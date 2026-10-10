@@ -96,6 +96,7 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | mensajes de una conversación | `/api/conversations/<id>/messages/?after=` |
 | `/api/onboarding/estilo/` | `/api/onboarding/style/` |
 | asistente | `/api/assistant/messages/` (GET con `?after=`, POST), `/api/assistant/reset/` |
+| cuenta de Claude (solo Gerente, ADR 0022) | `/api/settings/claude/start/`, `exchange/`, `status/`, `disconnect/`, `set-key/` |
 | historial del estilo | `/api/style/versions/`, `/api/style/versions/<id>/`, `<id>/restore/`; P1: `/api/style/refresh/` |
 | entregas y avances de un pedido | `/api/purchase-orders/<id>/deliveries/`, `/api/purchase-orders/<id>/progress/` |
 | sin cambio | `/webhooks/evolution/<secret>/`, `/api/auth/*`, `/api/monitor/`, `/api/onboarding/whatsapp/*`, `/api/schema/` |
@@ -183,5 +184,6 @@ Cada ruta usa el nombre de su modelo.
 | Simulador de chat | `/simulator` |
 | Asistente (pantalla completa en móvil) | `/assistant` |
 | Historial del estilo (solo Gerente) | `/style` |
-| Onboarding | `/onboarding/whatsapp`, `/onboarding/suppliers`, `/onboarding/style` |
+| Onboarding (4 pasos) | `/onboarding/claude`, `/onboarding/whatsapp`, `/onboarding/suppliers`, `/onboarding/style` |
+| Configuración: cuenta de Claude (solo Gerente) | `/settings/claude` |
 | Autoregistro público | `/supplier-signup` |
