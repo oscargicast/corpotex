@@ -119,9 +119,10 @@ El plan por fases, con responsables, dependencias e hitos, está en `docs/planni
 
 ## Pendiente de decidir (preguntar a Oscar)
 
-- Celular de Valeria para la allowlist.
 - Reparto del equipo.
 
-El pitch, la hora de entrega y los criterios del jurado los maneja Oscar; no son tema de las sesiones.
+El pitch lo maneja Oscar. La agenda real está en `docs/planning.md`. El guion del chat de rol con la proveedora real está en `docs/guion-chat-de-rol.md`.
+
+Estado de Evolution (10/10, 17:25): instancia `corpotex` `open`, webhook configurado (solo `MESSAGES_UPSERT`, base64), `groupsIgnore=true`, y el service token de Cloudflare Access en `.env` probado contra la API.
 
 Más contexto: Kenji lo guarda en el trick hackathon-retos; pedirlo con `/kenji`.
