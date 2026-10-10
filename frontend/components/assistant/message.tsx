@@ -12,7 +12,7 @@ import { Pill, SEVERITY_TONE } from "../ui";
 // The assistant names orders and purchase orders by code, never by URL:
 // codes become links here, outside inline code spans.
 // Only the routes codes link to; anything else in the model's text stays plain.
-const INTERNAL_HREF = /^\/(?:(?:orders|purchase-orders|suppliers)\/[A-Za-z0-9-]+)?$/;
+const INTERNAL_HREF = /^\/(?:(?:orders|purchase-orders|suppliers|inventory)\/[A-Za-z0-9-]+|inventory)?$/;
 
 function linkCodes(text: string): string {
   return text

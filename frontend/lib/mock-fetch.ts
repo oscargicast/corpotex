@@ -267,10 +267,10 @@ function agentSays(conversationId: number, text: string, delayMs: number) {
 
 function simulatorPost(body: BodyInit | null | undefined): Response {
   const get = (key: string) => (body instanceof FormData ? body.get(key) : readBody(body)[key]);
-  const contact = simulatorContacts.find((c) => c.id === Number(get("allowed_number_id")));
+  const contact = simulatorContacts.find((c) => c.allowed_number_id === Number(get("allowed_number_id")));
   if (!contact) return json(400, { detail: "Número no permitido." });
   if (contact.channel !== "simulator") return json(400, { detail: "Ese contacto escribe por WhatsApp real." });
-  contact.conversation_id ??= 100 + contact.id;
+  contact.conversation_id ??= 100 + contact.allowed_number_id;
   const photo = get("photo");
   const text = String(get("text") ?? "");
   const message: ChatMessage = {
@@ -286,9 +286,9 @@ function simulatorPost(body: BodyInit | null | undefined): Response {
   if (/no (voy a|puedo)|cancel/i.test(text)) {
     agentSays(contact.conversation_id, "Entendido, gracias por avisar a tiempo. Coordino con el Gerente y te confirmo cómo recogemos lo que ya tienes.", 2000);
     // The redistribution reaches another workshop: shows the highlight and the toast.
-    const other = simulatorContacts.find((c) => c.channel === "simulator" && c.id !== contact.id);
+    const other = simulatorContacts.find((c) => c.channel === "simulator" && c.allowed_number_id !== contact.allowed_number_id);
     if (other) {
-      other.conversation_id ??= 100 + other.id;
+      other.conversation_id ??= 100 + other.allowed_number_id;
       agentSays(other.conversation_id, "Hola, ¿puedes tomar 250 polos piqué para el 20 oct. a S/ 8.10 c/u? Va con 50 % de adelanto.", 6000);
     }
   } else {
