@@ -61,6 +61,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
                   {number.name && <p className="text-xs text-muted">{number.name}</p>}
                 </div>
                 <div className="flex items-center gap-2">
+                  {number.simulated && <Pill tone="info">Simulador</Pill>}
                   {number.active ? <Pill tone="success">Activo para WhatsApp</Pill> : <Pill>Inactivo</Pill>}
                   {number.active ? (
                     <Button className="py-1" disabled={busy} onClick={() => setActive(number, false)}>

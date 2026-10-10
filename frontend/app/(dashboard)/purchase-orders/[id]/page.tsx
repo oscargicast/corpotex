@@ -74,12 +74,12 @@ export default function PurchaseOrderDetailPage() {
         )}
       </header>
 
-      {isManager && po.decision_pending && (
-        <DecisionCard decision={po.decision_pending} onResolved={() => mutate()} />
+      {isManager && po.pending_decision && (
+        <DecisionCard decision={po.pending_decision} onResolved={() => mutate()} />
       )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Fact label="Avance" value={`${po.units_done} / ${po.total_units}`} />
+        <Fact label="Avance" value={`${po.units_done} / ${Number(po.total_units)}`} />
         <Fact label="Límite interno" value={formatDay(po.internal_due_on)} />
         <Fact label="Acordado" value={formatDay(po.committed_on)} />
         <Fact label="Último avance" value={formatDayTime(po.last_progress_at)} />
@@ -175,7 +175,7 @@ export default function PurchaseOrderDetailPage() {
                   )}
                   <div className="text-sm">
                     <p className="font-semibold tabular-nums">
-                      {report.units_done} de {po.total_units}
+                      {report.units_done} de {Number(po.total_units)}
                     </p>
                     {report.note && <p>{report.note}</p>}
                     <p className="text-xs text-muted">
@@ -190,7 +190,7 @@ export default function PurchaseOrderDetailPage() {
           )}
           {open && user.role !== "sales" && (
             <div className="mt-4 border-t border-line pt-4">
-              <ProgressForm purchaseOrderId={po.id} current={po.units_done} total={po.total_units} onSaved={() => mutate()} />
+              <ProgressForm purchaseOrderId={po.id} current={po.units_done} total={Number(po.total_units)} onSaved={() => mutate()} />
             </div>
           )}
         </Card>

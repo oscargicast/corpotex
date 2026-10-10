@@ -74,7 +74,7 @@ export default function OrdersPage() {
                     {order.customer.name} · {order.brand.name}
                   </p>
                   <p className="mt-1 text-xs text-muted">
-                    {order.status_display} · {order.total_units} u. · prometida {formatDay(order.promised_on)}, estimada{" "}
+                    {order.status_display} · {Number(order.total_units)} u. · prometida {formatDay(order.promised_on)}, estimada{" "}
                     {formatDay(order.estimated_on)}
                   </p>
                 </Link>
@@ -113,7 +113,7 @@ export default function OrdersPage() {
                         <span className="block text-xs text-warning">{order.purchase_orders_summary.waiting_manager} esperando al Gerente</span>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">{order.total_units}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{Number(order.total_units)}</td>
                     <td className="px-4 py-3">{formatDay(order.promised_on)}</td>
                     <td className={`px-4 py-3 ${order.slack_days !== null && order.slack_days < 0 ? "font-semibold text-danger" : ""}`}>
                       {formatDay(order.estimated_on)}

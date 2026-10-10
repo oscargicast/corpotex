@@ -33,7 +33,8 @@ export function Clock() {
 
   if (!data) return <div className="h-8 w-40 animate-pulse rounded-md bg-line" />;
 
-  const elapsed = data.paused ? 0 : (Date.now() - fetchedAt) * data.factor;
+  const factor = Number(data.factor); // Decimal: arrives as a string
+  const elapsed = data.paused ? 0 : (Date.now() - fetchedAt) * factor;
   const now = new Date(new Date(data.now).getTime() + elapsed);
 
   async function update(patch: Partial<{ factor: number; paused: boolean; advance_hours: number }>) {
@@ -50,7 +51,7 @@ export function Clock() {
         {format.format(now)}
       </span>
       {(data.paused || user.role !== "manager") && (
-        <span className="hidden text-muted sm:inline">{data.paused ? "en pausa" : `×${data.factor}`}</span>
+        <span className="hidden text-muted sm:inline">{data.paused ? "en pausa" : `×${factor}`}</span>
       )}
       {user.role === "manager" && (
         <div className="hidden items-center gap-1 md:flex">
@@ -64,7 +65,7 @@ export function Clock() {
             {data.paused ? <Play size={16} /> : <Pause size={16} />}
           </button>
           <select
-            value={data.factor}
+            value={factor}
             onChange={(e) => update({ factor: Number(e.target.value) })}
             className="rounded-md bg-transparent px-1 py-1 text-muted hover:bg-line"
             aria-label="Velocidad del reloj"

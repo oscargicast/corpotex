@@ -86,7 +86,7 @@ function Progress({ po }: { po: PurchaseOrderListItem }) {
       <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-canvas">
         <span className="block h-full rounded-full bg-success" style={{ width: `${po.progress_pct}%` }} />
       </span>
-      {po.units_done}/{po.total_units}
+      {po.units_done}/{Number(po.total_units)}
     </span>
   );
 }

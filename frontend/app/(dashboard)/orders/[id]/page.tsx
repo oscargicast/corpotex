@@ -52,7 +52,7 @@ export default function OrderDetailPage() {
             <Pill>{order.status_display}</Pill>
           </div>
           <p className="mt-1 text-sm text-muted">
-            {order.customer.name} · {order.brand.name} · {order.total_units} unidades
+            {order.customer.name} · {order.brand.name} · {Number(order.total_units)} unidades
             {order.total_amount ? ` · ${formatMoney(order.total_amount)}` : ""}
           </p>
         </div>

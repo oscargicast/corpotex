@@ -16,7 +16,7 @@ export interface LoginResponse {
 
 export interface Clock {
   now: string;
-  factor: number;
+  factor: number | string; // Decimal in the API
   paused: boolean;
 }
 
@@ -53,7 +53,7 @@ export interface OrderListItem {
   promised_on: string;
   estimated_on: string | null;
   slack_days: number | null;
-  total_units: number;
+  total_units: number | string; // Decimal in the API
   purchase_orders_summary?: { total: number; confirmed: number; waiting_manager: number };
 }
 
@@ -67,7 +67,7 @@ export interface PurchaseOrderListItem {
   waiting_manager: boolean;
   supplier: { id: number; name: string; kind: string };
   orders: (Ref & { customer_name: string })[];
-  total_units: number;
+  total_units: number | string; // Decimal in the API
   units_done: number;
   progress_pct: number;
   internal_due_on: string | null;
@@ -132,7 +132,8 @@ export interface PurchaseOrderDetail extends PurchaseOrderListItem {
   paid_amount: string | null;
   pending_amount: string | null;
   conversation_id: number | null;
-  decision_pending: Decision | null;
+  pending_decision: Decision | null;
+  suggested_supplier: { id: number; name: string } | null;
   redistributed_into: (Ref & { supplier_name: string; quantity: number; status_display: string })[];
   rating: { delay_days: number; quality: number; defect_pct: number; score: number; rated_at: string } | null;
 }
@@ -165,6 +166,7 @@ export interface SupplierNumber {
   phone: string;
   name: string;
   active: boolean;
+  simulated?: boolean; // answered through the simulator, not WhatsApp
 }
 
 export interface SupplierDetail extends SupplierListItem {

@@ -46,11 +46,12 @@ function purchaseOrderDetailFor(po: PurchaseOrderListItem, role: Role): Purchase
     rating: null,
     ...extra,
     ...po,
-    decision_pending: monitor.decisions.find((d) => d.purchase_orders.some((p) => p.id === po.id)) ?? null,
+    suggested_supplier: null,
+    pending_decision: monitor.decisions.find((d) => d.purchase_orders.some((p) => p.id === po.id)) ?? null,
   } as PurchaseOrderDetail;
   if (role !== "manager") {
     // Team members see the supplier's name, never prices, payments or the matching scores.
-    Object.assign(detail, { total_amount: null, payments: [], paid_amount: null, pending_amount: null, rationale: null, scores: null, candidates: null, decision_pending: null });
+    Object.assign(detail, { total_amount: null, payments: [], paid_amount: null, pending_amount: null, rationale: null, scores: null, candidates: null, pending_decision: null });
     detail.items = detail.items.map((item) => ({ ...item, unit_price: null }));
   }
   return detail;
@@ -367,7 +368,7 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
       },
       ...reports,
     ];
-    Object.assign(po, { units_done: units, progress_pct: Math.round((units / po.total_units) * 100), last_progress_at: new Date().toISOString() });
+    Object.assign(po, { units_done: units, progress_pct: Math.round((units / Number(po.total_units)) * 100), last_progress_at: new Date().toISOString() });
     return json(201, poDetails[po.id].progress_reports![0]);
   }
   const payMatch = route.match(/^POST \/api\/payments\/(\d+)\/pay\/$/);
