@@ -27,8 +27,9 @@ export default function PurchaseOrderDetailPage() {
     refreshInterval: 3000,
   });
   const { data: clock } = useSWR<Clock>("/api/clock/", fetcher);
+  // Supplier conversations hold sensitive data: only the Gerente sees them (rule of 10/10).
   const { data: chat } = useSWR<{ typing: boolean; messages: ChatMessage[] }>(
-    po?.conversation_id ? `/api/conversations/${po.conversation_id}/messages/` : null,
+    isManager && po?.conversation_id ? `/api/conversations/${po.conversation_id}/messages/` : null,
     fetcher,
     { refreshInterval: 3000 },
   );
@@ -206,7 +207,7 @@ export default function PurchaseOrderDetailPage() {
           </Card>
         )}
 
-        {po.conversation_id && (
+        {isManager && po.conversation_id && (
           <Card className="xl:col-span-2">
             <SectionTitle>Chat con el proveedor</SectionTitle>
             <ChatThread messages={chat?.messages ?? []} typing={chat?.typing} />

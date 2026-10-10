@@ -1,0 +1,12 @@
+# Demo override (ADR 0023): the frontend serves a production build instead of
+# `next dev`, so the projector never shows compile waits or the error overlay.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build
+#
+# The build runs inside the container on start (about a minute); `docker compose
+# logs -f frontend` shows "Ready" when it is serving.
+services:
+  frontend:
+    command: sh -c "pnpm build && pnpm start"
+    environment:
+      NODE_ENV: production
