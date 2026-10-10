@@ -818,7 +818,7 @@
             },
             "OrderDetail": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -934,6 +934,21 @@
                             "additionalProperties": {}
                         },
                         "readOnly": true
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "production_stage_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "risk_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
                     }
                 },
                 "required": [
@@ -945,19 +960,22 @@
                     "issued_on",
                     "items",
                     "owner",
+                    "production_stage_display",
                     "promised_on",
                     "purchase_orders",
                     "purchase_orders_summary",
                     "redistributions",
                     "requirements",
+                    "risk_display",
                     "slack_days",
+                    "status_display",
                     "total_amount",
                     "total_units"
                 ]
             },
             "OrderItem": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -997,9 +1015,15 @@
                         "type": "string",
                         "format": "decimal",
                         "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "customization_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
                     }
                 },
                 "required": [
+                    "customization_display",
                     "id",
                     "product",
                     "quantity",
@@ -1008,7 +1032,7 @@
             },
             "OrderList": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -1080,6 +1104,21 @@
                         "type": "object",
                         "additionalProperties": {},
                         "readOnly": true
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "production_stage_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "risk_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
                     }
                 },
                 "required": [
@@ -1088,9 +1127,12 @@
                     "customer",
                     "id",
                     "issued_on",
+                    "production_stage_display",
                     "promised_on",
                     "purchase_orders_summary",
+                    "risk_display",
                     "slack_days",
+                    "status_display",
                     "total_amount",
                     "total_units"
                 ]
@@ -1114,7 +1156,7 @@
             },
             "Payment": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -1164,6 +1206,16 @@
                     "receipt": {
                         "type": "string",
                         "readOnly": true
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "method_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
                     }
                 },
                 "required": [
@@ -1171,6 +1223,8 @@
                     "due_on",
                     "id",
                     "kind",
+                    "kind_display",
+                    "method_display",
                     "purchase_order",
                     "receipt",
                     "status",
@@ -1261,7 +1315,7 @@
             },
             "PurchaseOrderDetail": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -1272,6 +1326,10 @@
                         "maxLength": 40
                     },
                     "kind": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "kind_display": {
                         "type": "string",
                         "readOnly": true
                     },
@@ -1432,6 +1490,11 @@
                         "nullable": true,
                         "description": "Chat where this purchase order is negotiated.",
                         "readOnly": true
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
                     }
                 },
                 "required": [
@@ -1445,6 +1508,7 @@
                     "id",
                     "items",
                     "kind",
+                    "kind_display",
                     "last_progress_at",
                     "orders",
                     "paid_amount",
@@ -1455,6 +1519,7 @@
                     "progress_reports",
                     "redistributed_from",
                     "redistributed_into",
+                    "status_display",
                     "suggested_supplier",
                     "supplier",
                     "total_amount",
@@ -1475,6 +1540,18 @@
                         "additionalProperties": {},
                         "readOnly": true
                     },
+                    "name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "image": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "order_code": {
+                        "type": "string",
+                        "readOnly": true
+                    },
                     "quantity": {
                         "type": "string",
                         "format": "decimal",
@@ -1493,6 +1570,9 @@
                 },
                 "required": [
                     "id",
+                    "image",
+                    "name",
+                    "order_code",
                     "quantity",
                     "requirement",
                     "unit_price"
@@ -1500,7 +1580,7 @@
             },
             "PurchaseOrderList": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -1511,6 +1591,10 @@
                         "maxLength": 40
                     },
                     "kind": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "kind_display": {
                         "type": "string",
                         "readOnly": true
                     },
@@ -1588,6 +1672,11 @@
                     "alert_severity": {
                         "type": "string",
                         "readOnly": true
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
                     }
                 },
                 "required": [
@@ -1596,10 +1685,12 @@
                     "currency",
                     "id",
                     "kind",
+                    "kind_display",
                     "last_progress_at",
                     "orders",
                     "progress_pct",
                     "redistributed_from",
+                    "status_display",
                     "supplier",
                     "total_amount",
                     "total_units",
@@ -1642,7 +1733,7 @@
             },
             "Requirement": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -1688,6 +1779,11 @@
                         "description": "pending: nothing ordered; ordered: live purchase orders cover it; covered: delivered.",
                         "readOnly": true
                     },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
                     "purchase_orders": {
                         "type": "array",
                         "items": {
@@ -1695,17 +1791,24 @@
                             "additionalProperties": {}
                         },
                         "readOnly": true
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
                     }
                 },
                 "required": [
                     "id",
                     "kind",
+                    "kind_display",
                     "material",
                     "product",
                     "purchase_orders",
                     "qty_needed",
                     "qty_to_order",
-                    "status"
+                    "status",
+                    "status_display"
                 ]
             },
             "RiskEnum": {
@@ -1766,7 +1869,7 @@
             },
             "SupplierDetail": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -1909,6 +2012,21 @@
                             "additionalProperties": {}
                         },
                         "readOnly": true
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "source_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
                     }
                 },
                 "required": [
@@ -1916,6 +2034,7 @@
                     "has_style_notes",
                     "id",
                     "kind",
+                    "kind_display",
                     "load_pct",
                     "name",
                     "numbers",
@@ -1926,12 +2045,14 @@
                     "purchase_orders",
                     "quality_score",
                     "rates",
-                    "ratings"
+                    "ratings",
+                    "source_display",
+                    "status_display"
                 ]
             },
             "SupplierList": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -2019,6 +2140,21 @@
                     "has_style_notes": {
                         "type": "boolean",
                         "readOnly": true
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "source_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
                     }
                 },
                 "required": [
@@ -2026,12 +2162,15 @@
                     "has_style_notes",
                     "id",
                     "kind",
+                    "kind_display",
                     "load_pct",
                     "name",
                     "numbers_count",
                     "on_time_score",
                     "open_purchase_orders",
-                    "quality_score"
+                    "quality_score",
+                    "source_display",
+                    "status_display"
                 ]
             },
             "SupplierRef": {

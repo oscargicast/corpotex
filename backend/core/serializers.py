@@ -45,9 +45,17 @@ class RelativeFileField(serializers.FileField):
 
 
 class DisplayMixin:
-    """Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and
-    strips manager-only fields from every nested payload when the context role is not the
-    manager (nested serializers do not go through `serializer_for`)."""
+    """Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
+    as real fields so the OpenAPI schema carries them), and strips manager-only fields from
+    every nested payload when the context role is not the manager (nested serializers do not
+    go through `serializer_for`)."""
+
+    def get_fields(self):
+        fields = super().get_fields()
+        for name in getattr(self.Meta, "display_fields", ()):
+            if name in fields:
+                fields[f"{name}_display"] = serializers.CharField(read_only=True, default="")
+        return fields
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

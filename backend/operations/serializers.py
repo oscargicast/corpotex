@@ -74,6 +74,8 @@ class RequirementSerializer(DisplayMixin, serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     purchase_orders = serializers.SerializerMethodField()
 
+    status_display = serializers.CharField(read_only=True, default="")
+
     class Meta:
         model = Requirement
         display_fields = ["kind"]
@@ -86,11 +88,19 @@ class RequirementSerializer(DisplayMixin, serializers.ModelSerializer):
             "qty_from_stock",
             "qty_to_order",
             "status",
+            "status_display",
             "purchase_orders",
         ]
 
     def _items(self, obj):
         return obj.purchase_order_items.select_related("purchase_order__supplier")
+
+    REQUIREMENT_STATUS_DISPLAY = {"pending": "Pendiente", "ordered": "Pedido", "covered": "Cubierto"}
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["status_display"] = self.REQUIREMENT_STATUS_DISPLAY[data["status"]]
+        return data
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_status(self, obj):
@@ -243,16 +253,33 @@ class OrderDetailSerializer(OrderListSerializer):
 
 class PurchaseOrderItemSerializer(serializers.ModelSerializer):
     requirement = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
+    order_code = serializers.CharField(source="requirement.order.code", read_only=True)
 
     class Meta:
         model = PurchaseOrderItem
-        fields = ["id", "requirement", "quantity", "unit_price", "qty_delivered"]
+        fields = ["id", "requirement", "name", "image", "order_code", "quantity", "unit_price", "qty_delivered"]
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_name(self, obj):
+        item = obj.requirement.material or obj.requirement.product
+        return item.name if item else obj.requirement.get_kind_display()
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_image(self, obj):
+        return _image(obj.requirement.material or obj.requirement.product)
 
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_requirement(self, obj):
         req = obj.requirement
-        item = req.material or req.product
-        return {"id": req.id, "order_code": req.order.code, "description": item.name if item else req.kind}
+        return {
+            "id": req.id,
+            "kind": req.kind,
+            "order": {"id": req.order_id, "code": req.order.code},
+            "material": MaterialRefSerializer(req.material).data if req.material_id else None,
+            "product": ProductRefSerializer(req.product).data if req.product_id else None,
+        }
 
 
 class ProgressReportSerializer(serializers.ModelSerializer):
@@ -308,6 +335,7 @@ class PaymentSerializer(DisplayMixin, serializers.ModelSerializer):
 @register(PurchaseOrder)
 class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
     kind = serializers.CharField(read_only=True)
+    kind_display = serializers.CharField(source="supplier.get_kind_display", read_only=True)
     waiting_manager = serializers.SerializerMethodField()
     supplier = SupplierRefSerializer(read_only=True)
     orders = serializers.SerializerMethodField()
@@ -327,6 +355,7 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
             "id",
             "code",
             "kind",
+            "kind_display",
             "status",
             "waiting_manager",
             "supplier",
@@ -343,11 +372,6 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
             "redistributed_from",
             "alert_severity",
         ]
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data["kind_display"] = instance.supplier.get_kind_display()
-        return data
 
     @extend_schema_field(OpenApiTypes.BOOL)
     def get_waiting_manager(self, obj):
