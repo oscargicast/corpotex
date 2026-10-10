@@ -1,0 +1,20 @@
+from django.urls import path
+
+from . import views, views_style
+
+urlpatterns = [
+    path("auth/login/", views.LoginView.as_view(), name="auth-login"),
+    path("auth/logout/", views.LogoutView.as_view(), name="auth-logout"),
+    path("auth/me/", views.MeView.as_view(), name="auth-me"),
+    path("clock/", views.ClockView.as_view(), name="clock"),
+    # Style onboarding and history: views owned by `personalidad` in core/views_style.py.
+    path("onboarding/style/", views_style.OnboardingStyleView.as_view(), name="onboarding-style"),
+    path("onboarding/style/extract/", views_style.StyleExtractView.as_view()),
+    path("onboarding/style/import-txt/", views_style.StyleImportTxtView.as_view()),
+    path("onboarding/style/template/", views_style.StyleTemplateView.as_view()),
+    path("onboarding/style/approve/", views_style.StyleApproveView.as_view()),
+    path("style/versions/", views_style.StyleVersionListView.as_view()),
+    path("style/versions/<int:pk>/", views_style.StyleVersionDetailView.as_view()),
+    path("style/versions/<int:pk>/restore/", views_style.StyleVersionRestoreView.as_view()),
+    path("style/refresh/", views_style.StyleRefreshView.as_view()),
+]

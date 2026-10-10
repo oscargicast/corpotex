@@ -20,3 +20,8 @@ __pycache__/
 node_modules/
 .next/
 celerybeat-schedule*
+
+# Python
+backend/.venv/
+.pytest_cache/
+.ruff_cache/
