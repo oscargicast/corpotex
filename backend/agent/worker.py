@@ -33,10 +33,12 @@ def run_batch(batch) -> sdk.TurnResult:
 
 
 def _run(batch, conversation, *, resume: str | None, with_history: bool = False) -> sdk.TurnResult:
-    if conversation.channel == "dashboard":
+    dashboard = conversation.channel == "dashboard"
+    if dashboard:
         from agent.persona import build_assistant_prompt as build_prompt
 
-        from agent.tools import assistant_tools as tools_for
+        from agent.assistant_tools import assistant_tools as tools_for
+        from agent.assistant_tools import finish_dashboard_turn, is_alert_only
     else:
         from agent.persona import build_prompt
 
@@ -50,9 +52,11 @@ def _run(batch, conversation, *, resume: str | None, with_history: bool = False)
         mcp_servers={SERVER: create_sdk_mcp_server(SERVER, tools=tools)} if tools else None,
         allowed_tools=[f"mcp__{SERVER}__{t.name}" for t in tools],
         resume=resume,
-        effort=TURN_EFFORT,
+        effort="low" if dashboard and is_alert_only(batch) else TURN_EFFORT,
     )
     result = asyncio.run(_run_and_release(blocks, options))
+    if dashboard:
+        finish_dashboard_turn(conversation, batch, result)
     log.info(
         "turn %s conversation %s session %s error=%s note=%r",
         batch.turn.pk,
