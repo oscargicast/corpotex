@@ -80,6 +80,63 @@ export interface PurchaseOrderListItem {
   alert_severity: Severity | null;
 }
 
+export interface Payment {
+  id: number;
+  kind: "advance" | "balance";
+  kind_display: string;
+  amount: string;
+  status: "pending" | "paid";
+  due_on: string | null;
+  paid_at: string | null;
+  method: "yape" | "transfer" | "cash" | null;
+  receipt: string | null;
+}
+
+export interface ProgressReport {
+  id: number;
+  units_done: number;
+  note: string;
+  photo: string | null;
+  source: "whatsapp" | "web" | "manual" | "simulator";
+  reported_at: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  direction: "inbound" | "outbound";
+  author: "supplier" | "agent" | "manager" | "system";
+  text: string;
+  media: string | null;
+  media_kind: "image" | "audio" | "document" | null;
+  sent_at: string;
+}
+
+export interface PurchaseOrderDetail extends PurchaseOrderListItem {
+  rationale: string | null;
+  scores: Record<string, number> | null;
+  candidates: Candidate[] | null;
+  changed_by_manager: boolean;
+  terms: string;
+  delivered_on: string | null;
+  items: {
+    id: number;
+    name: string;
+    image: string | null;
+    order_code: string;
+    quantity: string;
+    unit_price?: string | null;
+    qty_delivered: string;
+  }[];
+  progress_reports: ProgressReport[];
+  payments: Payment[];
+  paid_amount: string | null;
+  pending_amount: string | null;
+  conversation_id: number | null;
+  decision_pending: Decision | null;
+  redistributed_into: (Ref & { supplier_name: string; quantity: number; status_display: string })[];
+  rating: { delay_days: number; quality: number; defect_pct: number; score: number; rated_at: string } | null;
+}
+
 export interface Named {
   id: number;
   name: string;

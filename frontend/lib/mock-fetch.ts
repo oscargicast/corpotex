@@ -1,21 +1,61 @@
 // In-browser stand-in for the Django API while B1 is not on main.
 // Enabled with NEXT_PUBLIC_USE_MOCKS=1. Shapes follow docs/backend/modelo-de-datos.md.
 import badgesByRole from "@/mocks/badges.json";
+import conversationsSeed from "@/mocks/conversations.json";
 import monitorSeed from "@/mocks/monitor.json";
 import ordersSeed from "@/mocks/orders.json";
+import poDetailsSeed from "@/mocks/purchase-order-details.json";
 import purchaseOrdersSeed from "@/mocks/purchase-orders.json";
 import users from "@/mocks/users.json";
 import type {
   Badges,
+  ChatMessage,
   ClaudeStatus,
   Clock,
   Monitor,
   OrderDetail,
   OrderListItem,
+  PurchaseOrderDetail,
   PurchaseOrderListItem,
   Role,
   User,
 } from "./types";
+
+const poDetails = structuredClone(poDetailsSeed) as Record<string, Partial<PurchaseOrderDetail> & { decision_id?: number }>;
+const conversations = structuredClone(conversationsSeed) as Record<string, ChatMessage[]>;
+
+function purchaseOrderDetailFor(po: PurchaseOrderListItem, role: Role): PurchaseOrderDetail {
+  const extra = poDetails[po.id] ?? {};
+  const detail = {
+    rationale: null,
+    scores: null,
+    candidates: null,
+    changed_by_manager: false,
+    terms: "",
+    delivered_on: null,
+    items: [],
+    progress_reports: [],
+    payments: [],
+    paid_amount: "0.00",
+    pending_amount: "0.00",
+    conversation_id: null,
+    redistributed_into: [],
+    rating: null,
+    ...extra,
+    ...po,
+    decision_pending: monitor.decisions.find((d) => d.purchase_orders.some((p) => p.id === po.id)) ?? null,
+  } as PurchaseOrderDetail;
+  if (role !== "manager") {
+    // Team members see the supplier's name, never prices, payments or the matching scores.
+    Object.assign(detail, { total_amount: null, payments: [], paid_amount: null, pending_amount: null, rationale: null, scores: null, candidates: null, decision_pending: null });
+    detail.items = detail.items.map((item) => ({ ...item, unit_price: null }));
+  }
+  return detail;
+}
+
+function formValue(body: BodyInit | null | undefined, key: string): FormDataEntryValue | null {
+  return body instanceof FormData ? body.get(key) : null;
+}
 
 const orders = structuredClone(ordersSeed.list) as OrderListItem[];
 const orderDetails = structuredClone(ordersSeed.detail) as Record<string, Partial<OrderDetail>>;
@@ -214,6 +254,69 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     const order = orders.find((o) => o.id === Number(orderMatch[1]));
     return order ? json(200, orderDetailFor(order, user.role)) : json(404, { detail: "No existe." });
   }
+  if (route === "GET /api/purchase-orders/") {
+    const params = new URL(path, "http://mock").searchParams;
+    return json(
+      200,
+      purchaseOrders
+        .filter(
+          (po) =>
+            (!params.get("kind") || po.kind === params.get("kind")) &&
+            (!params.get("waiting_manager") || po.waiting_manager) &&
+            (!params.get("code") || po.code === params.get("code")),
+        )
+        .map((po) => (user.role === "manager" ? po : { ...po, total_amount: null })),
+    );
+  }
+  const poMatch = route.match(/^GET \/api\/purchase-orders\/(\d+)\/$/);
+  if (poMatch) {
+    const po = purchaseOrders.find((p) => p.id === Number(poMatch[1]));
+    return po ? json(200, purchaseOrderDetailFor(po, user.role)) : json(404, { detail: "No existe." });
+  }
+  const progressMatch = route.match(/^POST \/api\/purchase-orders\/(\d+)\/progress\/$/);
+  if (progressMatch) {
+    if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
+    const po = purchaseOrders.find((p) => p.id === Number(progressMatch[1]));
+    if (!po) return json(404, { detail: "No existe." });
+    const units = Number(formValue(init.body, "units_done"));
+    const photo = formValue(init.body, "photo");
+    const reports = (poDetails[po.id] ??= {}).progress_reports ?? [];
+    poDetails[po.id].progress_reports = [
+      {
+        id: Date.now(),
+        units_done: units,
+        note: String(formValue(init.body, "note") ?? ""),
+        photo: photo instanceof File && photo.size ? URL.createObjectURL(photo) : null,
+        source: "web",
+        reported_at: new Date().toISOString(),
+      },
+      ...reports,
+    ];
+    Object.assign(po, { units_done: units, progress_pct: Math.round((units / po.total_units) * 100), last_progress_at: new Date().toISOString() });
+    return json(201, poDetails[po.id].progress_reports![0]);
+  }
+  const payMatch = route.match(/^POST \/api\/payments\/(\d+)\/pay\/$/);
+  if (payMatch) {
+    if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
+    for (const detail of Object.values(poDetails)) {
+      const payment = detail.payments?.find((p) => p.id === Number(payMatch[1]));
+      if (!payment) continue;
+      Object.assign(payment, { status: "paid", paid_at: new Date().toISOString(), method: String(formValue(init.body, "method")) });
+      const paid = detail.payments!.filter((p) => p.status === "paid").reduce((sum, p) => sum + Number(p.amount), 0);
+      const total = detail.payments!.reduce((sum, p) => sum + Number(p.amount), 0);
+      detail.paid_amount = paid.toFixed(2);
+      detail.pending_amount = (total - paid).toFixed(2);
+      return json(200, payment);
+    }
+    return json(404, { detail: "No existe." });
+  }
+  const messagesMatch = route.match(/^GET \/api\/conversations\/(\d+)\/messages\/$/);
+  if (messagesMatch) {
+    const after = Number(new URL(path, "http://mock").searchParams.get("after") ?? 0);
+    const messages = (conversations[messagesMatch[1]] ?? []).filter((m) => m.id > after);
+    return json(200, { typing: false, messages });
+  }
+
   const confirmMatch = route.match(/^POST \/api\/orders\/(\d+)\/confirm\/$/);
   if (confirmMatch) {
     if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
