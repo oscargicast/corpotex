@@ -10,6 +10,43 @@ from .models import Supplier
 OPEN = PurchaseOrder.OPEN_STATUSES
 
 
+def _normalize(text: str) -> str:
+    return " ".join(str(text or "").lower().split())
+
+
+def create_suggested_suppliers(candidates: list[dict], *, actor) -> dict:
+    """The assistant's `suggest_suppliers` tool (ADR 0024): web candidates become suppliers
+    `pending_review`. The url and excerpt go to `source_detail`, never to `notes` (which the
+    WhatsApp agent reads). Deduplicates by normalized name + city against existing suppliers."""
+    from core.permissions import require_role
+
+    require_role(actor, "manager")
+    existing = {(_normalize(s.name), _normalize(s.city)) for s in Supplier.objects.only("name", "city")}
+    created, skipped = [], []
+    for candidate in candidates:
+        name = " ".join(str(candidate.get("name", "")).split())[:160]
+        city = " ".join(str(candidate.get("city", "")).split())[:80]
+        key = (_normalize(name), _normalize(city))
+        if not name or key in existing:
+            skipped.append({"name": name, "city": city})
+            continue
+        existing.add(key)
+        kind = candidate.get("kind") if candidate.get("kind") in ("workshop", "material", "finished") else "workshop"
+        specialty = " ".join(str(candidate.get("specialty", "")).split())[:60]
+        supplier = Supplier.objects.create(
+            name=name,
+            kind=kind,
+            specialties=[specialty] if specialty else [],
+            city=city,
+            source=Supplier.Source.EXTERNAL,
+            source_detail={"url": str(candidate.get("source_url", ""))[:500], "evidence": str(candidate.get("evidence", ""))[:300]},
+            status=Supplier.Status.PENDING_REVIEW,
+            notes="",
+        )
+        created.append({"id": supplier.id, "name": supplier.name, "city": supplier.city, "kind": supplier.kind})
+    return {"created": created, "skipped": skipped}
+
+
 def supplier_scores(supplier: Supplier) -> dict:
     """{on_time, quality} from the `rating` of its closed purchase orders; None when unrated."""
     ratings = [po.rating for po in supplier.purchase_orders.filter(rating__isnull=False) if po.rating]
