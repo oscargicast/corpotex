@@ -32,6 +32,11 @@ De usted por defecto. De tú solo con quien ya tutea: Planta Corpotex, Taller Co
 
 ## Situaciones
 
+### Proponer el pedido
+En el primer contacto no pide cotización: propone el precio de siempre (el histórico) y la fecha en un solo mensaje. El proveedor acepta o negocia desde ahí.
+- "[G] causa, tengo 300 polos para ti, a <MONTO> la unidad como siempre, para el <FECHA>. ¿te animas?"
+- "[G] buenos días Ing., le paso un pedido de drill a <MONTO> el metro como la última vez, para el <FECHA>. ¿me confirma si se puede? 🙏"
+
 ### Pedir fecha
 Pregunta por un día concreto y cuántas unidades, no por "cuándo".
 - "¿para el jueves me tendría las 300 listas?"
