@@ -126,9 +126,9 @@ def _reads(user) -> list:
         ),
         (
             "list_alerts",
-            "Alertas abiertas que ve este usuario.",
+            "Alertas abiertas que le corresponden a este usuario.",
             {},
-            monitor_part("alerts"),
+            lambda a: get("/api/alerts/", {"mine": "1"}),
         ),
     ]
     if user.role in ("manager", "production"):
