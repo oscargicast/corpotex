@@ -193,7 +193,7 @@ function Reservations({ id }: { id: number }) {
         {data.requirements.map((r) => (
           <tr key={`${r.order_code}-${r.status}`}>
             <td className="px-3 py-1.5">
-              <Link href={`/orders/${r.order_code}`} className="font-medium text-accent hover:underline">
+              <Link href={`/orders/${r.order_id ?? r.order_code}`} className="font-medium text-accent hover:underline">
                 {r.order_code}
               </Link>
             </td>

@@ -4,6 +4,90 @@
  */
 
 export interface paths {
+    "/api/alerts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Open alerts. `?mine=1` keeps only the ones that concern the caller's role, with the same
+         *     rule the assistant uses to notify (ADR 0020). `?status=` filters; default `open`.
+         */
+        get: operations["alerts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts/{id}/acknowledge/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["alerts_acknowledge_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["assistant_messages_retrieve"];
+        put?: never;
+        post: operations["assistant_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/messages/read/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assistant_messages_read_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/reset/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assistant_reset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login/": {
         parameters: {
             query?: never;
@@ -72,6 +156,113 @@ export interface paths {
         patch: operations["clock_partial_update"];
         trace?: never;
     };
+    "/api/conversations/{id}/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Read-only chat for the simulator and the purchase order detail (manager only: supplier
+         *     messages may carry prices).
+         */
+        get: operations["conversations_messages_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/manager/decisions/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Idempotent: the same action again returns 200 with the current state; a different one, 409. */
+        post: operations["manager_decisions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/manager/pending/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["manager_pending_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description `GET /api/materials/`: every material ordered by kind and name. `committed` is the sum of
+         *     `Requirement.qty_from_stock` of open orders; `available = stock - committed`.
+         */
+        get: operations["materials_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET /api/materials/<id>/`: the list row plus the open orders that take from it. */
+        get: operations["materials_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/badges/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Counters for the menu and the assistant button, polled every 5 s (ADR 0020, 0022). */
+        get: operations["me_badges_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/monitor/": {
         parameters: {
             query?: never;
@@ -92,6 +283,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/onboarding/style/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["onboarding_style_retrieve"];
+        put: operations["onboarding_style_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/onboarding/style/approve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["onboarding_style_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/onboarding/style/extract/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["onboarding_style_extract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/onboarding/style/import-txt/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["onboarding_style_import_txt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/onboarding/style/template/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["onboarding_style_template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/onboarding/whatsapp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["onboarding_whatsapp_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/onboarding/whatsapp/qr/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["onboarding_whatsapp_qr_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/onboarding/whatsapp/webhook/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["onboarding_whatsapp_webhook_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/": {
         parameters: {
             query?: never;
@@ -101,7 +420,8 @@ export interface paths {
         };
         get: operations["orders_list"];
         put?: never;
-        post?: never;
+        /** @description Register an order (sales or manager). Idempotent by `code`: 201 when new, 200 when it existed. */
+        post: operations["orders_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -118,6 +438,23 @@ export interface paths {
         get: operations["orders_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{id}/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Production confirms the breakdown; the matching proposes suppliers. */
+        post: operations["orders_confirm_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -156,6 +493,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/{id}/pay/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["payments_pay_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/purchase-orders/": {
         parameters: {
             query?: never;
@@ -188,6 +541,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/purchase-orders/{id}/deliveries/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["purchase_orders_deliveries_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchase-orders/{id}/progress/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["purchase_orders_progress_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/report/{token}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The workshop's public page (`/report/<token>`): no login, the token is the secret.
+         *     Never prices nor the supplier (ADR 0024 C).
+         */
+        get: operations["report_retrieve"];
+        put?: never;
+        /**
+         * @description The workshop's public page (`/report/<token>`): no login, the token is the secret.
+         *     Never prices nor the supplier (ADR 0024 C).
+         */
+        post: operations["report_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/schema/": {
         parameters: {
             query?: never;
@@ -204,6 +613,200 @@ export interface paths {
         get: operations["schema_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/claude/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["settings_claude_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/claude/disconnect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["settings_claude_disconnect_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/claude/exchange/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["settings_claude_exchange_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/claude/set-key/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["settings_claude_set_key_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/claude/start/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["settings_claude_start_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/claude/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["settings_claude_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulator/contacts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Active numbers with their simulator and WhatsApp conversations, never the phone. */
+        get: operations["simulator_contacts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulator/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description A team member acting as a supplier writes here; the agent answers in the same chat. */
+        post: operations["simulator_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/style/refresh/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["style_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/style/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["style_versions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/style/versions/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["style_versions_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/style/versions/{id}/restore/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["style_versions_restore"];
         delete?: never;
         options?: never;
         head?: never;
@@ -248,6 +851,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description * `approve` - approve
+         *     * `reject` - reject
+         *     * `change_supplier` - change_supplier
+         * @enum {string}
+         */
+        ActionEnum: "approve" | "reject" | "change_supplier";
         AllowedNumber: {
             readonly id: number;
             /** @description JID digits without +, or sim-<slug> if simulated. */
@@ -258,8 +868,66 @@ export interface components {
             /** @description Simulator only, never WhatsApp. */
             simulated?: boolean;
         };
+        AssistantMessage: {
+            readonly id: number;
+            readonly role: string;
+            text?: string;
+            readonly action: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Format: date-time
+             * @description Assistant messages only.
+             */
+            read_at?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        AssistantMessageInRequest: {
+            text: string;
+            context?: {
+                [key: string]: unknown;
+            };
+        };
         /** @enum {unknown} */
         BlankEnum: "";
+        ClaudeApiKeyRequest: {
+            api_key: string;
+        };
+        ClaudeError: {
+            error_code: string;
+            detail: string;
+        };
+        ClaudeExchangeRequest: {
+            /** @description `<code>#<state>` as shown by Anthropic. */
+            code: string;
+        };
+        ClaudeStart: {
+            /** Format: uri */
+            url: string;
+            state: string;
+        };
+        ClaudeStatus: {
+            connected: boolean;
+            method: components["schemas"]["ClaudeStatusMethodEnum"];
+            subscription_type: string | null;
+            /** @description Epoch milliseconds. */
+            expires_at: number | null;
+            refresh_token_expires_at: number | null;
+            expired: boolean;
+            /** Format: date-time */
+            connected_at: string | null;
+            last_error: string | null;
+            /** Format: date-time */
+            last_error_at: string | null;
+        };
+        /**
+         * @description * `oauth` - oauth
+         *     * `api_key` - api_key
+         *     * `none` - none
+         * @enum {string}
+         */
+        ClaudeStatusMethodEnum: "oauth" | "api_key" | "none";
         Clock: {
             /** Format: date-time */
             readonly now: string;
@@ -273,20 +941,26 @@ export interface components {
          * @enum {string}
          */
         CurrencyEnum: "PEN" | "USD";
-        /**
-         * @description * `embroidery` - Bordado
-         *     * `print` - Estampado
-         *     * `sublimation` - Sublimado
-         * @enum {string}
-         */
-        CustomizationEnum: "embroidery" | "print" | "sublimation";
-        /**
-         * @description * `material` - Insumos
-         *     * `workshop` - Taller
-         *     * `finished` - Producto terminado
-         * @enum {string}
-         */
-        KindC64Enum: "material" | "workshop" | "finished";
+        DecisionActionRequest: {
+            action: components["schemas"]["ActionEnum"];
+            supplier_id?: number | null;
+            purchase_order_id?: number | null;
+            /** @default  */
+            note: string;
+        };
+        DeliveryInRequest: {
+            /** Format: decimal */
+            qty_received: string;
+            /**
+             * Format: decimal
+             * @default 0.00
+             */
+            qty_defective: string;
+            /** @default 5 */
+            quality: number;
+            /** @default  */
+            note: string;
+        };
         LoginRequest: {
             username: string;
             password: string;
@@ -295,21 +969,111 @@ export interface components {
             token: string;
             user: components["schemas"]["User"];
         };
+        Material: {
+            readonly id: number;
+            /** @description Corpotex's internal code. */
+            sku: string;
+            name: string;
+            kind: components["schemas"]["MaterialKindEnum"];
+            readonly kind_display: string;
+            unit: components["schemas"]["MaterialUnitEnum"];
+            readonly unit_display: string;
+            /** Format: decimal */
+            stock?: string;
+            readonly committed: string;
+            readonly available: string;
+            /** Format: uri */
+            readonly image: string | null;
+        };
+        /**
+         * @description * `fabric` - Tela
+         *     * `button` - Botón
+         *     * `zipper` - Cierre
+         *     * `collar_cuff` - Cuello y puño
+         *     * `other` - Otro
+         * @enum {string}
+         */
+        MaterialKindEnum: "fabric" | "button" | "zipper" | "collar_cuff" | "other";
         MaterialRef: {
             readonly id: number;
             /** @description Corpotex's internal code. */
             sku: string;
             name: string;
-            unit: components["schemas"]["UnitEnum"];
+            unit: components["schemas"]["MaterialUnitEnum"];
             readonly image: string;
         };
         /**
-         * @description * `yape` - Yape
-         *     * `transfer` - Transferencia
-         *     * `cash` - Efectivo
+         * @description * `m` - m
+         *     * `kg` - kg
+         *     * `unit` - unidad
          * @enum {string}
          */
-        MethodEnum: "yape" | "transfer" | "cash";
+        MaterialUnitEnum: "m" | "kg" | "unit";
+        Message: {
+            readonly id: number;
+            readonly direction: string;
+            author: components["schemas"]["MessageAuthorEnum"];
+            text?: string;
+            readonly media: string | null;
+            status: components["schemas"]["MessageStatusEnum"];
+            /**
+             * Format: date-time
+             * @description Real time.
+             */
+            sent_at: string;
+            readonly turn_id: number | null;
+        };
+        /**
+         * @description * `supplier` - Proveedor
+         *     * `agent` - Agente
+         *     * `manager` - Gerente
+         *     * `user` - Usuario del dashboard
+         * @enum {string}
+         */
+        MessageAuthorEnum: "supplier" | "agent" | "manager" | "user";
+        /**
+         * @description * `received` - Recibido
+         *     * `processed` - Procesado
+         *     * `error` - Error
+         *     * `sent` - Enviado
+         *     * `failed` - Fallido
+         * @enum {string}
+         */
+        MessageStatusEnum: "received" | "processed" | "error" | "sent" | "failed";
+        /** @enum {unknown} */
+        NullEnum: null;
+        OnboardingError: {
+            error_code: string;
+            detail: string;
+        };
+        OnboardingStyle: {
+            status: components["schemas"]["OnboardingStyleStatusEnum"];
+            status_display: string;
+            error: string;
+            /** Format: date */
+            since: string | null;
+            step: (components["schemas"]["OnboardingStyleStepEnum"] | components["schemas"]["NullEnum"]) | null;
+            suppliers: components["schemas"]["StyleSupplierProgress"][];
+            style_md: string;
+            notes: components["schemas"]["StyleNotes"][];
+            /** Format: date-time */
+            approved_at: string | null;
+        };
+        /**
+         * @description * `not_started` - Sin iniciar
+         *     * `extracting` - Extrayendo
+         *     * `draft` - Borrador
+         *     * `approved` - Aprobado
+         *     * `error` - Error
+         * @enum {string}
+         */
+        OnboardingStyleStatusEnum: "not_started" | "extracting" | "draft" | "approved" | "error";
+        /**
+         * @description * `suppliers` - Proveedores
+         *     * `merging` - Juntando
+         * @enum {string}
+         */
+        OnboardingStyleStepEnum: "suppliers" | "merging";
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
          *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
@@ -326,9 +1090,9 @@ export interface components {
             readonly brand: {
                 [key: string]: unknown;
             };
-            status?: components["schemas"]["StatusFd6Enum"];
-            production_stage?: components["schemas"]["ProductionStageEnum"] | components["schemas"]["BlankEnum"];
-            risk?: components["schemas"]["RiskEnum"];
+            status?: components["schemas"]["OrderStatusEnum"];
+            production_stage?: components["schemas"]["OrderStageEnum"] | components["schemas"]["BlankEnum"];
+            risk?: components["schemas"]["OrderRiskEnum"];
             risk_reason?: string;
             /** Format: date */
             issued_on: string;
@@ -370,6 +1134,19 @@ export interface components {
             /** @default  */
             readonly risk_display: string;
         };
+        /** @description The simulated sales system payload (`docs/api/examples/order-*.json`). */
+        OrderInRequest: {
+            code: string;
+            /** @description Customer name. */
+            customer: string;
+            /** @description Brand name. */
+            brand: string;
+            /** Format: date */
+            issued_on?: string;
+            /** Format: date */
+            promised_on: string;
+            items: components["schemas"]["OrderItemInRequest"][];
+        };
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
          *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
@@ -383,11 +1160,30 @@ export interface components {
             /** @description Quantity per size. */
             sizes?: unknown;
             color?: string;
-            customization?: components["schemas"]["CustomizationEnum"] | components["schemas"]["BlankEnum"];
+            customization?: components["schemas"]["OrderItemCustomizationEnum"] | components["schemas"]["BlankEnum"];
             /** Format: decimal */
             unit_price: string;
             /** @default  */
             readonly customization_display: string;
+        };
+        /**
+         * @description * `embroidery` - Bordado
+         *     * `print` - Estampado
+         *     * `sublimation` - Sublimado
+         * @enum {string}
+         */
+        OrderItemCustomizationEnum: "embroidery" | "print" | "sublimation";
+        OrderItemInRequest: {
+            /** @description Product code. */
+            product: string;
+            quantity: number;
+            sizes?: {
+                [key: string]: unknown;
+            };
+            color?: string;
+            customization?: string;
+            /** Format: decimal */
+            unit_price: string;
         };
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
@@ -405,9 +1201,9 @@ export interface components {
             readonly brand: {
                 [key: string]: unknown;
             };
-            status?: components["schemas"]["StatusFd6Enum"];
-            production_stage?: components["schemas"]["ProductionStageEnum"] | components["schemas"]["BlankEnum"];
-            risk?: components["schemas"]["RiskEnum"];
+            status?: components["schemas"]["OrderStatusEnum"];
+            production_stage?: components["schemas"]["OrderStageEnum"] | components["schemas"]["BlankEnum"];
+            risk?: components["schemas"]["OrderRiskEnum"];
             risk_reason?: string;
             /** Format: date */
             issued_on: string;
@@ -434,12 +1230,45 @@ export interface components {
             /** @default  */
             readonly risk_display: string;
         };
+        /**
+         * @description * `ok` - OK
+         *     * `at_risk` - En riesgo
+         *     * `in_danger` - En peligro
+         * @enum {string}
+         */
+        OrderRiskEnum: "ok" | "at_risk" | "in_danger";
+        /**
+         * @description * `cutting` - Corte
+         *     * `sublimation` - Sublimado
+         *     * `embroidery` - Bordado
+         *     * `sewing` - Costura
+         *     * `finishing` - Acabado
+         * @enum {string}
+         */
+        OrderStageEnum: "cutting" | "sublimation" | "embroidery" | "sewing" | "finishing";
+        /**
+         * @description * `registered` - Registrada
+         *     * `broken_down` - Desglosada
+         *     * `confirmed` - Confirmada
+         *     * `sourcing` - En abastecimiento
+         *     * `in_production` - En producción
+         *     * `ready` - Lista
+         *     * `delivered` - Entregada
+         *     * `cancelled` - Cancelada
+         * @enum {string}
+         */
+        OrderStatusEnum: "registered" | "broken_down" | "confirmed" | "sourcing" | "in_production" | "ready" | "delivered" | "cancelled";
         PatchedClockPatchRequest: {
             /** Format: decimal */
             factor?: string;
             paused?: boolean;
             /** Format: double */
             advance_hours?: number;
+        };
+        PayInRequest: {
+            method: components["schemas"]["PaymentMethodEnum"];
+            /** Format: binary */
+            receipt?: string;
         };
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
@@ -461,7 +1290,7 @@ export interface components {
             readonly due_on: string;
             /** Format: date-time */
             paid_at?: string | null;
-            method?: components["schemas"]["MethodEnum"] | components["schemas"]["BlankEnum"];
+            method?: components["schemas"]["PaymentMethodEnum"] | components["schemas"]["BlankEnum"];
             readonly receipt: string;
             /** @default  */
             readonly kind_display: string;
@@ -474,21 +1303,26 @@ export interface components {
          * @enum {string}
          */
         PaymentKindEnum: "advance" | "balance";
+        /**
+         * @description * `yape` - Yape
+         *     * `transfer` - Transferencia
+         *     * `cash` - Efectivo
+         * @enum {string}
+         */
+        PaymentMethodEnum: "yape" | "transfer" | "cash";
         ProductRef: {
             readonly id: number;
             code: string;
             name: string;
             readonly image: string;
         };
-        /**
-         * @description * `cutting` - Corte
-         *     * `sublimation` - Sublimado
-         *     * `embroidery` - Bordado
-         *     * `sewing` - Costura
-         *     * `finishing` - Acabado
-         * @enum {string}
-         */
-        ProductionStageEnum: "cutting" | "sublimation" | "embroidery" | "sewing" | "finishing";
+        ProgressInRequest: {
+            units_done: number;
+            /** @default  */
+            note: string;
+            /** Format: binary */
+            photo?: string;
+        };
         ProgressReport: {
             readonly id: number;
             units_done: number;
@@ -497,6 +1331,13 @@ export interface components {
             readonly source: string;
             /** Format: date-time */
             reported_at: string;
+        };
+        PublicReportInRequest: {
+            units_done: number;
+            /** @default  */
+            note: string;
+            /** Format: binary */
+            photo?: string;
         };
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
@@ -509,7 +1350,7 @@ export interface components {
             code: string;
             readonly kind: string;
             readonly kind_display: string;
-            status?: components["schemas"]["Status979Enum"];
+            status?: components["schemas"]["PurchaseOrderStatusEnum"];
             readonly waiting_manager: boolean;
             readonly supplier: components["schemas"]["SupplierRef"];
             readonly orders: {
@@ -593,7 +1434,7 @@ export interface components {
             code: string;
             readonly kind: string;
             readonly kind_display: string;
-            status?: components["schemas"]["Status979Enum"];
+            status?: components["schemas"]["PurchaseOrderStatusEnum"];
             readonly waiting_manager: boolean;
             readonly supplier: components["schemas"]["SupplierRef"];
             readonly orders: {
@@ -626,6 +1467,19 @@ export interface components {
             /** @default  */
             readonly status_display: string;
         };
+        /**
+         * @description * `suggested` - Sugerido
+         *     * `approved` - Aprobado
+         *     * `negotiating` - En negociación
+         *     * `confirmed` - Confirmado
+         *     * `in_progress` - En proceso
+         *     * `delivered` - Entregado
+         *     * `declined_by_supplier` - Rechazado por el proveedor
+         *     * `cancelled_by_supplier` - Cancelado por el proveedor
+         *     * `cancelled` - Cancelado
+         * @enum {string}
+         */
+        PurchaseOrderStatusEnum: "suggested" | "approved" | "negotiating" | "confirmed" | "in_progress" | "delivered" | "declined_by_supplier" | "cancelled_by_supplier" | "cancelled";
         Rate: {
             readonly id: number;
             readonly item_name: string;
@@ -643,7 +1497,7 @@ export interface components {
          */
         Requirement: {
             readonly id: number;
-            kind: components["schemas"]["KindC64Enum"];
+            kind: components["schemas"]["SupplierKindEnum"];
             readonly material: components["schemas"]["MaterialRef"];
             readonly product: components["schemas"]["ProductRef"];
             /** Format: decimal */
@@ -662,52 +1516,90 @@ export interface components {
             /** @default  */
             readonly kind_display: string;
         };
+        SimulatorMessageInRequest: {
+            allowed_number_id: number;
+            /** @default  */
+            text: string;
+            /** Format: binary */
+            photo?: string;
+        };
+        StyleDraftRequest: {
+            style_md: string;
+            notes?: components["schemas"]["StyleNotesRequest"][];
+        };
+        StyleError: {
+            detail: string;
+            errors?: string[];
+        };
+        StyleExtractRequest: {
+            /** Format: date */
+            since: string;
+            supplier_ids?: number[];
+        };
+        StyleImportTxtRequest: {
+            /** Format: binary */
+            file: string;
+            manager_author: string;
+            /** Format: date */
+            since: string;
+            supplier_id?: number | null;
+        };
+        StyleNotes: {
+            supplier_id: number;
+            readonly supplier_name: string;
+            notes: string;
+        };
+        StyleNotesRequest: {
+            supplier_id: number;
+            notes: string;
+        };
+        StyleSupplierProgress: {
+            id: number;
+            name: string;
+            status: components["schemas"]["StyleSupplierProgressStatusEnum"];
+            messages_read: number | null;
+            error: string;
+        };
         /**
-         * @description * `ok` - OK
-         *     * `at_risk` - En riesgo
-         *     * `in_danger` - En peligro
+         * @description * `pending` - pending
+         *     * `reading` - reading
+         *     * `analyzing` - analyzing
+         *     * `done` - done
+         *     * `no_phone` - no_phone
+         *     * `no_chat` - no_chat
+         *     * `not_allowed` - not_allowed
+         *     * `error` - error
          * @enum {string}
          */
-        RiskEnum: "ok" | "at_risk" | "in_danger";
+        StyleSupplierProgressStatusEnum: "pending" | "reading" | "analyzing" | "done" | "no_phone" | "no_chat" | "not_allowed" | "error";
+        StyleVersion: {
+            readonly id: number;
+            source: components["schemas"]["StyleVersionSourceEnum"];
+            readonly source_display: string;
+            changelog?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        StyleVersionDetail: {
+            readonly id: number;
+            source: components["schemas"]["StyleVersionSourceEnum"];
+            readonly source_display: string;
+            changelog?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            style_md: string;
+            /** @description supplier_id -> notes */
+            notes_snapshot?: unknown;
+        };
         /**
-         * @description * `registered` - Registrado
-         *     * `self_registered` - Autoregistro
-         *     * `external` - Fuente externa
+         * @description * `onboarding` - Onboarding
+         *     * `daily` - Diario
+         *     * `template` - Plantilla
+         *     * `manual` - Manual
+         *     * `rollback` - Vuelta atrás
          * @enum {string}
          */
-        SourceEnum: "registered" | "self_registered" | "external";
-        /**
-         * @description * `suggested` - Sugerido
-         *     * `approved` - Aprobado
-         *     * `negotiating` - En negociación
-         *     * `confirmed` - Confirmado
-         *     * `in_progress` - En proceso
-         *     * `delivered` - Entregado
-         *     * `declined_by_supplier` - Rechazado por el proveedor
-         *     * `cancelled_by_supplier` - Cancelado por el proveedor
-         *     * `cancelled` - Cancelado
-         * @enum {string}
-         */
-        Status979Enum: "suggested" | "approved" | "negotiating" | "confirmed" | "in_progress" | "delivered" | "declined_by_supplier" | "cancelled_by_supplier" | "cancelled";
-        /**
-         * @description * `active` - Activo
-         *     * `pending_review` - Por revisar
-         *     * `inactive` - Inactivo
-         * @enum {string}
-         */
-        StatusB81Enum: "active" | "pending_review" | "inactive";
-        /**
-         * @description * `registered` - Registrada
-         *     * `broken_down` - Desglosada
-         *     * `confirmed` - Confirmada
-         *     * `sourcing` - En abastecimiento
-         *     * `in_production` - En producción
-         *     * `ready` - Lista
-         *     * `delivered` - Entregada
-         *     * `cancelled` - Cancelada
-         * @enum {string}
-         */
-        StatusFd6Enum: "registered" | "broken_down" | "confirmed" | "sourcing" | "in_production" | "ready" | "delivered" | "cancelled";
+        StyleVersionSourceEnum: "onboarding" | "daily" | "template" | "manual" | "rollback";
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
          *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
@@ -717,7 +1609,7 @@ export interface components {
         SupplierDetail: {
             readonly id: number;
             name: string;
-            kind: components["schemas"]["KindC64Enum"];
+            kind: components["schemas"]["SupplierKindEnum"];
             specialties?: string[];
             city?: string;
             /** Format: double */
@@ -729,8 +1621,8 @@ export interface components {
             weekly_capacity?: number | null;
             lead_time_days?: number;
             currency?: components["schemas"]["CurrencyEnum"];
-            source?: components["schemas"]["SourceEnum"];
-            status?: components["schemas"]["StatusB81Enum"];
+            source?: components["schemas"]["SupplierSourceEnum"];
+            status?: components["schemas"]["SupplierStatusEnum"];
             /** Format: float */
             readonly on_time_score: number;
             /** Format: float */
@@ -766,6 +1658,13 @@ export interface components {
             readonly status_display: string;
         };
         /**
+         * @description * `material` - Insumos
+         *     * `workshop` - Taller
+         *     * `finished` - Producto terminado
+         * @enum {string}
+         */
+        SupplierKindEnum: "material" | "workshop" | "finished";
+        /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
          *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
          *     every nested payload when the context role is not the manager (nested serializers do not
@@ -774,7 +1673,7 @@ export interface components {
         SupplierList: {
             readonly id: number;
             name: string;
-            kind: components["schemas"]["KindC64Enum"];
+            kind: components["schemas"]["SupplierKindEnum"];
             specialties?: string[];
             city?: string;
             /** Format: double */
@@ -786,8 +1685,8 @@ export interface components {
             weekly_capacity?: number | null;
             lead_time_days?: number;
             currency?: components["schemas"]["CurrencyEnum"];
-            source?: components["schemas"]["SourceEnum"];
-            status?: components["schemas"]["StatusB81Enum"];
+            source?: components["schemas"]["SupplierSourceEnum"];
+            status?: components["schemas"]["SupplierStatusEnum"];
             /** Format: float */
             readonly on_time_score: number;
             /** Format: float */
@@ -808,15 +1707,22 @@ export interface components {
         SupplierRef: {
             readonly id: number;
             name: string;
-            kind: components["schemas"]["KindC64Enum"];
+            kind: components["schemas"]["SupplierKindEnum"];
         };
         /**
-         * @description * `m` - m
-         *     * `kg` - kg
-         *     * `unit` - unidad
+         * @description * `registered` - Registrado
+         *     * `self_registered` - Autoregistro
+         *     * `external` - Fuente externa
          * @enum {string}
          */
-        UnitEnum: "m" | "kg" | "unit";
+        SupplierSourceEnum: "registered" | "self_registered" | "external";
+        /**
+         * @description * `active` - Activo
+         *     * `pending_review` - Por revisar
+         *     * `inactive` - Inactivo
+         * @enum {string}
+         */
+        SupplierStatusEnum: "active" | "pending_review" | "inactive";
         User: {
             readonly id: number;
             /**
@@ -833,6 +1739,25 @@ export interface components {
              */
             is_staff?: boolean;
         };
+        WebhookSummary: {
+            /** @description Secret masked as ****. */
+            url: string;
+            events: string[];
+            base64: boolean;
+        };
+        WhatsAppOnboarding: {
+            state: string;
+            webhook: components["schemas"]["WebhookSummary"] | null;
+            settings: {
+                [key: string]: unknown;
+            } | null;
+            offline: boolean;
+            done_at: string | null;
+        };
+        WhatsAppQr: {
+            /** @description data:image/png;base64,… */
+            qr_base64: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -842,6 +1767,138 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    alerts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    alerts_acknowledge_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    assistant_messages_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    assistant_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssistantMessageInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AssistantMessageInRequest"];
+                "multipart/form-data": components["schemas"]["AssistantMessageInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssistantMessage"];
+                };
+            };
+        };
+    };
+    assistant_messages_read_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    assistant_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     auth_login_create: {
         parameters: {
             query?: never;
@@ -948,6 +2005,140 @@ export interface operations {
             };
         };
     };
+    conversations_messages_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    manager_decisions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionActionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DecisionActionRequest"];
+                "multipart/form-data": components["schemas"]["DecisionActionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    manager_pending_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    materials_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Material"][];
+                };
+            };
+        };
+    };
+    materials_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Material"];
+                };
+            };
+        };
+    };
+    me_badges_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     monitor_retrieve: {
         parameters: {
             query?: never;
@@ -965,6 +2156,297 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    onboarding_style_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingStyle"];
+                };
+            };
+        };
+    };
+    onboarding_style_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StyleDraftRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StyleDraftRequest"];
+                "multipart/form-data": components["schemas"]["StyleDraftRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingStyle"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+        };
+    };
+    onboarding_style_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingStyle"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+        };
+    };
+    onboarding_style_extract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StyleExtractRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StyleExtractRequest"];
+                "multipart/form-data": components["schemas"]["StyleExtractRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingStyle"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+        };
+    };
+    onboarding_style_import_txt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StyleImportTxtRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingStyle"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+        };
+    };
+    onboarding_style_template: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingStyle"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+        };
+    };
+    onboarding_whatsapp_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppOnboarding"];
+                };
+            };
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingError"];
+                };
+            };
+        };
+    };
+    onboarding_whatsapp_qr_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppQr"];
+                };
+            };
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingError"];
+                };
+            };
+        };
+    };
+    onboarding_whatsapp_webhook_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppOnboarding"];
+                };
+            };
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingError"];
                 };
             };
         };
@@ -988,6 +2470,43 @@ export interface operations {
             };
         };
     };
+    orders_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OrderInRequest"];
+                "multipart/form-data": components["schemas"]["OrderInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     orders_retrieve: {
         parameters: {
             query?: never;
@@ -1006,6 +2525,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderDetail"];
+                };
+            };
+        };
+    };
+    orders_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este orden. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -1051,6 +2594,36 @@ export interface operations {
             };
         };
     };
+    payments_pay_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este pago. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PayInRequest"];
+                "multipart/form-data": components["schemas"]["PayInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     purchase_orders_list: {
         parameters: {
             query?: never;
@@ -1092,6 +2665,118 @@ export interface operations {
             };
         };
     };
+    purchase_orders_deliveries_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este pedido. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DeliveryInRequest"];
+                "multipart/form-data": components["schemas"]["DeliveryInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    purchase_orders_progress_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este pedido. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProgressInRequest"];
+                "multipart/form-data": components["schemas"]["ProgressInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    report_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    report_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicReportInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PublicReportInRequest"];
+                "multipart/form-data": components["schemas"]["PublicReportInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     schema_retrieve: {
         parameters: {
             query?: {
@@ -1121,6 +2806,282 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    settings_claude_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeStatus"];
+                };
+            };
+        };
+    };
+    settings_claude_disconnect_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeStatus"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeError"];
+                };
+            };
+        };
+    };
+    settings_claude_exchange_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaudeExchangeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClaudeExchangeRequest"];
+                "multipart/form-data": components["schemas"]["ClaudeExchangeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeStatus"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeError"];
+                };
+            };
+        };
+    };
+    settings_claude_set_key_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaudeApiKeyRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClaudeApiKeyRequest"];
+                "multipart/form-data": components["schemas"]["ClaudeApiKeyRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeStatus"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeError"];
+                };
+            };
+        };
+    };
+    settings_claude_start_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeStart"];
+                };
+            };
+        };
+    };
+    settings_claude_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeStatus"];
+                };
+            };
+        };
+    };
+    simulator_contacts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    simulator_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulatorMessageInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SimulatorMessageInRequest"];
+                "multipart/form-data": components["schemas"]["SimulatorMessageInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Message"];
+                };
+            };
+        };
+    };
+    style_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleError"];
+                };
+            };
+        };
+    };
+    style_versions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleVersion"][];
+                };
+            };
+        };
+    };
+    style_versions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleVersionDetail"];
+                };
+            };
+        };
+    };
+    style_versions_restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleVersionDetail"];
                 };
             };
         };

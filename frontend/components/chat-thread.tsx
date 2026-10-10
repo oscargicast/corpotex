@@ -33,7 +33,12 @@ export function ChatThread({
     if (box.current) box.current.scrollTop = box.current.scrollHeight;
   }, [messages.length, typing]);
 
-  if (!messages.length) return <p className="text-sm text-muted">Todavía no hay mensajes.</p>;
+  // The empty state keeps the same box, so the composer stays at the bottom.
+  if (!messages.length && !typing) {
+    return (
+      <div className={`flex items-center justify-center rounded-lg bg-[#efeae2] p-3 text-sm text-muted ${className}`}>Todavía no hay mensajes.</div>
+    );
+  }
 
   return (
     <div ref={box} className={`space-y-2 overflow-y-auto rounded-lg bg-[#efeae2] p-3 ${large ? "text-lg" : "text-sm"} ${className}`}>
@@ -43,7 +48,8 @@ export function ChatThread({
           <div key={message.id} className={`flex ${ours ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] rounded-2xl px-3 py-2 ${ours ? "rounded-br-sm bg-[#d9fdd3]" : "rounded-bl-sm bg-surface ring-1 ring-line"}`}>
               {message.author !== "supplier" && <p className="text-[0.7em] font-semibold text-muted">{AUTHOR[message.author]}</p>}
-              {message.media_kind === "image" &&
+              {/* The API sends media without a kind: anything with a file is shown as a photo. */}
+              {(message.media_kind === "image" || (message.media && !message.media_kind)) &&
                 (message.media ? (
                   // Photos come from /media/ (Django).
                   <img src={message.media} alt="Foto del avance" className="mb-1 max-h-60 rounded-lg" loading="lazy" />

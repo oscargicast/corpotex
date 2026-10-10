@@ -107,7 +107,7 @@ export interface ChatMessage {
   author: "supplier" | "agent" | "manager" | "system";
   text: string;
   media: string | null;
-  media_kind: "image" | "audio" | "document" | null;
+  media_kind?: "image" | "audio" | "document" | null; // not in the API yet
   sent_at: string;
 }
 
@@ -381,6 +381,7 @@ export interface Material {
 
 export interface MaterialDetail extends Material {
   requirements: {
+    order_id?: number;
     order_code: string;
     qty_needed: string | number;
     qty_from_stock: string | number;
@@ -454,12 +455,12 @@ export interface Route {
 
 // Simulator (ADR 0017 demo decision: one real supplier on WhatsApp, the rest here).
 export interface SimulatorContact {
-  id: number; // AllowedNumber id
-  name: string;
-  role: string;
+  allowed_number_id: number;
+  name: string; // the number's label ("Simulador", "dueña"); the supplier name is in supplier.name
   supplier: { id: number; name: string } | null;
   conversation_id: number | null;
   channel: "simulator" | "whatsapp";
+  simulated?: boolean;
   last_message: { id: number; text: string; direction: "inbound" | "outbound"; sent_at: string } | null;
 }
 
