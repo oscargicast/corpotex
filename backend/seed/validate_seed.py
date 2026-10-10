@@ -142,8 +142,8 @@ for x in d["decisions"]:
     enum(x["channel"], {"dashboard","assistant","admin"}, w)
 for v in d["style_versions"]: enum(v["source"], {"onboarding","daily","template","manual","rollback"}, "style")
 # escena demo
-po38 = [p for p in d["purchase_orders"] if any(i["order"] == "OC-2026-0142" for i in p["items"]) and p["kind"] == "workshop"]
+po38 = [p for p in d["purchase_orders"] if any(i["order"] == "CP-2026-0142" for i in p["items"]) and p["kind"] == "workshop"]
 if len(po38) != 1 or po38[0]["supplier"] != "Confecciones del Norte" or po38[0]["status"] != "in_progress" or po38[0]["units_done"] != 400: err("escena demo: pedido de taller")
-if any(x["kind"] == "approve_assignment" and x["order"] == "OC-2026-0142" for x in d["decisions"]): err("escena demo: decision prohibida")
-if any(a["kind"] == "order_in_danger" and a["order"] == "OC-2026-0142" for a in d["alerts"]): err("escena demo: alerta prohibida")
+if any(x["kind"] == "approve_assignment" and x["order"] == "CP-2026-0142" for x in d["decisions"]): err("escena demo: decision prohibida")
+if any(a["kind"] == "order_in_danger" and a["order"] == "CP-2026-0142" for a in d["alerts"]): err("escena demo: alerta prohibida")
 print("\n".join(E) or "OK: seed válido"); sys.exit(1 if E else 0)
