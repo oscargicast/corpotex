@@ -11,7 +11,8 @@ WORKDIR /app
 
 # Dependencies first, so code changes don't reinstall them.
 COPY pyproject.toml uv.lock* ./
-RUN uv sync --no-dev --no-install-project
+# The dev group (pytest, ruff) is part of the image: every PR runs `docker compose exec web pytest -q`.
+RUN uv sync --no-install-project
 
 COPY . .
 

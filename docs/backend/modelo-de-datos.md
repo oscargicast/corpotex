@@ -1154,16 +1154,18 @@ Los números (1000, 400 y 600) se fijan con el guion del pitch. El diagrama `tal
 
 ## Plan de implementación
 
+El detalle por tarea (archivos, criterios de aceptación y estimados) está en `docs/planning.md`, sección B. Dos reglas de Oscar: cada PR trae los tests de lo que implementa, en `backend/tests/` con un `conftest.py` común, al menos uno por servicio (seed, rutas y proveedores incluidos), y el orquestador no mergea en rojo (`docker compose exec web pytest -q`). B1 es la puerta de todo: nada de `agente`, `personalidad` ni `disenador` se mergea antes.
+
 Cada paso se revisa solo, en este orden:
 
 1. **Proyecto:** sobre el `backend/Dockerfile`, el `pyproject.toml` y el `docker-compose.yml` de la raíz que ya están en `main` (ADR 0023). Django vive directo en `backend/` (`manage.py`, `config/` con `settings.py`, `urls.py` y `celery.py`). `core.User` antes de la primera migración, grupos por data migration, `TokenAuthentication`, drf-spectacular y settings: `ALLOWED_HOSTS` con `localhost`, `127.0.0.1`, `web` (el admin y la API entran por el rewrite de Next en desarrollo) y `corpotex.oscargicast.com`; `CSRF_TRUSTED_ORIGINS` con `http://localhost:3000`, `http://localhost:3001` y `https://corpotex.oscargicast.com`. Puertos de compose en loopback (sección 7). Sin `CLAUDE_CODE_OAUTH_TOKEN`: la cuenta se conecta desde el dashboard (ADR 0022).
-2. **Todos los modelos de una vez** (P0 y P1), con admin y una migración por app.
+2. **Todos los modelos de una vez** (P0 y P1), con admin y una migración por app. El PR B1 junta los pasos 1 y 2 más el reloj, `recover_stuck_turns` en `worker_ready` y un pytest que pase; su criterio es `docker compose up --build` con los 6 servicios arriba y `pytest -q` en verde.
 3. **Seed:** el comando `seed_demo` con el formato de la sección 8, un JSON mínimo de prueba mientras llegan los de Kenji, un token por usuario y `Config.agent_user` = Gerente.
 4. **Servicios de operaciones:** desglose, matching, ruta crítica, aprobación, confirmación con reglas de jefe, avance, entrega, cancelación, redistribución, pagos y `plan_route`.
 5. **Mensajería:** webhook con allowlist, `send_text`, la cola de turnos con `run_turn` en Celery, `turn_state` y la API del asistente.
 6. **Gerencia:** decisiones, alertas, `notify_roles`, monitor, `tick` y los endpoints del Gerente; servicios con `actor` para las tools del asistente.
 7. **API del dashboard y contrato en `docs/api/`**, con los JSON de ejemplo, los serializers por rol y `/api/me/badges/`.
-8. **Onboarding y estilo:** conexión de Claude (`core/claude_auth.py`), WhatsApp, alta e importación de proveedores, la tarea de extracción, el historial de versiones y `refresh_style`.
+8. **Onboarding y estilo:** conexión de Claude (`core/claude_auth.py`), WhatsApp y alta de proveedores. La extracción, el historial de versiones y `refresh_style` los implementa la sesión `personalidad` en `core/views_style.py`, `core/onboarding.py`, `core/style.py` y `core/tasks_style.py`.
 9. **P1:** `/api/report/<token>/` con `send_report_link`, `create_suggested_suppliers` para la tool `suggest_suppliers`, y `POST /api/style/refresh/`.
 
 ## Preguntas abiertas
