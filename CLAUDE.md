@@ -38,12 +38,13 @@ Flujo:
 
 Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden por ruta crítica, permisos por rol (el equipo ve el nombre del proveedor, no su número).
 
-### Dashboard (4 vistas)
+### Dashboard (5 vistas)
 
 1. Órdenes de clientes.
 2. Pedidos a proveedores y talleres.
 3. Monitor con alertas (retrasos, órdenes en peligro).
 4. Proveedores de insumos y talleres: solo el Gerente tiene permisos.
+5. Inventario de insumos (stock, reservado por órdenes abiertas, disponible): Gerente y Producción; Comercial no lo ve (pedido de Oscar, 10/10 20:40).
 
 ### Onboarding (ADR 0011)
 
