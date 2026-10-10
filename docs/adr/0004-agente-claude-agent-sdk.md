@@ -9,7 +9,7 @@ El agente conversa con los proveedores por WhatsApp: un turno por cada mensaje e
 
 ## Decisión
 
-Claude Agent SDK en Python. La autenticación la define el ADR 0013 (suscripción de Oscar para la demo).
+Claude Agent SDK en Python. Es Claude Code como librería: lanza el binario de Claude Code como subproceso y le habla por pipes con stream-json, el mismo mecanismo que `mano` implementó a mano en `system/session_manager.py`, pero ya resuelto (loop, sesiones, parseo de eventos) y con las tools como funciones Python. La cuenta se conecta una sola vez, desde el dashboard y solo por el Gerente (ADR 0022); el SDK la lee del `CLAUDE_CONFIG_DIR` compartido.
 
 ## Consecuencias
 

@@ -83,7 +83,9 @@ Asistente del Gerente con 3 pasos: conectar WhatsApp (QR y webhook de la instanc
 - Rutas: los proveedores de Lima envían por la agencia Sullana Express y ellos recogen en Piura.
 - Campañas: Unicrack de enero a marzo, Corpotex de agosto a octubre.
 
-## Arquitectura del agente (ADR 0004; detalle de Kenji, sin verificar contra la doc)
+## Arquitectura del agente (ADR 0004)
+
+El Agent SDK es Claude Code como librería: corre el binario de Claude Code por pipes (stream-json), como `mano`, con las tools en Python. No se usa API key: la cuenta de Claude la conecta el Gerente una vez desde `/settings/claude` (ADR 0022) y todos los agentes la comparten.
 
 Claude Agent SDK en Python, por eventos:
 
