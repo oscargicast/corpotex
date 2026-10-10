@@ -88,13 +88,6 @@ def _reads(user) -> list:
             params["waiting_manager"] = 1
         return get("/api/purchase-orders/", params)
 
-    def materials(args):
-        status, rows = api_get(user, "/api/materials/", {"kind": args.get("kind")})
-        text = (args.get("query") or "").strip().lower()
-        if status < 400 and text:
-            rows = [r for r in rows if text in f"{r.get('sku', '')} {r.get('name', '')}".lower()]
-        return answer(status, rows)
-
     def monitor_part(*keys):
         def read(args):
             status, data = api_get(user, "/api/monitor/")
@@ -147,7 +140,7 @@ def _reads(user) -> list:
                     "Filtra por tipo o por texto en el nombre o el código."
                 ),
                 {"kind": {"type": "string"}, "query": {"type": "string"}},
-                materials,
+                lambda a: get("/api/materials/", {"kind": a.get("kind"), "q": a.get("query")}),
             )
         )
     if user.role == "manager":
