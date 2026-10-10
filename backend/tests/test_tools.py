@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -126,3 +126,12 @@ def test_report_link_falls_back_to_neutral_template(monkeypatch, intro):
     calls = install(monkeypatch)
     call("send_report_link", {"code": "PT-0001", "intro": intro})
     assert calls.sent[0][1] == f"Para reportar avance y fotos del pedido PT-0001:\n{REPORT_URL}"
+
+
+def test_retry_does_not_resend_messages_of_same_turn(monkeypatch):
+    sent_before = SimpleNamespace(author="agent", text="Buenas", sent_at=datetime.now(UTC))
+    calls = install(monkeypatch, message_history=lambda conversation, limit: [sent_before])
+    assert call("send_message", {"text": "Buenas"})[0] is False
+    assert calls.sent == []
+    call("send_message", {"text": "Otra cosa"})
+    assert [text for _, text, _ in calls.sent] == ["Otra cosa"]

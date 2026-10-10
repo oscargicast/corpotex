@@ -5,7 +5,7 @@ orders of this conversation's supplier. Boss rules live in the services: when
 they refuse, the tool tells the model to escalate. What the model reads is Spanish.
 """
 
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 from asgiref.sync import sync_to_async
@@ -14,6 +14,7 @@ from claude_agent_sdk import tool
 from agent import channels
 
 INTRO_MAX = 200
+RESEND_WINDOW = timedelta(minutes=10)  # real time, like Message.sent_at
 # Neutral on purpose (no tú/usted): used when the model's intro is missing or unsafe.
 REPORT_LINK_FALLBACK = "Para reportar avance y fotos del pedido {code}:\n{url}"
 
@@ -42,6 +43,12 @@ def whatsapp_tools(conversation, batch) -> list:
 
     turn = batch.turn
 
+    def already_sent(text: str) -> bool:
+        """A retried turn (or a repetitive model) must not send the same text twice."""
+        since = datetime.now(UTC) - RESEND_WINDOW
+        recent = message_history(conversation, 10)
+        return any(m.author == "agent" and m.text == text and m.sent_at >= since for m in recent)
+
     @sync_to_async
     def order(code: str):
         return purchase_order_for_conversation(conversation, code)
@@ -65,6 +72,8 @@ def whatsapp_tools(conversation, batch) -> list:
         },
     )
     async def send_message(args):
+        if await sync_to_async(already_sent)(args["text"]):
+            return ok("Ya habías enviado ese mensaje hace poco; no se repitió.")
         try:
             await sync_to_async(channels.send)(conversation, args["text"], turn)
         except NumberNotAllowed:
