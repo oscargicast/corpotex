@@ -1,12 +1,19 @@
 from django.urls import path
 
-from . import views, views_style
+from . import views, views_claude, views_style
 
 urlpatterns = [
     path("auth/login/", views.LoginView.as_view(), name="auth-login"),
     path("auth/logout/", views.LogoutView.as_view(), name="auth-logout"),
     path("auth/me/", views.MeView.as_view(), name="auth-me"),
     path("clock/", views.ClockView.as_view(), name="clock"),
+    # Claude account (ADR 0022, B4.3): views owned by `orquestador` in core/views_claude.py.
+    path("settings/claude/", views_claude.ClaudeStatusView.as_view(), name="claude-status"),
+    path("settings/claude/status/", views_claude.ClaudeStatusView.as_view()),
+    path("settings/claude/start/", views_claude.ClaudeStartView.as_view()),
+    path("settings/claude/exchange/", views_claude.ClaudeExchangeView.as_view()),
+    path("settings/claude/set-key/", views_claude.ClaudeSetKeyView.as_view()),
+    path("settings/claude/disconnect/", views_claude.ClaudeDisconnectView.as_view()),
     # Style onboarding and history: views owned by `personalidad` in core/views_style.py.
     path("onboarding/style/", views_style.OnboardingStyleView.as_view(), name="onboarding-style"),
     path("onboarding/style/extract/", views_style.StyleExtractView.as_view()),
