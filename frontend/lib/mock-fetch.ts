@@ -55,6 +55,7 @@ function purchaseOrderDetailFor(po: PurchaseOrderListItem, role: Role): Purchase
     conversation_id: null,
     redistributed_into: [],
     rating: null,
+    status_history: [],
     ...extra,
     ...po,
     suggested_supplier: null,
@@ -369,6 +370,7 @@ function orderDetailFor(order: OrderListItem, role: Role): OrderDetail {
     requirements: [],
     critical_path: [],
     redistributions: [],
+    status_history: [],
     ...extra,
     ...order,
     purchase_orders: purchaseOrders.filter((po) => po.orders.some((o) => o.id === order.id)),
@@ -465,21 +467,9 @@ function connectedStatus(method: ClaudeStatus["method"]): ClaudeStatus {
   };
 }
 
-const clock = {
-  realStart: Date.now(),
-  simStart: new Date("2026-10-12T08:00:00-05:00").getTime(),
-  factor: 60,
-  paused: false,
-};
-
+// The clock is real time now (factor 1); the endpoint stays for compatibility.
 function clockNow(): number {
-  if (clock.paused) return clock.simStart;
-  return clock.simStart + (Date.now() - clock.realStart) * clock.factor;
-}
-
-function rebase() {
-  clock.simStart = clockNow();
-  clock.realStart = Date.now();
+  return Date.now();
 }
 
 function json(status: number, data?: unknown): Response {
@@ -537,16 +527,7 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     case "POST /api/auth/logout/":
       return json(204);
     case "GET /api/clock/":
-      return json(200, { now: new Date(clockNow()).toISOString(), factor: clock.factor, paused: clock.paused } satisfies Clock);
-    case "PATCH /api/clock/": {
-      if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
-      const { factor, paused, advance_hours } = readBody(init.body);
-      rebase();
-      if (typeof factor === "number") clock.factor = factor;
-      if (typeof paused === "boolean") clock.paused = paused;
-      if (typeof advance_hours === "number") clock.simStart += advance_hours * 3_600_000;
-      return json(200, { now: new Date(clockNow()).toISOString(), factor: clock.factor, paused: clock.paused } satisfies Clock);
-    }
+      return json(200, { now: new Date(clockNow()).toISOString(), factor: 1, paused: false } satisfies Clock);
     case "GET /api/me/badges/":
       return json(200, (badgesByRole as Record<Role, Badges>)[user.role]);
   }
