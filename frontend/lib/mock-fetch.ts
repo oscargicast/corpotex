@@ -6,6 +6,8 @@ import monitorSeed from "@/mocks/monitor.json";
 import ordersSeed from "@/mocks/orders.json";
 import poDetailsSeed from "@/mocks/purchase-order-details.json";
 import purchaseOrdersSeed from "@/mocks/purchase-orders.json";
+import routesSeed from "@/mocks/routes.json";
+import simulatorContactsSeed from "@/mocks/simulator-contacts.json";
 import suppliersSeed from "@/mocks/suppliers.json";
 import users from "@/mocks/users.json";
 import type {
@@ -20,6 +22,8 @@ import type {
   PurchaseOrderDetail,
   PurchaseOrderListItem,
   Role,
+  Route,
+  SimulatorContact,
   SupplierDetail,
   SupplierListItem,
   User,
@@ -118,6 +122,63 @@ function supplierRoutes(route: string, body: BodyInit | null | undefined): Respo
     return json(200, number);
   }
   return null;
+}
+
+// Simulator: the operator writes as the supplier; the "agent" answers after 2 s.
+const simulatorContacts = structuredClone(simulatorContactsSeed) as SimulatorContact[];
+const agentQueue: { conversationId: number; at: number; message: ChatMessage }[] = [];
+
+function flushAgentQueue() {
+  const now = Date.now();
+  for (const item of agentQueue.filter((q) => q.at <= now)) {
+    (conversations[item.conversationId] ??= []).push(item.message);
+  }
+  for (let i = agentQueue.length - 1; i >= 0; i--) if (agentQueue[i].at <= now) agentQueue.splice(i, 1);
+}
+
+function nextMessageId(): number {
+  const all = Object.values(conversations).flat();
+  return Math.max(1000, ...all.map((m) => m.id), ...agentQueue.map((q) => q.message.id)) + 1;
+}
+
+function agentSays(conversationId: number, text: string, delayMs: number) {
+  agentQueue.push({
+    conversationId,
+    at: Date.now() + delayMs,
+    message: { id: nextMessageId(), direction: "outbound", author: "agent", text, media: null, media_kind: null, sent_at: new Date(Date.now() + delayMs).toISOString() },
+  });
+}
+
+function simulatorPost(body: BodyInit | null | undefined): Response {
+  const get = (key: string) => (body instanceof FormData ? body.get(key) : readBody(body)[key]);
+  const contact = simulatorContacts.find((c) => c.id === Number(get("allowed_number_id")));
+  if (!contact) return json(400, { detail: "Número no permitido." });
+  if (contact.channel !== "simulator") return json(400, { detail: "Ese contacto escribe por WhatsApp real." });
+  contact.conversation_id ??= 100 + contact.id;
+  const photo = get("photo");
+  const text = String(get("text") ?? "");
+  const message: ChatMessage = {
+    id: nextMessageId(),
+    direction: "inbound",
+    author: "supplier",
+    text,
+    media: photo instanceof File && photo.size ? URL.createObjectURL(photo) : typeof photo === "string" && photo ? photo : null,
+    media_kind: photo ? "image" : null,
+    sent_at: new Date().toISOString(),
+  };
+  (conversations[contact.conversation_id] ??= []).push(message);
+  if (/no (voy a|puedo)|cancel/i.test(text)) {
+    agentSays(contact.conversation_id, "Entendido, gracias por avisar a tiempo. Coordino con el Gerente y te confirmo cómo recogemos lo que ya tienes.", 2000);
+    // The redistribution reaches another workshop: shows the highlight and the toast.
+    const other = simulatorContacts.find((c) => c.channel === "simulator" && c.id !== contact.id);
+    if (other) {
+      other.conversation_id ??= 100 + other.id;
+      agentSays(other.conversation_id, "Hola, ¿puedes tomar 250 polos piqué para el 20 oct. a S/ 8.10 c/u? Va con 50 % de adelanto.", 6000);
+    }
+  } else {
+    agentSays(contact.conversation_id, message.media ? "¡Gracias por la foto! Lo registro en el pedido." : "Anotado, gracias.", 2000);
+  }
+  return json(201, { ...message, conversation_id: contact.conversation_id });
 }
 
 // Assistant: one thread per user, with a scripted reply after 1.5 s.
@@ -233,6 +294,7 @@ function createOrder(body: Record<string, unknown>): Response {
 }
 
 const monitor = structuredClone(monitorSeed) as Monitor;
+const routes = structuredClone(routesSeed) as Record<string, Route>;
 
 function monitorFor(role: Role): Monitor {
   const kpis = { ...monitor.kpis, pending_decisions: monitor.decisions.length, open_alerts: monitor.alerts.length };
@@ -254,6 +316,11 @@ function resolveDecision(id: number, action: string): Response {
   const status = action === "approve" ? "approved" : action === "reject" ? "rejected" : "supplier_changed";
   const resolved = { ...decision, status, status_display: status };
   if (action === "approve" && decision.detail.cancelled) monitor.redistributions = [resolved, ...monitor.redistributions];
+  // Approving the redistribution swaps the routes; rejecting discards the proposal.
+  const before = decision.detail.before?.route_id;
+  const after = decision.detail.after?.route_id;
+  if (after && routes[after]) routes[after].status = action === "reject" ? "discarded" : "planned";
+  if (before && routes[before] && action !== "reject") routes[before].status = "replaced";
   return json(200, resolved);
 }
 
@@ -462,11 +529,31 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     }
     return json(404, { detail: "No existe." });
   }
+  flushAgentQueue();
+  if (route === "GET /api/routes/") {
+    const all = Object.values(routes);
+    const current = all.find((r) => r.status === "planned" || r.status === "in_progress") ?? null;
+    const replaced = current?.recalculated_from ? routes[current.recalculated_from] ?? null : null;
+    return json(200, { current, replaced });
+  }
+  const routeMatch = route.match(/^GET \/api\/routes\/(\d+)\/$/);
+  if (routeMatch) return routes[routeMatch[1]] ? json(200, routes[routeMatch[1]]) : json(404, { detail: "No existe." });
+  if (route === "GET /api/simulator/contacts/") {
+    return json(
+      200,
+      simulatorContacts.map((c) => {
+        const last = c.conversation_id ? conversations[c.conversation_id]?.at(-1) : undefined;
+        return { ...c, last_message: last ? { id: last.id, text: last.text, direction: last.direction, sent_at: last.sent_at } : null };
+      }),
+    );
+  }
+  if (route === "POST /api/simulator/messages/") return simulatorPost(init.body);
   const messagesMatch = route.match(/^GET \/api\/conversations\/(\d+)\/messages\/$/);
   if (messagesMatch) {
     const after = Number(new URL(path, "http://mock").searchParams.get("after") ?? 0);
     const messages = (conversations[messagesMatch[1]] ?? []).filter((m) => m.id > after);
-    return json(200, { typing: false, messages });
+    const typing = agentQueue.some((q) => q.conversationId === Number(messagesMatch[1]) && q.at - Date.now() < 2500);
+    return json(200, { typing, messages });
   }
 
   const confirmMatch = route.match(/^POST \/api\/orders\/(\d+)\/confirm\/$/);

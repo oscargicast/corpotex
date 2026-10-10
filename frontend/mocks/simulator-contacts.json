@@ -1,0 +1,6 @@
+[
+  { "id": 11, "name": "Confecciones del Norte", "role": "supplier", "supplier": { "id": 2, "name": "Confecciones del Norte" }, "conversation_id": 2, "channel": "whatsapp", "last_message": null },
+  { "id": 12, "name": "Taller Sullana", "role": "supplier", "supplier": { "id": 1, "name": "Taller Sullana" }, "conversation_id": 1, "channel": "simulator", "last_message": null },
+  { "id": 13, "name": "Taller Castilla", "role": "supplier", "supplier": { "id": 3, "name": "Taller Castilla" }, "conversation_id": 3, "channel": "simulator", "last_message": null },
+  { "id": 14, "name": "Textiles Gamarra", "role": "supplier", "supplier": { "id": 4, "name": "Textiles Gamarra" }, "conversation_id": 4, "channel": "simulator", "last_message": null }
+]
