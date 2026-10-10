@@ -48,7 +48,7 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `PurchaseOrderItem` | `pedido` → `purchase_order`, `requerimiento` → `requirement`, `cantidad` → `quantity`, `precio_unitario` → `unit_price`, `cantidad_entregada` → `qty_delivered` |
 | `ProgressReport` | `pedido` → `purchase_order`, `unidades_completadas` → `units_done`, `nota` → `note`, `foto` → `photo`, `mensaje` → `message`, `reportado_en` → `reported_at`, `acusado_en` → `acknowledged_at` (nuevo, ADR 0024: el agente ya acusó recibo del reporte web) |
 | `Delivery` | `pedido` → `purchase_order`, `cantidad_recibida` → `qty_received`, `cantidad_defectuosa` → `qty_defective`, `calidad` → `quality`, `recibido_por` → `received_by`, `recibido_en` → `received_at`, `nota` → `note` |
-| `Payment` | `pedido` → `purchase_order`, `tipo` → `kind`, `monto` → `amount`, `estado` → `status` (vuelve, ADR 0024), `metodo` → `method`, `pagado_en` → `paid_at`, `comprobante` → `receipt` |
+| `Payment` | `pedido` → `purchase_order`, `tipo` → `kind`, `monto` → `amount`, `metodo` → `method`, `pagado_en` → `paid_at`, `comprobante` → `receipt` |
 | `Route` (vuelve) | `fecha` → `date`, `estado` → `status`, `distancia_km` → `distance_km`, `duracion_min` → `duration_min`, `trazado` → `path`, `recalculada_de` → `recalculated_from` |
 | `RouteStop` (vuelve) | `ruta` → `route`, `posicion` → `position`, `tipo` → `kind`, `proveedor` → `supplier`, `cliente` → `customer`, `pedido` → `purchase_order`, `orden` → `order`, `nombre` → `name`, `direccion` → `address`, `lat`, `lng`, `hora_estimada` → `eta` |
 | `AllowedNumber` | `telefono` → `phone`, `lid` → `lid`, `nombre` → `name`, `proveedor` → `supplier`, `activo` → `active`, `simulado` → `simulated` |
@@ -81,7 +81,6 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `Payment.method` | yape → `yape`, transferencia → `transfer`, efectivo → `cash` |
 | `PurchaseOrder.status` | sugerido → `suggested`, aprobado → `approved`, en_negociacion → `negotiating`, confirmado → `confirmed`, en_proceso → `in_progress`, entregado → `delivered`, rechazado_proveedor → `declined_by_supplier`, cancelado_proveedor → `cancelled_by_supplier`, cancelado → `cancelled` |
 | `Payment.kind` | adelanto → `advance`, saldo → `balance` |
-| `Payment.status` | pendiente → `pending`, pagado → `paid` |
 | `Route.status` | propuesta → `proposed`, planificada → `planned`, en_curso → `in_progress`, completada → `completed`, reemplazada → `replaced`, descartada → `discarded` |
 | `RouteStop.kind` | recojo → `pickup`, entrega → `delivery` |
 | `Conversation.channel` | whatsapp → `whatsapp`, simulador → `simulator`, dashboard → `dashboard` (asistente) |
@@ -122,7 +121,7 @@ Se calculan, se repetían o nadie los iba a usar en la demo. Los que el dashboar
 | `Customer` | `contact_name`, `phone` | Nadie le escribe al cliente |
 | `Product` | `category` | No se usaba |
 | `ProgressReport` | `source` | Es `whatsapp` si tiene `message`, si no, `web` |
-| `Payment` | `due_on`, `invoice_required`, `invoice_number`, `recorded_by` | El vencimiento se calcula; el resto es contabilidad fuera del alcance. `status` volvió por el ADR 0024 |
+| `Payment` | `status`, `due_on`, `invoice_required`, `invoice_number`, `recorded_by` | `paid` es `paid_at` lleno (en la API, `status` calculado); el vencimiento se calcula; el resto es contabilidad fuera del alcance |
 | `AllowedNumber` | `role` | Todos los números activos actúan de proveedor; el del Gerente es `Config.agent_user` |
 | `Conversation` | `status`, `last_message_at` | No se usaban; el último mensaje se consulta |
 | `Message` | `direction`, `media_type`, `payload` | Sale de `author`; el tipo, del archivo; el payload crudo va al log |
@@ -220,7 +219,7 @@ Todas con barra final (ADR 0009). Los filtros también van en inglés (`?status=
 
 Claves JSON: las de los modelos. Cada `status` o `kind` viaja con su `status_display` o `kind_display`, que es el texto en español.
 
-**Campos calculados en la API** (no se guardan): `Order.total_amount`; `PurchaseOrder.kind`, `total_amount`, `currency`, `units_done`, `progress_pct`, `last_progress_at`, `delivered_on`, `changed_by_manager`, `candidates` (el `proposal` de su `Decision` de asignación), `paid_amount`, `pending_amount`, `waiting_manager`; `Requirement.qty_to_order` y `status`; `Supplier.on_time_score`, `quality_score`, `open_purchase_orders`, `load_pct`, `numbers_count`, `active_numbers_count`, `payments_summary`; `Payment.due_on`; `Message.direction`. Todo objeto anidado de producto o material trae `image` (URL relativa `/media/...`): ítems de la orden, requerimientos, ítems del pedido y tarifas.
+**Campos calculados en la API** (no se guardan): `Order.total_amount`; `PurchaseOrder.kind`, `total_amount`, `currency`, `units_done`, `progress_pct`, `last_progress_at`, `delivered_on`, `changed_by_manager`, `candidates` (el `proposal` de su `Decision` de asignación), `paid_amount`, `pending_amount`, `waiting_manager`; `Requirement.qty_to_order` y `status`; `Supplier.on_time_score`, `quality_score`, `open_purchase_orders`, `load_pct`, `numbers_count`, `active_numbers_count`, `payments_summary`; `Payment.status` y `due_on`; `Message.direction`. Todo objeto anidado de producto o material trae `image` (URL relativa `/media/...`): ítems de la orden, requerimientos, ítems del pedido y tarifas.
 
 ### Sin Pana ni Kenji (ADR 0017)
 
@@ -477,9 +476,8 @@ erDiagram
         int purchase_order_id FK
         string kind "advance, balance"
         decimal amount
-        string status "pending, paid"
         string method "yape, transfer, cash"
-        datetime paid_at
+        datetime paid_at "vacio hasta que el Gerente lo marque"
         file receipt
     }
 ```
@@ -494,7 +492,7 @@ erDiagram
 - **Reglas de jefe (`confirm_purchase_order`):** si el precio pasa la `Rate` vigente o la fecha pasa `internal_due_on`, lanza `ManagerApprovalRequired(reason)` y la tool le dice al modelo que escale. Es idempotente: confirmar un pedido ya `confirmed` con los mismos términos devuelve OK.
 - **Cancelación (`cancel_by_supplier`):** pasa el pedido a `cancelled_by_supplier` y llama a `redistribute`, que además crea la ruta nueva en `proposed` (sección 3). Es idempotente: si el pedido ya estaba cancelado, no redistribuye de nuevo.
 - **Calificación automática:** al cerrar el pedido (`delivered`) se llena `rating` a partir de las `Delivery` y las fechas: `{delay_days, quality, defect_pct, price_vs_ref_pct, score, rated_at}`. `supplier_scores` promedia los `rating` del proveedor en cada consulta; con la data de la demo no hace falta cachearlo. El seed trae pedidos cerrados con `rating` para que los puntajes no salgan vacíos.
-- **Pagos (P0, ADR 0024):** al confirmar un pedido se crean dos `Payment` (50% `advance` y 50% `balance`) en `pending`. `mark_payment_paid(payment, *, method, receipt=None, actor)` (`POST /api/payments/<id>/pay/`, multipart) los pasa a `paid` con `paid_at`; solo el Gerente. `GET /api/payments/` lista todos. En el detalle del pedido van `payments: [{id, kind, kind_display, amount, status, due_on, paid_at, method, receipt}]`, `paid_amount`, `pending_amount` y `currency`; en el detalle del proveedor y en el Monitor (solo Gerente), `payments_summary: [{currency, paid, pending, overdue_count}]` agrupado por moneda, nunca sumando PEN con USD (en el Monitor, además, por proveedor). `due_on` se calcula: el adelanto vence al confirmar (`PurchaseOrder.created_at` del `confirmed`, en hora simulada) y el saldo el día de la última `Delivery`. La alerta `payment_due` sale de eso: un pago sin `paid_at` con `due_on` pasado.
+- **Pagos (P0, ADR 0024):** al confirmar un pedido se crean dos `Payment` (50% `advance` y 50% `balance`) con `paid_at` vacío. `mark_payment_paid(payment, *, method, receipt=None, actor)` (`POST /api/payments/<id>/pay/`, multipart) llena `paid_at`, `method` y `receipt`; solo el Gerente. En la API, `status` es `paid` si `paid_at` tiene valor. `GET /api/payments/` lista todos. En el detalle del pedido van `payments: [{id, kind, kind_display, amount, status, due_on, paid_at, method, receipt}]`, `paid_amount`, `pending_amount` y `currency`; en el detalle del proveedor y en el Monitor (solo Gerente), `payments_summary: [{currency, paid, pending, overdue_count}]` agrupado por moneda, nunca sumando PEN con USD (en el Monitor, además, por proveedor). `due_on` se calcula: el adelanto vence al confirmar (`PurchaseOrder.created_at` del `confirmed`, en hora simulada) y el saldo el día de la última `Delivery`. La alerta `payment_due` sale de eso: un pago sin `paid_at` con `due_on` pasado.
 - **Proveedores por revisar (ADR 0024):** `POST /api/suppliers/self-register/` es público (P0) y crea el `Supplier` con `source = self_registered` y `status = pending_review`. Para las fuentes externas (P1), la tool `suggest_suppliers(specialty, city)` del asistente del Gerente (la define `agente`) llama a `create_suggested_suppliers(candidates, *, actor)`: recibe `[{name, city, kind, specialty, source_url, evidence}]` ya validados, deduplica por nombre normalizado y ciudad contra los existentes, crea los `Supplier` con `source = external`, `status = pending_review` y la url y el extracto en `source_detail` (nunca en `notes`, que entra al prompt del agente de WhatsApp), y devuelve `{created, skipped}`. El Gerente los ve con `GET /api/suppliers/?status=pending_review` (con `source`, `source_detail` y `notes`) y los aprueba o descarta con `PATCH /api/suppliers/<id>/ {status: active | inactive}`.
 - **Reporte público del taller (P1, ADR 0024):** cada pedido tiene un `report_token` (uuid). `GET /api/report/<token>/` devuelve `{code, product: {name, image}, quantity, committed_on, units_done}`, sin precios ni proveedor; `POST` multipart `{units_done, photo?, note?}` llama a `record_public_report`, que registra el `ProgressReport` (`actor = None`) y encola un `Turn` `web_report` en `PurchaseOrder.conversation`, si existe, para que el agente acuse recibo. Sin auth: el token es el secreto. La tool `send_report_link(code)` del agente arma la URL con `report_url(purchase_order)` y la marca con `mark_report_link_sent`, así el modelo nunca ve el token ni repite el link (`turn_state` trae `report_link_sent_at` por pedido).
 - **Celulares (ADR 0016):** viven solo en `AllowedNumber`, de 0 a n por proveedor (por ejemplo, el dueño y el encargado del taller). Un proveedor tiene canal si tiene al menos un número activo.
@@ -913,7 +911,7 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
 | Dinero y cantidades decimales | Strings con dos decimales: `"12.50"`. Enteros como números. |
 | Estados y tipos | Los valores en inglés de la tabla de `choices`. |
 | Texto para personas | En español (nombres, notas, `summary`, `text`, `changelog`). |
-| Teléfonos | Los JSON no traen teléfonos reales: los números simulados se escriben `"sim-<slug>"`. Los dos números reales de la demo son constantes del comando `seed_demo` (decisión de Oscar; el repo es público y lo acepta): la proveedora real (`Confecciones del Norte`, contacto "Encargada") es `51906746241`, y el Gerente (`Config.agent_phone`) es `51907898162`. El seed le agrega ese `AllowedNumber` activo al proveedor con `key = confecciones-norte`. |
+| Teléfonos | Los JSON no traen teléfonos reales: los números simulados se escriben `"sim-<slug>"`. Los dos números reales de la demo son constantes del comando `seed_demo` (decisión de Oscar; el repo es público y lo acepta): la proveedora real (`Confecciones del Norte`) es `51906746241`, con `AllowedNumber.name` vacío salvo que Oscar dé un nombre: el bot saluda solo con el nombre de contacto y, si está vacío, saluda sin nombre; nunca deduce uno del nombre comercial. Si el PR de Kenji trae otro nombre para ese número, `seed_demo` lo pisa. y el Gerente (`Config.agent_phone`) es `51907898162`. El seed le agrega ese `AllowedNumber` activo al proveedor con `key = confecciones-norte`. |
 | Opcionales | Se omiten o van en `null`. |
 
 ### Formato por archivo
@@ -952,7 +950,7 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
   "numbers": [{"name": "Simulador", "phone": "sim-confecciones-norte", "active": true}],
   "rates": [{"product": "POLO-ESC-01", "unit_price": "6.50", "valid_from": "T-200"}]}]
 // Un proveedor de insumos lleva rates con "material" en vez de "product".
-// El numero real de la proveedora (51906746241, "Encargada") lo agrega seed_demo al proveedor confecciones-norte; no va en el JSON.
+// El numero real de la proveedora (51906746241, name vacio) lo agrega seed_demo al proveedor confecciones-norte; no va en el JSON.
 // Nombres fijos (los fixtures .txt de personalidad los referencian): "Textiles Lima Norte S.A.C." (Lima, contacto "Sr. Ramírez")
 // e "Hilados del Bajío" (México, currency USD, contacto "Ing. Castañeda").
 
@@ -974,8 +972,8 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
   "items": [{"order": "CP-2026-0001", "product": "POLO-ESC-01", "quantity": "1000", "unit_price": "6.50", "qty_delivered": "0"}],
   "progress_reports": [{"units_done": 400, "note": "Avanzamos 400", "reported_at": "T-1 17:00"}],
   "deliveries": [],   // opcional
-  "payments": [{"kind": "advance", "amount": "3250.00", "status": "paid", "method": "yape", "paid_at": "T-3 10:00"},
-               {"kind": "balance", "amount": "3250.00", "status": "pending", "method": null, "paid_at": null}],
+  "payments": [{"kind": "advance", "amount": "3250.00", "method": "yape", "paid_at": "T-3 10:00"},
+               {"kind": "balance", "amount": "3250.00", "method": null, "paid_at": null}],
   "rating": null}]
 // Cada item apunta al requirement de (order, product) o (order, material).
 // report_token lo genera el seed. El ranking completo (candidates) va en decisions.json, dentro de detail.proposal.

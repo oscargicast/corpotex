@@ -9,7 +9,7 @@ El celular de un proveedor estaba en dos lugares: `Supplier.whatsapp_phone` y `A
 
 ## Decisión
 
-Se elimina `Supplier.whatsapp_phone`. Los celulares viven solo en `AllowedNumber` {phone, lid, name, role, supplier, active}, con FK al proveedor.
+Se elimina `Supplier.whatsapp_phone`. Los celulares viven solo en `AllowedNumber` {phone, lid, name, supplier, active, simulated}, con FK al proveedor.
 
 ## Consecuencias
 

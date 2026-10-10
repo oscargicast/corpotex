@@ -45,7 +45,7 @@ Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden 
 
 ### Onboarding (ADR 0011)
 
-Asistente del Gerente con 3 pasos: conectar WhatsApp (QR y webhook de la instancia `corpotex`), cargar proveedores (celular opcional) y extraer el estilo del Gerente de sus chats con proveedores (el "BOSS.md": un texto que se guarda en `User.style_md`, con historial en `StyleVersion`, ADR 0019). Solo se leen los chats de celulares de proveedores registrados.
+Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), conectar WhatsApp (QR y webhook de la instancia `corpotex`), cargar proveedores (celular opcional) y extraer el estilo del Gerente de sus chats con proveedores (el "BOSS.md": un texto que se guarda en `User.style_md`, con historial en `StyleVersion`, ADR 0019). Solo se leen los chats de celulares de proveedores registrados.
 
 ## Demo
 
