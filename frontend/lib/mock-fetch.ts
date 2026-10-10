@@ -1,8 +1,34 @@
 // In-browser stand-in for the Django API while B1 is not on main.
 // Enabled with NEXT_PUBLIC_USE_MOCKS=1. Shapes follow docs/backend/modelo-de-datos.md.
 import badgesByRole from "@/mocks/badges.json";
+import monitorSeed from "@/mocks/monitor.json";
 import users from "@/mocks/users.json";
-import type { Badges, ClaudeStatus, Clock, Role, User } from "./types";
+import type { Badges, ClaudeStatus, Clock, Monitor, Role, User } from "./types";
+
+const monitor = structuredClone(monitorSeed) as Monitor;
+
+function monitorFor(role: Role): Monitor {
+  const kpis = { ...monitor.kpis, pending_decisions: monitor.decisions.length, open_alerts: monitor.alerts.length };
+  if (role === "manager") return { ...monitor, kpis };
+  // Other roles: no decisions, prices or payments (the API filters them by role).
+  return {
+    ...monitor,
+    kpis: { ...kpis, pending_decisions: null },
+    decisions: [],
+    redistributions: [],
+    payments_by_supplier: undefined,
+  };
+}
+
+function resolveDecision(id: number, action: string): Response {
+  const decision = monitor.decisions.find((d) => d.id === id);
+  if (!decision) return json(404, { detail: "No existe." });
+  monitor.decisions = monitor.decisions.filter((d) => d.id !== id);
+  const status = action === "approve" ? "approved" : action === "reject" ? "rejected" : "supplier_changed";
+  const resolved = { ...decision, status, status_display: status };
+  if (action === "approve" && decision.detail.cancelled) monitor.redistributions = [resolved, ...monitor.redistributions];
+  return json(200, resolved);
+}
 
 const DISCONNECTED: ClaudeStatus = {
   connected: false,
@@ -97,6 +123,18 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     }
     case "GET /api/me/badges/":
       return json(200, (badgesByRole as Record<Role, Badges>)[user.role]);
+  }
+
+  if (route === "GET /api/monitor/") return json(200, monitorFor(user.role));
+  const decisionMatch = route.match(/^POST \/api\/manager\/decisions\/(\d+)\/$/);
+  if (decisionMatch) {
+    if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
+    return resolveDecision(Number(decisionMatch[1]), String(readBody(init.body).action));
+  }
+  const alertMatch = route.match(/^POST \/api\/alerts\/(\d+)\/acknowledge\/$/);
+  if (alertMatch) {
+    monitor.alerts = monitor.alerts.filter((a) => a.id !== Number(alertMatch[1]));
+    return json(200, { id: Number(alertMatch[1]), status: "acknowledged" });
   }
 
   if (path.startsWith("/api/settings/claude/") && user.role !== "manager") {

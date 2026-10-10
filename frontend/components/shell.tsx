@@ -23,8 +23,8 @@ function Count({ value, className = "" }: { value: number | null | undefined; cl
   );
 }
 
-// Local only: /api/auth/logout/ deletes the user's token, which would also log
-// out every other window of that user (new tabs share the seeded token).
+// Clears this tab only. The token stays valid on the server (logout does not
+// revoke it), so other windows of the same user keep working.
 function logout() {
   clearSession();
   window.location.assign("/login");

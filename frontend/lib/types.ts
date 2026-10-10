@@ -32,6 +32,111 @@ export interface Badges {
   claude_refresh_expires_at: string | null;
 }
 
+export type Currency = "PEN" | "USD";
+export type Risk = "ok" | "at_risk" | "in_danger";
+export type Severity = "info" | "warning" | "critical";
+
+export interface Ref {
+  id: number;
+  code: string;
+}
+
+export interface OrderListItem {
+  id: number;
+  code: string;
+  customer: { id: number; name: string };
+  brand: { id: number; name: string };
+  status: string;
+  status_display: string;
+  risk: Risk;
+  risk_reason: string;
+  promised_on: string;
+  estimated_on: string | null;
+  slack_days: number | null;
+  total_units: number;
+}
+
+export interface Alert {
+  id: number;
+  kind: string;
+  kind_display: string;
+  severity: Severity;
+  status: "open" | "acknowledged" | "resolved";
+  text: string;
+  detected_at: string;
+  order: Ref | null;
+  purchase_order: (Ref & { supplier_name: string }) | null;
+}
+
+export interface Candidate {
+  supplier: { id: number; name: string };
+  score: number;
+  scores: Record<string, number>; // on_time, price, load, quality: 0 to 1
+  unit_price: string;
+  load_pct: number;
+  rationale: string;
+}
+
+export interface ProposalItem {
+  purchase_order: Ref | null;
+  supplier: { id: number; name: string };
+  quantity: number;
+  unit_price: string;
+  currency: Currency;
+  rationale: string;
+  candidates: Candidate[];
+}
+
+export interface Snapshot {
+  estimated_on: string;
+  total_amount: string;
+  route_id?: number | null;
+}
+
+export interface Decision {
+  id: number;
+  kind: string;
+  kind_display: string;
+  status: string;
+  status_display: string;
+  summary: string;
+  detail: {
+    before?: Snapshot | null;
+    after?: Snapshot;
+    proposal?: ProposalItem[];
+    cancelled?: { code: string; supplier_name: string; quantity: number; units_done: number };
+  };
+  created_at: string;
+  purchase_orders: (Ref & { supplier_name: string })[];
+  orders: (Ref & { customer_name: string })[];
+}
+
+export interface PaymentSummary {
+  supplier: { id: number; name: string };
+  currency: Currency;
+  paid: string;
+  pending: string;
+  overdue_count: number;
+}
+
+export interface Monitor {
+  clock: Clock;
+  kpis: {
+    orders_in_danger: number;
+    orders_at_risk: number;
+    stalled_purchase_orders: number;
+    pending_decisions: number | null;
+    open_alerts: number;
+  };
+  alerts: Alert[];
+  decisions: Decision[];
+  orders_in_danger: OrderListItem[];
+  redistributions: Decision[];
+  payments_by_supplier?: PaymentSummary[];
+}
+
+export type DecisionAction = "approve" | "reject" | "change_supplier";
+
 // /api/settings/claude/* (ADR 0022). The credential itself never reaches the browser.
 export interface ClaudeStatus {
   connected: boolean;

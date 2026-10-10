@@ -1,0 +1,127 @@
+{
+  "clock": { "now": "2026-10-12T13:00:00Z", "factor": 60, "paused": false },
+  "kpis": {
+    "orders_in_danger": 1,
+    "orders_at_risk": 2,
+    "stalled_purchase_orders": 1,
+    "pending_decisions": 2,
+    "open_alerts": 3
+  },
+  "alerts": [
+    {
+      "id": 31,
+      "kind": "order_in_danger",
+      "kind_display": "Orden en peligro",
+      "severity": "critical",
+      "status": "open",
+      "text": "CP-2026-0001 (Caja Piura) ya no llega al 24 oct: la fecha estimada pasó al 27 oct.",
+      "detected_at": "2026-10-12T12:40:00Z",
+      "order": { "id": 1, "code": "CP-2026-0001" },
+      "purchase_order": null
+    },
+    {
+      "id": 32,
+      "kind": "stalled_purchase_order",
+      "kind_display": "Pedido sin avance",
+      "severity": "warning",
+      "status": "open",
+      "text": "PI-0003 lleva 2 días sin avance ni respuesta.",
+      "detected_at": "2026-10-12T09:10:00Z",
+      "order": { "id": 2, "code": "CP-2026-0002" },
+      "purchase_order": { "id": 3, "code": "PI-0003", "supplier_name": "Textiles Gamarra" }
+    },
+    {
+      "id": 33,
+      "kind": "payment_due",
+      "kind_display": "Pago vencido",
+      "severity": "info",
+      "status": "open",
+      "text": "El adelanto de PT-0002 venció hace 1 día.",
+      "detected_at": "2026-10-12T08:00:00Z",
+      "order": null,
+      "purchase_order": { "id": 2, "code": "PT-0002", "supplier_name": "Confecciones del Norte" }
+    }
+  ],
+  "decisions": [
+    {
+      "id": 11,
+      "kind": "approve_assignment",
+      "kind_display": "Aprobar asignación",
+      "status": "pending",
+      "status_display": "Pendiente",
+      "summary": "Taller Sullana canceló PT-0001 con 400 de 1000 polos hechos. Propongo repartir los 600 restantes entre Confecciones del Norte (350) y Taller Castilla (250).",
+      "detail": {
+        "before": { "estimated_on": "2026-10-22", "total_amount": "18500.00", "route_id": 4 },
+        "after": { "estimated_on": "2026-10-27", "total_amount": "19340.00", "route_id": 5 },
+        "cancelled": { "code": "PT-0001", "supplier_name": "Taller Sullana", "quantity": 1000, "units_done": 400 },
+        "proposal": [
+          {
+            "purchase_order": { "id": 7, "code": "PT-0004" },
+            "supplier": { "id": 2, "name": "Confecciones del Norte" },
+            "quantity": 350,
+            "unit_price": "8.50",
+            "currency": "PEN",
+            "rationale": "Mejor cumplimiento (96 %) y capacidad libre para 350 esta semana.",
+            "candidates": [
+              { "supplier": { "id": 2, "name": "Confecciones del Norte" }, "score": 0.86, "scores": { "on_time": 0.96, "price": 0.78, "load": 0.8, "quality": 0.9 }, "unit_price": "8.50", "load_pct": 40, "rationale": "Mejor cumplimiento y capacidad libre." },
+              { "supplier": { "id": 3, "name": "Taller Castilla" }, "score": 0.79, "scores": { "on_time": 0.85, "price": 0.88, "load": 0.62, "quality": 0.8 }, "unit_price": "8.10", "load_pct": 58, "rationale": "Más barato, pero con más carga." },
+              { "supplier": { "id": 5, "name": "Planta propia" }, "score": 0.58, "scores": { "on_time": 0.9, "price": 0.7, "load": 0.15, "quality": 0.95 }, "unit_price": "9.20", "load_pct": 92, "rationale": "Planta casi llena hasta el 18 oct." }
+            ]
+          },
+          {
+            "purchase_order": { "id": 8, "code": "PT-0005" },
+            "supplier": { "id": 3, "name": "Taller Castilla" },
+            "quantity": 250,
+            "unit_price": "8.10",
+            "currency": "PEN",
+            "rationale": "Precio más bajo; 250 entran en su capacidad.",
+            "candidates": [
+              { "supplier": { "id": 3, "name": "Taller Castilla" }, "score": 0.81, "scores": { "on_time": 0.85, "price": 0.88, "load": 0.7, "quality": 0.8 }, "unit_price": "8.10", "load_pct": 58, "rationale": "Precio más bajo." },
+              { "supplier": { "id": 2, "name": "Confecciones del Norte" }, "score": 0.74, "scores": { "on_time": 0.96, "price": 0.78, "load": 0.45, "quality": 0.9 }, "unit_price": "8.50", "load_pct": 75, "rationale": "Quedaría al 75 % con los 350." }
+            ]
+          }
+        ]
+      },
+      "created_at": "2026-10-12T12:40:00Z",
+      "purchase_orders": [
+        { "id": 7, "code": "PT-0004", "supplier_name": "Confecciones del Norte" },
+        { "id": 8, "code": "PT-0005", "supplier_name": "Taller Castilla" }
+      ],
+      "orders": [{ "id": 1, "code": "CP-2026-0001", "customer_name": "Caja Piura" }]
+    },
+    {
+      "id": 12,
+      "kind": "price",
+      "kind_display": "Precio",
+      "status": "pending",
+      "status_display": "Pendiente",
+      "summary": "Textiles Gamarra pide S/ 21.00 por kg de algodón 20/1; la referencia es S/ 19.50 (+7.7 %).",
+      "detail": {},
+      "created_at": "2026-10-12T10:05:00Z",
+      "purchase_orders": [{ "id": 3, "code": "PI-0003", "supplier_name": "Textiles Gamarra" }],
+      "orders": [{ "id": 2, "code": "CP-2026-0002", "customer_name": "Colegio San José" }]
+    }
+  ],
+  "orders_in_danger": [
+    {
+      "id": 1,
+      "code": "CP-2026-0001",
+      "customer": { "id": 1, "name": "Caja Piura" },
+      "brand": { "id": 1, "name": "UNICRACK" },
+      "status": "in_production",
+      "status_display": "En producción",
+      "risk": "in_danger",
+      "risk_reason": "Un taller canceló a mitad del pedido.",
+      "promised_on": "2026-10-24",
+      "estimated_on": "2026-10-27",
+      "slack_days": -3,
+      "total_units": 1000
+    }
+  ],
+  "redistributions": [],
+  "payments_by_supplier": [
+    { "supplier": { "id": 2, "name": "Confecciones del Norte" }, "currency": "PEN", "paid": "4250.00", "pending": "4250.00", "overdue_count": 1 },
+    { "supplier": { "id": 4, "name": "Textiles Gamarra" }, "currency": "PEN", "paid": "2340.00", "pending": "0.00", "overdue_count": 0 },
+    { "supplier": { "id": 6, "name": "Hilos de México" }, "currency": "USD", "paid": "600.00", "pending": "600.00", "overdue_count": 0 }
+  ]
+}
