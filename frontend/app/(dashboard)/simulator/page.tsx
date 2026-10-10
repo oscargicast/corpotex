@@ -1,10 +1,15 @@
-import { Placeholder } from "@/components/placeholder";
-import { RoleGate } from "@/components/require-auth";
+"use client";
 
-export default function Page() {
+import { Suspense } from "react";
+import { RoleGate } from "@/components/require-auth";
+import { Simulator } from "@/components/simulator/simulator";
+
+export default function SimulatorPage() {
   return (
     <RoleGate roles={["manager"]}>
-      <Placeholder title="Simulador" phase="F3" />
+      <Suspense>
+        <Simulator />
+      </Suspense>
     </RoleGate>
   );
 }

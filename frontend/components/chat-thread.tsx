@@ -19,11 +19,14 @@ export function ChatThread({
   typing = false,
   large = false,
   className = "max-h-96",
+  perspective = "us",
 }: {
   messages: ChatMessage[];
   typing?: boolean;
   large?: boolean;
   className?: string;
+  // "supplier" in the simulator: the operator writes as the supplier, so those go right.
+  perspective?: "us" | "supplier";
 }) {
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -35,11 +38,11 @@ export function ChatThread({
   return (
     <div ref={box} className={`space-y-2 overflow-y-auto rounded-lg bg-[#efeae2] p-3 ${large ? "text-lg" : "text-sm"} ${className}`}>
       {messages.map((message) => {
-        const ours = message.direction === "outbound";
+        const ours = perspective === "supplier" ? message.direction === "inbound" : message.direction === "outbound";
         return (
           <div key={message.id} className={`flex ${ours ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] rounded-2xl px-3 py-2 ${ours ? "rounded-br-sm bg-[#d9fdd3]" : "rounded-bl-sm bg-surface ring-1 ring-line"}`}>
-              {message.author !== "supplier" && <p className="text-[11px] font-semibold text-muted">{AUTHOR[message.author]}</p>}
+              {message.author !== "supplier" && <p className="text-[0.7em] font-semibold text-muted">{AUTHOR[message.author]}</p>}
               {message.media_kind === "image" &&
                 (message.media ? (
                   // Photos come from /media/ (Django).
@@ -56,8 +59,8 @@ export function ChatThread({
         );
       })}
       {typing && (
-        <div className="flex justify-end">
-          <p className="rounded-2xl bg-[#d9fdd3] px-3 py-2 text-xs text-muted">Escribiendo…</p>
+        <div className={`flex ${perspective === "supplier" ? "justify-start" : "justify-end"}`}>
+          <p className="rounded-2xl bg-surface px-3 py-2 text-[0.8em] text-muted ring-1 ring-line">Escribiendo…</p>
         </div>
       )}
     </div>

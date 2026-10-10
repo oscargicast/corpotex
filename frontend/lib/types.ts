@@ -365,6 +365,17 @@ export interface AssistantMessage {
   created_at: string;
 }
 
+// Simulator (ADR 0017 demo decision: one real supplier on WhatsApp, the rest here).
+export interface SimulatorContact {
+  id: number; // AllowedNumber id
+  name: string;
+  role: string;
+  supplier: { id: number; name: string } | null;
+  conversation_id: number | null;
+  channel: "simulator" | "whatsapp";
+  last_message: { id: number; text: string; direction: "inbound" | "outbound"; sent_at: string } | null;
+}
+
 export interface AssistantContext {
   path: string;
   view: string;
