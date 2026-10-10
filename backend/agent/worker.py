@@ -1,13 +1,14 @@
 """One agent turn: build the prompt, run the isolated SDK, return the result (ADR 0010).
 
-Django queries (prompt and tools) run here, outside the event loop; only the SDK
-run is async. One CLI process per turn, resumed by session id: the spike measured
+The prompt is built here, outside the event loop; tools reach the ORM through
+sync_to_async. One CLI process per turn, resumed by session id: the spike measured
 p50 7.7 s against 10.4 s with a long-lived client.
 """
 
 import asyncio
 import logging
 
+from asgiref.sync import sync_to_async
 from claude_agent_sdk import create_sdk_mcp_server
 
 from agent import sdk
@@ -34,9 +35,11 @@ def run_batch(batch) -> sdk.TurnResult:
 def _run(batch, conversation, *, resume: str | None, with_history: bool = False) -> sdk.TurnResult:
     if conversation.channel == "dashboard":
         from agent.persona import build_assistant_prompt as build_prompt
+
         from agent.tools import assistant_tools as tools_for
     else:
         from agent.persona import build_prompt
+
         from agent.tools import whatsapp_tools as tools_for
 
     system, blocks = build_prompt(conversation, batch, with_history=with_history)
@@ -49,7 +52,7 @@ def _run(batch, conversation, *, resume: str | None, with_history: bool = False)
         resume=resume,
         effort=TURN_EFFORT,
     )
-    result = asyncio.run(sdk.run(blocks, options))
+    result = asyncio.run(_run_and_release(blocks, options))
     log.info(
         "turn %s conversation %s session %s error=%s note=%r",
         batch.turn.pk,
@@ -59,3 +62,18 @@ def _run(batch, conversation, *, resume: str | None, with_history: bool = False)
         result.text[:300],
     )
     return result
+
+
+async def _run_and_release(blocks, options) -> sdk.TurnResult:
+    try:
+        return await sdk.run(blocks, options)
+    finally:
+        # Tools use sync_to_async's single worker thread, whose DB connection Celery
+        # never closes: drop it so a Postgres restart can't break the next turns.
+        await sync_to_async(_close_db)()
+
+
+def _close_db() -> None:
+    from django.db import connections
+
+    connections.close_all()
