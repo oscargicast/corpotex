@@ -36,7 +36,7 @@ Flujo:
 4. El agente conversa con el proveedor, responde dudas y acuerda fecha. Si se cumplen todos los términos, cierra el pedido solo y actualiza pedido y orden. Si es decisión de jefe (precio, términos), no decide: crea una decisión pendiente para el Gerente y espera.
 5. Seguimiento: cualquier retraso o riesgo al plazo crea una alerta para el Gerente y marca la orden en peligro.
 
-Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden por ruta crítica, permisos por rol (el equipo ve el nombre del proveedor, no su número).
+Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden por ruta crítica, permisos por rol (el equipo ve el nombre del proveedor, no su número; las conversaciones con proveedores y el simulador solo los ve el Gerente: Comercial y Producción ven avances, fotos, estado y fechas, nunca el texto de WhatsApp. Pedido de Oscar, 10/10 20:50).
 
 ### Dashboard (5 vistas)
 
