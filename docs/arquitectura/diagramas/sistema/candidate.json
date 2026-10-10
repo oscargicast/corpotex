@@ -449,89 +449,32 @@
   },
   "components": [
     {
-      "id": "pepita",
-      "type": "backend",
-      "label": "n8n pepita",
-      "sublabel": "flujo existente",
-      "tag": "no se toca",
-      "pos": [
-        480,
-        40
-      ],
-      "size": [
-        160,
-        64
-      ]
-    },
-    {
-      "id": "gerente",
-      "type": "external",
-      "icon": "person",
-      "label": "Gerente",
-      "sublabel": "app Pana",
-      "pos": [
-        1250,
-        40
-      ],
-      "size": [
-        160,
-        64
-      ]
-    },
-    {
       "id": "evoPersonal",
       "type": "backend",
       "label": "personal-whatsapp",
-      "sublabel": "instancia Evolution",
+      "sublabel": "flujo personal en n8n",
+      "tag": "no se toca",
       "pos": [
-        480,
-        160
+        620,
+        40
       ],
       "size": [
-        160,
+        200,
         64
       ]
     },
     {
-      "id": "trick",
-      "type": "backend",
-      "label": "Trick corpotex",
-      "sublabel": "pendientes · decisiones",
-      "pos": [
-        1000,
-        160
-      ],
-      "size": [
-        160,
-        64
-      ]
-    },
-    {
-      "id": "bridge",
-      "type": "messagebus",
-      "label": "Bridge de Kenji",
-      "sublabel": "POST /incoming",
-      "pos": [
-        1250,
-        160
-      ],
-      "size": [
-        160,
-        64
-      ]
-    },
-    {
-      "id": "proveedor",
+      "id": "suppliers",
       "type": "external",
       "icon": "person",
-      "label": "Proveedores y talleres",
-      "sublabel": "los actúa el equipo",
+      "label": "Proveedores",
+      "sublabel": "talleres e insumos",
       "pos": [
         40,
-        340
+        200
       ],
       "size": [
-        150,
+        160,
         64
       ]
     },
@@ -541,11 +484,11 @@
       "label": "WhatsApp",
       "sublabel": "número de Oscar",
       "pos": [
-        270,
-        340
+        290,
+        200
       ],
       "size": [
-        130,
+        150,
         64
       ]
     },
@@ -553,14 +496,44 @@
       "id": "evoCorpotex",
       "type": "backend",
       "label": "Evolution corpotex",
-      "sublabel": "dispositivo vinculado",
+      "sublabel": "instancia Baileys",
       "tag": "ADR 0001",
       "pos": [
-        480,
-        340
+        620,
+        200
       ],
       "size": [
-        160,
+        200,
+        64
+      ]
+    },
+    {
+      "id": "access",
+      "type": "security",
+      "label": "Cloudflare Access",
+      "sublabel": "service token",
+      "tag": "ADR 0006",
+      "pos": [
+        1220,
+        200
+      ],
+      "size": [
+        180,
+        64
+      ]
+    },
+    {
+      "id": "team",
+      "type": "external",
+      "icon": "person",
+      "label": "Usuarios del tablero",
+      "sublabel": "manager · sales · production",
+      "pos": [
+        40,
+        440
+      ],
+      "size": [
+        180,
         64
       ]
     },
@@ -569,56 +542,13 @@
       "type": "cloud",
       "label": "Cloudflare Tunnel",
       "sublabel": "corpotex.oscargicast.com",
-      "tag": "ADR 0006",
+      "tag": "cloudflared",
       "pos": [
-        720,
-        340
+        620,
+        440
       ],
       "size": [
-        160,
-        64
-      ]
-    },
-    {
-      "id": "django",
-      "type": "backend",
-      "label": "Django + DRF",
-      "sublabel": "API · admin · webhook",
-      "tag": ":8000",
-      "pos": [
-        1000,
-        340
-      ],
-      "size": [
-        160,
-        64
-      ]
-    },
-    {
-      "id": "worker",
-      "type": "backend",
-      "label": "Worker del agente",
-      "sublabel": "Agent SDK · reloj",
-      "pos": [
-        1250,
-        340
-      ],
-      "size": [
-        160,
-        64
-      ]
-    },
-    {
-      "id": "anthropic",
-      "type": "cloud",
-      "label": "Anthropic API",
-      "sublabel": "Claude",
-      "pos": [
-        1500,
-        340
-      ],
-      "size": [
-        160,
+        200,
         64
       ]
     },
@@ -626,57 +556,102 @@
       "id": "nextjs",
       "type": "frontend",
       "label": "Next.js",
-      "sublabel": "tablero · simulador",
-      "tag": ":3000",
+      "sublabel": "tablero · asistente · simulador",
+      "tag": "host :3000",
       "pos": [
-        1000,
-        500
+        940,
+        440
       ],
       "size": [
-        160,
+        210,
+        64
+      ]
+    },
+    {
+      "id": "web",
+      "type": "backend",
+      "label": "web · Django + DRF",
+      "sublabel": "API · admin · webhook",
+      "tag": ":8000",
+      "pos": [
+        620,
+        640
+      ],
+      "size": [
+        200,
         64
       ]
     },
     {
       "id": "postgres",
       "type": "database",
-      "label": "Postgres",
-      "sublabel": "Docker · cola de turnos",
+      "label": "postgres",
+      "sublabel": "datos · cola Turn",
       "pos": [
-        1250,
-        500
+        940,
+        640
       ],
       "size": [
-        160,
+        210,
         64
       ]
     },
     {
-      "id": "equipo",
-      "type": "external",
-      "icon": "person",
-      "label": "Equipo interno",
-      "sublabel": "navegador · celular",
+      "id": "beat",
+      "type": "backend",
+      "icon": "clock",
+      "label": "celery-beat",
+      "sublabel": "tick 10 s · refresh_style 03:00",
       "pos": [
-        720,
-        650
+        290,
+        820
       ],
       "size": [
-        160,
+        190,
         64
       ]
     },
     {
-      "id": "access",
-      "type": "security",
-      "label": "Cloudflare Access",
-      "sublabel": "evolution.oscargicast.com",
+      "id": "redis",
+      "type": "messagebus",
+      "label": "redis",
+      "sublabel": "broker de Celery",
       "pos": [
-        480,
-        800
+        620,
+        820
       ],
       "size": [
-        160,
+        200,
+        64
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "celery-worker",
+      "sublabel": "agente · asistente · tick · estilo",
+      "tag": "turns · periodic · style",
+      "pos": [
+        940,
+        820
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "claude",
+      "type": "cloud",
+      "label": "Claude",
+      "sublabel": "suscripción de Oscar",
+      "tag": "sin API key",
+      "pos": [
+        940,
+        1000
+      ],
+      "size": [
+        210,
         64
       ]
     }
@@ -684,38 +659,45 @@
   "boundaries": [
     {
       "kind": "region",
-      "label": "mac-mini · k3s automation",
+      "label": "mac-mini · k3s",
       "wraps": [
-        "pepita",
         "evoPersonal",
         "evoCorpotex"
       ]
     },
     {
       "kind": "region",
-      "label": "Servidor de Kenji · tailnet",
+      "label": "Laptop de Oscar",
       "wraps": [
-        "trick",
-        "bridge"
-      ]
+        "tunnel",
+        "nextjs",
+        "web",
+        "postgres",
+        "beat",
+        "redis",
+        "worker"
+      ],
+      "pad": 40
     },
     {
       "kind": "region",
-      "label": "Laptop de Oscar",
+      "label": "docker compose",
       "wraps": [
-        "django",
-        "worker",
-        "nextjs",
-        "postgres"
-      ]
+        "web",
+        "postgres",
+        "beat",
+        "redis",
+        "worker"
+      ],
+      "pad": 18
     }
   ],
   "connections": [
     {
-      "id": "prov-wa",
-      "from": "proveedor",
+      "id": "sup-wa",
+      "from": "suppliers",
       "to": "whatsapp",
-      "label": "mensaje",
+      "label": "mensajes",
       "variant": "emphasis"
     },
     {
@@ -724,33 +706,6 @@
       "to": "evoCorpotex",
       "label": "Baileys",
       "variant": "emphasis"
-    },
-    {
-      "id": "evo-tunnel",
-      "from": "evoCorpotex",
-      "to": "tunnel",
-      "label": "webhook",
-      "variant": "emphasis"
-    },
-    {
-      "id": "tunnel-django",
-      "from": "tunnel",
-      "to": "django",
-      "label": "/api /webhooks",
-      "variant": "emphasis"
-    },
-    {
-      "id": "django-worker",
-      "from": "django",
-      "to": "worker",
-      "label": "encola",
-      "variant": "dashed"
-    },
-    {
-      "id": "worker-anthropic",
-      "from": "worker",
-      "to": "anthropic",
-      "label": "Agent SDK"
     },
     {
       "id": "wa-personal",
@@ -762,85 +717,81 @@
       "toSide": "left"
     },
     {
-      "id": "personal-pepita",
-      "from": "evoPersonal",
-      "to": "pepita",
-      "label": "webhook actual",
-      "variant": "dashed"
+      "id": "evo-tunnel",
+      "from": "evoCorpotex",
+      "to": "tunnel",
+      "label": "POST /webhooks/evolution/<secret>/",
+      "variant": "emphasis"
+    },
+    {
+      "id": "team-tunnel",
+      "from": "team",
+      "to": "tunnel",
+      "label": "HTTPS"
     },
     {
       "id": "tunnel-next",
       "from": "tunnel",
       "to": "nextjs",
-      "label": "/ tablero",
-      "fromSide": "bottom",
-      "toSide": "left"
+      "label": "el resto"
     },
     {
-      "id": "equipo-tunnel",
-      "from": "equipo",
-      "to": "tunnel",
-      "label": "HTTPS",
-      "fromSide": "top",
-      "toSide": "bottom"
+      "id": "tunnel-web",
+      "from": "tunnel",
+      "to": "web",
+      "label": "/api /admin /webhooks /static /media",
+      "variant": "emphasis"
     },
     {
-      "id": "django-pg",
-      "from": "django",
+      "id": "web-pg",
+      "from": "web",
       "to": "postgres",
-      "label": "ORM",
-      "fromSide": "right",
-      "toSide": "left"
+      "label": "ORM"
+    },
+    {
+      "id": "web-redis",
+      "from": "web",
+      "to": "redis",
+      "label": "enqueue_turn",
+      "variant": "dashed"
+    },
+    {
+      "id": "beat-redis",
+      "from": "beat",
+      "to": "redis",
+      "label": "programa",
+      "variant": "dashed"
+    },
+    {
+      "id": "redis-worker",
+      "from": "redis",
+      "to": "worker",
+      "label": "tareas"
     },
     {
       "id": "worker-pg",
       "from": "worker",
       "to": "postgres",
-      "label": "ORM async"
+      "label": "claim_next_turn · ORM"
+    },
+    {
+      "id": "worker-claude",
+      "from": "worker",
+      "to": "claude",
+      "label": "Agent SDK · OAuth token"
     },
     {
       "id": "worker-access",
       "from": "worker",
       "to": "access",
-      "label": "sendText · service token",
-      "variant": "security",
-      "fromSide": "right",
-      "toSide": "right"
+      "label": "sendText/corpotex",
+      "variant": "security"
     },
     {
       "id": "access-evo",
       "from": "access",
       "to": "evoCorpotex",
       "label": "Service Auth",
-      "variant": "security",
-      "fromSide": "top",
-      "toSide": "bottom"
-    },
-    {
-      "id": "worker-bridge",
-      "from": "worker",
-      "to": "bridge",
-      "label": "POST /incoming"
-    },
-    {
-      "id": "bridge-gerente",
-      "from": "bridge",
-      "to": "gerente",
-      "label": "notifica"
-    },
-    {
-      "id": "gerente-trick",
-      "from": "gerente",
-      "to": "trick",
-      "label": "consulta y decide",
-      "fromSide": "left",
-      "toSide": "top"
-    },
-    {
-      "id": "trick-django",
-      "from": "trick",
-      "to": "django",
-      "label": "API · tailnet",
       "variant": "security"
     }
   ],
@@ -849,8 +800,8 @@
       "dot": "cyan",
       "title": "Ruteo del tunnel",
       "items": [
-        "/api, /admin, /webhooks y /static van a Django :8000",
-        "Todo lo demás va a Next.js :3000",
+        "/api, /admin, /webhooks, /static y /media van a web (Django :8000)",
+        "Todo lo demás va a Next.js :3000, que corre en el host",
         "Hostname fijo corpotex.oscargicast.com (ADR 0006)"
       ]
     },
@@ -858,27 +809,27 @@
       "dot": "emerald",
       "title": "WhatsApp",
       "items": [
-        "La instancia corpotex recibe todo el número; el backend filtra por allowlist",
-        "La respuesta sale por la misma instancia con sendText",
-        "personal-whatsapp y pepita no se tocan (ADR 0001)"
+        "corpotex recibe todo el número; el webhook solo guarda números activos en AllowedNumber (ADR 0016)",
+        "Las respuestas salen por sendText/corpotex, con el service token de Cloudflare Access",
+        "personal-whatsapp y su flujo de n8n no se tocan (ADR 0001)"
       ]
     },
     {
       "dot": "violet",
-      "title": "Agente",
+      "title": "Segundo plano (ADR 0018)",
       "items": [
-        "Un turno por mensaje; cola por chat en Postgres",
-        "Agent SDK limitado a nuestras tools (ADR 0004)",
-        "El reloj acelerado dispara seguimientos y alertas"
+        "celery-worker corre los turnos del agente de WhatsApp y del asistente, el tick y las tareas de estilo",
+        "celery-beat lanza el tick cada ~10 s y refresh_style a las 03:00 de Lima (ADR 0019)",
+        "La tabla Turn en Postgres manda: un turno a la vez por conversación"
       ]
     },
     {
       "dot": "amber",
-      "title": "Gerente",
+      "title": "Claude y tablero",
       "items": [
-        "Escalamientos y alertas le llegan por su Pana (ADR 0007)",
-        "Kenji llama a la API por la tailnet, no por el tunnel",
-        "Usuarios y roles se gestionan en el admin de Django"
+        "Agent SDK aislado, con la suscripción de Oscar por CLAUDE_CODE_OAUTH_TOKEN (ADR 0013)",
+        "Cada usuario tiene un asistente con tools según su rol (ADR 0017)",
+        "Las decisiones del Gerente aparecen en el Monitor y en el contador del menú"
       ]
     }
   ]

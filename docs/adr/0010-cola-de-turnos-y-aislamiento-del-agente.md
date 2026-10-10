@@ -32,6 +32,6 @@ El agente corre un turno por conversación. Hay turnos que no nacen de un mensaj
 ## Consecuencias
 
 - Juntar causas en un turno nunca pierde nada, porque el turno lee el estado fresco.
-- Los eventos de sistema no ensucian el historial del chat que ve el tablero.
+- Los eventos de sistema no ensucian el historial del chat que ve el dashboard.
 - Cada turno deja rastro de reintentos y errores.
 - Un proveedor sin celular no se puede contactar: su pedido aprobado queda en `approved` con una `Alert` `no_channel`.

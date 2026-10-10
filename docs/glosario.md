@@ -130,9 +130,9 @@ El modelo las ve como `mcp__corpotex__<nombre>`.
 
 Nombres fijados por el orquestador para que todas las sesiones coincidan: Orden = `Order`, Pedido = `PurchaseOrder`, Proveedor = `Supplier`, Gerente = `manager`.
 
-## Asistente del tablero (ADR 0017)
+## Asistente del dashboard (ADR 0017)
 
-Un chat en el tablero para cada usuario, con tools según su rol (`manager`, `sales`, `production`). Usa el mismo `agent/sdk.py` y la misma cola de turnos que el agente de WhatsApp. Tools por rol (las de escritura piden confirmación en código, con `pending_action`):
+Un chat en el dashboard para cada usuario, con tools según su rol (`manager`, `sales`, `production`). Usa el mismo `agent/sdk.py` y la misma cola de turnos que el agente de WhatsApp. Tools por rol (las de escritura piden confirmación en código, con `pending_action`):
 
 | Rol | Tools |
 |---|---|
@@ -169,7 +169,7 @@ Armado del prompt del agente y extracción de estilo. El texto que lee el modelo
 | estados generales | `not_started`, `extracting`, `draft`, `approved`, `error` |
 | estados por proveedor | `pending`, `reading`, `analyzing`, `done`, `no_phone`, `no_chat`, `not_allowed`, `error` |
 
-## Tablero (rutas de Next.js)
+## Dashboard (rutas de Next.js)
 
 Cada ruta usa el nombre de su modelo.
 

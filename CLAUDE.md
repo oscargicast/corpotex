@@ -9,7 +9,7 @@ Stack: backend Django + Django REST Framework, frontend Next.js, Postgres, agent
 ## Convenciones
 
 - Código en inglés: identificadores, comentarios, docstrings, endpoints y claves JSON (ADR 0014). Equivalencias español → inglés en `docs/glosario.md`.
-- En español: la documentación y los textos para personas (tablero, admin, WhatsApp, `BOSS.md`).
+- En español: la documentación y los textos para personas (dashboard, admin, WhatsApp, `BOSS.md`).
 
 ## Qué construimos
 
@@ -17,13 +17,13 @@ Un agente que lleva la orden del cliente hasta que el proveedor entrega. Habla p
 
 Roles (usar estos en el producto y la data, no nombres reales):
 
-- **Gerente**: dueño. Controla proveedores, precios y pagos. Ve todo. Atiende pendientes y alertas en el tablero.
+- **Gerente**: dueño. Controla proveedores, precios y pagos. Ve todo. Atiende pendientes y alertas en el dashboard.
 - **Comercial**: registra órdenes de clientes.
 - **Producción**: revisa y confirma el desglose.
 
-Cada rol tiene en el tablero un asistente (chat) con tools y permisos propios de su rol (ADR 0017).
+Cada rol tiene en el dashboard un asistente (chat) con tools y permisos propios de su rol (ADR 0017). El asistente también avisa solo, en ese chat, de pedidos retrasados u órdenes en peligro, a cada rol lo que le toca (ADR 0020). Los datos de demo salen de `python manage.py seed_demo` con fixtures en `backend/seed/` (ADR 0021).
 
-Usuarios: uno sembrado por rol. Usuarios, roles y contraseñas se gestionan desde el admin de Django; el resto del tablero es Next.js.
+Usuarios: uno sembrado por rol. Usuarios, roles y contraseñas se gestionan desde el admin de Django; el resto del dashboard es Next.js.
 
 Flujo:
 
@@ -36,7 +36,7 @@ Flujo:
 
 Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden por ruta crítica, permisos por rol (el equipo ve el nombre del proveedor, no su número).
 
-### Tablero (4 vistas)
+### Dashboard (4 vistas)
 
 1. Órdenes de clientes.
 2. Pedidos a proveedores y talleres.
@@ -114,7 +114,7 @@ Reglas de la instancia `personal-whatsapp` (número de Oscar):
 ## Planning
 
 - Sábado tarde: data demo, motor (desglose, asignación, ruta crítica), estilo del Gerente.
-- Sábado noche: agente WhatsApp, tablero, reloj acelerado.
+- Sábado noche: agente WhatsApp, dashboard, reloj acelerado.
 - Domingo mañana: prueba punta a punta x2, video de respaldo, pitch, ensayo cronometrado.
 
 ## Pendiente de decidir (preguntar a Oscar)

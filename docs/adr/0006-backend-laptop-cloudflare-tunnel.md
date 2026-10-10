@@ -18,9 +18,9 @@ Config en `infra/cloudflared/config.yml`. Para llamar a Evolution usamos un serv
 
 ## Consecuencias
 
-- Sin pipeline de deploy, y el tablero se puede abrir desde el celular (criterio móvil).
+- Sin pipeline de deploy, y el dashboard se puede abrir desde el celular (criterio móvil).
 - Tunnel con nombre (no quick tunnel): la URL no cambia y queda fija en el webhook de la instancia `corpotex`.
 - Hay que crear el service token y agregar a la app de Evolution en Access una policy Service Auth que lo incluya. El client id y el secret van en `.env`.
 - La API y el admin quedan públicos: todo endpoint exige auth, y el webhook valida un secreto compartido con Evolution.
-- El Gerente decide desde el tablero, por el mismo tunnel. La API no necesita ser alcanzable por otra red (ADR 0017).
+- El Gerente decide desde el dashboard, por el mismo tunnel. La API no necesita ser alcanzable por otra red (ADR 0017).
 - Si la laptop se apaga o pierde internet, el bot se cae. Respaldo: tethering desde el celular y el simulador de chat.

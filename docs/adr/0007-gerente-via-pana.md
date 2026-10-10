@@ -1,11 +1,11 @@
 # 0007. El Gerente atiende pendientes y alertas desde su Pana
 
-- Estado: reemplazada por 0017 (asistente en el tablero)
+- Estado: reemplazada por 0017 (asistente en el dashboard)
 - Fecha: 2026-10-10
 
 ## Contexto
 
-El agente escala al Gerente lo que no puede decidir solo (precio, términos, cambio de proveedor) y le avisa de retrasos y órdenes en peligro. El Gerente es el cuello de botella de la empresa: necesita enterarse sin abrir el tablero.
+El agente escala al Gerente lo que no puede decidir solo (precio, términos, cambio de proveedor) y le avisa de retrasos y órdenes en peligro. El Gerente es el cuello de botella de la empresa: necesita enterarse sin abrir el dashboard.
 
 ## Decisión
 
@@ -25,7 +25,7 @@ El Gerente tiene un Pana (en la demo, Kenji) con el trick `com.oscar.corpotex`, 
 
 ## Consecuencias
 
-- El backend necesita endpoints para pendientes y decisiones del Gerente, además del tablero.
-- El tablero sigue mostrando lo mismo; el Pana es otro canal hacia el Gerente, no el único.
+- El backend necesita endpoints para pendientes y decisiones del Gerente, además del dashboard.
+- El dashboard sigue mostrando lo mismo; el Pana es otro canal hacia el Gerente, no el único.
 - Pendiente: quién hace de Gerente en la demo. La cuenta Pana es la de Oscar, así que lo directo es que sea Oscar usando la app de Kenji.
-- Si Kenji no está disponible en la demo, el Gerente usa el tablero.
+- Si Kenji no está disponible en la demo, el Gerente usa el dashboard.

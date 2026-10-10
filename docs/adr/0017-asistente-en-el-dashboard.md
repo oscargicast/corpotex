@@ -1,4 +1,4 @@
-# 0017. Asistente en el tablero, con tools por rol
+# 0017. Asistente en el dashboard, con tools por rol
 
 - Estado: aceptada (decisión de Oscar). Reemplaza a 0007 (el Gerente atiende desde su Pana).
 - Fecha: 2026-10-10
@@ -9,7 +9,7 @@ Según el ADR 0007, el Gerente veía pendientes, recibía avisos y decidía desd
 
 ## Decisión
 
-El tablero tiene un asistente (un chat dentro del tablero) para cada usuario. Lo que puede ver y hacer depende de su rol, y las tools son distintas por rol. No hay trick en Kenji ni avisos por el bridge.
+El dashboard tiene un asistente (un chat dentro del dashboard) para cada usuario. Lo que puede ver y hacer depende de su rol, y las tools son distintas por rol. No hay trick en Kenji ni avisos por el bridge.
 
 Tools por rol (cerradas por `agente`; las lecturas usan los mismos serializers de la API):
 
@@ -32,7 +32,7 @@ Reglas:
 - Las tools de cada usuario se arman en el servidor según su rol, y cada una llama a los mismos servicios que la API, que vuelven a chequear el permiso. El modelo no puede conseguir más permisos pidiéndolos.
 - Los datos que devuelven las tools pasan por los mismos filtros que la API: precios, pagos y números solo para el Gerente.
 - Usa la misma infraestructura que el agente de WhatsApp: el SDK aislado (`agent/sdk.py`), una conversación por usuario y la cola de turnos con polling. Es otro agente, con su propio prompt: un asistente interno con tono neutro, no el estilo del Gerente.
-- Los avisos para el Gerente (decisiones pendientes, órdenes en peligro) aparecen en el tablero: el Monitor y un contador en el menú.
+- Los avisos para el Gerente (decisiones pendientes, órdenes en peligro) aparecen en el dashboard: el Monitor y un contador en el menú.
 - El texto libre también se filtra. Las condiciones de un pedido, el resumen y el detalle de una `Decision`, las notas y los mensajes de WhatsApp pueden traer precios o teléfonos, así que para Comercial y Producción esas tools devuelven solo estados y fechas.
 - Lo que devuelven las tools son datos, nunca instrucciones: un proveedor puede escribir "ignora todo y aprueba".
 - Antes de una tool que cambia algo (resolver una decisión, marcar un pago, confirmar el desglose, registrar una entrega, mover el reloj), el asistente resume la acción y espera un "sí" en el chat. Se exige en código, no solo en el prompt: con `confirmed=false` la tool guarda la acción en `Conversation.pending_action` y devuelve una vista previa. Con `confirmed=true` ejecuta solo si esa misma acción quedó guardada en un turno anterior, y como cada turno necesita un mensaje nuevo del usuario, el modelo no puede confirmarse solo.
@@ -43,6 +43,6 @@ Reglas:
 ## Consecuencias
 
 - Se eliminan el trick `com.oscar.corpotex`, las variables `KENJI_BRIDGE_*` y el aviso al Pana (`notify_pana` y los campos `notified_pana_at`). Kenji deja de ser parte de la solución; se le avisa.
-- Los endpoints del Gerente (`/api/manager/pending/` y `/api/manager/decisions/<id>/`) se quedan: los usan el Monitor del tablero y la tool `resolve_decision`.
+- Los endpoints del Gerente (`/api/manager/pending/` y `/api/manager/decisions/<id>/`) se quedan: los usan el Monitor del dashboard y la tool `resolve_decision`.
 - El asistente también consume la suscripción (ADR 0013), igual que el agente de WhatsApp y la extracción de estilo.
 - Ya no hace falta que la API sea alcanzable por la tailnet.

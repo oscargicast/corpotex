@@ -15,7 +15,7 @@ Lo verificado el 10/10 desde el pod de Evolution, leyendo solo conteos:
 
 ## Decisión
 
-El onboarding es un asistente en el tablero, solo para el Gerente, con 3 pasos:
+El onboarding es un asistente en el dashboard, solo para el Gerente, con 3 pasos:
 
 1. **WhatsApp:** muestra el estado de la instancia de `EVOLUTION_INSTANCE`, el QR para vincularla si no está `open`, y un botón que configura el webhook (URL con secreto, solo `MESSAGES_UPSERT`, base64) y los settings (ignorar grupos; rechazar llamadas, marcar como leído y sincronizar historial apagados). Usa el token de la instancia a través del service token de Cloudflare Access. No crea, desconecta ni borra instancias, y nunca toca `personal-whatsapp`. Si el service token no está listo, el paso se marca como hecho fuera de línea y muestra el estado leído.
 2. **Proveedores:** alta o importación de proveedores. El celular es opcional y se guarda en `AllowedNumber` (ADR 0016). Sin él no se puede extraer el estilo con ese proveedor.

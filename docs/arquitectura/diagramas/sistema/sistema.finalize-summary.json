@@ -1,36 +1,69 @@
 {
   "schemaVersion": 1,
-  "ok": true,
+  "ok": false,
   "command": "finalize",
-  "status": "pass",
+  "status": "fail",
   "type": "architecture",
   "quality": "showcase",
   "specification": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/candidate.json",
-    "sha256": "cfb75a039ba9f4034ca761c0377ede48cff78cad7151f8f0ae1cf3b12fc5ac28",
-    "bytes": 37562
+    "sha256": "5ffeb43e9b287e48a94023a6be818860cb55c5e57c63ab98ecc36142b1efa954",
+    "bytes": 36953
   },
   "artifact": {
-    "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
-    "sha256": "a428fb30bd75b07a777a2f1a3c865ed209358e92bb5bab0d8a288bea79f64e20",
-    "bytes": 786372
+    "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html"
   },
   "gates": {
-    "validate": "pass",
-    "deliver": "pass",
-    "check": "pass",
-    "browser-check": "pass"
+    "validate": "fail",
+    "deliver": "not-run",
+    "check": "not-run",
+    "browser-check": "not-run"
   },
-  "diagnostics": [],
+  "failedStage": "validate",
+  "diagnostics": [
+    {
+      "code": "composition/desktop-readability",
+      "severity": "error",
+      "message": "Final artifact failed composition/desktop-readability.",
+      "subject": {
+        "check": "composition"
+      },
+      "evidence": {
+        "owner": {
+          "kind": "edge",
+          "id": "sup-wa",
+          "from": "suppliers",
+          "to": "whatsapp"
+        },
+        "viewportWidth": 1440,
+        "viewportHeight": 900,
+        "availableDiagramWidth": 930,
+        "budgetBasis": "legacy-930",
+        "readerContract": "declared-wide-v1",
+        "requestedTargetPx": 7.5,
+        "requestedTargetMet": false,
+        "budgetLimit": "legacy",
+        "viewBoxWidth": 1440,
+        "scale": 0.6458333333333334,
+        "text": "mensajes",
+        "detail": "edge",
+        "sourceFontPx": 8,
+        "projectedFontPx": 5.166666666666667,
+        "minimumProjectedFontPx": 6
+      },
+      "supportedFixes": [
+        "Preserve the semantic text and any supplied coordinates, routes, sides, channels, and labels. Compactly reflow automatic spacing and empty corridors so the complete viewBox width is at most 1240px (current 1440px; 8px source text at 930px desktop budget). If supplied geometry fixes that width, use a renderer-supported semantic text-size setting or renderer-level fix instead. Position-only label controls cannot repair its projection."
+      ]
+    }
+  ],
   "diagnosticSummary": {
-    "total": 0,
-    "shown": 0,
+    "total": 1,
+    "shown": 1,
     "truncated": false
   },
   "evidence": {
     "receipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.finalize.json",
-    "summaryReceipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.finalize-summary.json",
-    "browserCheckReceipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.browser-check.json"
+    "summaryReceipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.finalize-summary.json"
   },
   "update": {
     "status": "current",
@@ -38,52 +71,16 @@
     "availableVersion": "3.0.1",
     "releaseNotes": null,
     "checkedAt": "2026-10-10T19:50:17.100Z",
-    "source": "network",
+    "source": "cache",
     "noticeRequired": false,
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 6117,
-  "visualReviewRecommendation": {
-    "action": "inspect-route-readability",
-    "signals": {
-      "routesOverSuggestedBends": 2
-    },
-    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
-    "affectedRoutes": {
-      "crossings": [],
-      "detours": [
-        {
-          "relationship": {
-            "id": "wa-personal",
-            "from": "whatsapp",
-            "to": "evoPersonal",
-            "label": "mismo número",
-            "collectionIndex": 6,
-            "artifactIndex": 7
-          },
-          "bends": 3,
-          "stretch": 1
-        },
-        {
-          "relationship": {
-            "id": "tunnel-next",
-            "from": "tunnel",
-            "to": "nextjs",
-            "label": "/ tablero",
-            "collectionIndex": 8,
-            "artifactIndex": 9
-          },
-          "bends": 3,
-          "stretch": 1
-        }
-      ],
-      "truncated": false
-    },
-    "hints": [
-      "whatsapp → evoPersonal needs 3 bends: move node whatsapp or evoPersonal so they share a row or column with matching centers, or sit diagonally with a clear corner.",
-      "tunnel → nextjs needs 3 bends: move node tunnel or nextjs so they share a row or column with matching centers, or sit diagonally with a clear corner."
-    ],
-    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  "durationMs": 227,
+  "nextAction": {
+    "action": "edit-in-place",
+    "candidate": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/candidate.json",
+    "constraint": "Preserve all semantics and user-fixed geometry. Use references/architecture-layout-repair.md to choose a local repair or connected-scene reflow; edit the existing candidate.",
+    "then": "finalize-once"
   }
 }

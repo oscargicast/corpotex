@@ -5,7 +5,7 @@
 
 ## Contexto
 
-Oscar quiere que el estilo aprenda solo, todos los días, y que el `BOSS.md` sea un dato del usuario en la BD. Ahora todos los usuarios tienen el asistente del tablero (ADR 0017), y el Gerente además tiene el agente que escribe por él en WhatsApp.
+Oscar quiere que el estilo aprenda solo, todos los días, y que el `BOSS.md` sea un dato del usuario en la BD. Ahora todos los usuarios tienen el asistente del dashboard (ADR 0017), y el Gerente además tiene el agente que escribe por él en WhatsApp.
 
 ## Decisión
 
@@ -16,7 +16,7 @@ Oscar quiere que el estilo aprenda solo, todos los días, y que el `BOSS.md` sea
   - lee de nuestra BD, no de Evolution, los mensajes escritos a mano por el Gerente (`author=manager`) desde la última corrida, solo de conversaciones con números activos. Si no hay mensajes nuevos, no llama al modelo;
   - es incremental: estilo actual + mensajes nuevos anonimizados → estilo y notas por proveedor actualizados, más un changelog;
   - se aplica sola si pasa la validación: schema, secciones obligatorias, sin teléfonos ni RUC, largo razonable. Si no pasa, se queda el estilo actual y se crea una `Alert`;
-  - el changelog ("hoy aprendí…") se muestra en el tablero, solo como información.
+  - el changelog ("hoy aprendí…") se muestra en el dashboard, solo como información.
 - La reconstrucción completa sigue siendo el paso Estilo del onboarding (ADR 0011), que sí pasa por la revisión del Gerente.
 - `no_phone` (proveedor sin números) y `not_allowed` (tiene números, pero ninguno activo) se mantienen separados, para que el Gerente sepa qué arreglar.
 

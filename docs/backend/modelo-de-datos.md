@@ -2,9 +2,9 @@
 
 Estado: propuesta revisada el 10/10 con lo acordado entre sesiones. No hay nada implementado.
 
-Fuentes: `CLAUDE.md` y `docs/adr/`: Django + DRF (0002), Postgres (0005), monorepo (0008), API (0009), cola de turnos (0010), onboarding (0011), suscripción (0013), código en inglés (0014), sin rutas (0015), celulares en `AllowedNumber` (0016), asistente del tablero (0017, reemplaza al 0007 del Pana), Celery y Redis (0018) y estilo por usuario (0019).
+Fuentes: `CLAUDE.md` y `docs/adr/`: Django + DRF (0002), Postgres (0005), monorepo (0008), API (0009), cola de turnos (0010), onboarding (0011), suscripción (0013), código en inglés (0014), sin rutas (0015), celulares en `AllowedNumber` (0016), asistente del dashboard (0017, reemplaza al 0007 del Pana), Celery y Redis (0018) y estilo por usuario (0019).
 
-**Idioma (ADR 0014):** todo el código va en inglés: apps, modelos, campos, valores de `choices`, servicios, excepciones, URLs y claves JSON de la API. Siguen en español este documento y lo que lee una persona: `verbose_name`, los `*_display` de la API, el admin, el tablero y los mensajes de WhatsApp.
+**Idioma (ADR 0014):** todo el código va en inglés: apps, modelos, campos, valores de `choices`, servicios, excepciones, URLs y claves JSON de la API. Siguen en español este documento y lo que lee una persona: `verbose_name`, los `*_display` de la API, el admin, el dashboard y los mensajes de WhatsApp.
 
 ## Equivalencias español → inglés
 
@@ -81,17 +81,17 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `Payment.kind` | adelanto → `advance`, saldo → `balance` |
 | `Payment.status` | pendiente → `pending`, pagado → `paid` |
 | `AllowedNumber.role` | proveedor → `supplier`, equipo → `team`, gerente → `manager` |
-| `Conversation.channel` | whatsapp → `whatsapp`, simulador → `simulator`, tablero → `dashboard` (nuevo, asistente) |
+| `Conversation.channel` | whatsapp → `whatsapp`, simulador → `simulator`, dashboard → `dashboard` (nuevo, asistente) |
 | `Conversation.status` | activa → `active`, en_pausa → `paused`, cerrada → `closed` |
 | `Message.direction` | entrante → `inbound`, saliente → `outbound` |
-| `Message.author` | proveedor → `supplier`, agente → `agent`, gerente → `manager`, usuario → `user` (nuevo, persona del tablero). Se quita `sistema`. En la API del asistente sale como `role`: `user` → `user`, `agent` → `assistant` |
+| `Message.author` | proveedor → `supplier`, agente → `agent`, gerente → `manager`, usuario → `user` (nuevo, persona del dashboard). Se quita `sistema`. En la API del asistente sale como `role`: `user` → `user`, `agent` → `assistant` |
 | `Message.media_type` | imagen → `image`, audio → `audio`, documento → `document` |
 | `Message.status` | recibido → `received`, procesado → `processed`, ignorado → `ignored`, error → `error`, enviado → `sent`, fallido → `failed`. Se quita `procesando`: "escribiendo…" sale de `Turn` |
 | `Turn.reason` | mensaje → `message`, decision → `decision`, seguimiento → `follow_up`, pedido_aprobado → `purchase_order_approved` |
 | `Turn.status` | pendiente → `pending`, en_curso → `running`, hecho → `done`, error → `error` |
 | `Decision.kind` | aprobar_asignacion → `approve_assignment`, precio → `price`, terminos → `terms`, otro → `other` |
 | `Decision.status` | pendiente → `pending`, aprobada → `approved`, rechazada → `rejected`, proveedor_cambiado → `supplier_changed`, cancelada → `cancelled` |
-| `Decision.channel` | tablero → `dashboard`, asistente → `assistant` (nuevo), admin → `admin`. Se quita `pana` |
+| `Decision.channel` | dashboard → `dashboard`, asistente → `assistant` (nuevo), admin → `admin`. Se quita `pana` |
 | `Alert.kind` | pedido_estancado → `stalled_purchase_order`, retraso → `delay`, orden_en_peligro → `order_in_danger`, sin_respuesta → `no_response`, pago_pendiente → `payment_due`, instancia_caida → `instance_down`, sin_canal → `no_channel` (nuevo), turno_fallido → `turn_failed` (nuevo), refresco_estilo_fallido → `style_refresh_failed` (nuevo) |
 | `Alert.severity` | info → `info`, advertencia → `warning`, critica → `critical` |
 | `Alert.status` | abierta → `open`, reconocida → `acknowledged`, resuelta → `resolved` |
@@ -162,7 +162,7 @@ Todas con barra final (ADR 0009). Los filtros también van en inglés (`?status=
 | `/api/gerente/decisiones/<id>/` (POST) | `/api/manager/decisions/<id>/` |
 | `/api/ordenes/`, `/api/ordenes/<id>/`, `/api/ordenes/<id>/confirmar/` | `/api/orders/`, `/api/orders/<id>/`, `/api/orders/<id>/confirm/` |
 | `/api/pedidos/`, `/api/pedidos/<id>/` | `/api/purchase-orders/`, `/api/purchase-orders/<id>/` |
-| Entregas y avances desde el tablero (nuevo) | `/api/purchase-orders/<id>/deliveries/` (POST), `/api/purchase-orders/<id>/progress/` (POST, multipart con foto) |
+| Entregas y avances desde el dashboard (nuevo) | `/api/purchase-orders/<id>/deliveries/` (POST), `/api/purchase-orders/<id>/progress/` (POST, multipart con foto) |
 | `/api/pagos/<id>/pagar/` | `/api/payments/<id>/pay/` |
 | `/api/alertas/<id>/reconocer/` | `/api/alerts/<id>/acknowledge/` |
 | `/api/proveedores/`, `/api/proveedores/<id>/`, `/api/proveedores/importar/`, `/api/proveedores/autoregistro/` | `/api/suppliers/`, `/api/suppliers/<id>/`, `/api/suppliers/import/`, `/api/suppliers/self-register/` |
@@ -188,7 +188,7 @@ Se eliminan el contrato con Kenji, `notify_pana` y los `pana_notified_at`. Los a
 - Todos los modelos se crean de una vez, P0 y P1 juntos. P1 queda como lógica y endpoints, no como tablas, para que el frontend tenga el contrato completo desde el principio.
 - Las fechas del negocio usan el reloj simulado (acelerado), no la hora real. Las excepciones son los tiempos de WhatsApp y de la cola, que van en hora real.
 - Las escalaciones al Gerente son filas de `Decision`. Una decisión puede cubrir un lote de pedidos.
-- Hay dos agentes sobre la misma cola de turnos (`Turn`), uno a la vez por conversación: el de WhatsApp, que escribe por el Gerente con su estilo, y el asistente del tablero, uno por usuario y con tools según su rol (ADR 0017).
+- Hay dos agentes sobre la misma cola de turnos (`Turn`), uno a la vez por conversación: el de WhatsApp, que escribe por el Gerente con su estilo, y el asistente del dashboard, uno por usuario y con tools según su rol (ADR 0017).
 - Todo el trabajo en segundo plano corre en Celery con Redis, y `Turn` sigue siendo la fuente de verdad de la cola (ADR 0018).
 - Los mensajes de números que no están activos en la allowlist no se guardan: la instancia `corpotex` recibe todo lo que llega al número de Oscar, familia incluida.
 
@@ -335,10 +335,10 @@ erDiagram
     }
 ```
 
-- **Entrada:** `POST /api/orders/` es la API simulada del sistema de Comercial. Es idempotente por `code` y la usa el botón "Simular orden de Comercial" del tablero. `docs/api/` trae 3 payloads de ejemplo (Caja Piura, un colegio, AIDER) con productos y tallas del seed.
+- **Entrada:** `POST /api/orders/` es la API simulada del sistema de Comercial. Es idempotente por `code` y la usa el botón "Simular orden de Comercial" del dashboard. `docs/api/` trae 3 payloads de ejemplo (Caja Piura, un colegio, AIDER) con productos y tallas del seed.
 - **Desglose (`break_down_order`, paso 1 del flujo):** por cada `OrderItem`, `quantity` × `ProductMaterial.qty_per_unit`, menos `Material.stock`, da un `Requirement` de kind `material`. La costura genera uno de kind `workshop` (el matching decide si va a la planta o a un taller externo) y la tercerización completa uno de kind `finished`.
 - **Cantidad cubierta de un `Requirement`:** lo entregado por pedidos cancelados (`qty_delivered` de sus `PurchaseOrderItem`) más la `quantity` de los pedidos vivos. Así cuentan las unidades que un taller ya hizo antes de cancelar.
-- **`critical_path`** es una foto en JSON del último cálculo, para mostrarla en el tablero: `[{id, name, kind, start, end, critical, status, purchase_order_id}]`. Se recalcula cuando cambia un pedido; no hace falta una tabla de tareas.
+- **`critical_path`** es una foto en JSON del último cálculo, para mostrarla en el dashboard: `[{id, name, kind, start, end, critical, status, purchase_order_id}]`. Se recalcula cuando cambia un pedido; no hace falta una tabla de tareas.
 - **Ruta crítica (`compute_critical_path`):** la fecha de llegada de los insumos (`committed_on`, o `internal_due_on` si todavía no hay compromiso), más las etapas en planta según `Config.stage_durations`, más la costura (en planta según `stage_durations`, o en taller según su `committed_on`), más el acabado, da `estimated_on`. Si `estimated_on` pasa de `promised_on`, `risk` sube.
 - **`risk`** lo actualiza el monitor y es independiente de `status`.
 
@@ -458,7 +458,7 @@ erDiagram
 - **Consolidación:** un `PurchaseOrder` puede cubrir requerimientos de varias órdenes y marcas, porque cada `PurchaseOrderItem` apunta a su `Requirement`. Así funciona hoy la compra: un pedido por proveedor para las 3 marcas.
 - **División de un pedido grande:** un `Requirement` de 1000 polos puede repartirse en varios `PurchaseOrderItem` de talleres distintos.
 - **Planta propia:** es un `Supplier` con `is_in_house = true` y kind `workshop`, sin números. Entra al matching y al cálculo de carga como cualquier taller. Un pedido a la planta pasa de `approved` a `confirmed` sin negociación: no abre turno ni genera `no_channel`.
-- **Matching (`match_requirements`, paso 3):** usa `Rate` (precio), los puntajes cacheados de `Supplier` (cumplimiento y calidad), la carga (unidades en pedidos abiertos frente a `weekly_capacity`, calculada y no guardada) y el plazo. Crea los `PurchaseOrder` en `suggested` con `suggested_supplier`, `rationale`, `scores` y `candidates` (el ranking completo, que alimenta "cambiar proveedor" en el tablero). Después crea una `Decision` `approve_assignment` por el lote.
+- **Matching (`match_requirements`, paso 3):** usa `Rate` (precio), los puntajes cacheados de `Supplier` (cumplimiento y calidad), la carga (unidades en pedidos abiertos frente a `weekly_capacity`, calculada y no guardada) y el plazo. Crea los `PurchaseOrder` en `suggested` con `suggested_supplier`, `rationale`, `scores` y `candidates` (el ranking completo, que alimenta "cambiar proveedor" en el dashboard). Después crea una `Decision` `approve_assignment` por el lote.
 - **Colchón:** `internal_due_on` = `Order.promised_on` menos `Config.buffer_days`. Es el "5 días al proveedor cuando al cliente se le prometieron 10".
 - **Reglas de jefe (`confirm_purchase_order`):** si el precio pasa la `Rate` vigente o la fecha pasa `internal_due_on`, lanza `ManagerApprovalRequired(reason)` y la tool le dice al modelo que escale. Es idempotente: confirmar un pedido ya `confirmed` con los mismos términos devuelve OK.
 - **Cancelación (`cancel_by_supplier`):** pasa el pedido a `cancelled_by_supplier` y llama a `redistribute`. Es idempotente: si el pedido ya estaba cancelado, no redistribuye de nuevo.
@@ -475,7 +475,7 @@ erDiagram
 erDiagram
     Supplier |o--o{ AllowedNumber : "tiene 0 a n"
     AllowedNumber ||--o{ Conversation : "chatea en"
-    User |o--o| Conversation : "asistente del tablero"
+    User |o--o| Conversation : "asistente del dashboard"
     Conversation |o--o{ PurchaseOrder : "negocia"
     Conversation ||--o{ Message : "contiene"
     Conversation ||--o{ Turn : "encola"
@@ -514,7 +514,7 @@ erDiagram
         datetime sent_at "hora real de WhatsApp"
         int turn_id FK "turno que lo envio (salientes del agente)"
         json action "lo que hizo una tool del asistente"
-        json context "vista del tablero: path, view, id"
+        json context "vista del dashboard: path, view, id"
     }
     Turn {
         int conversation_id FK
@@ -534,7 +534,7 @@ erDiagram
   - El webhook nunca los acepta, y `send_text` se niega a mandarlos por WhatsApp (`NumberNotAllowed`).
   - Cuentan como canal activo, así que no disparan `no_channel`.
   - La extracción de estilo los salta: un proveedor que solo tiene números simulados sale como `no_phone`.
-  - En el tablero, el Gerente los ve como "Simulador".
+  - En el dashboard, el Gerente los ve como "Simulador".
 - **Webhook (`/webhooks/evolution/<secret>/`):** valida el secreto con comparación de tiempo constante y acepta solo `MESSAGES_UPSERT`. Descarta grupos (`@g.us`) y estados.
 - **`@lid`:** Baileys puede mandar `remoteJid` como `<id>@lid` en vez del teléfono. El webhook saca el número del campo alterno (`remoteJidAlt` o `senderPn`; se verifica con un payload real) y guarda el `lid` en `AllowedNumber`.
 - **Proveedor de la conversación:** el número (`phone` o `lid`) se busca en `AllowedNumber`. La conversación es la de ese número (`Conversation.allowed_number`), y su proveedor es `allowed_number.supplier`.
@@ -544,7 +544,7 @@ erDiagram
 - **Idempotencia:** `external_id` es único. Si Evolution reintenta, el segundo insert falla y se ignora. Los mensajes del simulador no tienen `external_id`.
 - `Conversation` de WhatsApp o del simulador es única por `(channel, allowed_number)`. Un proveedor con dos números activos tiene dos conversaciones por canal, y cada número puede tener una por WhatsApp y otra en el simulador. Un CheckConstraint obliga a que `dashboard` lleve `user` y no `allowed_number`, y los otros canales al revés.
 
-### Asistente del tablero (ADR 0017)
+### Asistente del dashboard (ADR 0017)
 
 - **Conversación:** una por usuario, con `channel = dashboard` (restricción única parcial sobre `user`). Se crea en el primer GET.
 - **`GET /api/assistant/messages/?after=<id>`** → `{typing, messages: [{id, role: user | assistant, text, action?, created_at}]}`. `role` sale de `author` (`user` → `user`, `agent` → `assistant`) y `created_at`, de `sent_at` (hora real).
@@ -662,7 +662,7 @@ erDiagram
   - en los pedidos con `next_follow_up_at <= clock.now()` que todavía no tienen la marca, marca `follow_up_requested_at` y encola un `Turn` `follow_up` en `PurchaseOrder.conversation`;
   - barre los turnos vencidos (sección 3);
   - llama a `run_monitor()`, que actualiza `risk` y abre o cierra alertas, incluida `instance_down` según `connectionState`.
-- **`GET /api/monitor/`** junta para el tablero: `clock`, `kpis`, alertas abiertas, decisiones pendientes, órdenes en peligro y las últimas 3 `redistributions` (decisiones `approve_assignment` resueltas con un pedido que tiene `redistributed_from`). Los `kpis` alimentan también el contador del menú.
+- **`GET /api/monitor/`** junta para el dashboard: `clock`, `kpis`, alertas abiertas, decisiones pendientes, órdenes en peligro y las últimas 3 `redistributions` (decisiones `approve_assignment` resueltas con un pedido que tiene `redistributed_from`). Los `kpis` alimentan también el contador del menú.
 
 ## 5. Sistema, onboarding y estilo
 
@@ -684,7 +684,7 @@ erDiagram
         text style_md
         json notes_snapshot "supplier_id a notas"
         string source "onboarding, daily, template, manual, rollback"
-        text changelog "lo que cambio; se muestra en el tablero"
+        text changelog "lo que cambio; se muestra en el dashboard"
     }
     Config {
         datetime clock_real_start
@@ -732,7 +732,7 @@ erDiagram
 
 ### Estilo por usuario y refresco diario (ADR 0019)
 
-- **`User.style_md`** es el estilo vigente. El agente de WhatsApp usa el de `Config.agent_user`; el asistente del tablero no usa estilo.
+- **`User.style_md`** es el estilo vigente. El agente de WhatsApp usa el de `Config.agent_user`; el asistente del dashboard no usa estilo.
 - **Historial:** cada cambio crea una `StyleVersion` con su `changelog` y un `notes_snapshot` (las `Supplier.notes` de ese momento). Las fuentes son `onboarding`, `daily`, `template`, `manual` (edición del Gerente) y `rollback`.
 - **Volver atrás:** `POST /api/style/versions/<id>/restore/` llama a `restore_style_version`, que crea una versión nueva `rollback`, copia de la elegida, y restaura `style_md` y `Supplier.notes`. El historial nunca se reescribe.
 - **`refresh_style(user)`:** tarea de beat a las 03:00 de Lima, en hora real, en la cola `style`.
@@ -811,7 +811,7 @@ stateDiagram-v2
     cancelled --> [*]
 ```
 
-- Mientras haya una `Decision` `pending` sobre el pedido (precio o términos), sigue en `negotiating`; el tablero lo muestra como "esperando al Gerente" (`waiting_manager`).
+- Mientras haya una `Decision` `pending` sobre el pedido (precio o términos), sigue en `negotiating`; el dashboard lo muestra como "esperando al Gerente" (`waiting_manager`).
 - Un pedido `approved` de un proveedor sin canal se queda ahí, con una `Alert` `no_channel`, hasta que el Gerente lo gestione.
 - De `declined_by_supplier` y `cancelled_by_supplier`, `redistribute` devuelve al matching lo que falta del requerimiento, y nacen pedidos nuevos con `redistributed_from`.
 
@@ -873,7 +873,7 @@ Los números (1000, 400 y 600) se fijan con el guion del pitch. El diagrama `tal
 1. `PurchaseOrder` T1 (kind `workshop`, 1000 polos para Caja Piura) está `in_progress`, con un `ProgressReport` de 400 unidades.
 2. El taller escribe que no puede seguir. El webhook guarda el `Message` y encola el turno. La tool `report_cancellation` llama a `cancel_by_supplier`: T1 pasa a `cancelled_by_supplier` y se registra la `Delivery` de las 400 que ya cosió, que la planta recoge.
 3. `redistribute(T1)`: el `Requirement` queda con 600 unidades sin cubrir. `match_requirements` las reparte entre talleres según `Rate`, capacidad, carga y puntajes, y crea T2 y T3 en `suggested`, con `redistributed_from = T1`, `rationale` y `candidates`.
-4. Se crea una `Decision` `approve_assignment` con `purchase_orders = [T2, T3]` y `detail = {before, after, proposal}`, y aparece en el Monitor y en el contador del menú del Gerente. La orden queda con `risk = in_danger` y una `Alert` `order_in_danger`. La tarjeta "Redistribución" del tablero muestra el antes y el después de la fecha estimada y del costo.
+4. Se crea una `Decision` `approve_assignment` con `purchase_orders = [T2, T3]` y `detail = {before, after, proposal}`, y aparece en el Monitor y en el contador del menú del Gerente. La orden queda con `risk = in_danger` y una `Alert` `order_in_danger`. La tarjeta "Redistribución" del dashboard muestra el antes y el después de la fecha estimada y del costo.
 5. El Gerente aprueba desde el Monitor (`POST /api/manager/decisions/<id>/ {action: "approve"}`) o pidiéndoselo a su asistente, que usa `resolve_decision` con `channel = assistant` y deja una tarjeta `action` en el chat. `approve_purchase_orders` pasa T2 y T3 a `approved`, recalcula `estimated_on`, `critical_path`, `total_amount` y `risk`, y encola un `Turn` `purchase_order_approved` en la conversación de cada taller.
 6. El agente escribe a los talleres de T2 y T3 (pasan a `negotiating`) y acuerda fechas. Con `confirm_purchase_order` quedan `confirmed`. Si la nueva `estimated_on` cumple `promised_on`, la orden sale de peligro y la alerta se resuelve.
 
@@ -900,7 +900,7 @@ Cada paso se revisa solo, en este orden:
 4. **Servicios de operaciones:** desglose, matching, ruta crítica, aprobación, confirmación con reglas de jefe, avance, cancelación y redistribución.
 5. **Mensajería:** webhook con allowlist, `send_text`, la cola de turnos con `run_turn` en Celery, `turn_state` y la API del asistente.
 6. **Gerencia:** decisiones, alertas, monitor, `tick` y los endpoints del Gerente; servicios con `actor` para las tools del asistente.
-7. **API del tablero y contrato en `docs/api/`**, con los JSON de ejemplo y los serializers por rol.
+7. **API del dashboard y contrato en `docs/api/`**, con los JSON de ejemplo y los serializers por rol.
 8. **Onboarding y estilo:** WhatsApp, alta e importación de proveedores, la tarea de extracción, el historial de versiones y `refresh_style`.
 9. **P1:** pagos, autoregistro y `POST /api/style/refresh/`.
 

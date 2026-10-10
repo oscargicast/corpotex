@@ -5,7 +5,7 @@
 
 ## Contexto
 
-El tablero tiene 4 vistas (órdenes, pedidos, monitor con alertas, proveedores y talleres), debe funcionar en móvil y escritorio. El mapa de Piura quedó fuera (ADR 0015).
+El dashboard tiene 4 vistas (órdenes, pedidos, monitor con alertas, proveedores y talleres), debe funcionar en móvil y escritorio. El mapa de Piura quedó fuera (ADR 0015).
 
 ## Decisión
 

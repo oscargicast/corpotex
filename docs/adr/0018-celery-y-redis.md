@@ -14,7 +14,7 @@ Oscar pidió que el estilo se refresque todos los días con Celery beat, con Red
 - La tarea `agent.tasks.run_turn(conversation_id)` es idempotente: toma el turno con `claim_next_turn(conversation_id)` y, si no hay ninguno, termina. Al terminar, `finish_turn` vuelve a encolarla si quedó otro turno pendiente en esa conversación.
 - El worker corre siempre en el contenedor, con el volumen de `CLAUDE_CONFIG_DIR` y el cwd fijos, porque el archivo de sesión depende de la ruta. Nunca se mezcla con corridas nativas en la Mac ni se monta el `.venv` de la Mac.
 - Todo el trabajo en segundo plano corre en Celery:
-  - Los turnos del agente de WhatsApp y del asistente del tablero (ADR 0017): `enqueue_turn` dispara una tarea con `countdown` hasta `available_at`. La tabla `Turn` sigue siendo la fuente de verdad de la cola y de la exclusividad por conversación (`select_for_update(skip_locked=True)`). Así un reintento o una tarea duplicada no corre dos turnos a la vez.
+  - Los turnos del agente de WhatsApp y del asistente del dashboard (ADR 0017): `enqueue_turn` dispara una tarea con `countdown` hasta `available_at`. La tabla `Turn` sigue siendo la fuente de verdad de la cola y de la exclusividad por conversación (`select_for_update(skip_locked=True)`). Así un reintento o una tarea duplicada no corre dos turnos a la vez.
   - El tick: beat cada ~10 s (seguimientos y monitor).
   - La extracción de estilo del onboarding y el refresco diario (ADR 0019): cola `style`, con concurrencia 1.
 - El schedule es estático en settings. No hace falta django-celery-beat.

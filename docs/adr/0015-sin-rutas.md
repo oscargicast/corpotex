@@ -14,5 +14,5 @@ No se implementan rutas: no hay modelos `Route` ni `RouteStop`, ni mapa, ni vist
 ## Consecuencias
 
 - Se quitan del modelo `Route`, `RouteStop` y todo lo que dependía de ellos: `ruta_id` en el detalle de la `Decision`, la ruta del recorrido de la demo, y las coordenadas de `Supplier` y de la planta en `Config`.
-- La tarjeta "Redistribución" del tablero muestra el antes y el después de la fecha estimada y del costo.
+- La tarjeta "Redistribución" del dashboard muestra el antes y el después de la fecha estimada y del costo.
 - En el pitch se explica por qué no hay rutas: el recojo es en la agencia. Es un criterio del jurado que queda sin cubrir a propósito.

@@ -10,7 +10,7 @@ Los docs de diseño nombraban apps, modelos, campos, estados, servicios y tools 
 ## Decisión
 
 - En inglés: todo el código. Eso incluye identificadores (apps, modelos, tablas, campos, valores de `choices`, funciones, clases, tools del agente, endpoints y claves JSON de la API), comentarios y docstrings.
-- En español: la documentación (`docs/`, `CLAUDE.md`), los textos para personas (tablero, admin, etiquetas como `verbose_name` y `status_display`, mensajes de WhatsApp y `BOSS.md`) y todo lo que lee el modelo: prompts, etiquetas XML y `RULES` del agente. Así el agente no se pasa al inglés al responder en español peruano. Las claves del JSON que devuelve el modelo van en inglés, porque las valida el código.
+- En español: la documentación (`docs/`, `CLAUDE.md`), los textos para personas (dashboard, admin, etiquetas como `verbose_name` y `status_display`, mensajes de WhatsApp y `BOSS.md`) y todo lo que lee el modelo: prompts, etiquetas XML y `RULES` del agente. Así el agente no se pasa al inglés al responder en español peruano. Las claves del JSON que devuelve el modelo van en inglés, porque las valida el código.
 
 ## Consecuencias
 

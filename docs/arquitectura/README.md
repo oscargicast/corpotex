@@ -4,7 +4,7 @@ Estado: propuesta, 2026-10-10. Lo marcado **ADR** ya está decidido (`docs/adr/`
 
 ## Resumen
 
-Un agente de WhatsApp lleva cada orden de cliente hasta que el proveedor entrega. Los proveedores escriben al número de Oscar; la instancia `corpotex` de Evolution manda cada mensaje a Django por el tunnel `corpotex.oscargicast.com`. Django lo encola en Postgres y una tarea de Celery corre el turno con Claude Agent SDK: lee el estado fresco, actualiza pedidos y responde por Evolution. Lo que es decisión de jefe aparece en el tablero Next.js, en el Monitor y en el contador del menú, y el Gerente decide ahí. El equipo ve todo en el tablero, y cada usuario tiene un asistente con tools según su rol (ADR 0017).
+Un agente de WhatsApp lleva cada orden de cliente hasta que el proveedor entrega. Los proveedores escriben al número de Oscar; la instancia `corpotex` de Evolution manda cada mensaje a Django por el tunnel `corpotex.oscargicast.com`. Django lo encola en Postgres y una tarea de Celery corre el turno con Claude Agent SDK: lee el estado fresco, actualiza pedidos y responde por Evolution. Lo que es decisión de jefe aparece en el dashboard Next.js, en el Monitor y en el contador del menú, y el Gerente decide ahí. El equipo ve todo en el dashboard, y cada usuario tiene un asistente con tools según su rol (ADR 0017).
 
 ## Diagramas
 
@@ -14,14 +14,14 @@ Abrir los `.html` en el navegador (funcionan sin servidor).
 |---|---|
 | Arquitectura completa | [diagramas/sistema/sistema.html](diagramas/sistema/sistema.html) |
 | Flujo 1: mensaje de un proveedor y turno del agente | [diagramas/turno-proveedor/turno-proveedor.html](diagramas/turno-proveedor/turno-proveedor.html) |
-| Flujo 2: escalamiento al Gerente en el tablero | [diagramas/escalamiento-gerente/escalamiento-gerente.html](diagramas/escalamiento-gerente/escalamiento-gerente.html) |
+| Flujo 2: escalamiento al Gerente en el dashboard | [diagramas/escalamiento-gerente/escalamiento-gerente.html](diagramas/escalamiento-gerente/escalamiento-gerente.html) |
 | Flujo 3 (demo): un taller cancela a mitad del pedido | [diagramas/taller-cancela/taller-cancela.html](diagramas/taller-cancela/taller-cancela.html) |
 
 Cada carpeta guarda `candidate.json` (la fuente del diagrama) y los recibos de validación de archify.
 
 Los diagramas de archify todavía usan los nombres en español de antes del ADR 0014; las equivalencias están en [docs/glosario.md](../glosario.md).
 
-El diagrama del flujo 2 todavía muestra el flujo anterior del ADR 0007, ya reemplazado. Ahora la decisión aparece en el Monitor y el Gerente la resuelve en el tablero o con su asistente (ADR 0017).
+El diagrama del flujo 2 todavía muestra el flujo anterior del ADR 0007, ya reemplazado. Ahora la decisión aparece en el Monitor y el Gerente la resuelve en el dashboard o con su asistente (ADR 0017).
 
 ## Componentes y responsabilidades
 
@@ -31,11 +31,11 @@ El diagrama del flujo 2 todavía muestra el flujo anterior del ADR 0007, ya reem
 | Evolution `personal-whatsapp` + n8n pepita | mac-mini, k3s | Flujo existente. No se toca | ADR 0001 |
 | Cloudflare Tunnel | laptop → Cloudflare | `/api`, `/admin`, `/webhooks`, `/static`, `/media` → Django :8000; el resto → Next.js :3000 | ADR 0006 |
 | Cloudflare Access | Cloudflare | Protege `evolution.oscargicast.com`; el backend entra con service token | ADR 0006 |
-| Django + DRF | laptop | API del tablero, admin (usuarios y roles), webhook, API del Gerente, motor de dominio | ADR 0002 |
+| Django + DRF | laptop | API del dashboard, admin (usuarios y roles), webhook, API del Gerente, motor de dominio | ADR 0002 |
 | Worker del agente | laptop, tareas de Celery | Toma turnos de la cola, corre el Agent SDK con nuestras tools, reloj acelerado | ADR 0004 y 0018 |
 | Postgres | laptop, Docker | Datos y cola de turnos | ADR 0005; cola en Postgres: **propuesto** |
-| Next.js | laptop | Tablero (4 vistas) y simulador de chat | ADR 0003 |
-| Asistente del tablero | laptop, tareas de Celery | Chat en el tablero para cada usuario, con tools según su rol que llaman a los mismos servicios que la API | ADR 0017 |
+| Next.js | laptop | Dashboard (4 vistas) y simulador de chat | ADR 0003 |
+| Asistente del dashboard | laptop, tareas de Celery | Chat en el dashboard para cada usuario, con tools según su rol que llaman a los mismos servicios que la API | ADR 0017 |
 | Redis + Celery (`celery-worker`, `celery-beat`) | laptop, Docker | Corre en segundo plano los turnos, el tick (~10 s), la extracción de estilo y el refresco diario `refresh_style` (03:00 Lima) | ADR 0018 y 0019 |
 | Anthropic (Claude) | nube | Modelo detrás del Agent SDK, con la suscripción de Oscar | ADR 0004 y 0013 |
 
@@ -70,13 +70,13 @@ La fuente de verdad es [`docs/backend/modelo-de-datos.md`](../backend/modelo-de-
 |---|---|---|
 | 0 | Alta de orden: Comercial registra (formulario o `POST /api/orders/`; el PDF es extra) → el motor desglosa contra inventario → Producción confirma → el motor propone proveedor con justificación → Decisión de asignación al Gerente → aprobada, el agente contacta | solo texto |
 | 1 | Mensaje de un proveedor y turno del agente | [turno-proveedor](diagramas/turno-proveedor/turno-proveedor.html) |
-| 2 | Escalamiento al Gerente en el tablero | [escalamiento-gerente](diagramas/escalamiento-gerente/escalamiento-gerente.html) |
+| 2 | Escalamiento al Gerente en el dashboard | [escalamiento-gerente](diagramas/escalamiento-gerente/escalamiento-gerente.html) |
 | 3 | Demo: un taller cancela, el sistema redistribuye y recalcula fecha y costo (sin rutas, ADR 0015) | [taller-cancela](diagramas/taller-cancela/taller-cancela.html) |
 | 4 | Reloj acelerado: cada tick revisa plazos; sin avance → turno de seguimiento; fecha estimada pasa la comprometida → orden en peligro + alerta en el Monitor | solo texto |
 
 ## API
 
-DRF con `TokenAuthentication` para el tablero (ADR 0009). El tablero llama por el mismo origen (tunnel en la demo, rewrites de Next.js en desarrollo). Todas las URLs llevan barra final. El contrato completo lo publica la sesión `backend` en `docs/api/` con drf-spectacular.
+DRF con `TokenAuthentication` para el dashboard (ADR 0009). El dashboard llama por el mismo origen (tunnel en la demo, rewrites de Next.js en desarrollo). Todas las URLs llevan barra final. El contrato completo lo publica la sesión `backend` en `docs/api/` con drf-spectacular.
 
 | Endpoint | Para | Origen |
 |---|---|---|
@@ -88,8 +88,8 @@ DRF con `TokenAuthentication` para el tablero (ADR 0009). El tablero llama por e
 | `GET /api/payments/` · `POST /api/payments/<id>/pay/` | pagos; marcar solo Gerente | propuesto |
 | `POST /api/simulator/messages/` | simulador de chat | propuesto |
 | `POST /webhooks/evolution/<secret>/` | Evolution | ADR 0006; secreto en la URL según `.env.example` |
-| `GET /api/manager/pending/` | Monitor del tablero | ADR 0017 |
-| `POST /api/manager/decisions/<id>/` con `{action: approve \| reject \| change_supplier, supplier_id?, purchase_order_id?, note?, channel?}`; idempotente, devuelve el estado nuevo | Monitor del tablero y tool `resolve_decision` del asistente | ADR 0017 |
+| `GET /api/manager/pending/` | Monitor del dashboard | ADR 0017 |
+| `POST /api/manager/decisions/<id>/` con `{action: approve \| reject \| change_supplier, supplier_id?, purchase_order_id?, note?, channel?}`; idempotente, devuelve el estado nuevo | Monitor del dashboard y tool `resolve_decision` del asistente | ADR 0017 |
 
 ## El agente
 
