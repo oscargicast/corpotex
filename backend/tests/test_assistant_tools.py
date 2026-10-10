@@ -70,11 +70,14 @@ READS = {"list_orders", "get_order", "list_purchase_orders", "get_purchase_order
         (
             "manager",
             READS
-            | {"list_pending", "list_suppliers", "get_supplier"}
+            | {"list_materials", "list_pending", "list_suppliers", "get_supplier"}
             | {"resolve_decision", "acknowledge_alert", "mark_payment_paid", "set_clock"}
             | {"suggest_suppliers"},
         ),
-        ("production", READS | {"confirm_order", "record_delivery", "record_progress"}),
+        (
+            "production",
+            READS | {"list_materials"} | {"confirm_order", "record_delivery", "record_progress"},
+        ),
         ("sales", READS),
     ],
 )
@@ -326,3 +329,20 @@ def test_suggest_suppliers_without_confirmation_refuses(monkeypatch):
     calls = install(monkeypatch)
     is_error, _ = call(conversation(), 2, "suggest_suppliers", {**SUGGEST, "confirmed": True})
     assert is_error and services(calls, "create_suggested_suppliers") == []
+
+
+def test_list_materials_filters_by_kind_in_the_api_and_by_text_here(monkeypatch):
+    install(monkeypatch)
+    seen = []
+    rows = [
+        {"sku": "TEL-201", "name": "Algodón 20/1", "available": "120.00"},
+        {"sku": "BOT-01", "name": "Botón 4 huecos", "available": "900.00"},
+    ]
+    monkeypatch.setattr(
+        assistant_tools, "api_get", fake_api({"/api/materials/": (200, rows)}, seen)
+    )
+    _, text = call(
+        conversation("production"), 1, "list_materials", {"kind": "fabric", "query": "algodón"}
+    )
+    assert seen == [("/api/materials/", {"kind": "fabric"})]
+    assert "TEL-201" in text and "BOT-01" not in text
