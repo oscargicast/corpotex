@@ -19,3 +19,4 @@ backend/media/
 __pycache__/
 node_modules/
 .next/
+celerybeat-schedule*
