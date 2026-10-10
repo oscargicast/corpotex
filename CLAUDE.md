@@ -9,7 +9,7 @@ Stack: backend Django + Django REST Framework, frontend Next.js, Postgres, agent
 ## Convenciones
 
 - Código en inglés: identificadores, comentarios, docstrings, endpoints y claves JSON (ADR 0014). Equivalencias español → inglés en `docs/glosario.md`.
-- En español: la documentación y los textos para personas (dashboard, admin, WhatsApp, `BOSS.md`).
+- En español: la documentación y los textos para personas (dashboard, admin, WhatsApp, el texto del estilo del Gerente).
 
 ## Qué construimos
 
@@ -54,7 +54,7 @@ Asistente del Gerente con 3 pasos: conectar WhatsApp (QR y webhook de la instanc
 - Clientes en la data: Caja Piura, colegios de Piura, AIDER, PIQA.
 - Por WhatsApp solo hay un proveedor real: Valeria (su número va en la allowlist). Los demás proveedores van por el simulador. Oscar no puede ser proveedor: es su propio número.
 - Plan B: simulador de chat si falla el wifi, y video de respaldo.
-- En vivo no se muestra el QR ni se corre la extracción de estilo: el onboarding se muestra ya hecho, con el `BOSS.md` precalculado (ADR 0011).
+- En vivo no se muestra el QR ni se corre la extracción de estilo: el onboarding se muestra ya hecho, con el estilo del Gerente ya extraído y aprobado (ADR 0011).
 - Orden del guion: el paso Estilo (mostrar el borrador y aprobar) va ANTES de la escena de WhatsApp. El bot usa el último estilo aprobado; si se aprueba después, el bot habla con el perfil base.
 - Dato de dolor para el pitch: al proveedor le dan 5 días cuando al cliente le prometieron 10, y aun así hay pedidos que nadie revisa hasta el día 9.
 

@@ -154,7 +154,7 @@ Armado del prompt del agente y extracción de estilo. El texto que lee el modelo
 | extracción de estilo | `extract_style(chats, since, on_progress=None, manager_names=())` |
 | parser del export `.txt` | `parse_whatsapp_export(content, manager_author, since, supplier_id=None, supplier_name=None)` |
 | contexto del turno | `persona/context.py` |
-| plantilla base del `BOSS.md` | `persona/templates/BOSS.base.md` |
+| plantilla base del estilo (el "BOSS.md" vive en `User.style_md`) | `persona/templates/style.base.md` |
 | escenarios de prueba | `persona/scenarios.yaml` |
 | modelos de la extracción | `STYLE_ANALYSIS_MODEL` (`sonnet`), `STYLE_BOSS_MODEL` (`opus`) |
 
