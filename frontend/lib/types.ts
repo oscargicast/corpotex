@@ -315,6 +315,45 @@ export interface Monitor {
 
 export type DecisionAction = "approve" | "reject" | "change_supplier";
 
+// Assistant chat (ADR 0017 and 0020).
+export type LinkKind = "order" | "purchase_order" | "decision" | "supplier";
+
+export type AssistantAction =
+  | {
+      kind: "tool";
+      tool: string;
+      status: "done" | "failed";
+      title: string;
+      summary: string;
+      links: { kind: LinkKind; id: number; code?: string }[];
+    }
+  | {
+      kind: "alert";
+      alert_ids: number[];
+      alerts: {
+        id: number;
+        kind: string;
+        kind_display: string;
+        severity: Severity;
+        order: Ref | null;
+        purchase_order: Ref | null;
+      }[];
+    };
+
+export interface AssistantMessage {
+  id: number;
+  role: "user" | "assistant";
+  text: string;
+  action: AssistantAction | null;
+  created_at: string;
+}
+
+export interface AssistantContext {
+  path: string;
+  view: string;
+  id?: number;
+}
+
 // /api/settings/claude/* (ADR 0022). The credential itself never reaches the browser.
 export interface ClaudeStatus {
   connected: boolean;

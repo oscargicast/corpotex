@@ -2,12 +2,14 @@
 
 import { LogOut, MoreHorizontal, Sparkles, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { clearSession } from "@/lib/auth";
 import { useBadges } from "@/lib/badges";
 import { isActive, type NavItem, navFor } from "@/lib/nav";
 import { ROLE_LABELS } from "@/lib/types";
+import { AssistantPanel } from "./assistant/panel";
+import { AssistantToast } from "./assistant/toast";
 import { ClaudeBanner } from "./claude-banner";
 import { Clock } from "./clock";
 import { useUser } from "./require-auth";
@@ -33,7 +35,9 @@ function logout() {
 export function Shell({ children }: { children: React.ReactNode }) {
   const user = useUser();
   const pathname = usePathname();
+  const router = useRouter();
   const badges = useBadges();
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const items = navFor(user.role);
   const pending = badges?.pending_decisions ?? 0;
   const unread = badges?.assistant_unread ?? 0;
@@ -42,6 +46,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
     const total = unread + pending;
     document.title = total ? `(${total}) Corpotex` : "Corpotex";
   }, [unread, pending]);
+
+  // Desktop opens the side panel; on a phone the assistant is its own screen.
+  function openAssistant() {
+    if (window.matchMedia("(min-width: 768px)").matches) setAssistantOpen(true);
+    else router.push("/assistant");
+  }
 
   return (
     <div className="flex min-h-dvh">
@@ -74,14 +84,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Link>
           <div className="ml-auto flex items-center gap-3">
             <Clock />
-            <Link
-              href="/assistant"
+            <button
+              type="button"
+              onClick={() => setAssistantOpen((open) => !open)}
+              aria-expanded={assistantOpen}
               className="hidden items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium hover:bg-canvas md:flex"
             >
               <Sparkles size={18} />
               <span className="hidden lg:inline">Asistente</span>
               <Count value={unread} />
-            </Link>
+            </button>
             <UserLabel name={user.first_name || user.username} role={ROLE_LABELS[user.role]} />
           </div>
         </header>
@@ -90,6 +102,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </div>
 
       <BottomNav items={items} pathname={pathname} unread={unread} pending={pending} />
+      {pathname !== "/assistant" && <AssistantPanel open={assistantOpen} onClose={() => setAssistantOpen(false)} />}
+      <AssistantToast badges={badges} chatOpen={assistantOpen || pathname === "/assistant"} onOpen={openAssistant} />
     </div>
   );
 }

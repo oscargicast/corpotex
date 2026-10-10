@@ -12,9 +12,9 @@ docker compose exec frontend pnpm typecheck
 docker compose exec frontend pnpm build
 ```
 
-## Rutas nuevas
+## Carpetas nuevas
 
-Turbopack dentro de Docker no ve las carpetas de rutas nuevas (por ejemplo `app/(dashboard)/orders/[id]/`) hasta reiniciar: `docker compose restart frontend`. Los cambios en archivos que ya existen sí recargan solos.
+Turbopack dentro de Docker no ve las carpetas nuevas (rutas como `app/(dashboard)/orders/[id]/` o componentes como `components/assistant/`) hasta reiniciar: `docker compose restart frontend`. Los cambios en archivos que ya existen sí recargan solos.
 
 ## Mocks
 

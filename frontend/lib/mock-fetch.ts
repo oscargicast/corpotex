@@ -9,6 +9,7 @@ import purchaseOrdersSeed from "@/mocks/purchase-orders.json";
 import suppliersSeed from "@/mocks/suppliers.json";
 import users from "@/mocks/users.json";
 import type {
+  AssistantMessage,
   Badges,
   ChatMessage,
   ClaudeStatus,
@@ -117,6 +118,59 @@ function supplierRoutes(route: string, body: BodyInit | null | undefined): Respo
     return json(200, number);
   }
   return null;
+}
+
+// Assistant: one thread per user, with a scripted reply after 1.5 s.
+const assistantThreads: Record<string, { messages: AssistantMessage[]; replyAt: number | null; pendingReply: AssistantMessage[] }> = {};
+
+function assistantThread(user: User) {
+  if (!assistantThreads[user.username]) {
+    const notice: AssistantMessage[] =
+      user.role === "production"
+        ? []
+        : [
+            {
+              id: 1,
+              role: "assistant",
+              text:
+                user.role === "manager"
+                  ? "Taller Sullana canceló PT-0001 con 400 de 1000 hechas. Propongo repartir 600 entre dos talleres; la orden CP-2026-0001 pasa al 27 oct."
+                  : "La orden CP-2026-0001 de Caja Piura está en peligro: la fecha estimada pasó del 24 al 27 oct.",
+              action: {
+                kind: "alert",
+                alert_ids: [31],
+                alerts: [{ id: 31, kind: "order_in_danger", kind_display: "Orden en peligro", severity: "critical", order: { id: 1, code: "CP-2026-0001" }, purchase_order: null }],
+              },
+              created_at: new Date(Date.now() - 600_000).toISOString(),
+            },
+          ];
+    assistantThreads[user.username] = { messages: notice, replyAt: null, pendingReply: [] };
+  }
+  return assistantThreads[user.username];
+}
+
+function scriptedReply(text: string, nextId: number): AssistantMessage[] {
+  const now = new Date().toISOString();
+  const say = (body: string, extra: Partial<AssistantMessage> = {}): AssistantMessage => ({ id: nextId++, role: "assistant", text: body, action: null, created_at: now, ...extra });
+  // No \b here: in JS regexes "í" is not a word character.
+  if (/^s[ií]\s*[.!]?$/i.test(text.trim())) {
+    return [
+      say("Aprobé la redistribución", {
+        action: { kind: "tool", tool: "resolve_decision", status: "done", title: "Aprobé la redistribución de CP-2026-0001", summary: "PT-0004 (350) y PT-0005 (250) quedan aprobados; el agente les escribe para acordar fecha.", links: [{ kind: "purchase_order", id: 7, code: "PT-0004" }, { kind: "purchase_order", id: 8, code: "PT-0005" }] },
+      }),
+      say("Listo. Te aviso cuando los dos talleres confirmen fecha."),
+    ];
+  }
+  if (/^no\b/i.test(text)) return [say("Entendido, no cambio nada.")];
+  if (/aprueb|redistrib/i.test(text)) return [say("¿Apruebo la redistribución de PT-0004 y PT-0005 para CP-2026-0001? (sí/no)")];
+  if (/pendiente/i.test(text)) {
+    return [
+      say(
+        "Tienes **2 decisiones**:\n\n- Redistribución de CP-2026-0001: 600 polos entre PT-0004 y PT-0005.\n- Precio de PI-0003: piden S/ 21.00 por kg, referencia S/ 19.50.\n\n| Orden | Cliente | Estimada |\n|---|---|---|\n| CP-2026-0001 | Caja Piura | 27 oct |\n| CP-2026-0002 | Colegio San José | 26 oct |",
+      ),
+    ];
+  }
+  return [say("Entendido. (Respuesta de prueba: el asistente real llega con el backend.)")];
 }
 
 function formValue(body: BodyInit | null | undefined, key: string): FormDataEntryValue | null {
@@ -319,6 +373,28 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
   if (orderMatch) {
     const order = orders.find((o) => o.id === Number(orderMatch[1]));
     return order ? json(200, orderDetailFor(order, user.role)) : json(404, { detail: "No existe." });
+  }
+  if (path.startsWith("/api/assistant/")) {
+    const thread = assistantThread(user);
+    if (thread.replyAt && Date.now() >= thread.replyAt) {
+      thread.messages.push(...thread.pendingReply);
+      thread.replyAt = null;
+      thread.pendingReply = [];
+    }
+    if (route === "GET /api/assistant/messages/") {
+      const after = Number(new URL(path, "http://mock").searchParams.get("after") ?? 0);
+      return json(200, { typing: thread.replyAt !== null, messages: thread.messages.filter((m) => m.id > after) });
+    }
+    if (route === "POST /api/assistant/messages/") {
+      const text = String(readBody(init.body).text ?? "");
+      const nextId = (thread.messages.at(-1)?.id ?? 0) + 1;
+      const mine: AssistantMessage = { id: nextId, role: "user", text, action: null, created_at: new Date().toISOString() };
+      thread.messages.push(mine);
+      thread.pendingReply = scriptedReply(text, nextId + 1);
+      thread.replyAt = Date.now() + 1500;
+      return json(201, mine);
+    }
+    if (route === "POST /api/assistant/messages/read/") return json(200, { ok: true });
   }
   if (path.startsWith("/api/suppliers/")) {
     if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
