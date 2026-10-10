@@ -1,0 +1,58 @@
+{
+  "1": {
+    "rationale": "Taller con capacidad libre para 1000 polos y buen cumplimiento histórico.",
+    "scores": { "on_time": 0.82, "price": 0.85, "load": 0.7, "quality": 0.78 },
+    "changed_by_manager": false,
+    "terms": "Entrega en planta, 50 % de adelanto por Yape.",
+    "items": [{ "id": 1, "name": "Polo piqué manga corta (costura)", "image": null, "order_code": "CP-2026-0001", "quantity": "1000.00", "unit_price": "8.50", "qty_delivered": "400.00" }],
+    "progress_reports": [
+      { "id": 2, "units_done": 400, "note": "Ya van 400 listos, mañana seguimos con las tallas L.", "photo": null, "source": "whatsapp", "reported_at": "2026-10-11T15:00:00Z" },
+      { "id": 1, "units_done": 150, "note": "Arrancamos con S y M.", "photo": null, "source": "whatsapp", "reported_at": "2026-10-09T17:20:00Z" }
+    ],
+    "payments": [
+      { "id": 1, "kind": "advance", "kind_display": "Adelanto", "amount": "4250.00", "status": "paid", "due_on": "2026-10-07", "paid_at": "2026-10-07T14:00:00Z", "method": "yape", "receipt": null },
+      { "id": 2, "kind": "balance", "kind_display": "Saldo", "amount": "4250.00", "status": "pending", "due_on": null, "paid_at": null, "method": null, "receipt": null }
+    ],
+    "paid_amount": "4250.00",
+    "pending_amount": "4250.00",
+    "conversation_id": 1,
+    "redistributed_into": [
+      { "id": 7, "code": "PT-0004", "supplier_name": "Confecciones del Norte", "quantity": 350, "status_display": "Sugerido" },
+      { "id": 8, "code": "PT-0005", "supplier_name": "Taller Castilla", "quantity": 250, "status_display": "Sugerido" }
+    ]
+  },
+  "7": {
+    "rationale": "Mejor cumplimiento (96 %) y capacidad libre para 350 esta semana.",
+    "scores": { "on_time": 0.96, "price": 0.78, "load": 0.8, "quality": 0.9 },
+    "candidates": [
+      { "supplier": { "id": 2, "name": "Confecciones del Norte" }, "score": 0.86, "scores": { "on_time": 0.96, "price": 0.78, "load": 0.8, "quality": 0.9 }, "unit_price": "8.50", "load_pct": 40, "rationale": "Mejor cumplimiento y capacidad libre." },
+      { "supplier": { "id": 3, "name": "Taller Castilla" }, "score": 0.79, "scores": { "on_time": 0.85, "price": 0.88, "load": 0.62, "quality": 0.8 }, "unit_price": "8.10", "load_pct": 58, "rationale": "Más barato, pero con más carga." },
+      { "supplier": { "id": 5, "name": "Planta propia" }, "score": 0.58, "scores": { "on_time": 0.9, "price": 0.7, "load": 0.15, "quality": 0.95 }, "unit_price": "9.20", "load_pct": 92, "rationale": "Planta casi llena hasta el 18 oct." }
+    ],
+    "changed_by_manager": false,
+    "terms": "",
+    "items": [{ "id": 7, "name": "Polo piqué manga corta (costura)", "image": null, "order_code": "CP-2026-0001", "quantity": "350.00", "unit_price": "8.50", "qty_delivered": "0.00" }],
+    "payments": [],
+    "paid_amount": "0.00",
+    "pending_amount": "0.00",
+    "conversation_id": null,
+    "decision_id": 11
+  },
+  "2": {
+    "rationale": "Único taller con experiencia en buzos escolares y capacidad para 600.",
+    "scores": { "on_time": 0.9, "price": 0.75, "load": 0.6, "quality": 0.88 },
+    "changed_by_manager": true,
+    "terms": "Entrega por partes: 300 el 17 y 300 el 21.",
+    "items": [{ "id": 2, "name": "Buzo escolar (costura)", "image": null, "order_code": "CP-2026-0002", "quantity": "600.00", "unit_price": "14.20", "qty_delivered": "0.00" }],
+    "progress_reports": [
+      { "id": 5, "units_done": 180, "note": "Primeros 180 buzos listos, foto adjunta.", "photo": null, "source": "simulator", "reported_at": "2026-10-12T11:30:00Z" }
+    ],
+    "payments": [
+      { "id": 3, "kind": "advance", "kind_display": "Adelanto", "amount": "4250.00", "status": "pending", "due_on": "2026-10-11", "paid_at": null, "method": null, "receipt": null },
+      { "id": 4, "kind": "balance", "kind_display": "Saldo", "amount": "4250.00", "status": "pending", "due_on": null, "paid_at": null, "method": null, "receipt": null }
+    ],
+    "paid_amount": "0.00",
+    "pending_amount": "8500.00",
+    "conversation_id": 2
+  }
+}

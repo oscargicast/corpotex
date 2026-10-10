@@ -1,0 +1,86 @@
+[
+  {
+    "label": "Caja Piura · 1000 prendas UNICRACK",
+    "source": "docs/api/examples/order-caja-piura.json",
+    "promised_in_days": 14,
+    "payload": {
+      "customer": "Caja Piura",
+      "brand": "UNICRACK",
+      "items": [
+        {
+          "product": "POLO-ESC-01",
+          "quantity": 1000,
+          "sizes": {
+            "S": 300,
+            "M": 400,
+            "L": 300
+          },
+          "color": "azul",
+          "customization": "embroidery",
+          "unit_price": "18.00"
+        }
+      ]
+    }
+  },
+  {
+    "label": "Colegio San Miguel de Piura · 900 prendas UNICRACK",
+    "source": "docs/api/examples/order-colegio.json",
+    "promised_in_days": 19,
+    "payload": {
+      "customer": "Colegio San Miguel de Piura",
+      "brand": "UNICRACK",
+      "items": [
+        {
+          "product": "POLO-ESC-01",
+          "quantity": 450,
+          "sizes": {
+            "8": 100,
+            "10": 120,
+            "12": 130,
+            "14": 100
+          },
+          "color": "blanco",
+          "customization": "embroidery",
+          "unit_price": "16.50"
+        },
+        {
+          "product": "BUZO-ESC-01",
+          "quantity": 450,
+          "sizes": {
+            "8": 100,
+            "10": 120,
+            "12": 130,
+            "14": 100
+          },
+          "color": "azul marino",
+          "customization": "sublimation",
+          "unit_price": "42.00"
+        }
+      ]
+    }
+  },
+  {
+    "label": "AIDER · 200 prendas NEXO",
+    "source": "docs/api/examples/order-aider.json",
+    "promised_in_days": 17,
+    "payload": {
+      "customer": "AIDER",
+      "brand": "NEXO",
+      "items": [
+        {
+          "product": "CAMISA-TRAB-01",
+          "quantity": 200,
+          "sizes": {
+            "S": 40,
+            "M": 80,
+            "L": 60,
+            "XL": 20
+          },
+          "color": "beige",
+          "customization": "embroidery",
+          "unit_price": "38.00"
+        }
+      ]
+    }
+  }
+]
