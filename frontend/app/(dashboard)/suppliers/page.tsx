@@ -141,11 +141,17 @@ function ReviewCard({ supplier, onChange }: { supplier: SupplierListItem; onChan
   }
 
   const source = detail?.source_detail;
+  // The URL comes from a web search: only http(s) becomes a link.
   let host = "";
+  let safeUrl = "";
   try {
-    host = source ? new URL(source.url).hostname : "";
+    const url = source ? new URL(source.url) : null;
+    if (url && (url.protocol === "https:" || url.protocol === "http:")) {
+      host = url.hostname;
+      safeUrl = url.href;
+    }
   } catch {
-    host = "";
+    // Not a URL: show the excerpt without a link.
   }
 
   return (
@@ -162,9 +168,9 @@ function ReviewCard({ supplier, onChange }: { supplier: SupplierListItem; onChan
       {source && (
         <blockquote className="mt-3 border-l-2 border-line pl-3 text-sm text-muted">
           {source.excerpt}
-          {host && (
-            // Found by a web search: open outside the dashboard, without the opener.
-            <a href={source.url} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-1 text-xs text-accent hover:underline">
+          {safeUrl && (
+            // Open outside the dashboard, without the opener.
+            <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-1 text-xs text-accent hover:underline">
               {host} <ExternalLink size={12} />
             </a>
           )}
