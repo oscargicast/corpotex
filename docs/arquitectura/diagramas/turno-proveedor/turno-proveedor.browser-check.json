@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "8d4f3653-5246-4cab-b59b-f750607227e5",
+  "deliveryReceiptId": "59eec17a-29dd-4371-bfed-7103ad13e66f",
   "artifact": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/turno-proveedor.html",
-    "sha256": "6c3055a6d5b70735e7847149cad9d3575a4859562def7c21c203e48e1774e1f7",
-    "bytes": 769380
+    "sha256": "ac73ded28f608541f9334799daa9d336abadbf389816c6cb3fb82f8bf8407b53",
+    "bytes": 769381
   },
   "state": {
     "detail": "read",

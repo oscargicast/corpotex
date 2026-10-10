@@ -9,8 +9,7 @@ El ADR 0004 decía que el agente se autenticaba con API key. Oscar prefiere usar
 
 ## Decisión
 
-- Oscar genera un token de larga duración con `claude setup-token` y lo guarda en `.env` como `CLAUDE_CODE_OAUTH_TOKEN`.
-- El worker del agente (Agent SDK) se lo pasa al CLI por `env=`, sin perder el aislamiento del ADR 0010: el `CLAUDE_CONFIG_DIR` propio sigue sin la config personal de Oscar.
+- La cuenta se conecta desde el dashboard (ADR 0022) y la credencial queda en el `CLAUDE_CONFIG_DIR` propio del agente, que sigue sin la config personal de Oscar (ADR 0010).
 - La extracción de estilo del onboarding (ADR 0011) también corre con Claude Code y no con la Messages API, porque esta solo acepta API key: el Agent SDK sin tools y con salida JSON validada en código.
 - Para usar la API key, basta cambiar la variable de entorno; el código no cambia.
 

@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/escalamiento-gerente/candidate.json",
-    "sha256": "e6cd65dd5de94711be9ce7ce6122c47d5661e891a50cb3ea5992e5fedcbc2a44",
-    "bytes": 36570
+    "sha256": "528abd277a6f011ec55cff15ea17666bd6a9994092f2be351b336eb3d5df19ed",
+    "bytes": 36732
   },
   "artifact": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/escalamiento-gerente/escalamiento-gerente.html",
-    "sha256": "65c7f55afbcc27e547efc9d6af32624ac057da018457027eab791cf42cbe8bd4",
-    "bytes": 774349
+    "sha256": "a04805c209d8b43d5754b5790c28c6b161949d8854e9bc180831d3d1995c0bef",
+    "bytes": 774548
   },
   "gates": {
     "validate": "pass",
@@ -43,5 +43,5 @@
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 1319
+  "durationMs": 1325
 }

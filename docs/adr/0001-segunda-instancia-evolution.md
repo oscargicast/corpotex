@@ -5,7 +5,7 @@
 
 ## Contexto
 
-El agente necesita recibir los mensajes de los proveedores (evento `MESSAGES_UPSERT`). La instancia `personal-whatsapp` (número de Oscar) tiene un solo webhook y está ocupado por un flujo personal de n8n (`pepita`), que sigue en uso y no se puede reemplazar sin ok de Oscar.
+El agente necesita recibir los mensajes de los proveedores (evento `MESSAGES_UPSERT`). La instancia `personal-whatsapp` (número de Oscar) tiene un solo webhook y está ocupado por un flujo personal de Oscar, que sigue en uso y no se puede reemplazar sin ok de Oscar.
 
 ## Decisión
 

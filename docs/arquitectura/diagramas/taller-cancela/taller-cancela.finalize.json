@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "sequence",
   "quality": "showcase",
-  "startedAt": "2026-10-10T21:33:37.868Z",
+  "startedAt": "2026-10-10T21:36:19.407Z",
   "specification": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/candidate.json",
-    "sha256": "05849bbc7c187cdca332e479a07129b1124b609993a30c3854f73e900ba68466",
-    "bytes": 35814
+    "sha256": "3e7f363dd88b4a86af2e0a9da88e3de04e0427d061826baf1cedd25092e24353",
+    "bytes": 36153
   },
   "artifact": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/taller-cancela.html",
-    "sha256": "fbc55638579bd4c73733cb5ff145195ff3a9ecbf76a24d5cc34b67f5f2b842ee",
-    "bytes": 771741
+    "sha256": "9af8e062da2524165ecb65dfeead51d03ab7c8c99096237310ccdc2d503e1697",
+    "bytes": 772762
   },
   "stages": {
     "validate": {
@@ -38,8 +38,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "05849bbc7c187cdca332e479a07129b1124b609993a30c3854f73e900ba68466",
-          "bytes": 35814
+          "sha256": "3e7f363dd88b4a86af2e0a9da88e3de04e0427d061826baf1cedd25092e24353",
+          "bytes": 36153
         },
         "validation": {
           "checksPassed": 9,
@@ -54,7 +54,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 197,
+      "durationMs": 214,
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -68,19 +68,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "4b1388e3-c76e-447f-a584-22d916502278",
+        "receiptId": "1f0b3523-beb1-41f2-83b7-7306a51065d2",
         "ok": true,
         "command": "deliver",
         "type": "sequence",
         "input": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/candidate.json",
         "output": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/taller-cancela.html",
         "specification": {
-          "sha256": "05849bbc7c187cdca332e479a07129b1124b609993a30c3854f73e900ba68466",
-          "bytes": 35814
+          "sha256": "3e7f363dd88b4a86af2e0a9da88e3de04e0427d061826baf1cedd25092e24353",
+          "bytes": 36153
         },
         "artifact": {
-          "sha256": "fbc55638579bd4c73733cb5ff145195ff3a9ecbf76a24d5cc34b67f5f2b842ee",
-          "bytes": 771741
+          "sha256": "9af8e062da2524165ecb65dfeead51d03ab7c8c99096237310ccdc2d503e1697",
+          "bytes": 772762
         },
         "validation": {
           "checksPassed": 9,
@@ -106,7 +106,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 100,
+      "durationMs": 105,
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -118,8 +118,8 @@
         "ok": true,
         "file": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/taller-cancela.html",
         "artifact": {
-          "sha256": "fbc55638579bd4c73733cb5ff145195ff3a9ecbf76a24d5cc34b67f5f2b842ee",
-          "bytes": 771741
+          "sha256": "9af8e062da2524165ecb65dfeead51d03ab7c8c99096237310ccdc2d503e1697",
+          "bytes": 772762
         },
         "checks": [
           {
@@ -219,11 +219,11 @@
             "measured": true,
             "columnFit": "spread",
             "participantCount": 7,
-            "occupiedRight": 880,
+            "occupiedRight": 902.3,
             "viewBoxLeft": 0,
             "canvasWidth": 920,
-            "emptyRightPx": 40,
-            "emptyRightRatio": 0.043,
+            "emptyRightPx": 17.7,
+            "emptyRightRatio": 0.019,
             "typicalParticipantWidth": 90,
             "reviewSuggested": false
           },
@@ -243,18 +243,18 @@
             },
             "minimumSourceTextPx": 7,
             "minimumProjectedTextPx": 7,
-            "semanticTextCount": 33
+            "semanticTextCount": 34
           },
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "4b1388e3-c76e-447f-a584-22d916502278"
+        "deliveryReceiptId": "1f0b3523-beb1-41f2-83b7-7306a51065d2"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 900,
+      "durationMs": 905,
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -272,11 +272,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "4b1388e3-c76e-447f-a584-22d916502278",
+        "deliveryReceiptId": "1f0b3523-beb1-41f2-83b7-7306a51065d2",
         "artifact": {
           "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/taller-cancela.html",
-          "sha256": "fbc55638579bd4c73733cb5ff145195ff3a9ecbf76a24d5cc34b67f5f2b842ee",
-          "bytes": 771741
+          "sha256": "9af8e062da2524165ecb65dfeead51d03ab7c8c99096237310ccdc2d503e1697",
+          "bytes": 772762
         },
         "state": {
           "detail": "read",
@@ -298,7 +298,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 931,
+              "scrollHeight": 954,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -313,9 +313,9 @@
                 "bodyPaddingPx": 12,
                 "headerPx": 68,
                 "diagramChromePx": 78,
-                "svgPx": 772,
+                "svgPx": 796,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
               "minimumProjectedNodeTextPx": 6.003260869565217,
@@ -348,13 +348,13 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1000,
+              "scrollHeight": 1020,
               "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
               "readerLayout": "adaptive",
-              "readerOverflow": null,
+              "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
               "readerWidth": 960,
@@ -363,9 +363,9 @@
                 "bodyPaddingPx": 64,
                 "headerPx": 76,
                 "diagramChromePx": 84,
-                "svgPx": 772,
+                "svgPx": 796,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
               "minimumProjectedNodeTextPx": 6.003260869565217,
@@ -408,19 +408,19 @@
               "readerFit": "intrinsic-height",
               "ok": true,
               "readerWidth": 960,
-              "diagramWidth": 863,
+              "diagramWidth": 837,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 76,
                 "diagramChromePx": 84,
                 "svgPx": 844,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
-              "minimumProjectedNodeTextPx": 6.566304347826087,
-              "minimumProjectedNonEdgeTextPx": 6.566304347826087,
-              "minimumProjectedEdgeTextPx": 10.318478260869565,
+              "minimumProjectedNodeTextPx": 6.368478260869566,
+              "minimumProjectedNonEdgeTextPx": 6.368478260869566,
+              "minimumProjectedEdgeTextPx": 10.007608695652173,
               "minimumProjectedNodeText": "cancela a mitad",
               "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
@@ -457,15 +457,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1156,
-              "diagramWidth": 1106,
+              "readerWidth": 1123,
+              "diagramWidth": 1073,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
                 "diagramChromePx": 94,
                 "svgPx": 1082,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
               "minimumProjectedNodeTextPx": 7,
@@ -551,7 +551,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 931,
+              "scrollHeight": 954,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -566,9 +566,9 @@
                 "bodyPaddingPx": 12,
                 "headerPx": 68,
                 "diagramChromePx": 78,
-                "svgPx": 772,
+                "svgPx": 796,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
               "minimumProjectedNodeTextPx": 6.003260869565217,
@@ -601,13 +601,13 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1000,
+              "scrollHeight": 1020,
               "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
               "readerLayout": "adaptive",
-              "readerOverflow": null,
+              "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
               "readerWidth": 960,
@@ -616,9 +616,9 @@
                 "bodyPaddingPx": 64,
                 "headerPx": 76,
                 "diagramChromePx": 84,
-                "svgPx": 772,
+                "svgPx": 796,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
               "minimumProjectedNodeTextPx": 6.003260869565217,
@@ -661,19 +661,19 @@
               "readerFit": "intrinsic-height",
               "ok": true,
               "readerWidth": 960,
-              "diagramWidth": 863,
+              "diagramWidth": 837,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 76,
                 "diagramChromePx": 84,
                 "svgPx": 844,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
-              "minimumProjectedNodeTextPx": 6.566304347826087,
-              "minimumProjectedNonEdgeTextPx": 6.566304347826087,
-              "minimumProjectedEdgeTextPx": 10.318478260869565,
+              "minimumProjectedNodeTextPx": 6.368478260869566,
+              "minimumProjectedNonEdgeTextPx": 6.368478260869566,
+              "minimumProjectedEdgeTextPx": 10.007608695652173,
               "minimumProjectedNodeText": "cancela a mitad",
               "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
@@ -710,15 +710,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1156,
-              "diagramWidth": 1106,
+              "readerWidth": 1123,
+              "diagramWidth": 1073,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
                 "diagramChromePx": 94,
                 "svgPx": 1082,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
               "minimumProjectedNodeTextPx": 7,
@@ -756,7 +756,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 931,
+              "scrollHeight": 954,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -771,9 +771,9 @@
                 "bodyPaddingPx": 12,
                 "headerPx": 68,
                 "diagramChromePx": 78,
-                "svgPx": 772,
+                "svgPx": 796,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
               "minimumProjectedNodeTextPx": 6.003260869565217,
@@ -806,13 +806,13 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1000,
+              "scrollHeight": 1020,
               "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
               "readerLayout": "adaptive",
-              "readerOverflow": null,
+              "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
               "readerWidth": 960,
@@ -821,9 +821,9 @@
                 "bodyPaddingPx": 64,
                 "headerPx": 76,
                 "diagramChromePx": 84,
-                "svgPx": 772,
+                "svgPx": 796,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
               "minimumProjectedNodeTextPx": 6.003260869565217,
@@ -866,19 +866,19 @@
               "readerFit": "intrinsic-height",
               "ok": true,
               "readerWidth": 960,
-              "diagramWidth": 863,
+              "diagramWidth": 837,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 76,
                 "diagramChromePx": 84,
                 "svgPx": 844,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
-              "minimumProjectedNodeTextPx": 6.566304347826087,
-              "minimumProjectedNonEdgeTextPx": 6.566304347826087,
-              "minimumProjectedEdgeTextPx": 10.318478260869565,
+              "minimumProjectedNodeTextPx": 6.368478260869566,
+              "minimumProjectedNonEdgeTextPx": 6.368478260869566,
+              "minimumProjectedEdgeTextPx": 10.007608695652173,
               "minimumProjectedNodeText": "cancela a mitad",
               "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
@@ -915,15 +915,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1156,
-              "diagramWidth": 1106,
+              "readerWidth": 1123,
+              "diagramWidth": 1073,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
                 "diagramChromePx": 94,
                 "svgPx": 1082,
                 "cardsPx": 0,
-                "viewBoxHeight": 900
+                "viewBoxHeight": 928
               },
               "viewBoxWidth": 920,
               "minimumProjectedNodeTextPx": 7,
@@ -970,8 +970,8 @@
     "browserCheckReceipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/taller-cancela.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-10T21:33:39.214Z",
-  "durationMs": 1346,
+  "finishedAt": "2026-10-10T21:36:20.791Z",
+  "durationMs": 1383,
   "update": {
     "status": "current",
     "installedVersion": "3.0.1",

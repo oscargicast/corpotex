@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/candidate.json",
-    "sha256": "f02dd2b6e03d3a8526209c8e72e86394f2981d31eb1ecd9a2400a5316999a1d3",
-    "bytes": 35696
+    "sha256": "c9cc2764750e78e0cd3ff1de63550a3592dc4b1e62133fe2f17f9b5c726fa511",
+    "bytes": 35697
   },
   "artifact": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/turno-proveedor.html",
-    "sha256": "6c3055a6d5b70735e7847149cad9d3575a4859562def7c21c203e48e1774e1f7",
-    "bytes": 769380
+    "sha256": "ac73ded28f608541f9334799daa9d336abadbf389816c6cb3fb82f8bf8407b53",
+    "bytes": 769381
   },
   "gates": {
     "validate": "pass",
@@ -43,5 +43,5 @@
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 1486
+  "durationMs": 1419
 }

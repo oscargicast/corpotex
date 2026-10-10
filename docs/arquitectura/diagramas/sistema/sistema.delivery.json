@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "receiptId": "6c8d09d7-49d3-4c73-827e-53c5e03bd202",
+  "receiptId": "cfc60b58-0c15-47c7-8bfa-f05c42fd73e7",
   "status": "current",
   "command": "deliver",
   "type": "architecture",
   "input": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/candidate.json",
   "output": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
   "specification": {
-    "sha256": "a900ba7279951a06faee8d2a8c18a38fb1655dfd5e218fb33d0a4c6013752a33",
-    "bytes": 37257
+    "sha256": "30d3ce44b5f6c37d92761b3b51e2ff2bc6ef022b3d4150d1b4b78c68559750a0",
+    "bytes": 37337
   },
   "artifact": {
-    "sha256": "2aa41517c9f8b22a9acd7c21a0d21c705b0f8f49505badf1ad09e4d24a5381b8",
-    "bytes": 780825
+    "sha256": "b0623ce1a7b8ae47cb46cb5de86eec47a57c310c60b4fd5559a4e71798e49eaa",
+    "bytes": 780919
   }
 }

@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/candidate.json",
-    "sha256": "05849bbc7c187cdca332e479a07129b1124b609993a30c3854f73e900ba68466",
-    "bytes": 35814
+    "sha256": "3e7f363dd88b4a86af2e0a9da88e3de04e0427d061826baf1cedd25092e24353",
+    "bytes": 36153
   },
   "artifact": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/taller-cancela.html",
-    "sha256": "fbc55638579bd4c73733cb5ff145195ff3a9ecbf76a24d5cc34b67f5f2b842ee",
-    "bytes": 771741
+    "sha256": "9af8e062da2524165ecb65dfeead51d03ab7c8c99096237310ccdc2d503e1697",
+    "bytes": 772762
   },
   "gates": {
     "validate": "pass",
@@ -43,5 +43,5 @@
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 1346
+  "durationMs": 1383
 }

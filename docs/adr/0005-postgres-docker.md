@@ -15,4 +15,4 @@ Postgres levantado con docker compose.
 
 - Sin bloqueos por escrituras concurrentes, a diferencia de SQLite.
 - Cada integrante levanta su propia BD local; la data de demo se carga con un script de seed.
-- docker compose también levanta `redis`, `celery-worker` y `celery-beat` (ADR 0018).
+- docker compose, en la raíz del repo, también levanta `redis`, `celery-worker`, `celery-beat` y `frontend` (ADR 0018 y 0023).

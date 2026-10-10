@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "sequence",
   "quality": "showcase",
-  "startedAt": "2026-10-10T21:33:34.541Z",
+  "startedAt": "2026-10-10T21:36:16.288Z",
   "specification": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/candidate.json",
-    "sha256": "f02dd2b6e03d3a8526209c8e72e86394f2981d31eb1ecd9a2400a5316999a1d3",
-    "bytes": 35696
+    "sha256": "c9cc2764750e78e0cd3ff1de63550a3592dc4b1e62133fe2f17f9b5c726fa511",
+    "bytes": 35697
   },
   "artifact": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/turno-proveedor.html",
-    "sha256": "6c3055a6d5b70735e7847149cad9d3575a4859562def7c21c203e48e1774e1f7",
-    "bytes": 769380
+    "sha256": "ac73ded28f608541f9334799daa9d336abadbf389816c6cb3fb82f8bf8407b53",
+    "bytes": 769381
   },
   "stages": {
     "validate": {
@@ -38,8 +38,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "f02dd2b6e03d3a8526209c8e72e86394f2981d31eb1ecd9a2400a5316999a1d3",
-          "bytes": 35696
+          "sha256": "c9cc2764750e78e0cd3ff1de63550a3592dc4b1e62133fe2f17f9b5c726fa511",
+          "bytes": 35697
         },
         "validation": {
           "checksPassed": 9,
@@ -54,7 +54,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 184,
+      "durationMs": 200,
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -68,19 +68,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "8d4f3653-5246-4cab-b59b-f750607227e5",
+        "receiptId": "59eec17a-29dd-4371-bfed-7103ad13e66f",
         "ok": true,
         "command": "deliver",
         "type": "sequence",
         "input": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/candidate.json",
         "output": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/turno-proveedor.html",
         "specification": {
-          "sha256": "f02dd2b6e03d3a8526209c8e72e86394f2981d31eb1ecd9a2400a5316999a1d3",
-          "bytes": 35696
+          "sha256": "c9cc2764750e78e0cd3ff1de63550a3592dc4b1e62133fe2f17f9b5c726fa511",
+          "bytes": 35697
         },
         "artifact": {
-          "sha256": "6c3055a6d5b70735e7847149cad9d3575a4859562def7c21c203e48e1774e1f7",
-          "bytes": 769380
+          "sha256": "ac73ded28f608541f9334799daa9d336abadbf389816c6cb3fb82f8bf8407b53",
+          "bytes": 769381
         },
         "validation": {
           "checksPassed": 9,
@@ -106,7 +106,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 91,
+      "durationMs": 101,
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -118,8 +118,8 @@
         "ok": true,
         "file": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/turno-proveedor.html",
         "artifact": {
-          "sha256": "6c3055a6d5b70735e7847149cad9d3575a4859562def7c21c203e48e1774e1f7",
-          "bytes": 769380
+          "sha256": "ac73ded28f608541f9334799daa9d336abadbf389816c6cb3fb82f8bf8407b53",
+          "bytes": 769381
         },
         "checks": [
           {
@@ -248,13 +248,13 @@
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "8d4f3653-5246-4cab-b59b-f750607227e5"
+        "deliveryReceiptId": "59eec17a-29dd-4371-bfed-7103ad13e66f"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1032,
+      "durationMs": 968,
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -272,11 +272,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "8d4f3653-5246-4cab-b59b-f750607227e5",
+        "deliveryReceiptId": "59eec17a-29dd-4371-bfed-7103ad13e66f",
         "artifact": {
           "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/turno-proveedor.html",
-          "sha256": "6c3055a6d5b70735e7847149cad9d3575a4859562def7c21c203e48e1774e1f7",
-          "bytes": 769380
+          "sha256": "ac73ded28f608541f9334799daa9d336abadbf389816c6cb3fb82f8bf8407b53",
+          "bytes": 769381
         },
         "state": {
           "detail": "read",
@@ -970,8 +970,8 @@
     "browserCheckReceipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/turno-proveedor/turno-proveedor.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-10T21:33:36.028Z",
-  "durationMs": 1486,
+  "finishedAt": "2026-10-10T21:36:17.707Z",
+  "durationMs": 1419,
   "update": {
     "status": "current",
     "installedVersion": "3.0.1",

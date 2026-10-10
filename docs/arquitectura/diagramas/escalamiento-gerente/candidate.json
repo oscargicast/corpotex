@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "sequence",
   "meta": {
-    "title": "Flujo 2 · escalamiento al Gerente en el tablero",
+    "title": "Flujo 2 · escalamiento al Gerente en el dashboard",
     "output": "docs/arquitectura/diagramas/escalamiento-gerente/escalamiento-gerente.html",
     "column_fit": "spread",
     "quality_profile": "showcase",
@@ -483,8 +483,8 @@
     {
       "id": "dash",
       "type": "frontend",
-      "label": "Tablero",
-      "sublabel": "Monitor · chat"
+      "label": "Dashboard",
+      "sublabel": "Monitor · asistente"
     },
     {
       "id": "manager",
@@ -503,7 +503,7 @@
     {
       "from": 280,
       "to": 368,
-      "label": "Aviso en el tablero"
+      "label": "Aviso en el dashboard"
     },
     {
       "from": 394,
@@ -552,8 +552,8 @@
       "from": "dash",
       "to": "web",
       "y": 300,
-      "label": "GET /api/monitor/",
-      "note": "polling cada 3 s; sin websockets"
+      "label": "GET /api/me/badges/ · /api/monitor/",
+      "note": "polling: contadores cada 5 s, vistas cada 3 s"
     },
     {
       "id": "pending",
@@ -567,7 +567,7 @@
       "from": "web",
       "to": "dash",
       "y": 356,
-      "label": "Decision en el Monitor + contador del menú",
+      "label": "contador del menú + Decision en el Monitor",
       "variant": "return"
     },
     {
@@ -584,7 +584,7 @@
       "y": 442,
       "label": "POST /api/manager/decisions/<id>/",
       "variant": "security",
-      "note": "{action: approve}; idempotente; channel dashboard"
+      "note": "{action: approve}; idempotente; solo manager"
     },
     {
       "id": "resolve-api",
@@ -593,7 +593,7 @@
       "y": 470,
       "label": "resolve_decision → enqueue_turn",
       "variant": "emphasis",
-      "note": "require_role manager; Turn decision en la conversación del proveedor"
+      "note": "require_role manager; encola un Turn decision en la conversación del proveedor"
     },
     {
       "id": "ask-assistant",
@@ -649,7 +649,7 @@
       "y": 696,
       "label": "resolve_decision(confirmed=true)",
       "variant": "security",
-      "note": "ejecuta solo si coincide con pending_action; channel assistant; también encola el Turn"
+      "note": "ejecuta solo si coincide con pending_action; también encola el Turn decision"
     },
     {
       "id": "action-card",
@@ -748,8 +748,9 @@
       "dot": "amber",
       "title": "Dónde lo ve el Gerente (ADR 0017)",
       "items": [
-        "Las decisiones pendientes aparecen en el Monitor y en el contador del menú",
+        "Las decisiones pendientes aparecen en el Monitor y en el contador del menú (/api/me/badges/)",
         "El Monitor usa /api/manager/pending/ y /api/manager/decisions/<id>/",
+        "Si sigue pendiente N horas simuladas, el asistente se lo recuerda (decision_pending, ADR 0020)",
         "Reemplaza al flujo del ADR 0007"
       ]
     },

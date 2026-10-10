@@ -727,7 +727,7 @@
       "title": "Celery y Claude",
       "items": [
         "run_turn es idempotente: la tabla Turn decide qué corre (ADR 0018)",
-        "Agent SDK con CLAUDE_CODE_OAUTH_TOKEN, sin archivos ni bash (ADR 0013)",
+        "Agent SDK con la suscripción de Oscar, sin archivos ni bash (ADR 0013)",
         "Si es decisión de jefe, escala al Gerente: ver flujo 2"
       ]
     }

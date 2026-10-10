@@ -24,12 +24,12 @@ Cada carpeta guarda `candidate.json` (la fuente del diagrama) y los recibos de v
 | Componente | Dónde corre | Responsabilidad | Origen |
 |---|---|---|---|
 | Evolution `corpotex` | mac-mini, k3s | Recibe todo lo del número de Oscar y manda `MESSAGES_UPSERT` al webhook; envía con `sendText` | ADR 0001 |
-| Evolution `personal-whatsapp` + n8n pepita | mac-mini, k3s | Flujo existente. No se toca | ADR 0001 |
+| Evolution `personal-whatsapp` | mac-mini, k3s | Instancia personal con su propio webhook. No se toca | ADR 0001 |
 | Cloudflare Tunnel | laptop → Cloudflare | `/api`, `/admin`, `/webhooks`, `/static`, `/media` → Django :8000; el resto → Next.js :3000 | ADR 0006 |
 | Cloudflare Access | Cloudflare | Protege `evolution.oscargicast.com`; el backend entra con service token | ADR 0006 |
 | Django + DRF | laptop | API del dashboard, admin (usuarios y roles), webhook, API del Gerente, motor de dominio | ADR 0002 |
 | Worker del agente | laptop, tareas de Celery | Toma turnos de la cola, corre el Agent SDK con nuestras tools, reloj acelerado | ADR 0004 y 0018 |
-| Postgres | laptop, Docker | Datos y cola de turnos | ADR 0005; cola en Postgres: **propuesto** |
+| Postgres | laptop, Docker | Datos y cola de turnos (`Turn`) | ADR 0005, 0010 y 0018 |
 | Next.js | laptop | Dashboard (4 vistas) y simulador de chat | ADR 0003 |
 | Asistente del dashboard | laptop, tareas de Celery | Chat en el dashboard para cada usuario, con tools según su rol que llaman a los mismos servicios que la API | ADR 0017 |
 | Redis + Celery (`celery-worker`, `celery-beat`) | laptop, Docker | Corre en segundo plano los turnos, el tick (~10 s), la extracción de estilo y el refresco diario `refresh_style` (03:00 Lima) | ADR 0018 y 0019 |
@@ -85,7 +85,7 @@ DRF con `TokenAuthentication` para el dashboard (ADR 0009). El dashboard llama p
 | `POST /api/simulator/messages/` | simulador de chat | propuesto |
 | `POST /webhooks/evolution/<secret>/` | Evolution | ADR 0006; secreto en la URL según `.env.example` |
 | `GET /api/manager/pending/` | Monitor del dashboard | ADR 0017 |
-| `POST /api/manager/decisions/<id>/` con `{action: approve \| reject \| change_supplier, supplier_id?, purchase_order_id?, note?, channel?}`; idempotente, devuelve el estado nuevo | Monitor del dashboard y tool `resolve_decision` del asistente | ADR 0017 |
+| `POST /api/manager/decisions/<id>/` con `{action: approve \| reject \| change_supplier, supplier_id?, purchase_order_id?, note?}`; idempotente, devuelve el estado nuevo | Monitor del dashboard y tool `resolve_decision` del asistente | ADR 0017 |
 
 ## El agente
 

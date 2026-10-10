@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "sequence",
   "quality": "showcase",
-  "startedAt": "2026-10-10T21:33:36.288Z",
+  "startedAt": "2026-10-10T21:36:17.887Z",
   "specification": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/escalamiento-gerente/candidate.json",
-    "sha256": "e6cd65dd5de94711be9ce7ce6122c47d5661e891a50cb3ea5992e5fedcbc2a44",
-    "bytes": 36570
+    "sha256": "528abd277a6f011ec55cff15ea17666bd6a9994092f2be351b336eb3d5df19ed",
+    "bytes": 36732
   },
   "artifact": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/escalamiento-gerente/escalamiento-gerente.html",
-    "sha256": "65c7f55afbcc27e547efc9d6af32624ac057da018457027eab791cf42cbe8bd4",
-    "bytes": 774349
+    "sha256": "a04805c209d8b43d5754b5790c28c6b161949d8854e9bc180831d3d1995c0bef",
+    "bytes": 774548
   },
   "stages": {
     "validate": {
@@ -38,8 +38,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "e6cd65dd5de94711be9ce7ce6122c47d5661e891a50cb3ea5992e5fedcbc2a44",
-          "bytes": 36570
+          "sha256": "528abd277a6f011ec55cff15ea17666bd6a9994092f2be351b336eb3d5df19ed",
+          "bytes": 36732
         },
         "validation": {
           "checksPassed": 9,
@@ -54,7 +54,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 197,
+      "durationMs": 202,
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -68,19 +68,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "186fc642-60e8-4b6f-9fd9-4fbb14bd18d9",
+        "receiptId": "b2126f2f-0beb-4f71-b833-a7f98bd8ec05",
         "ok": true,
         "command": "deliver",
         "type": "sequence",
         "input": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/escalamiento-gerente/candidate.json",
         "output": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/escalamiento-gerente/escalamiento-gerente.html",
         "specification": {
-          "sha256": "e6cd65dd5de94711be9ce7ce6122c47d5661e891a50cb3ea5992e5fedcbc2a44",
-          "bytes": 36570
+          "sha256": "528abd277a6f011ec55cff15ea17666bd6a9994092f2be351b336eb3d5df19ed",
+          "bytes": 36732
         },
         "artifact": {
-          "sha256": "65c7f55afbcc27e547efc9d6af32624ac057da018457027eab791cf42cbe8bd4",
-          "bytes": 774349
+          "sha256": "a04805c209d8b43d5754b5790c28c6b161949d8854e9bc180831d3d1995c0bef",
+          "bytes": 774548
         },
         "validation": {
           "checksPassed": 9,
@@ -106,7 +106,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 103,
+      "durationMs": 107,
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -118,8 +118,8 @@
         "ok": true,
         "file": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/escalamiento-gerente/escalamiento-gerente.html",
         "artifact": {
-          "sha256": "65c7f55afbcc27e547efc9d6af32624ac057da018457027eab791cf42cbe8bd4",
-          "bytes": 774349
+          "sha256": "a04805c209d8b43d5754b5790c28c6b161949d8854e9bc180831d3d1995c0bef",
+          "bytes": 774548
         },
         "checks": [
           {
@@ -248,13 +248,13 @@
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "186fc642-60e8-4b6f-9fd9-4fbb14bd18d9"
+        "deliveryReceiptId": "b2126f2f-0beb-4f71-b833-a7f98bd8ec05"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 872,
+      "durationMs": 862,
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -272,11 +272,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "186fc642-60e8-4b6f-9fd9-4fbb14bd18d9",
+        "deliveryReceiptId": "b2126f2f-0beb-4f71-b833-a7f98bd8ec05",
         "artifact": {
           "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/escalamiento-gerente/escalamiento-gerente.html",
-          "sha256": "65c7f55afbcc27e547efc9d6af32624ac057da018457027eab791cf42cbe8bd4",
-          "bytes": 774349
+          "sha256": "a04805c209d8b43d5754b5790c28c6b161949d8854e9bc180831d3d1995c0bef",
+          "bytes": 774548
         },
         "state": {
           "detail": "read",
@@ -298,7 +298,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 995,
+              "scrollHeight": 996,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -348,7 +348,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1061,
+              "scrollHeight": 1062,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -551,7 +551,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 995,
+              "scrollHeight": 996,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -601,7 +601,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1061,
+              "scrollHeight": 1062,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -756,7 +756,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 995,
+              "scrollHeight": 996,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -806,7 +806,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1061,
+              "scrollHeight": 1062,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -970,8 +970,8 @@
     "browserCheckReceipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/escalamiento-gerente/escalamiento-gerente.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-10T21:33:37.608Z",
-  "durationMs": 1319,
+  "finishedAt": "2026-10-10T21:36:19.213Z",
+  "durationMs": 1325,
   "update": {
     "status": "current",
     "installedVersion": "3.0.1",

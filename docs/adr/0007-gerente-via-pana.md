@@ -19,7 +19,7 @@ El Gerente tiene un Pana (en la demo, Kenji) con el trick `com.oscar.corpotex`, 
 
 - Kenji arma e instala el trick en su servidor a partir de nuestra spec. Nosotros entregamos el contrato de la API: endpoints, payloads de ejemplo y estados.
 - Consulta: el trick llama `GET /api/manager/pending/` por la tailnet (laptop y servidor de Kenji). Django debe escuchar en `0.0.0.0:8000`, no en `127.0.0.1`.
-- Decisión: el trick llama `POST /api/manager/decisions/<id>/` con `{action: approve|reject|change_supplier, supplier_id?, purchase_order_id?, note?, channel?}`. Debe devolver el estado nuevo y ser idempotente (si llega dos veces, no duplica).
+- Decisión: el trick llama `POST /api/manager/decisions/<id>/` con `{action: approve|reject|change_supplier, supplier_id?, purchase_order_id?, note?}`. Debe devolver el estado nuevo y ser idempotente (si llega dos veces, no duplica).
 - Notificaciones: el backend hace `POST /incoming` al bridge de Kenji con `source: "corpotex"` y un texto con prefijo `[Corpotex]` más un JSON `{kind, id, summary}`. Kenji distingue por `source`.
 - Credenciales: Kenji guarda el token del Gerente en el estado privado del trick, nunca en el repo. Para las notificaciones prefiere un token del bridge propio de Corpotex, no el personal de Oscar.
 

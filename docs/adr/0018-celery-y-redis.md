@@ -9,7 +9,7 @@ Oscar pidió que el estilo se refresque todos los días con Celery beat, con Red
 
 ## Decisión
 
-- docker compose (`infra/docker-compose.yml`) levanta `postgres`, `redis`, `web` (Django en `0.0.0.0:8000`), `celery-worker` y `celery-beat`, todos con la misma imagen (`backend/Dockerfile`). Next.js corre en el host.
+- docker compose, en la raíz del repo (ADR 0023), levanta `postgres`, `redis`, `web` (Django en `0.0.0.0:8000`), `celery-worker`, `celery-beat` y `frontend` (Next.js).
 - Un solo `celery-worker` (pool prefork; gevent y eventlet rompen los subprocesos) con las colas `turns`, `periodic` y `style`, `-c 5`, `acks_late` y `prefetch=1`. Los turnos tienen `soft_time_limit` de ~180 s. La cola `style` corre una tarea a la vez gracias a un lock en la BD. Si en las pruebas el tick se atrasa detrás de los turnos (con el reloj acelerado, un minuto es un día), se separa un contenedor `celery-periodic`.
 - La tarea `agent.tasks.run_turn(conversation_id)` es idempotente: toma el turno con `claim_next_turn(conversation_id)` y, si no hay ninguno, termina. Al terminar, `finish_turn` vuelve a encolarla si quedó otro turno pendiente en esa conversación.
 - El worker corre siempre en el contenedor, con el volumen de `CLAUDE_CONFIG_DIR` y el cwd fijos, porque el archivo de sesión depende de la ruta. Nunca se mezcla con corridas nativas en la Mac ni se monta el `.venv` de la Mac.
@@ -18,7 +18,7 @@ Oscar pidió que el estilo se refresque todos los días con Celery beat, con Red
   - El tick: beat cada ~10 s (seguimientos y monitor).
   - La extracción de estilo del onboarding y el refresco diario (ADR 0019): cola `style`, con concurrencia 1.
 - El schedule es estático en settings. No hace falta django-celery-beat.
-- El contenedor del worker lleva `CLAUDE_CODE_OAUTH_TOKEN` y un volumen para `CLAUDE_CONFIG_DIR`, porque ahí el Agent SDK guarda las sesiones que se reanudan.
+- El contenedor del worker monta el volumen `agent-home` como `CLAUDE_CONFIG_DIR`: ahí viven la credencial de Claude (ADR 0022) y las sesiones que el Agent SDK reanuda.
 
 ## Consecuencias
 

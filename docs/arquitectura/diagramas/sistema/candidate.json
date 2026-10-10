@@ -526,7 +526,7 @@
       "id": "team",
       "type": "external",
       "icon": "person",
-      "label": "Usuarios del tablero",
+      "label": "Usuarios del dashboard",
       "sublabel": "manager · sales · production",
       "pos": [
         32,
@@ -556,7 +556,7 @@
       "id": "nextjs",
       "type": "frontend",
       "label": "Next.js · host",
-      "sublabel": "tablero · asistente · simulador",
+      "sublabel": "dashboard · asistente · simulador",
       "tag": ":3000",
       "pos": [
         800,
@@ -784,7 +784,7 @@
       "id": "worker-claude",
       "from": "worker",
       "to": "claude",
-      "label": "Agent SDK · OAuth token"
+      "label": "Agent SDK · suscripción"
     },
     {
       "id": "worker-access",
@@ -843,10 +843,10 @@
     },
     {
       "dot": "amber",
-      "title": "Claude y tablero",
+      "title": "Claude y dashboard",
       "items": [
-        "Agent SDK aislado, con la suscripción de Oscar por CLAUDE_CODE_OAUTH_TOKEN (ADR 0013)",
-        "Cada usuario tiene un asistente con tools según su rol (ADR 0017)",
+        "Agent SDK aislado con la suscripción de Oscar, sin API key; el Gerente conecta la cuenta en /settings/claude (ADR 0013 y 0022)",
+        "Cada usuario tiene un asistente con tools por rol, que además avisa de retrasos (ADR 0017 y 0020)",
         "Las decisiones del Gerente aparecen en el Monitor y en el contador del menú"
       ]
     }

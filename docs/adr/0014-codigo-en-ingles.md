@@ -15,4 +15,4 @@ Los docs de diseño nombraban apps, modelos, campos, estados, servicios y tools 
 ## Consecuencias
 
 - `docs/glosario.md` lleva la tabla de equivalencias español → inglés (modelos, campos, servicios y tools) para que los docs y el código se lean juntos. Los ADR, el README de arquitectura y `CLAUDE.md` pasan a usar los nombres en inglés.
-- El payload para resolver una decisión (`/api/manager/decisions/<id>/`) queda en inglés: `{action: approve | reject | change_supplier, supplier_id?, purchase_order_id?, note?, channel?}`.
+- El payload para resolver una decisión (`/api/manager/decisions/<id>/`) queda en inglés: `{action: approve | reject | change_supplier, supplier_id?, purchase_order_id?, note?}`.

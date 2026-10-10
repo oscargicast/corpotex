@@ -1,6 +1,6 @@
 # Planning y roadmap
 
-Estado al sábado 10/10, 16:30. Demo: domingo 11/10. Diseño cerrado en `docs/adr/` (0001 a 0021) y commiteado en `main`; todavía no hay código.
+Estado al sábado 10/10, 17:00. Demo: domingo 11/10. Diseño cerrado en `docs/adr/` (0001 a 0021) y commiteado en `main`; todavía no hay código.
 
 ## Equipo y sesiones
 
@@ -15,6 +15,30 @@ Estado al sábado 10/10, 16:30. Demo: domingo 11/10. Diseño cerrado en `docs/ad
 | Kenji | Data e imágenes del seed con `infsh` | fuera del repo |
 
 Reglas: cada sesión trabaja en su worktree y abre PR contra `main`; el orquestador mergea en el orden de dependencias de abajo. Código en inglés, docs en español (ADR 0014). Sin créditos de Claude en los commits.
+
+## Agenda del hackathon (Piura Innova)
+
+| Día | Hora | Bloque | Qué significa para nosotros |
+|---|---|---|---|
+| Sáb 10 | 15:00 a 18:00 | CODE Bloque 2 | Cimientos (Fase 1) |
+| Sáb 10 | 18:00 a 18:30 | Refrigerio | |
+| Sáb 10 | 18:30 a 20:00 | libre | Fase 1 sigue |
+| Sáb 10 | 20:00 a 21:00 | Cena | |
+| Sáb 10 | 21:00 a 00:00 | CODE Bloque 3 | Datos y flujo principal (Fase 2) |
+| Dom 11 | 00:00 a 01:00 | Activación FUSA | Pausa; el código sigue en background |
+| Dom 11 | 01:00 a 08:00 | CODE Bloque 4 | Asistente, onboarding y monitor (Fase 3); integración y ensayo (Fase 5). **Entrega de prototipo + pitch en este bloque** |
+| Dom 11 | 08:00 a 09:00 | Desayuno | Último chequeo de Evolution y del tunnel |
+| Dom 11 | 09:00 a 11:00 | Pitch time | **La demo** |
+| Dom 11 | 11:00 a 12:00 | Deliberación y premiación | |
+
+Consecuencia: no hay "domingo en la mañana" para integrar. Todo tiene que estar probado punta a punta antes de las 07:00 del domingo, y la prueba con la proveedora real, el video y el ensayo van entre las 05:00 y las 07:00.
+
+## Setup de desarrollo (ADR 0023)
+
+- Carpetas `backend/` (Django, `uv`) y `frontend/` (Next.js, `pnpm`), cada una con su `Dockerfile`.
+- `docker-compose.yml` en la raíz levanta todo: `postgres`, `redis`, `web`, `celery-worker`, `celery-beat` y `frontend`. Un solo comando: `cp .env.example .env && docker compose up --build`.
+- Versiones estables al 10/10: Python 3.13, Django 6.1, DRF 3.18, Celery 5.6, Next.js 16.4, React 19.3, TypeScript 7.0, Tailwind 4.3. La lista completa está en el ADR 0023 y en `backend/pyproject.toml` y `frontend/package.json`.
+- Nada se instala en el host salvo Docker y `cloudflared`. El tunnel apunta a los puertos 8000 y 3000 que publica compose.
 
 ## Dependencias
 
@@ -45,9 +69,9 @@ flowchart LR
 
 ## Roadmap
 
-Horas en hora real. Las estimaciones son de cada sesión; el orquestador las ajusta al mergear.
+Horas en hora real, ajustadas a la agenda del hackathon. Las estimaciones son de cada sesión; el orquestador las ajusta al mergear.
 
-### Fase 0, sábado 16:30 a 17:30: salida
+### Fase 0, sábado hasta las 18:00: salida
 
 | # | Quién | Qué | Listo cuando |
 |---|---|---|---|
@@ -57,18 +81,18 @@ Horas en hora real. Las estimaciones son de cada sesión; el orquestador las aju
 | 0.5 | Oscar | Ignore Groups activado y webhook guardado en Evolution | `GET webhook/find/corpotex` lo muestra |
 | 0.6 | Kenji | Data e imágenes del seed | Carpeta `seed/` entregada |
 
-### Fase 1, sábado 17:30 a 20:00: cimientos
+### Fase 1, sábado 18:00 a 21:00: cimientos (Bloque 2 y cena)
 
 | # | Quién | Qué | Depende de | Estimado |
 |---|---|---|---|---|
-| B1 | backend | Proyecto Django + DRF, 25 modelos con admin, usuarios y grupos, Celery, `infra/docker-compose.yml`, `backend/Dockerfile`, `pyproject.toml` con claude-agent-sdk. PR a `main` | 0.1 | 2 h |
+| B1 | backend | Proyecto Django + DRF sobre el `backend/` ya creado (Dockerfile y pyproject), 26 modelos con admin, usuarios y grupos, Celery (`config/celery.py`), que `docker compose up` levante `web`, `celery-worker` y `celery-beat`. PR a `main` | 0.1 | 2 h |
 | A1 | agente | Spike fuera del repo (latencia, aislamiento, 4 en paralelo). Luego `agent/sdk.py` (`isolated_options`, `complete`), `tasks.run_turn`, `channels.py` | 0.2, B1 | 2 h |
 | P1 | personalidad | `persona/templates/style.base.md` (plantilla vacía del estilo), `build_prompt` del agente de WhatsApp, `rules` en español, fixtures sintéticos de Lima y México, `scenarios.yaml` | 0.1 | 2 h |
-| F1 | disenador | Next.js, login con token por pestaña, layout con menú por rol, reloj en el header, mocks con el shape de la API | 0.1 | 2 h |
+| F1 | disenador | Next.js sobre el `frontend/` ya creado (Dockerfile y package.json), login con token por pestaña, layout con menú por rol, reloj en el header, rewrites de `/api` a `API_URL`, mocks con el shape de la API | 0.1 | 2 h |
 
-Hito 1 (20:00): `docker compose up` levanta Postgres, Redis, Django, worker y beat; el admin muestra los modelos; el front hace login contra Django.
+Hito 1 (21:00): `docker compose up` levanta los 6 servicios; el admin muestra los modelos; el front hace login contra Django.
 
-### Fase 2, sábado 20:00 a 23:30: datos y flujo principal
+### Fase 2, sábado 21:00 a 01:00: datos y flujo principal (Bloque 3)
 
 | # | Quién | Qué | Depende de | Estimado |
 |---|---|---|---|---|
@@ -78,9 +102,9 @@ Hito 1 (20:00): `docker compose up` levanta Postgres, Redis, Django, worker y be
 | F2 | disenador | Órdenes, pedidos, Monitor y proveedores con datos reales; tipos generados desde `/api/schema/`; fotos | B2 | 3 h |
 | P2 | personalidad | `build_assistant_prompt` (rol, avisos), `extract_style`, `update_style`, `parse_whatsapp_export` | P1 | 2 h |
 
-Hito 2 (23:30): un mensaje por el simulador llega al agente y el agente responde; el Monitor muestra órdenes y alertas del seed.
+Hito 2 (01:00): un mensaje por el simulador llega al agente y el agente responde; el Monitor muestra órdenes y alertas del seed.
 
-### Fase 3, domingo 00:00 a 03:00: asistente, onboarding y monitor
+### Fase 3, domingo 01:00 a 04:30: asistente, onboarding y monitor (Bloque 4)
 
 | # | Quién | Qué | Depende de | Estimado |
 |---|---|---|---|---|
@@ -89,24 +113,24 @@ Hito 2 (23:30): un mensaje por el simulador llega al agente y el agente responde
 | A3 | agente | Asistente del dashboard: tools por rol, confirmación con `pending_action`, turnos `alert` | A1, B4, B5, P2 | 2 h |
 | F3 | disenador | Panel del asistente con tarjetas y contador, simulador en modo presentación, onboarding de 4 pasos (Claude, WhatsApp, proveedores, estilo), `/settings/claude` con conectar/reconectar (ADR 0022), `/style` con historial | B4 | 3.5 h |
 
-Hito 3 (03:00): el Gerente aprueba una decisión desde el asistente; Comercial recibe un aviso distinto de la misma escena.
+Hito 3 (04:30): el Gerente aprueba una decisión desde el asistente; Comercial recibe un aviso distinto de la misma escena.
 
-### Fase 4, domingo 03:00 a 09:00: descanso y pulido
+### Fase 4, domingo 04:30 a 05:00: corte
 
-- Dormir. Quien siga despierto: P1 pendientes (pagos, `/catalog`, "Aprender ahora", autoregistro) solo si todo lo anterior cierra.
+- Se congela el alcance. Lo que no esté mergeado a las 04:30 no entra en la demo. P1 (pagos, `/catalog`, "Aprender ahora", autoregistro) solo si todo lo anterior cerró antes.
 
-### Fase 5, domingo 09:00 a 12:00: integración y ensayo
+### Fase 5, domingo 05:00 a 08:00: integración y ensayo (fin del Bloque 4)
 
 | # | Quién | Qué |
 |---|---|---|
 | D1 | todos | Prueba punta a punta por WhatsApp real con la proveedora: pedido, avance con foto, cancelación, redistribución, aprobación, avisos |
-| D2 | Oscar + personalidad | Chat de rol con la proveedora (20 min), `extract` + `import-txt` x2, revisar y aprobar el estilo. Antes de la demo, nunca en vivo |
+| D2 | Oscar + personalidad | Chat de rol con la proveedora (20 min; puede hacerse el sábado en la noche), `extract` + `import-txt` x2, revisar y aprobar el estilo. Antes de la demo, nunca en vivo |
 | D3 | backend | Seed final de la escena: Caja Piura, 1000 polos, 400 avanzados, 2 talleres con capacidad |
 | D4 | disenador | Dos ventanas lado a lado (Gerente y Comercial), modo presentación, fotos cargadas |
 | D5 | Oscar | Guion y ensayo cronometrado. Orden del guion: onboarding ya hecho → estilo aprobado → escena de WhatsApp → avisos por rol |
 | D6 | todos | Video de respaldo de la corrida completa |
 
-Hito 4 (12:00): ensayo completo sin tocar código.
+Hito 4 (07:30): ensayo completo sin tocar código. 08:00 a 09:00, desayuno: verificar `connectionState` de Evolution, el tunnel y que las sesiones de desarrollo estén quietas. 09:00: pitch.
 
 ## Qué entra en la demo
 

@@ -14,7 +14,7 @@ Un solo repo con esta estructura:
 ```
 backend/    Django + DRF, worker del agente y adaptadores de canal (uv)
 frontend/   Next.js: dashboard y simulador de chat (pnpm)
-infra/      docker compose (Postgres, Redis, Celery worker y beat) y config del tunnel de Cloudflare
+infra/      config del tunnel de Cloudflare (el docker-compose.yml va en la raíz, ADR 0023)
 docs/       adr/, arquitectura/, api/
 .env        en la raíz, compartido por backend e infra (gitignored)
 ```

@@ -2,7 +2,7 @@
 
 Estado: propuesta revisada el 10/10 con lo acordado entre sesiones y simplificada a pedido de Oscar. No hay nada implementado.
 
-Fuentes: `CLAUDE.md` y `docs/adr/`: Django + DRF (0002), Postgres (0005), monorepo (0008), API (0009), cola de turnos (0010), onboarding (0011), suscripción (0013), código en inglés (0014), sin rutas (0015), celulares en `AllowedNumber` (0016), asistente del dashboard (0017, reemplaza al 0007 del Pana), Celery y Redis (0018), estilo por usuario (0019), asistente proactivo (0020) y seed (0021).
+Fuentes: `CLAUDE.md` y `docs/adr/`: Django + DRF (0002), Postgres (0005), monorepo (0008), API (0009), cola de turnos (0010), onboarding (0011), suscripción (0013), código en inglés (0014), sin rutas (0015), celulares en `AllowedNumber` (0016), asistente del dashboard (0017, reemplaza al 0007 del Pana), Celery y Redis (0018), estilo por usuario (0019), asistente proactivo (0020), seed (0021), conexión de Claude desde el dashboard (0022) y compose en la raíz (0023).
 
 **Idioma (ADR 0014):** todo el código va en inglés: apps, modelos, campos, valores de `choices`, servicios, excepciones, URLs y claves JSON de la API. Siguen en español este documento y lo que lee una persona: `verbose_name`, los `*_display` de la API, el admin, el dashboard y los mensajes de WhatsApp.
 
@@ -33,7 +33,7 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | Modelo | Español → inglés |
 |---|---|
 | `User` | `username`, `password`, `first_name` e `is_staff` no cambian. Rol → `role` (propiedad que sale del grupo). `estilo_md` → `style_md`, `estilo_refrescado_en` → `style_refreshed_at` (ADR 0019) |
-| `Config` | `reloj_inicio_real` → `clock_real_start`, `reloj_inicio_simulado` → `clock_sim_start`, `reloj_factor` → `clock_factor`, `reloj_pausado` → `clock_paused`, `colchon_dias` → `buffer_days`, `duraciones_etapa` → `stage_durations`, `onboarding` → `onboarding`, `usuario_agente` → `agent_user` |
+| `Config` | `reloj_inicio_real` → `clock_real_start`, `reloj_inicio_simulado` → `clock_sim_start`, `reloj_factor` → `clock_factor`, `reloj_pausado` → `clock_paused`, `colchon_dias` → `buffer_days`, `duraciones_etapa` → `stage_durations`, `onboarding` → `onboarding`, `usuario_agente` → `agent_user`, `numero_agente` → `agent_phone` (nuevo), `claude_conectado_en` → `claude_connected_at` y `claude_ultimo_error` → `claude_last_error` (nuevos, ADR 0022), `horas_decision_pendiente` → `decision_pending_hours` (nuevo, ADR 0020) |
 | `Brand` | `nombre` → `name`, `descripcion` → `description` |
 | `Customer` | `nombre` → `name`, `ruc` → `tax_id`, `tipo` → `kind` |
 | `Product` | `codigo` → `code`, `nombre` → `name`, `imagen` → `image` |
@@ -86,7 +86,7 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `Turn.status` | pendiente → `pending`, en_curso → `running`, hecho → `done`, error → `error` |
 | `Decision.kind` | aprobar_asignacion → `approve_assignment`, precio → `price`, terminos → `terms`, otro → `other` |
 | `Decision.status` | pendiente → `pending`, aprobada → `approved`, rechazada → `rejected`, proveedor_cambiado → `supplier_changed`, cancelada → `cancelled` |
-| `Alert.kind` | pedido_estancado → `stalled_purchase_order`, retraso → `delay`, orden_en_peligro → `order_in_danger`, sin_respuesta → `no_response`, pago_pendiente → `payment_due`, instancia_caida → `instance_down`, sin_canal → `no_channel`, turno_fallido → `turn_failed`, refresco_estilo_fallido → `style_refresh_failed`, decision_pendiente → `decision_pending` (nuevo, ADR 0020) |
+| `Alert.kind` | pedido_estancado → `stalled_purchase_order`, retraso → `delay`, orden_en_peligro → `order_in_danger`, sin_respuesta → `no_response`, pago_pendiente → `payment_due`, instancia_caida → `instance_down`, sin_canal → `no_channel`, turno_fallido → `turn_failed`, refresco_estilo_fallido → `style_refresh_failed`, decision_pendiente → `decision_pending` (ADR 0020), claude_desconectado → `claude_disconnected` (ADR 0022) |
 | `Alert.severity` | info → `info`, advertencia → `warning`, critica → `critical` |
 | `Alert.status` | abierta → `open`, reconocida → `acknowledged`, resuelta → `resolved` |
 | `OnboardingStyle.status` | sin_iniciar → `not_started`, extrayendo → `extracting`, borrador → `draft`, aprobado → `approved`, error → `error` |
@@ -171,6 +171,7 @@ Son sync; el agente los envuelve con `sync_to_async`. Los que tienen reglas de p
 | Extracción de estilo (onboarding) | `run_style_extraction()` | `core/onboarding.py` |
 | Estilo por usuario | `approve_style(onboarding_style, *, actor)`, `restore_style_version(version, *, actor)`, `refresh_style(user)` | `core/style.py` |
 | Tareas de Celery | `run_turn(conversation_id)`, `tick`, `run_style_extraction`, `refresh_style` | `agent/tasks.py`, `manager/tasks.py`, `core/tasks.py` |
+| Conexión de Claude (ADR 0022) | `claude_auth.start() -> {url, state}`, `exchange(code)`, `status()`, `disconnect()`, `set_api_key(api_key)`; constantes `CLIENT_ID`, `AUTHORIZE_URL`, `TOKEN_URL`, `REDIRECT_URI`, `SCOPES` copiadas de `mano` | `core/claude_auth.py` |
 | Seed | `python manage.py seed_demo` | `seed/management/commands/seed_demo.py` |
 | `ReglaDeJefe(motivo)` | `ManagerApprovalRequired(reason)` | `operations/exceptions.py` |
 | `NumeroNoPermitido` | `NumberNotAllowed` | `messaging/exceptions.py` |
@@ -204,6 +205,7 @@ Todas con barra final (ADR 0009). Los filtros también van en inglés (`?status=
 | `/webhooks/evolution/<secreto>/` | `/webhooks/evolution/<secret>/` (la URL no cambia) |
 | Asistente (ADR 0017 y 0020) | `/api/assistant/messages/?after=<id>` (GET), `/api/assistant/messages/` (POST), `/api/assistant/messages/read/` (POST), `/api/assistant/reset/` (POST) |
 | Estilo (ADR 0019) | `/api/style/versions/`, `/api/style/versions/<id>/`, `/api/style/versions/<id>/restore/` (POST). P1: `/api/style/refresh/` (POST) |
+| Conexión de Claude (ADR 0022, solo Gerente) | `/api/settings/claude/start/` (POST), `/api/settings/claude/exchange/` (POST), `/api/settings/claude/status/` (GET), `/api/settings/claude/disconnect/` (POST), `/api/settings/claude/set-key/` (POST) |
 | `/api/schema/` | no cambia |
 
 Claves JSON: las de los modelos. Cada `status` o `kind` viaja con su `status_display` o `kind_display`, que es el texto en español.
@@ -467,9 +469,9 @@ erDiagram
 - **Reglas de jefe (`confirm_purchase_order`):** si el precio pasa la `Rate` vigente o la fecha pasa `internal_due_on`, lanza `ManagerApprovalRequired(reason)` y la tool le dice al modelo que escale. Es idempotente: confirmar un pedido ya `confirmed` con los mismos términos devuelve OK.
 - **Cancelación (`cancel_by_supplier`):** pasa el pedido a `cancelled_by_supplier` y llama a `redistribute`. Es idempotente: si el pedido ya estaba cancelado, no redistribuye de nuevo.
 - **Calificación automática:** al cerrar el pedido (`delivered`) se llena `rating` a partir de las `Delivery` y las fechas: `{delay_days, quality, defect_pct, price_vs_ref_pct, score, rated_at}`. `supplier_scores` promedia los `rating` del proveedor en cada consulta; con la data de la demo no hace falta cachearlo. El seed trae pedidos cerrados con `rating` para que los puntajes no salgan vacíos.
-- **Pagos:** al confirmar un pedido se crean dos `Payment` (50% `advance` y 50% `balance`) con `paid_at` vacío. `mark_payment_paid` llena `paid_at`, `method` y `receipt`; solo el Gerente. En la API, `status` es `paid` si `paid_at` tiene valor.
+- **Pagos:** al confirmar un pedido se crean dos `Payment` (50% `advance` y 50% `balance`) con `paid_at` vacío. `mark_payment_paid` llena `paid_at`, `method` y `receipt`; solo el Gerente. En la API, `status` es `paid` si `paid_at` tiene valor, y `due_on` se calcula: el adelanto vence al confirmar (`PurchaseOrder.created_at` del `confirmed`, en hora simulada) y el saldo el día de la última `Delivery`. La alerta `payment_due` sale de eso: un pago sin `paid_at` con `due_on` pasado.
 - **Celulares (ADR 0016):** viven solo en `AllowedNumber`, de 0 a n por proveedor (por ejemplo, el dueño y el encargado del taller). Un proveedor tiene canal si tiene al menos un número activo.
-  - Alta, importación y autoregistro aceptan un `phone` opcional (en el CSV, la columna `phone`) y crean su `AllowedNumber` con `active = false`. Al importar, un proveedor ya existe si alguno de sus números coincide con el `phone`; si no, se compara por `name`.
+  - Alta, importación y autoregistro llevan `name`, `kind`, `specialties` (en el CSV, separadas por `;`), `city`, `weekly_capacity`, `lead_time_days`, `currency` y un `phone` opcional, que crea su `AllowedNumber` con `active = false`. `follow_up_every_hours` toma 48 por defecto y `notes` queda vacío hasta el onboarding de estilo. Al importar, un proveedor ya existe si alguno de sus números coincide con el `phone`; si no, se compara por `name`.
   - El detalle del Gerente trae `numbers: [{id, phone, name, active, simulated}]`. `POST /api/suppliers/<id>/numbers/ {phone, name?}` agrega uno inactivo, y `PATCH /api/suppliers/<id>/numbers/<number_id>/ {active?, name?, phone?}` lo activa o desactiva. El `phone` solo se corrige si el número no tiene conversación. Los números no se borran: se desactivan.
   - La lista trae `numbers_count` y `active_numbers_count`, para mostrar "1 de 2 activos" o "Sin canal" sin cargar el detalle.
 
@@ -549,7 +551,7 @@ erDiagram
 - **`POST /api/assistant/messages/ {text, context?}`** guarda el `Message` (`user`, `received`) con su `context = {path, view, id?}` y llama a `enqueue_turn(conversation, "message")`, sin la espera de 5 s. `view` es una de `monitor`, `orders`, `order`, `purchase_orders`, `purchase_order`, `suppliers`, `supplier`, `simulator`, `style` y `onboarding`; `id` solo va en las vistas de detalle.
 - **`POST /api/assistant/messages/read/ {up_to_id}`** llama a `mark_assistant_read`: pone `read_at` a los mensajes del asistente de esa conversación hasta ese id. El dashboard lo llama cuando el panel está abierto y el mensaje se ve.
 - **`POST /api/assistant/reset/`** vacía `agent_session` y `pending_action` para abrir un hilo nuevo. Los mensajes se quedan.
-- **`GET /api/me/badges/`** → `{assistant_unread, latest_unread: {id, preview, alert_kind} | null, pending_decisions, orders_in_danger}`. Se consulta cada 5 s desde cualquier vista. `pending_decisions` y `orders_in_danger` solo para el Gerente; para los otros roles, `null`.
+- **`GET /api/me/badges/`** → `{assistant_unread, latest_unread: {id, preview, alert_kind} | null, claude_ok, pending_decisions, orders_in_danger, claude_expired, claude_last_error, claude_refresh_expires_at}`. Se consulta cada 5 s desde cualquier vista. `claude_ok` va para todos los roles (hay credencial vigente y `Config.claude_last_error` está vacío), para el banner "El asistente no está disponible". Los demás campos solo para el Gerente; para los otros roles, `null`.
 - **`action`** tiene dos formas, según `kind`:
   - `{kind: "tool", tool, status: done | failed, title, summary, links: [{kind: order | purchase_order | decision | supplier, id}]}`: cuando una tool que cambia algo termina, el agente llama a `record_assistant_action(conversation, turn, action)`, que crea un mensaje del asistente con `text = title`. La respuesta final va en otro mensaje.
   - `{kind: "alert", alert_ids: [...]}`: el aviso proactivo (abajo). El serializer lo expande a `action.alerts: [{id, kind, kind_display, severity, order: {id, code} | null, purchase_order: {id, code} | null}]`, en el mismo orden que `alert_ids`; con eso el dashboard arma los botones "Ver orden" y "Ver pedido". El texto del asistente nunca lleva URLs.
@@ -673,7 +675,7 @@ erDiagram
 - **`tick()`** es una tarea de Celery beat, cada ~10 s reales, en la cola `periodic`:
   - encola un `Turn` `follow_up` en `PurchaseOrder.conversation` de los pedidos abiertos con `next_follow_up_at <= clock.now()` cuya conversación no tiene un turno `pending` ni `running` (si lo tiene, ese turno ya va a incluir el seguimiento en su lote);
   - barre los turnos vencidos (sección 3);
-  - llama a `run_monitor()`, que actualiza `risk`, abre o cierra alertas (incluida `instance_down` según `connectionState` y `decision_pending` para las decisiones con más de N horas simuladas sin resolver) y llama a `notify_roles` por cada alerta nueva;
+  - llama a `run_monitor()`, que actualiza `risk`, abre o cierra alertas (incluida `instance_down` según `connectionState` y `decision_pending` para las decisiones con más de `Config.decision_pending_hours` horas simuladas sin resolver, 12 por defecto) y llama a `notify_roles` por cada alerta nueva;
   - repite los avisos al Gerente de alertas que siguen abiertas al día siguiente simulado.
 - **`GET /api/monitor/`** junta para el dashboard: `clock`, `kpis`, alertas abiertas, decisiones pendientes, órdenes en peligro y las últimas 3 `redistributions` (decisiones `approve_assignment` resueltas con un pedido que tiene `redistributed_from`).
 
@@ -705,9 +707,13 @@ erDiagram
         decimal clock_factor "minutos simulados por minuto real"
         bool clock_paused
         int buffer_days "margen entre proveedor y cliente"
+        int decision_pending_hours "horas simuladas antes de la alerta; 12"
         json stage_durations "dias por etapa en planta"
         int agent_user_id FK "dueno del numero del agente"
+        string agent_phone "numero desde el que escribe el agente"
         json onboarding "pasos completados"
+        datetime claude_connected_at
+        text claude_last_error "error de autenticacion del CLI"
     }
     OnboardingStyle {
         string status "not_started, extracting, draft, approved, error"
@@ -723,7 +729,7 @@ erDiagram
 ```
 
 - **`User`** extiende `AbstractUser` desde la primera migración: cambiarlo después es caro. Los roles son grupos creados con una data migration. El Gerente gestiona usuarios y contraseñas desde el admin. Auth de la API con `TokenAuthentication` (ADR 0009); el seed genera un token por usuario.
-- **`Config`** es una sola fila. `agent_user` es el dueño del número del agente de WhatsApp; el seed pone al Gerente.
+- **`Config`** es una sola fila. `agent_user` es el dueño del número del agente de WhatsApp y `agent_phone` ese número (el que Evolution reporta como `fromMe`); el seed pone al Gerente y `51907898162`.
 - **Reloj:** `clock.now()` = `clock_sim_start` + (hora real − `clock_real_start`) × `clock_factor`; con el reloj pausado devuelve `clock_sim_start`. Cada cambio de factor, pausa o salto rebasa primero (`clock_sim_start = clock.now()`, `clock_real_start = ahora real`) para que la hora no salte. `GET /api/clock/` devuelve `{now, factor, paused}`, y `PATCH /api/clock/ {factor?, paused?, advance_hours?}` llama a `set_clock`, solo para el Gerente.
 - **`stage_durations`:** `{"cutting": 1, "sublimation": 1, "embroidery": 1, "sewing": 3, "finishing": 1}` en días. Suman los ~7 días de producción propia.
 - **`onboarding`:** `{"whatsapp": {"done_at", "offline"}, "suppliers": {"done_at"}, "style": {"done_at"}}`. El paso 1 se marca hecho fuera de línea si falta el service token de Cloudflare Access.
@@ -732,11 +738,19 @@ erDiagram
   - `POST .../qr/` llama a `instance/connect`. Devuelve `qr_base64: null` si la instancia ya está `open`.
   - `POST .../webhook/` aplica `webhook/set` y `settings/set`.
   Usa siempre la instancia `corpotex` con su token. Nunca crea, desconecta ni borra instancias, y nunca toca `personal-whatsapp`.
+- **Conexión de Claude (paso 0, ADR 0022):** una sola cuenta por instalación, conectada por el Gerente desde `/settings/claude`, para todos los agentes. La credencial nunca va a la BD ni a la API.
+  - `POST /api/settings/claude/start/` genera el `code_verifier` (PKCE) y devuelve `{url, state}`, con `state = verifier`: el servidor no guarda nada entre pasos.
+  - `POST /api/settings/claude/exchange/ {code}` separa `<code>#<state>`, canjea en el endpoint de token con `code_verifier = state`, consulta el tipo de suscripción y escribe `<CLAUDE_CONFIG_DIR>/.credentials.json` con `{claudeAiOauth: {accessToken, refreshToken, expiresAt, refreshTokenExpiresAt, scopes, subscriptionType, clientId}}`, atómico (archivo temporal y `rename`) y con permisos 0600. Lo vuelve a leer antes de responder y llena `Config.claude_connected_at`.
+  - `GET /api/settings/claude/status/` → `{connected, method: oauth | api_key | none, subscription_type, expires_at, refresh_token_expires_at, expired, last_error}`.
+  - `POST /api/settings/claude/disconnect/` borra el archivo. `POST /api/settings/claude/set-key/ {api_key}` guarda la key en un archivo aparte y un `apiKeyHelper` en `settings.json` del `CLAUDE_CONFIG_DIR`, excluyente con el OAuth.
+  - Las constantes (`CLIENT_ID`, `AUTHORIZE_URL`, `TOKEN_URL`, `REDIRECT_URI`, `SCOPES`) se copian de `mano` (`system/auth_providers/anthropic.py`) a `backend/core/claude_auth.py`.
+  - `run_turn` clasifica los errores de autenticación del CLI, los guarda en `Config.claude_last_error` y crea una `Alert` `claude_disconnected`. Un `exchange/` o `set-key/` que sale bien vacía `claude_last_error`.
+  - Errores con código estable, para que el dashboard muestre texto humano sin regex: `400 {error_code, detail}`. `exchange/`: `missing_state` (falta la parte después del `#`), `invalid_code` (Anthropic rechazó el canje), `unreachable` (no se llegó al endpoint). `set-key/`: `key_format` (no empieza con `sk-ant-`), `key_rejected`, `key_unverifiable`. `disconnect/` sobre nada: `not_connected`. `detail` es el texto crudo, solo para la consola.
 - **Estilo del Gerente (paso 3):** `OnboardingStyle` es una sola fila con el borrador. Lo aprobado vive en `User.style_md` de `Config.agent_user` (el `BOSS.md`) y en `Supplier.notes`.
   - `GET /api/onboarding/style/` → `{status, error, since, step, suppliers: [{id, name, status, messages_read, error}], boss_md, notes: [{supplier_id, supplier_name, notes}], approved_at}`. `approved_at` es el `created_at` de la última `StyleVersion` `onboarding`.
   - `POST extract/ {supplier_ids?, since}` lee de Evolution solo los chats de los números activos de cada proveedor, y pasa un chat por número (el `supplier_id` se repite; `persona` los agrupa). Un proveedor sin números sale como `no_phone`, y uno con números pero ninguno activo, como `not_allowed`. `POST import-txt/` (multipart `{file, manager_author, since, supplier_id?}`) guarda en `temp_transcript` el chat ya anonimizado. Las dos encolan la tarea `run_style_extraction` en la cola `style`.
   - `extract/` y `template/` reemplazan el borrador. `import-txt/` lo amplía: llama a `update_style(current_md, current_notes, chats)` de `persona`, la misma función incremental del refresco diario, y si no hay borrador parte de la plantilla. Orden antes de la demo: `extract/` (la proveedora real), `import-txt/` (Lima, con `supplier_id`), `import-txt/` (México, con `supplier_id`) y `approve/`. Los dos `.txt` son sintéticos y viven en `backend/agent/persona/fixtures/`.
-  - `PUT` guarda el borrador. `POST template/` carga la plantilla base como borrador. `POST approve/` llama a `approve_style`: copia el borrador a `agent_user.style_md` y a `Supplier.notes`, y crea una `StyleVersion` `onboarding` (o `template`, si el borrador vino de la plantilla). Es idempotente.
+  - `PUT` guarda el borrador. `POST template/` carga como borrador la `StyleVersion` con `source = template` de la BD (la que creó el seed); solo si no existe, lee `persona/templates/style.base.md`. `POST approve/` llama a `approve_style`: copia el borrador a `agent_user.style_md` y a `Supplier.notes`, y crea una `StyleVersion` `onboarding` (o `template`, si el borrador vino de la plantilla). Es idempotente.
   - `extract`, `import-txt`, `template` y `PUT` devuelven 409 mientras `status = extracting`.
   - Si `heartbeat_at` pasa 5 minutos sin moverse, el GET la muestra como `error` ("extracción interrumpida") y se puede volver a lanzar.
   - El job borra `temp_transcript` al terminar, salga bien o con error. Los mensajes crudos de Evolution solo viven en memoria.
@@ -754,17 +768,20 @@ erDiagram
 - **Una tarea de estilo a la vez:** el worker es uno solo con `-c 5` y la cola `style` no limita la concurrencia por sí misma, así que la extracción y el refresco toman un lock en la BD (`pg_try_advisory_lock`, liberado en `finally`). Si no lo consiguen, se reintentan con `countdown` en vez de ocupar un slot esperando. Si el proceso muere, Postgres suelta el lock al cerrarse la conexión.
 - **API (solo Gerente):** `GET /api/style/versions/` (con `source`, `changelog` y `created_at`), `GET /api/style/versions/<id>/` (con `style_md`) y `POST .../restore/`. P1: `POST /api/style/refresh/` ("Aprender ahora"; no se usa en vivo en la demo).
 
-## 6. Trabajo en segundo plano y docker compose (ADR 0018)
+## 6. Trabajo en segundo plano y docker compose (ADR 0018 y 0023)
 
-`infra/docker-compose.yml` levanta todo menos Next.js, que corre en el host con pnpm. Los servicios de Python salen de una misma imagen, `backend/Dockerfile` (con uv).
+`docker-compose.yml` en la raíz levanta todo con `docker compose up`, Next.js incluido. Los servicios de Python salen de una misma imagen, `backend/Dockerfile` (con uv). `infra/` queda solo para el tunnel.
 
 | Servicio | Qué corre |
 |---|---|
-| `postgres` | La BD |
-| `redis` | Broker de Celery |
-| `web` | Django con runserver en `0.0.0.0:8000` y `backend/` montado, para que recargue al editar. El tunnel le manda `/api`, `/admin`, `/webhooks`, `/static` y `/media` |
+| `postgres` | La BD. Puerto publicado solo en loopback: `127.0.0.1:5432:5432` |
+| `redis` | Broker de Celery. Puerto publicado solo en loopback: `127.0.0.1:6379:6379` |
+| `web` | Django con runserver en `0.0.0.0:8000` dentro del contenedor y `backend/` montado, para que recargue al editar. Publicado como `127.0.0.1:8000:8000`: el tunnel corre en el host y le manda `/api`, `/admin`, `/webhooks`, `/static` y `/media` |
 | `celery-worker` | `-Q turns,periodic,style -c 5`, pool prefork, `acks_late` y `prefetch_multiplier = 1` |
 | `celery-beat` | Schedule estático en settings (sin django-celery-beat) |
+| `frontend` | Next.js en modo dev, publicado como `127.0.0.1:3000:3000`; el tunnel le manda el resto |
+
+- **Puertos en loopback, no en `0.0.0.0`:** la laptop va a estar en el wifi del hackathon. Con `5432:5432` y `6379:6379` a secas, cualquiera en esa red entra a Postgres con `corpotex/corpotex` y a Redis sin clave. Con `127.0.0.1:` adelante, `psql` y `redis-cli` siguen funcionando desde el host y el tunnel también, porque `cloudflared` corre en el host. La contraseña de Postgres se lee de `.env` (`POSTGRES_PASSWORD`, con valor por defecto en `.env.example`); dentro de la red de compose los servicios se hablan por nombre y no necesitan puertos publicados.
 
 | Tarea | Cola | Se dispara |
 |---|---|---|
@@ -773,7 +790,7 @@ erDiagram
 | `run_style_extraction()` | `style` | `extract/` e `import-txt/` del onboarding |
 | `refresh_style(user)` | `style` | beat, a las 03:00 `America/Lima`. P1: `POST /api/style/refresh/` |
 
-- **Worker:** lleva `CLAUDE_CODE_OAUTH_TOKEN` y el volumen `agent-home` en `/app/.agent`: `config/` es el `CLAUDE_CONFIG_DIR`, donde quedan las sesiones que se reanudan, y `turns/` y `style/` son los cwd fijos del SDK (ADR 0010).
+- **Credencial de Claude (ADR 0022):** no hay token en `.env`. `web` y `celery-worker` montan el mismo volumen `agent-home` en `/app/.agent`: `config/` es el `CLAUDE_CONFIG_DIR`, con `.credentials.json` (lo escribe Django, lo lee el worker en cada spawn del CLI) y las sesiones que se reanudan; `turns/` y `style/` son los cwd fijos del SDK (ADR 0010).
 - **CLI:** según la doc de `claude-agent-sdk` (0.2.165), el CLI de Claude Code viene dentro del wheel, sin Node, con Python 3.10 o más. Se confirma al construir la imagen; si falla, se agrega node.
 - **Variables en compose:** `DATABASE_URL` apunta al servicio `postgres` y `REDIS_URL` a `redis://redis:6379/0`.
 - **Si Redis o el worker se caen,** se paran los turnos. Al volver, `recover_stuck_turns` (en `worker_ready`) y el barrido del tick los retoman desde `Turn`.
@@ -822,7 +839,7 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
 | Dinero y cantidades decimales | Strings con dos decimales: `"12.50"`. Enteros como números. |
 | Estados y tipos | Los valores en inglés de la tabla de `choices`. |
 | Texto para personas | En español (nombres, notas, `summary`, `text`, `changelog`). |
-| Teléfonos | Nunca reales. Los números simulados se escriben `"sim-<slug>"`; el real se escribe `"$SEED_WHATSAPP_SUPPLIER_PHONE"` y el seed lo reemplaza por la variable de entorno; si está vacía, ese número se salta. |
+| Teléfonos | Los JSON no traen teléfonos reales: los números simulados se escriben `"sim-<slug>"`. Los dos números reales de la demo son constantes del comando `seed_demo` (decisión de Oscar; el repo es público y lo acepta): la proveedora real (`Confecciones del Norte`, contacto "Encargada") es `51906746241`, y el Gerente (`Config.agent_phone`) es `51907898162`. El seed le agrega ese `AllowedNumber` activo al proveedor con `key = confecciones-norte`. |
 | Opcionales | Se omiten o van en `null`. |
 
 ### Formato por archivo
@@ -831,7 +848,7 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
 // config.json (un objeto, no un array)
 {"clock_factor": "60", "buffer_days": 5,
  "stage_durations": {"cutting": 1, "sublimation": 1, "embroidery": 1, "sewing": 3, "finishing": 1},
- "agent_user": "gerente"}
+ "agent_user": "gerente", "agent_phone": "51907898162"}
 
 // brands.json
 [{"name": "UNICRACK", "description": "Uniformes escolares, incluye deportivos"}]
@@ -855,10 +872,10 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
   "weekly_capacity": 800, "lead_time_days": 7, "follow_up_every_hours": 48,
   "currency": "PEN", "source": "registered", "status": "active",
   "notes": "Trato de usted. No insistir antes del mediodía.",
-  "numbers": [{"name": "Encargada", "phone": "$SEED_WHATSAPP_SUPPLIER_PHONE", "active": true},
-              {"name": "Simulador", "phone": "sim-confecciones-norte", "active": true}],
+  "numbers": [{"name": "Simulador", "phone": "sim-confecciones-norte", "active": true}],
   "rates": [{"product": "POLO-ESC-01", "unit_price": "6.50", "valid_from": "T-200"}]}]
 // Un proveedor de insumos lleva rates con "material" en vez de "product".
+// El numero real de la proveedora (51906746241, "Encargada") lo agrega seed_demo al proveedor confecciones-norte; no va en el JSON.
 // Nombres fijos (los fixtures .txt de personalidad los referencian): "Textiles Lima Norte S.A.C." (Lima, contacto "Sr. Ramírez")
 // e "Hilados del Bajío" (México, currency USD, contacto "Ing. Castañeda").
 
@@ -1046,14 +1063,14 @@ Los números (1000, 400 y 600) se fijan con el guion del pitch. El diagrama `tal
 
 Cada paso se revisa solo, en este orden:
 
-1. **Proyecto:** Django + DRF, `core.User` antes de la primera migración, grupos por data migration, `TokenAuthentication`, drf-spectacular y settings (`ALLOWED_HOSTS` con `corpotex.oscargicast.com` y `localhost`), Celery con Redis e `infra/docker-compose.yml` (sección 6). `pyproject.toml` con `claude-agent-sdk` desde el primer commit.
+1. **Proyecto:** sobre el `backend/Dockerfile`, el `pyproject.toml` y el `docker-compose.yml` de la raíz que ya están en `main` (ADR 0023). Django vive directo en `backend/` (`manage.py`, `config/` con `settings.py`, `urls.py` y `celery.py`). `core.User` antes de la primera migración, grupos por data migration, `TokenAuthentication`, drf-spectacular y settings (`ALLOWED_HOSTS` con `corpotex.oscargicast.com` y `localhost`). Puertos de compose en loopback (sección 6). Sin `CLAUDE_CODE_OAUTH_TOKEN`: la cuenta se conecta desde el dashboard (ADR 0022).
 2. **Todos los modelos de una vez** (P0 y P1), con admin y una migración por app.
 3. **Seed:** el comando `seed_demo` con el formato de la sección 7, un JSON mínimo de prueba mientras llegan los de Kenji, un token por usuario y `Config.agent_user` = Gerente.
 4. **Servicios de operaciones:** desglose, matching, ruta crítica, aprobación, confirmación con reglas de jefe, avance, entrega, cancelación y redistribución.
 5. **Mensajería:** webhook con allowlist, `send_text`, la cola de turnos con `run_turn` en Celery, `turn_state` y la API del asistente.
 6. **Gerencia:** decisiones, alertas, `notify_roles`, monitor, `tick` y los endpoints del Gerente; servicios con `actor` para las tools del asistente.
 7. **API del dashboard y contrato en `docs/api/`**, con los JSON de ejemplo, los serializers por rol y `/api/me/badges/`.
-8. **Onboarding y estilo:** WhatsApp, alta e importación de proveedores, la tarea de extracción, el historial de versiones y `refresh_style`.
+8. **Onboarding y estilo:** conexión de Claude (`core/claude_auth.py`), WhatsApp, alta e importación de proveedores, la tarea de extracción, el historial de versiones y `refresh_style`.
 9. **P1:** pagos, autoregistro y `POST /api/style/refresh/`.
 
 ## Preguntas abiertas
@@ -1062,4 +1079,4 @@ Cada paso se revisa solo, en este orden:
 2. ¿Un proveedor puede vender insumos y además confeccionar? Propuesta: un solo `kind` por proveedor.
 3. ~~¿Las rutas entran en el alcance?~~ Resuelto: no se implementan (ADR 0015).
 4. ~~Faltan los PDFs de ejemplo de Comercial.~~ Resuelto: no habrá PDFs. El seed inventa las órdenes con el formato de la sección 7.
-5. ¿Cuántas horas simuladas sin resolver una decisión disparan `decision_pending`? Propuesta: 12.
+5. ~~¿Cuántas horas simuladas sin resolver una decisión disparan `decision_pending`?~~ Resuelto: 12 (`Config.decision_pending_hours`, con ese valor por defecto).

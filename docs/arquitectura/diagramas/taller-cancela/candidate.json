@@ -484,8 +484,8 @@
     {
       "id": "dash",
       "type": "frontend",
-      "label": "Tablero",
-      "sublabel": "Monitor"
+      "label": "Dashboard",
+      "sublabel": "Monitor · asistente"
     },
     {
       "id": "manager",
@@ -503,17 +503,17 @@
     },
     {
       "from": 308,
-      "to": 424,
+      "to": 452,
       "label": "Redistribuye"
     },
     {
-      "from": 450,
-      "to": 622,
+      "from": 478,
+      "to": 650,
       "label": "El Gerente aprueba"
     },
     {
-      "from": 648,
-      "to": 792,
+      "from": 676,
+      "to": 820,
       "label": "Los talleres nuevos confirman"
     }
   ],
@@ -564,7 +564,7 @@
       "to": "pg",
       "y": 356,
       "label": "T2 y T3 en suggested",
-      "note": "redistributed_from = T1, con rationale y candidates"
+      "note": "redistributed_from = T1, con candidates"
     },
     {
       "id": "decision",
@@ -585,10 +585,19 @@
       "note": "Alert order_in_danger"
     },
     {
+      "id": "notify",
+      "from": "svc",
+      "to": "dash",
+      "y": 440,
+      "label": "notify_roles: aviso en el asistente",
+      "variant": "dashed",
+      "note": "ADR 0020: al Gerente con la decisión y las cifras; a Comercial, orden y fecha nueva sin precios"
+    },
+    {
       "id": "poll",
       "from": "dash",
       "to": "svc",
-      "y": 470,
+      "y": 498,
       "label": "GET /api/monitor/",
       "note": "polling cada 3 s"
     },
@@ -596,41 +605,41 @@
       "id": "card",
       "from": "svc",
       "to": "dash",
-      "y": 498,
+      "y": 526,
       "label": "tarjeta Redistribución: antes → después",
       "variant": "return",
-      "note": "estimated_on y total_amount; también suma en el contador del menú"
+      "note": "estimated_on y total_amount de la orden (calculado)"
     },
     {
       "id": "approves",
       "from": "manager",
       "to": "dash",
-      "y": 526,
+      "y": 554,
       "label": "aprueba"
     },
     {
       "id": "post",
       "from": "dash",
       "to": "svc",
-      "y": 554,
+      "y": 582,
       "label": "POST /api/manager/decisions/<id>/",
       "variant": "security",
-      "note": "{action: approve}; o con su asistente, resolve_decision con channel assistant"
+      "note": "{action: approve}; o se lo pide a su asistente, que usa resolve_decision"
     },
     {
       "id": "approve-pos",
       "from": "svc",
       "to": "pg",
-      "y": 582,
+      "y": 610,
       "label": "approve_purchase_orders([T2, T3])",
       "variant": "emphasis",
-      "note": "approved; recalcula estimated_on, critical_path, total_amount y risk"
+      "note": "approved; recalcula estimated_on, critical_path y risk"
     },
     {
       "id": "enqueue",
       "from": "svc",
       "to": "agent",
-      "y": 610,
+      "y": 638,
       "label": "enqueue_turn: purchase_order_approved",
       "variant": "dashed",
       "note": "un turno en la conversación de cada taller"
@@ -639,7 +648,7 @@
       "id": "offer",
       "from": "agent",
       "to": "workshops",
-      "y": 668,
+      "y": 696,
       "label": "ofrece su parte con fecha y precio",
       "variant": "emphasis",
       "note": "T2 y T3 → negotiating"
@@ -648,7 +657,7 @@
       "id": "accepts",
       "from": "workshops",
       "to": "agent",
-      "y": 696,
+      "y": 724,
       "label": "acepta",
       "variant": "return"
     },
@@ -656,7 +665,7 @@
       "id": "confirm",
       "from": "agent",
       "to": "svc",
-      "y": 724,
+      "y": 752,
       "label": "tool confirm_purchase_order",
       "note": "dentro de la Rate y de internal_due_on; si no, escala (flujo 2)"
     },
@@ -664,14 +673,14 @@
       "id": "confirmed",
       "from": "svc",
       "to": "pg",
-      "y": 752,
+      "y": 780,
       "label": "T2 y T3 confirmed"
     },
     {
       "id": "safe",
       "from": "svc",
       "to": "dash",
-      "y": 780,
+      "y": 808,
       "label": "la orden sale de peligro",
       "variant": "dashed",
       "note": "si la nueva estimated_on cumple promised_on; la alerta se resuelve"
@@ -687,31 +696,31 @@
     {
       "participant": "svc",
       "from": 209,
-      "to": 418,
+      "to": 446,
       "type": "backend"
     },
     {
       "participant": "dash",
-      "from": 465,
-      "to": 560,
+      "from": 493,
+      "to": 588,
       "type": "frontend"
     },
     {
       "participant": "svc",
-      "from": 549,
-      "to": 616,
+      "from": 577,
+      "to": 644,
       "type": "backend"
     },
     {
       "participant": "agent",
-      "from": 605,
-      "to": 730,
+      "from": 633,
+      "to": 758,
       "type": "backend"
     },
     {
       "participant": "svc",
-      "from": 719,
-      "to": 786,
+      "from": 747,
+      "to": 814,
       "type": "backend"
     }
   ],
@@ -721,8 +730,9 @@
       "title": "Qué ve el jurado",
       "items": [
         "El sistema redistribuye solo y justifica la elección",
+        "Gerente y Comercial reciben avisos distintos en su asistente (ADR 0020)",
         "La tarjeta Redistribución muestra el antes y el después de la fecha y el costo",
-        "El Gerente aprueba en el tablero o con su asistente"
+        "El Gerente aprueba en el dashboard o con su asistente"
       ]
     },
     {

@@ -100,7 +100,7 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | historial del estilo | `/api/style/versions/`, `/api/style/versions/<id>/`, `<id>/restore/`; P1: `/api/style/refresh/` |
 | entregas y avances de un pedido | `/api/purchase-orders/<id>/deliveries/`, `/api/purchase-orders/<id>/progress/` |
 | sin cambio | `/webhooks/evolution/<secret>/`, `/api/auth/*`, `/api/monitor/`, `/api/onboarding/whatsapp/*`, `/api/schema/` |
-| decisión `{accion: aprobar \| rechazar \| cambiar_proveedor, proveedor_id?, pedido_id?, nota?}` | `{action: approve \| reject \| change_supplier, supplier_id?, purchase_order_id?, note?, channel?}` |
+| decisión `{accion: aprobar \| rechazar \| cambiar_proveedor, proveedor_id?, pedido_id?, nota?}` | `{action: approve \| reject \| change_supplier, supplier_id?, purchase_order_id?, note?}` |
 
 ## Agente (`backend/agent/`)
 

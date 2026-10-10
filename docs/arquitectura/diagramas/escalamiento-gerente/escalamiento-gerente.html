@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="archify 3.0.1">
   <meta name="archify-reader-contract" content="declared-wide-v1">
-  <title>Flujo 2 · escalamiento al Gerente en el tablero · Diagrama</title>
+  <title>Flujo 2 · escalamiento al Gerente en el dashboard · Diagrama</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -4978,7 +4978,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
            data-preset-badge-blueprint="PLANO / REV 01"
            data-preset-badge-editorial="EDITORIAL / NOTA DE CAMPO">
         <div class="pulse-dot"></div>
-        <h1>Flujo 2 · escalamiento al Gerente en el tablero</h1>
+        <h1>Flujo 2 · escalamiento al Gerente en el dashboard</h1>
       </div>
     </div>
 
@@ -4988,7 +4988,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="ARCHIFY / LÁMINA 04">
       <svg viewBox="0 0 920 976" data-sequence-column-fit="spread" data-reader-fit="intrinsic-height" role="img" lang="es" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase">
-        <title id="archify-diagram-title">Flujo 2 · escalamiento al Gerente en el tablero</title>
+        <title id="archify-diagram-title">Flujo 2 · escalamiento al Gerente en el dashboard</title>
         <desc id="archify-diagram-description">Un diagrama de secuencia generado por Archify.</desc>
         <!-- Definitions -->
         <defs>
@@ -5077,13 +5077,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </g>
         </g>
 
-        <g data-edge-from="dash" data-edge-to="web" data-edge-label="GET /api/monitor/" data-edge-key="3" data-edge-id="poll">
+        <g data-edge-from="dash" data-edge-to="web" data-edge-label="GET /api/me/badges/ · /api/monitor/" data-edge-key="3" data-edge-id="poll">
           <path data-composition-edge-from="dash" data-composition-edge-to="web" data-composition-edge-id="poll" data-composition-points="706.6666666666666,300;599.3333333333333,300" d="M 706.6666666666666 300 L 599.3333333333333 300" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
-          <rect x="590.9" y="280" width="124.19999999999999" height="18" rx="3" class="c-mask"/>
-          <text x="653" y="290" class="t-muted" font-size="11" text-anchor="middle">GET /api/monitor/</text>
+          <rect x="531.5" y="280" width="243" height="18" rx="3" class="c-mask"/>
+          <text x="653" y="290" class="t-muted" font-size="11" text-anchor="middle">GET /api/me/badges/ · /api/monitor/</text>
         </g>
-        <text data-detail="fine" x="611.3333333333333" y="318" class="t-dim" font-size="7">polling cada 3 s; sin websockets</text>
+        <text data-detail="fine" x="611.3333333333333" y="318" class="t-dim" font-size="7">polling: contadores cada 5 s, vistas cada 3 s</text>
         </g>
 
         <g data-edge-from="web" data-edge-to="pg" data-edge-label="pendientes y kpis" data-edge-key="4" data-edge-id="pending">
@@ -5094,11 +5094,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </g>
         </g>
 
-        <g data-edge-from="web" data-edge-to="dash" data-edge-label="Decision en el Monitor + contador del menú" data-edge-key="5" data-edge-id="shows">
+        <g data-edge-from="web" data-edge-to="dash" data-edge-label="contador del menú + Decision en el Monitor" data-edge-key="5" data-edge-id="shows">
           <path data-composition-edge-from="web" data-composition-edge-to="dash" data-composition-edge-id="shows" data-composition-points="599.3333333333333,356;706.6666666666666,356" d="M 599.3333333333333 356 L 706.6666666666666 356" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
           <rect x="508.4" y="336" width="289.2" height="18" rx="3" class="c-mask"/>
-          <text x="653" y="346" class="t-muted" font-size="11" text-anchor="middle">Decision en el Monitor + contador del menú</text>
+          <text x="653" y="346" class="t-muted" font-size="11" text-anchor="middle">contador del menú + Decision en el Monitor</text>
         </g>
         </g>
 
@@ -5116,7 +5116,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <rect x="538.1" y="422" width="229.79999999999998" height="18" rx="3" class="c-mask"/>
           <text x="653" y="432" class="t-edge-security" font-size="11" text-anchor="middle">POST /api/manager/decisions/&lt;id&gt;/</text>
         </g>
-        <text data-detail="fine" x="611.3333333333333" y="460" class="t-dim" font-size="7">{action: approve}; idempotente; channel dashboard</text>
+        <text data-detail="fine" x="611.3333333333333" y="460" class="t-dim" font-size="7">{action: approve}; idempotente; solo manager</text>
         </g>
 
         <g data-edge-from="web" data-edge-to="pg" data-edge-label="resolve_decision → enqueue_turn" data-edge-key="8" data-edge-id="resolve-api">
@@ -5125,7 +5125,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <rect x="362.69999999999993" y="450" width="216.6" height="18" rx="3" class="c-mask"/>
           <text x="470.99999999999994" y="460" class="t-edge-emphasis" font-size="11" text-anchor="middle">resolve_decision → enqueue_turn</text>
         </g>
-        <text data-detail="fine" x="368.66666666666663" y="488" class="t-dim" font-size="7">require_role manager; Turn decision en la conversación del proveedor</text>
+        <text data-detail="fine" x="368.66666666666663" y="488" class="t-dim" font-size="7">require_role manager; encola un Turn decision en la conversación del proveedor</text>
         </g>
 
         <g data-edge-from="manager" data-edge-to="dash" data-edge-label="«apruébale el precio»" data-edge-key="9" data-edge-id="ask-assistant">
@@ -5185,7 +5185,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <rect x="298.73333333333335" y="676" width="223.2" height="18" rx="3" class="c-mask"/>
           <text x="410.33333333333337" y="686" class="t-edge-security" font-size="11" text-anchor="middle">resolve_decision(confirmed=true)</text>
         </g>
-        <text data-detail="fine" x="368.66666666666663" y="714" class="t-dim" font-size="7">ejecuta solo si coincide con pending_action; channel assistant; también encola el Turn</text>
+        <text data-detail="fine" x="368.66666666666663" y="714" class="t-dim" font-size="7">ejecuta solo si coincide con pending_action; también encola el Turn decision</text>
         </g>
 
         <g data-edge-from="assistant" data-edge-to="dash" data-edge-label="tarjeta de acción (Message.action)" data-edge-key="16" data-edge-id="action-card">
@@ -5236,8 +5236,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <text x="62" y="157" class="t-dim" font-size="9" font-weight="600">El agente escala</text>
         </g>
         <g data-graph-role="segment-label" data-segment-id="1">
-          <rect x="56" y="258" width="112.8" height="18" rx="3" class="c-mask"/>
-          <text x="62" y="271" class="t-dim" font-size="9" font-weight="600">Aviso en el tablero</text>
+          <rect x="56" y="258" width="123.2" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="271" class="t-dim" font-size="9" font-weight="600">Aviso en el dashboard</text>
         </g>
         <g data-graph-role="segment-label" data-segment-id="2">
           <rect x="56" y="372" width="149.20000000000002" height="18" rx="3" class="c-mask"/>
@@ -5309,8 +5309,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <text data-detail="context" x="592.3333333333333" y="122" class="t-muted" font-size="7" text-anchor="middle">Django · API</text>
         </g>
 
-        <g id="node-dash" data-node-id="dash" data-node-label="Tablero" tabindex="0" role="button" aria-label="Enfocar Tablero, Monitor · chat, Participante de secuencia" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Monitor · chat" data-node-context="Participante de secuencia">
-          <title>Tablero · Monitor · chat · Participante de secuencia</title>
+        <g id="node-dash" data-node-id="dash" data-node-label="Dashboard" tabindex="0" role="button" aria-label="Enfocar Dashboard, Monitor · asistente, Participante de secuencia" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Monitor · asistente" data-node-context="Participante de secuencia">
+          <title>Dashboard · Monitor · asistente · Participante de secuencia</title>
           <rect x="668.6666666666666" y="72" width="90" height="60" rx="6" class="c-mask"/>
           <rect x="668.6666666666666" y="72" width="90" height="60" rx="6" class="c-frontend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(674.6666666666666 78) scale(0.6875)">
@@ -5319,8 +5319,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="713.6666666666666" y="108" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Tablero</text>
-          <text data-detail="context" x="713.6666666666666" y="122" class="t-muted" font-size="7" text-anchor="middle">Monitor · chat</text>
+          <text data-node-label="" data-detail-anchor="" x="713.6666666666666" y="108" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Dashboard</text>
+          <text data-detail="context" x="713.6666666666666" y="122" class="t-muted" font-size="7" text-anchor="middle">Monitor · asistente</text>
         </g>
 
         <g id="node-manager" data-node-id="manager" data-node-label="Gerente" tabindex="0" role="button" aria-label="Enfocar Gerente, rol manager, Participante de secuencia" aria-pressed="false" data-node-kind="external" data-node-sublabel="rol manager" data-node-context="Participante de secuencia">
@@ -5540,8 +5540,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <h3>Dónde lo ve el Gerente (ADR 0017)</h3>
         </div>
         <ul>
-          <li>Las decisiones pendientes aparecen en el Monitor y en el contador del menú</li>
+          <li>Las decisiones pendientes aparecen en el Monitor y en el contador del menú (/api/me/badges/)</li>
           <li>El Monitor usa /api/manager/pending/ y /api/manager/decisions/&lt;id&gt;/</li>
+          <li>Si sigue pendiente N horas simuladas, el asistente se lo recuerda (decision_pending, ADR 0020)</li>
           <li>Reemplaza al flujo del ADR 0007</li>
         </ul>
       </div>
