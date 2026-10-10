@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 @shared_task(name="agent.tasks.run_turn", queue="turns", acks_late=True, soft_time_limit=180)
 def run_turn(conversation_id: int) -> None:
     """Claim this conversation's turn and run it. A duplicate or early task is a no-op."""
-    from core.claude_auth import mark_claude_disconnected
+    from core.claude_account import mark_claude_disconnected
     from messaging.services import claim_next_turn, finish_turn
 
     batch = claim_next_turn(conversation_id)
