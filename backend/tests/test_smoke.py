@@ -8,13 +8,13 @@ def test_all_seven_apps_are_installed():
     assert {"core", "suppliers", "operations", "messaging", "manager", "agent", "seed"} <= labels
 
 
-def test_twenty_eight_models_are_registered():
+def test_twenty_nine_models_are_registered():
     own = [
         model
         for model in apps.get_models()
         if model._meta.app_label in {"core", "suppliers", "operations", "messaging", "manager"}
     ]
-    assert len(own) == 28, sorted(m.__name__ for m in own)
+    assert len(own) == 29, sorted(m.__name__ for m in own)
 
 
 def test_celery_routes_and_schedule():

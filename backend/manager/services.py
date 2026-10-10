@@ -187,10 +187,11 @@ def resolve_decision(decision: Decision, *, action: str, supplier_id=None, purch
             if action in ("approve", "change_supplier"):
                 approve_purchase_orders(pos, actor=actor)
             else:
+                from operations.services import set_status
+
                 for po in pos:
                     if po.status == PurchaseOrder.Status.SUGGESTED:
-                        po.status = PurchaseOrder.Status.CANCELLED
-                        po.save(update_fields=["status", "updated_at"])
+                        set_status(po, PurchaseOrder.Status.CANCELLED, actor=actor, note=note or "Asignación rechazada")
                 for order in {i.requirement.order for po in pos for i in po.items.select_related("requirement__order")}:
                     compute_critical_path(order)
         elif decision.conversation_id:

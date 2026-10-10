@@ -327,51 +327,6 @@
                         "description": ""
                     }
                 }
-            },
-            "patch": {
-                "operationId": "clock_partial_update",
-                "tags": [
-                    "clock"
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PatchedClockPatchRequest"
-                            }
-                        },
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PatchedClockPatchRequest"
-                            }
-                        },
-                        "multipart/form-data": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PatchedClockPatchRequest"
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Clock"
-                                }
-                            }
-                        },
-                        "description": ""
-                    }
-                }
             }
         },
         "/api/conversations/{id}/messages/": {
@@ -3315,7 +3270,7 @@
             },
             "OrderDetail": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
+                "description": "`status_history: [{status, status_display, at, actor, note}]` ordered by `at` (10/10 21:40).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -3432,6 +3387,14 @@
                         },
                         "readOnly": true
                     },
+                    "status_history": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
                     "status_display": {
                         "type": "string",
                         "readOnly": true,
@@ -3466,6 +3429,7 @@
                     "risk_display",
                     "slack_days",
                     "status_display",
+                    "status_history",
                     "total_amount",
                     "total_units"
                 ]
@@ -3751,23 +3715,6 @@
                 ],
                 "type": "string",
                 "description": "* `registered` - Registrada\n* `broken_down` - Desglosada\n* `confirmed` - Confirmada\n* `sourcing` - En abastecimiento\n* `in_production` - En producción\n* `ready` - Lista\n* `delivered` - Entregada\n* `cancelled` - Cancelada"
-            },
-            "PatchedClockPatchRequest": {
-                "type": "object",
-                "properties": {
-                    "factor": {
-                        "type": "string",
-                        "format": "decimal",
-                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$"
-                    },
-                    "paused": {
-                        "type": "boolean"
-                    },
-                    "advance_hours": {
-                        "type": "number",
-                        "format": "double"
-                    }
-                }
             },
             "PatchedNumberPatchRequest": {
                 "type": "object",
@@ -4061,7 +4008,7 @@
             },
             "PurchaseOrderDetail": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
+                "description": "`status_history: [{status, status_display, at, actor, note}]` ordered by `at` (10/10 21:40).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -4237,6 +4184,14 @@
                         "description": "Chat where this purchase order is negotiated.",
                         "readOnly": true
                     },
+                    "status_history": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
                     "status_display": {
                         "type": "string",
                         "readOnly": true,
@@ -4266,6 +4221,7 @@
                     "redistributed_from",
                     "redistributed_into",
                     "status_display",
+                    "status_history",
                     "suggested_supplier",
                     "supplier",
                     "total_amount",

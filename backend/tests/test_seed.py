@@ -42,3 +42,37 @@ def test_seed_demo_loads_and_is_idempotent(monkeypatch):
     assert config.agent_user.style_md == versions.last().style_md
     for supplier in Supplier.objects.filter(source="external"):
         assert supplier.source_detail and supplier.notes == ""
+
+
+@pytest.mark.django_db
+def test_seed_demo_fills_the_status_timeline_and_runs_on_real_time():
+    from django.utils import timezone
+
+    from core.models import Config
+    from operations.models import Order, PurchaseOrder, StatusChange
+
+    call_command("seed_demo", verbosity=0)
+    config = Config.load()
+    assert config.clock_factor == 1 and not config.clock_paused and config.clock_sim_start == config.clock_real_start
+    assert abs((timezone.now() - config.clock_real_start).total_seconds()) < 120
+    for order in Order.objects.all():
+        statuses = [c.status for c in order.status_changes.all()]
+        assert statuses[0] == "registered" and statuses[-1] == order.status
+        assert all(c.at <= timezone.now() for c in order.status_changes.all())
+    for po in PurchaseOrder.objects.all():
+        statuses = [c.status for c in po.status_changes.all()]
+        assert statuses[0] == "suggested" and statuses[-1] == po.status
+    assert StatusChange.objects.count() >= Order.objects.count() + PurchaseOrder.objects.count()
+    assert set(Order.objects.values_list("code", flat=True)) == {c for c in Order.objects.values_list("code", flat=True) if c.startswith("CP-2026-")}
+    assert all(c[:3] in ("PT-", "PI-", "PF-") for c in PurchaseOrder.objects.values_list("code", flat=True))
+
+
+@pytest.mark.django_db
+def test_loader_rejects_codes_outside_the_documented_format(tmp_path):
+    import json
+
+    from seed.loader import Loader, SeedError
+
+    (tmp_path / "orders.json").write_text(json.dumps([{"code": "OC-2026-0001", "customer": "x", "brand": "y", "promised_on": "T+5", "items": []}]))
+    with pytest.raises(SeedError, match="CP-AAAA-NNNN"):
+        Loader(data_dir=tmp_path).load_orders()

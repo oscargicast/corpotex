@@ -266,6 +266,39 @@ class Payment(TimeStamped):
         return bool(due and not self.paid_at and due < clock.today())
 
 
+class StatusChange(models.Model):
+    """One row per status transition of an order or a purchase order: the timeline the
+    dashboard shows as "next step" (decision of 10/10 21:40)."""
+
+    order = models.ForeignKey(Order, null=True, blank=True, on_delete=models.CASCADE, related_name="status_changes")
+    purchase_order = models.ForeignKey(
+        PurchaseOrder, null=True, blank=True, on_delete=models.CASCADE, related_name="status_changes"
+    )
+    status = models.CharField(max_length=30)
+    at = models.DateTimeField()
+    actor = models.CharField(max_length=60, blank=True, help_text='"system", "agent", a username or empty.')
+    note = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = "cambio de estado"
+        verbose_name_plural = "cambios de estado"
+        ordering = ["at", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(order__isnull=False, purchase_order__isnull=True)
+                    | models.Q(order__isnull=True, purchase_order__isnull=False)
+                ),
+                name="status_change_one_target",
+            )
+        ]
+
+    @property
+    def status_display(self) -> str:
+        choices = Order.Status.choices if self.order_id else PurchaseOrder.Status.choices
+        return dict(choices).get(self.status, self.status)
+
+
 class Route(TimeStamped):
     class Status(models.TextChoices):
         PROPOSED = "proposed", "Propuesta"

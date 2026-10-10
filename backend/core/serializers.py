@@ -141,12 +141,6 @@ class ClockSerializer(serializers.Serializer):
     paused = serializers.BooleanField(read_only=True)
 
 
-class ClockPatchSerializer(serializers.Serializer):
-    factor = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)
-    paused = serializers.BooleanField(required=False)
-    advance_hours = serializers.FloatField(required=False)
-
-
 class StyleVersionSerializer(serializers.ModelSerializer):
     source_display = serializers.CharField(source="get_source_display", read_only=True)
 

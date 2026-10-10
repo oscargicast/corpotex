@@ -1,4 +1,6 @@
-"""The simulated clock (accelerated for the demo). Every business date is written with `now()`."""
+"""The business clock. Since 10/10 21:40 the demo runs on real time: `seed_demo` pins
+`clock_sim_start = clock_real_start = now` with factor 1, so `now()` is `timezone.now()`. The
+machinery stays (tests use it) but the API no longer exposes PATCH."""
 
 from datetime import datetime, timedelta
 from decimal import Decimal
