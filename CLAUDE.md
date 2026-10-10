@@ -52,7 +52,9 @@ Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), cone
 
 ## Demo
 
-- API simulada del sistema de Comercial, envío real por Evolution API con el número de Oscar, reloj acelerado.
+- API simulada del sistema de Comercial, envío real por Evolution API con el número de Oscar.
+- Sin reloj simulado (decisión de Oscar, 10/10 21:40): `core.clock` queda con factor 1 (hora real) y el dashboard no muestra reloj; las escenas con retraso salen del seed (fechas relativas a hoy).
+- Usuarios de rol del seed con contraseña `SEED_USERS_PASSWORD` del `.env`; ninguno es staff del admin (solo el superuser `admin`).
 - Escena que pide el jurado: un taller cancela a mitad del pedido y el sistema redistribuye y recalcula fecha, costo y ruta (ADR 0024).
 - Clientes en la data: Caja Piura, colegios de Piura, AIDER, PIQA.
 - Por WhatsApp solo hay un proveedor real: Valeria (`51906746241`, constante en el seed, activo en la allowlist). El Gerente escribe desde el número de Oscar (`51907898162`). Los demás proveedores van por el simulador. Oscar no puede ser proveedor: es su propio número.
