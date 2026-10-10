@@ -52,9 +52,10 @@ Asistente del Gerente con 3 pasos: conectar WhatsApp (QR y webhook de la instanc
 - API simulada del sistema de Comercial, envío real por Evolution API con el número de Oscar, reloj acelerado.
 - Escena que pide el jurado: un taller cancela a mitad del pedido y el sistema redistribuye y recalcula fecha y costo. La ruta no se implementa (ADR 0015).
 - Clientes en la data: Caja Piura, colegios de Piura, AIDER, PIQA.
-- Miembros del equipo hacen de talleres/proveedores por WhatsApp.
+- Por WhatsApp solo hay un proveedor real: Valeria (su número va en la allowlist). Los demás proveedores van por el simulador. Oscar no puede ser proveedor: es su propio número.
 - Plan B: simulador de chat si falla el wifi, y video de respaldo.
 - En vivo no se muestra el QR ni se corre la extracción de estilo: el onboarding se muestra ya hecho, con el `BOSS.md` precalculado (ADR 0011).
+- Orden del guion: el paso Estilo (mostrar el borrador y aprobar) va ANTES de la escena de WhatsApp. El bot usa el último estilo aprobado; si se aprueba después, el bot habla con el perfil base.
 - Dato de dolor para el pitch: al proveedor le dan 5 días cuando al cliente le prometieron 10, y aun así hay pedidos que nadie revisa hasta el día 9.
 
 ## Criterios del reto
@@ -78,7 +79,7 @@ Asistente del Gerente con 3 pasos: conectar WhatsApp (QR y webhook de la instanc
 - No cotizan: usan precios históricos 2024-2025; solo cotizan productos nuevos.
 - Pagos: 50% adelanto y 50% a la entrega, casi todo por Yape, a veces transferencia y factura. Solo paga el Gerente; si se atrasa, el proveedor deja de atenderlos.
 - Seguimiento: llamada o WhatsApp al día 3-4 de un plazo de 5, nada queda anotado. Al proveedor le incomoda que insistan (varía por proveedor). Caso real: un pedido de 10 días sin avance que nadie notó.
-- Su sistema de producción nuevo genera orden/ficha técnica en PDF o Excel (código, cliente, RUC, marca, estado, responsable, fechas de emisión y entrega, precios, detalle, imagen; estados corte/sublimado/bordado/costura). Poca adopción. Comercial va a mandar PDFs de ejemplo.
+- Su sistema de producción nuevo genera orden/ficha técnica en PDF o Excel (código, cliente, RUC, marca, estado, responsable, fechas de emisión y entrega, precios, detalle, imagen; estados corte/sublimado/bordado/costura). Poca adopción. No tenemos PDFs de ejemplo: los datos de órdenes se inventan en el seed.
 - Rutas: los proveedores de Lima envían por la agencia Sullana Express y ellos recogen en Piura.
 - Campañas: Unicrack de enero a marzo, Corpotex de agosto a octubre.
 
@@ -118,9 +119,9 @@ Reglas de la instancia `personal-whatsapp` (número de Oscar):
 
 ## Pendiente de decidir (preguntar a Oscar)
 
-- Números de la allowlist.
+- Celular de Valeria para la allowlist.
 - Reparto del equipo.
-- Hora de entrega, formato del pitch y pesos de los criterios.
-- PDFs de ejemplo de Comercial (todavía no llegan).
+
+El pitch, la hora de entrega y los criterios del jurado los maneja Oscar; no son tema de las sesiones.
 
 Más contexto: Kenji lo guarda en el trick hackathon-retos; pedirlo con `/kenji`.

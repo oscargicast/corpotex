@@ -27,7 +27,8 @@ El onboarding es un asistente en el tablero, solo para el Gerente, con 3 pasos:
 - Lectura: solo el JID del proveedor (y su `@lid`), nunca grupos; obligatorio un "leer desde" (en la demo, 10/10); solo texto y captions; como mucho los últimos 300 mensajes; sin los mensajes que mandó el agente.
 - Anonimización en código antes de llamar a un modelo. El borrador se guarda ya anonimizado.
 - Extracción con Claude Code (Agent SDK sin tools, ADR 0013): un llamado por proveedor y uno final que arma el `BOSS.md`. Corre como tarea de Celery en la cola `style` (ADR 0018).
-- Contrato: recurso único `/api/onboarding/style/` (GET/PUT) con `extract/`, `import-txt/`, `template/` y `approve/`.
+- Contrato: recurso único `/api/onboarding/style/` (GET/PUT) con `extract/`, `import-txt/`, `template/` y `approve/`. `extract/` y `template/` reemplazan el borrador; `import-txt/` lo actualiza de forma incremental (si no hay borrador, parte de la plantilla), así varios chats se acumulan.
+- Antes de la demo, no en vivo: `extract` (el proveedor real), `import-txt` por cada fixture sintético y la revisión. En vivo solo se muestra el borrador listo y se aprueba.
 - Los mensajes que el Gerente escribe a mano a un proveedor se guardan como `author=manager`, sin disparar turno, para regenerar el estilo y para el historial del agente.
 - Demo: el paso 1 se muestra ya hecho. Proyectar un QR en vivo permitiría que cualquiera lo escanee.
 - Demo: la extracción de estilo no corre en vivo. El `BOSS.md` va precalculado y aprobado, y el paso 3 se muestra con el borrador ya generado. La extracción en acción va en el video de respaldo. Motivo: comparte los límites de la suscripción con el bot (ADR 0013), y un 429 en medio de un turno se notaría en WhatsApp.

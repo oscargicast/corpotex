@@ -46,7 +46,7 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `ProgressReport` | `pedido` → `purchase_order`, `unidades_completadas` → `units_done`, `nota` → `note`, `foto` → `photo`, `origen` → `source`, `mensaje` → `message`, `reportado_en` → `reported_at` |
 | `Delivery` | `pedido` → `purchase_order`, `cantidad_recibida` → `qty_received`, `cantidad_defectuosa` → `qty_defective`, `calidad` → `quality`, `recibido_por` → `received_by`, `recibido_en` → `received_at`, `nota` → `note` |
 | `Payment` | `pedido` → `purchase_order`, `tipo` → `kind`, `monto` → `amount`, `metodo` → `method`, `estado` → `status`, `fecha_programada` → `due_on`, `pagado_en` → `paid_at`, `comprobante` → `receipt`, `requiere_factura` → `invoice_required`, `numero_factura` → `invoice_number`, `registrado_por` → `recorded_by` |
-| `AllowedNumber` | `telefono` → `phone`, `lid` (nuevo), `nombre` → `name`, `rol` → `role`, `proveedor` → `supplier`, `activo` → `active` |
+| `AllowedNumber` | `telefono` → `phone`, `lid` (nuevo), `nombre` → `name`, `rol` → `role`, `proveedor` → `supplier`, `activo` → `active`, `simulado` → `simulated` (nuevo) |
 | `Conversation` | `canal` → `channel`, `numero` → `allowed_number` (nuevo; reemplaza a `telefono` y `proveedor`, que salen de él), `usuario` → `user` (nuevo, solo `dashboard`), `sesion_agente` → `agent_session`, `accion_pendiente` → `pending_action` (nuevo), `estado` → `status`, `ultimo_mensaje_en` → `last_message_at` |
 | `Message` | `conversacion` → `conversation`, `direccion` → `direction`, `autor` → `author`, `texto` → `text`, `media` → `media`, `media_tipo` → `media_type`, `id_externo` → `external_id`, `payload` → `payload`, `estado` → `status`, `error` → `error`, `enviado_en` → `sent_at`, `turno` → `turn` (nuevo), `accion` → `action` (nuevo), `contexto` → `context` (nuevo) |
 | `Turn` (nuevo) | `conversacion` → `conversation`, `motivo` → `reason`, `decision` → `decision`, `estado` → `status`, `intentos` → `attempts`, `error` → `error`, `disponible_en` → `available_at` |
@@ -466,7 +466,7 @@ erDiagram
 - **Pagos:** al confirmar un pedido se crean dos `Payment` (50% `advance` y 50% `balance`). Solo el Gerente marca un pago como `paid`.
 - **Celulares (ADR 0016):** viven solo en `AllowedNumber`, de 0 a n por proveedor (por ejemplo, el dueño y el encargado del taller). Un proveedor tiene canal si tiene al menos un número activo.
   - Alta, importación y autoregistro aceptan un `phone` opcional (en el CSV, la columna `phone`) y crean su `AllowedNumber` con `active = false`. Al importar, un proveedor ya existe si alguno de sus números coincide con el `phone`; si no, se compara por `name`.
-  - El detalle del Gerente trae `numbers: [{id, phone, name, active}]`. `POST /api/suppliers/<id>/numbers/ {phone, name?}` agrega uno inactivo, y `PATCH /api/suppliers/<id>/numbers/<number_id>/ {active?, name?, phone?}` lo activa o desactiva. El `phone` solo se corrige si el número no tiene conversación. Los números no se borran: se desactivan.
+  - El detalle del Gerente trae `numbers: [{id, phone, name, active, simulated}]`. `POST /api/suppliers/<id>/numbers/ {phone, name?}` agrega uno inactivo, y `PATCH /api/suppliers/<id>/numbers/<number_id>/ {active?, name?, phone?}` lo activa o desactiva. El `phone` solo se corrige si el número no tiene conversación. Los números no se borran: se desactivan.
   - La lista trae `numbers_count` y `active_numbers_count`, para mostrar "1 de 2 activos" o "Sin canal" sin cargar el detalle.
 
 ## 3. Mensajería, asistente y cola de turnos
@@ -483,12 +483,13 @@ erDiagram
     Decision |o--o{ Turn : "origina"
 
     AllowedNumber {
-        string phone UK
+        string phone UK "JID sin +, o sim-slug si es simulado"
         string lid "id @lid de WhatsApp, si se conoce"
         string name "dueno, encargado o nombre del contacto"
         string role "supplier, team, manager"
         int supplier_id FK "si hace de proveedor"
         bool active "false al dar de alta"
+        bool simulated "solo simulador, nunca WhatsApp"
     }
     Conversation {
         string channel "whatsapp, simulator, dashboard"
@@ -528,7 +529,12 @@ erDiagram
 
 ### Allowlist y webhook
 
-- **Allowlist:** el webhook descarta, sin guardar nada, todo mensaje cuyo número no esté en `AllowedNumber` con `active = true`. Es la única fuente de celulares (ADR 0016) y la red de seguridad para no contestarle nunca a familia ni a contactos de Turbo. El agente y la extracción de estilo solo usan números activos. Los miembros del equipo que actúan de proveedores se siembran activos.
+- **Allowlist:** el webhook descarta, sin guardar nada, todo mensaje cuyo número no esté en `AllowedNumber` con `active = true`. Es la única fuente de celulares (ADR 0016) y la red de seguridad para no contestarle nunca a familia ni a contactos de Turbo. El agente y la extracción de estilo solo usan números activos.
+- **Números simulados (`simulated = true`):** son los de los proveedores que se operan por el simulador. Su `phone` no es un teléfono: es `sim-<slug>`, que nunca coincide con un JID real.
+  - El webhook nunca los acepta, y `send_text` se niega a mandarlos por WhatsApp (`NumberNotAllowed`).
+  - Cuentan como canal activo, así que no disparan `no_channel`.
+  - La extracción de estilo los salta: un proveedor que solo tiene números simulados sale como `no_phone`.
+  - En el tablero, el Gerente los ve como "Simulador".
 - **Webhook (`/webhooks/evolution/<secret>/`):** valida el secreto con comparación de tiempo constante y acepta solo `MESSAGES_UPSERT`. Descarta grupos (`@g.us`) y estados.
 - **`@lid`:** Baileys puede mandar `remoteJid` como `<id>@lid` en vez del teléfono. El webhook saca el número del campo alterno (`remoteJidAlt` o `senderPn`; se verifica con un payload real) y guarda el `lid` en `AllowedNumber`.
 - **Proveedor de la conversación:** el número (`phone` o `lid`) se busca en `AllowedNumber`. La conversación es la de ese número (`Conversation.allowed_number`), y su proveedor es `allowed_number.supplier`.
@@ -574,17 +580,21 @@ erDiagram
 - **Lo que llega mientras un turno corre** no entra en su lote; lo toma el turno siguiente.
 - **Conversación de un pedido (`PurchaseOrder.conversation`):** la fija `approve_purchase_orders`.
   1. Si el proveedor tiene conversaciones de números activos, toma la que tiene el mensaje entrante más reciente.
-  2. Si no tiene ninguna, crea la conversación de WhatsApp de su primer `AllowedNumber` activo (por id).
+  2. Si no tiene ninguna, crea una para su primer `AllowedNumber` activo (por id): de WhatsApp si el número es real, y del simulador si es `simulated`.
   3. Si no tiene números activos, no encola: el pedido queda en `approved` con una `Alert` `no_channel`.
   Los seguimientos van a esa misma conversación. Si su número se desactivó, el tick la vuelve a resolver con la misma regla. Así dos conversaciones del mismo proveedor nunca toman el mismo pedido. `PurchaseOrder.conversation` solo decide a dónde van los turnos proactivos: el proveedor puede hablar del pedido desde cualquiera de sus números.
 - **`recover_stuck_turns()`**, al arrancar el worker (señal `worker_ready`): los turnos en `running` pasan a `error` ("worker reiniciado") y se vuelven a encolar. Ese reintento no cuenta como intento.
 - **Barrido del tick:** cada 10 s dispara `run_turn` para los turnos `pending` con `available_at <= ahora` de conversaciones sin turno `running`, por si Redis perdió una tarea. También pasa a `error` los `running` de más de 10 min (el `soft_time_limit` de `run_turn` es de ~180 s).
-- **`send_text(conversation, text, turn)`** vuelve a chequear que `conversation.allowed_number` siga activo (`NumberNotAllowed`). Guarda el `Message` saliente con `agent` y su `turn`, y por WhatsApp lo envía con `POST /message/sendText/corpotex` usando el token de la instancia más el service token de Cloudflare Access. Completa `external_id` con el id que devuelve Evolution; si falla, el mensaje queda en `failed` y lanza `SendFailed`. En el canal `simulator` solo guarda. Con `Message.turn`, un reintento sabe qué ya envió ese turno.
+- **`send_text(conversation, text, turn)`** vuelve a chequear que `conversation.allowed_number` siga activo y que no sea `simulated` si el canal es WhatsApp (`NumberNotAllowed`). Guarda el `Message` saliente con `agent` y su `turn`, y por WhatsApp lo envía con `POST /message/sendText/corpotex` usando el token de la instancia más el service token de Cloudflare Access. Completa `external_id` con el id que devuelve Evolution; si falla, el mensaje queda en `failed` y lanza `SendFailed`. En el canal `simulator` solo guarda. Con `Message.turn`, un reintento sabe qué ya envió ese turno.
 - **`message_history(conversation, limit=20)`** sirve para la tool `read_history` y para abrir una sesión nueva si se perdió el archivo de sesión.
 - **"Escribiendo…":** `GET /api/conversations/<id>/messages/?after=<id>` devuelve `{typing, messages}`, con `typing = true` mientras haya un `Turn` `running` en la conversación.
 - **Índices:** `Message (conversation, sent_at)` parcial con `status = received`, para que el worker encuentre rápido lo pendiente, y `Turn (status, available_at)`.
 - **Tools del agente** (sesión `agente`): `send_message`, `confirm_purchase_order`, `record_progress`, `report_cancellation`, `escalate_to_manager` y `read_history`. Están atadas a la conversación del turno, validan el pedido con `purchase_order_for_conversation`, que compara por proveedor (`po.supplier == conversation.allowed_number.supplier`, no por `po.conversation`) y lanza `ForeignPurchaseOrder`, y llaman a los servicios de esta tabla.
-- **Simulador:** usa las mismas tablas con `channel = simulator`. `GET /api/simulator/contacts/` lista solo números activos y sin teléfono. Sirve de plan B y de herramienta de desarrollo.
+- **Simulador:** usa las mismas tablas con `channel = simulator`, y sirve de plan B y de herramienta de desarrollo.
+  - `GET /api/simulator/contacts/` lista, sin teléfono, las conversaciones de los números activos: las del simulador y también las de WhatsApp. Cada contacto trae `{allowed_number_id, name, role, supplier, channel: whatsapp | simulator, conversation_id, last_message}`.
+  - Las de WhatsApp son de solo lectura: en la demo, el chat de la proveedora real se proyecta junto a los talleres simulados. Se leen con `GET /api/conversations/<id>/messages/?after=`.
+  - `POST /api/simulator/messages/ {allowed_number_id, text, photo?}` escribe en la conversación del simulador de ese número. Devuelve 400 si se apunta a una conversación cuyo `channel` no es `simulator`.
+  - Permisos: el simulador y `/api/conversations/` muestran texto de mensajes de proveedores, que puede traer precios. Por la regla de texto libre, son solo para el Gerente. En la demo, quienes actúan de proveedores usan la cuenta del Gerente.
 
 ## 4. Gerencia y monitor
 
@@ -713,11 +723,12 @@ erDiagram
 - **Estilo del Gerente (paso 3):** `OnboardingStyle` es una sola fila con el borrador. Lo aprobado vive en `User.style_md` de `Config.agent_user` (el `BOSS.md`) y en `Supplier.notes`.
   - `GET /api/onboarding/style/` → `{status, error, since, step, suppliers: [{id, name, status, messages_read, error}], boss_md, notes: [{supplier_id, supplier_name, notes}], approved_at}`.
   - `POST extract/ {supplier_ids?, since}` lee de Evolution solo los chats de los números activos de cada proveedor, y pasa un chat por número (el `supplier_id` se repite; `persona` los agrupa). Un proveedor sin números sale como `no_phone`, y uno con números pero ninguno activo, como `not_allowed`. `POST import-txt/` (multipart `{file, manager_author, since, supplier_id?}`) guarda en `temp_transcript` el chat ya anonimizado. Las dos encolan la tarea `run_style_extraction` en la cola `style`.
+  - `extract/` y `template/` reemplazan el borrador. `import-txt/` lo amplía: llama a `update_style(current_md, current_notes, chats)` de `persona`, la misma función incremental del refresco diario, y si no hay borrador parte de la plantilla. Orden antes de la demo: `extract/` (la proveedora real), `import-txt/` (Lima, con `supplier_id`), `import-txt/` (México, con `supplier_id`) y `approve/`. Los dos `.txt` son sintéticos y viven en `backend/agent/persona/fixtures/`.
   - `PUT` guarda el borrador. `POST template/` carga la plantilla base como borrador. `POST approve/` llama a `approve_style`: copia el borrador a `agent_user.style_md` y a `Supplier.notes`, y crea una `StyleVersion` `onboarding` (o `template`, si el borrador vino de la plantilla). Es idempotente.
   - `extract`, `import-txt`, `template` y `PUT` devuelven 409 mientras `status = extracting`.
   - Si `heartbeat_at` pasa 5 minutos sin moverse, el GET la muestra como `error` ("extracción interrumpida") y se puede volver a lanzar.
   - El job borra `temp_transcript` al terminar, salga bien o con error. Los mensajes crudos de Evolution solo viven en memoria.
-  - La extracción en sí (anonimización, parser del `.txt`, llamados al modelo, plantilla base) es de la sesión `personalidad`, en `backend/agent/persona/` (`extract_style` y `parse_whatsapp_export`). La tarea le pasa `chats = [{supplier_id, supplier_name, contact_names: [AllowedNumber.name, pushName], messages: [{sender: manager | supplier | agent, text, sent_at}]}]`, uno por número activo, y `on_progress(supplier_id, status, messages_read=None, error=None)`. El paso global `on_progress(None, "merging")` también sirve de latido.
+  - La extracción en sí (anonimización, parser del `.txt`, llamados al modelo, plantilla base) es de la sesión `personalidad`, en `backend/agent/persona/` (`extract_style`, `update_style` y `parse_whatsapp_export`). La tarea le pasa `chats = [{supplier_id, supplier_name, contact_names: [AllowedNumber.name, pushName], messages: [{sender: manager | supplier | agent, text, sent_at}]}]`, uno por número activo, y `on_progress(supplier_id, status, messages_read=None, error=None)`. El paso global `on_progress(None, "merging")` también sirve de latido.
 
 ### Estilo por usuario y refresco diario (ADR 0019)
 
@@ -726,7 +737,7 @@ erDiagram
 - **Volver atrás:** `POST /api/style/versions/<id>/restore/` llama a `restore_style_version`, que crea una versión nueva `rollback`, copia de la elegida, y restaura `style_md` y `Supplier.notes`. El historial nunca se reescribe.
 - **`refresh_style(user)`:** tarea de beat a las 03:00 de Lima, en hora real, en la cola `style`.
   1. Lee de la BD los mensajes `author = manager` de conversaciones `whatsapp` con número activo, desde `User.style_refreshed_at`. Si no hay mensajes nuevos, no llama al modelo.
-  2. Si el resultado de `persona` pasa la validación, crea una `StyleVersion` `daily` y la aplica. Si no pasa, se queda el estilo actual y se crea una `Alert` `style_refresh_failed`.
+  2. Llama a `update_style` de `persona`. Si el resultado pasa la validación, crea una `StyleVersion` `daily` y la aplica. Si no pasa, se queda el estilo actual y se crea una `Alert` `style_refresh_failed`.
   3. Siempre actualiza `style_refreshed_at`.
 - **Una tarea de estilo a la vez:** el worker es uno solo con `-c 5` y la cola `style` no limita la concurrencia por sí misma, así que la extracción y el refresco toman un lock en la BD (`pg_try_advisory_lock`, liberado en `finally`). Si no lo consiguen, se reintentan con `countdown` en vez de ocupar un slot esperando. Si el proceso muere, Postgres suelta el lock al cerrarse la conexión.
 - **API (solo Gerente):** `GET /api/style/versions/` (con `source`, `changelog` y `created_at`), `GET /api/style/versions/<id>/` (con `style_md`) y `POST .../restore/`. P1: `POST /api/style/refresh/` ("Aprender ahora"; no se usa en vivo en la demo).
@@ -885,7 +896,7 @@ Cada paso se revisa solo, en este orden:
 
 1. **Proyecto:** Django + DRF, `core.User` antes de la primera migración, grupos por data migration, `TokenAuthentication`, drf-spectacular y settings (`ALLOWED_HOSTS` con `corpotex.oscargicast.com` y `localhost`), Celery con Redis e `infra/docker-compose.yml` (sección 6). `pyproject.toml` con `claude-agent-sdk` desde el primer commit.
 2. **Todos los modelos de una vez** (P0 y P1), con admin y una migración por app.
-3. **Seed:** usuarios por rol, catálogo de Corpotex, talleres en Piura (con la planta propia), proveedores de Lima y el de México. También `Supplier.notes` distintas por proveedor (tú o usted, "no insistir", horario), números del equipo activos, un token por usuario, `Config.agent_user` = Gerente, 3 `StyleVersion` con changelog y la orden de Caja Piura con el taller que va a cancelar.
+3. **Seed:** usuarios por rol, catálogo de Corpotex, talleres en Piura (con la planta propia), proveedores de Lima y el de México. También `Supplier.notes` distintas por proveedor (tú o usted, "no insistir", horario), un número simulado activo por proveedor (`sim-<slug>`), y el número real de la proveedora de WhatsApp desde `SEED_WHATSAPP_SUPPLIER_PHONE` (en `.env`, nunca en el repo; activo, con nombre de empresa inventado y contacto "Encargada"). Si la variable falta, ese proveedor queda solo con su número simulado. Además, un token por usuario, `Config.agent_user` = Gerente, 3 `StyleVersion` con changelog y la orden de Caja Piura con el taller que va a cancelar.
 4. **Servicios de operaciones:** desglose, matching, ruta crítica, aprobación, confirmación con reglas de jefe, avance, cancelación y redistribución.
 5. **Mensajería:** webhook con allowlist, `send_text`, la cola de turnos con `run_turn` en Celery, `turn_state` y la API del asistente.
 6. **Gerencia:** decisiones, alertas, monitor, `tick` y los endpoints del Gerente; servicios con `actor` para las tools del asistente.
@@ -898,4 +909,4 @@ Cada paso se revisa solo, en este orden:
 1. ~~¿Cuál es la tercera marca?~~ Resuelto: las marcas son UNICRACK (uniformes escolares, incluye deportivos), NEXO (ropa de trabajo de alto rendimiento) y Línea Médica Corpotex.
 2. ¿Un proveedor puede vender insumos y además confeccionar? Propuesta: un solo `kind` por proveedor.
 3. ~~¿Las rutas entran en el alcance?~~ Resuelto: no se implementan (ADR 0015).
-4. Faltan los PDFs de ejemplo de Comercial para fijar los campos de `Order` y `OrderItem`.
+4. ~~Faltan los PDFs de ejemplo de Comercial.~~ Resuelto: no habrá PDFs. El seed inventa las órdenes con los campos del modelo (clientes Caja Piura, colegios de Piura, AIDER y PIQA; marcas UNICRACK, NEXO y Línea Médica Corpotex).
