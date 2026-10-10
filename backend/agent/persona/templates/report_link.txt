@@ -1,2 +1,0 @@
-Para reportar avance y fotos del pedido {code}:
-{url}
