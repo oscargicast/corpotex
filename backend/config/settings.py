@@ -125,7 +125,42 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
     "COMPONENT_SPLIT_REQUEST": True,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
+    # Several models have `status` and `kind`; name their enums after the model.
+    "ENUM_NAME_OVERRIDES": {  # Nested TextChoices need module-level aliases (config/enums.py).
+        "OrderStatusEnum": "config.enums.ORDER_STATUS",
+        "OrderStageEnum": "config.enums.ORDER_STAGE",
+        "OrderRiskEnum": "config.enums.ORDER_RISK",
+        "OrderItemCustomizationEnum": "config.enums.ORDER_ITEM_CUSTOMIZATION",
+        "PurchaseOrderStatusEnum": "config.enums.PURCHASE_ORDER_STATUS",
+        "PaymentKindEnum": "config.enums.PAYMENT_KIND",
+        "PaymentMethodEnum": "config.enums.PAYMENT_METHOD",
+        "RouteStatusEnum": "config.enums.ROUTE_STATUS",
+        "RouteStopKindEnum": "config.enums.ROUTE_STOP_KIND",
+        "SupplierKindEnum": "suppliers.models.SupplierKind.choices",
+        "SupplierSourceEnum": "suppliers.models.SUPPLIER_SOURCE",
+        "SupplierStatusEnum": "suppliers.models.SUPPLIER_STATUS",
+        "CurrencyEnum": "suppliers.models.Currency.choices",
+        "CustomerKindEnum": "config.enums.CUSTOMER_KIND",
+        "MaterialKindEnum": "config.enums.MATERIAL_KIND",
+        "MaterialUnitEnum": "config.enums.MATERIAL_UNIT",
+        "ConversationChannelEnum": "config.enums.CONVERSATION_CHANNEL",
+        "MessageAuthorEnum": "config.enums.MESSAGE_AUTHOR",
+        "MessageStatusEnum": "config.enums.MESSAGE_STATUS",
+        "TurnReasonEnum": "config.enums.TURN_REASON",
+        "TurnStatusEnum": "config.enums.TURN_STATUS",
+        "DecisionKindEnum": "config.enums.DECISION_KIND",
+        "DecisionStatusEnum": "config.enums.DECISION_STATUS",
+        "AlertKindEnum": "config.enums.ALERT_KIND",
+        "AlertSeverityEnum": "config.enums.ALERT_SEVERITY",
+        "AlertStatusEnum": "config.enums.ALERT_STATUS",
+        "OnboardingStyleStatusEnum": "config.enums.ONBOARDING_STYLE_STATUS",
+        "OnboardingStyleStepEnum": "config.enums.ONBOARDING_STYLE_STEP",
+        "StyleVersionSourceEnum": "config.enums.STYLE_VERSION_SOURCE",
+    },
 }
+
+# The WhatsApp agent never writes first at night (simulated Lima time): proactive-only turns wait.
+QUIET_HOURS = (21, 7)
 
 # Celery (ADR 0018): one worker on three queues, beat with a static schedule.
 CELERY_BROKER_URL = env("REDIS_URL")
