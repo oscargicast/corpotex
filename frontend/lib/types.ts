@@ -278,7 +278,7 @@ export interface ProposalItem {
 }
 
 export interface Snapshot {
-  estimated_on: string;
+  estimated_on?: string | null; // price decisions carry only the amount
   total_amount: string;
   route_id?: number | null;
 }
