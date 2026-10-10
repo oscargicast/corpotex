@@ -22,7 +22,7 @@ from claude_agent_sdk import (
 )
 
 DEFAULT_MODEL = "opus"
-API_KEY_FILE = "api_key"  # written by core.claude_auth.set_api_key (ADR 0022, API key mode)
+API_KEY_FILE = "api_key"  # written by core.claude_account.set_api_key (ADR 0022, API key mode)
 
 # Credentials the host or .env may carry: the CLI must only use CLAUDE_CONFIG_DIR.
 FOREIGN_CREDENTIALS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN")
