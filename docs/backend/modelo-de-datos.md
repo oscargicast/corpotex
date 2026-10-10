@@ -58,7 +58,7 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `Decision` | `tipo` → `kind`, `estado` → `status`, `pedidos` → `purchase_orders` (M2M), `conversacion` → `conversation`, `resumen` → `summary`, `detalle` → `detail`, `nota` → `note`, `resuelta_por` → `resolved_by`, `resuelta_en` → `resolved_at`, `comunicada_en` → `communicated_at` |
 | `Alert` | `tipo` → `kind`, `severidad` → `severity`, `estado` → `status`, `orden` → `order`, `pedido` → `purchase_order`, `decision` → `decision` (nuevo, para `decision_pending`), `mensaje` → `text`, `detectada_en` → `detected_at`, `resuelta_en` → `resolved_at` |
 | `AlertNotification` (nuevo) | `alerta` → `alert`, `usuario` → `user`, `turno` → `turn`, `enviada_en` → `sent_at` |
-| `OnboardingStyle` | `estado` → `status`, `desde` → `since`, `paso` → `step`, `progreso` → `progress`, `borrador_boss_md` → `draft_boss_md`, `borrador_notas` → `draft_notes`, `transcript_temporal` → `temp_transcript`, `latido` → `heartbeat_at`, `error` → `error` |
+| `OnboardingStyle` | `estado` → `status`, `desde` → `since`, `paso` → `step`, `progreso` → `progress`, `borrador_md` → `draft_style_md`, `borrador_notas` → `draft_notes`, `borrador_origen` → `draft_source` (onboarding o template), `transcript_temporal` → `temp_transcript`, `latido` → `heartbeat_at`, `error` → `error`, `aprobado_en` → `approved_at` |
 | `StyleVersion` | `usuario` → `user`, `estilo_md` → `style_md`, `notas` → `notes_snapshot`, `origen` → `source`, `cambios` → `changelog` |
 
 ### Valores de `choices`
@@ -127,7 +127,6 @@ Se calculan, se repetían o nadie los iba a usar en la demo. Los que el dashboar
 | `Message` | `direction`, `media_type`, `payload` | Sale de `author`; el tipo, del archivo; el payload crudo va al log |
 | `Turn` | `decision` | Era solo rastro; el porqué sale del estado fresco |
 | `Decision` | `order`, `new_supplier`, `channel` | La orden sale de los pedidos; el proveedor nuevo queda en el pedido; el canal no se usaba |
-| `OnboardingStyle` | `approved_at` | Es el `created_at` de la `StyleVersion` `onboarding` |
 
 ### Servicios y excepciones
 
@@ -147,6 +146,9 @@ Son sync; el agente los envuelve con `sync_to_async`. Los que tienen reglas de p
 | `enviar_texto(conversacion, texto, turno)` | `send_text(conversation, text, turn)` | `messaging/services.py` |
 | `pedido_de_conversacion(conversacion, codigo)` | `purchase_order_for_conversation(conversation, code)` | `messaging/services.py` |
 | Acción del asistente | `record_assistant_action(conversation, turn, action)` | `messaging/services.py` |
+| Respuesta final del asistente | `post_assistant_message(conversation, turn, text, action=None)` | `messaging/services.py` |
+| Última foto del lote | `latest_photo_id(message_ids) -> int \| None` | `messaging/services.py` |
+| Serializer por rol | `serializer_for(model, role)` | `core/serializers.py` |
 | Marcar leídos | `mark_assistant_read(conversation, up_to_id)` | `messaging/services.py` |
 | `evolution.enviar_texto` (cliente HTTP) | `evolution.send_text(phone, text)` | `messaging/evolution.py` |
 | Lectura de chats para el estilo | `evolution.find_messages(jid, since)` | `messaging/evolution.py` |
@@ -192,7 +194,7 @@ Todas con barra final (ADR 0009). Los filtros también van en inglés (`?status=
 
 | Español | Inglés |
 |---|---|
-| `/api/auth/login/`, `/api/auth/logout/`, `/api/auth/me/` | no cambian |
+| `/api/auth/login/`, `/api/auth/logout/`, `/api/auth/me/` | no cambian. `logout/` responde 200 sin revocar el token: dos ventanas del mismo usuario en la demo |
 | Contadores del menú (nuevo, ADR 0020) | `/api/me/badges/` (GET) |
 | `/api/reloj/` (GET, PATCH) | `/api/clock/` |
 | `/api/monitor/` | no cambia |
@@ -617,9 +619,10 @@ erDiagram
 - **`POST /api/assistant/messages/ {text, context?}`** guarda el `Message` (`user`, `received`) con su `context = {path, view, id?}` y llama a `enqueue_turn(conversation, "message")`, sin la espera de 5 s. `view` es una de `monitor`, `orders`, `order`, `purchase_orders`, `purchase_order`, `suppliers`, `supplier`, `routes`, `simulator`, `style` y `onboarding`; `id` solo va en las vistas de detalle.
 - **`POST /api/assistant/messages/read/ {up_to_id}`** llama a `mark_assistant_read`: pone `read_at` a los mensajes del asistente de esa conversación hasta ese id. El dashboard lo llama cuando el panel está abierto y el mensaje se ve.
 - **`POST /api/assistant/reset/`** vacía `agent_session` y `pending_action` para abrir un hilo nuevo. Los mensajes se quedan.
+- **Códigos en el chat:** el asistente escribe códigos, no URLs; el dashboard los enlaza con `?code=` exacto en `GET /api/orders/` y `GET /api/purchase-orders/`. Órdenes: el código de Comercial (`CP-…`); pedidos: `PT-` taller, `PI-` insumo, `PF-` terminado, más un correlativo de 4 dígitos.
 - **`GET /api/me/badges/`** → `{assistant_unread, latest_unread: {id, preview, alert_kind} | null, claude_ok, pending_decisions, orders_in_danger, claude_expired, claude_last_error, claude_refresh_expires_at}`. Se consulta cada 5 s desde cualquier vista. `claude_ok` va para todos los roles (hay credencial vigente y `Config.claude_last_error` está vacío), para el banner "El asistente no está disponible". Los demás campos solo para el Gerente; para los otros roles, `null`.
 - **`action`** tiene dos formas, según `kind`:
-  - `{kind: "tool", tool, status: done | failed, title, summary, links: [{kind: order | purchase_order | decision | supplier, id}]}`: cuando una tool que cambia algo termina, el agente llama a `record_assistant_action(conversation, turn, action)`, que crea un mensaje del asistente con `text = title`. La respuesta final va en otro mensaje.
+  - `{kind: "tool", tool, status: done | failed, title, summary, links: [{kind: order | purchase_order | decision | supplier, id}]}`: cuando una tool que cambia algo termina, el agente llama a `record_assistant_action(conversation, turn, action)`, que crea un mensaje del asistente con `text = title`. La respuesta final va en otro mensaje, con `post_assistant_message(conversation, turn, text, action=None)`; el aviso de alertas usa ese mismo servicio con `action = {kind: "alert", alert_ids}`, donde `alert_ids` son ids de `Alert` (los mismos que trae `TurnBatch.alert_ids`; `finish_turn` marca las `AlertNotification` de ese usuario).
   - `{kind: "alert", alert_ids: [...]}`: el aviso proactivo (abajo). El serializer lo expande a `action.alerts: [{id, kind, kind_display, severity, order: {id, code} | null, purchase_order: {id, code} | null}]`, en el mismo orden que `alert_ids`; con eso el dashboard arma los botones "Ver orden" y "Ver pedido". El texto del asistente nunca lleva URLs.
 - **`pending_action` = `{tool, args, turn_id}`:** las tools que escriben no ejecutan en el momento. Dejan la acción ahí y piden confirmación, y la ejecuta el código cuando el usuario confirma (diseño de `agente`). Vale solo para el turno inmediatamente siguiente: cada turno borra la que no creó, y si el usuario confirma con argumentos distintos, se rechaza y se borra. Un aviso nunca deja una `pending_action`.
 - **Tools por rol:** se arman en el servidor según `user.role`. Llaman a los servicios con `actor = user`, que vuelven a chequear el rol, y leen con los serializers de ese rol.
@@ -634,7 +637,7 @@ erDiagram
   - `decision_ids`: las decisiones resueltas de la conversación con `communicated_at` vacío;
   - `follow_up_purchase_order_ids`: los pedidos de esta conversación (`PurchaseOrder.conversation`) abiertos con `next_follow_up_at <= clock.now()`;
   - `new_purchase_order_ids`: los pedidos de esta conversación en `approved`;
-  - `alert_ids`: en `dashboard`, las `AlertNotification` del usuario con `sent_at` vacío cuya alerta sigue `open`;
+  - `alert_ids`: en `dashboard`, los ids de `Alert` (no de la notificación) de las `AlertNotification` del usuario con `sent_at` vacío cuya alerta sigue `open`;
   - `web_report_ids`: los `ProgressReport` con `acknowledged_at` vacío que llegaron por `/report/<token>` a pedidos de esta conversación.
   Si el lote queda vacío en todas sus listas (por ejemplo, otro turno ya atendió el seguimiento), el turno pasa a `done` sin llamar al modelo.
 - **`turn_state(batch)`** arma el estado fresco con esos mismos ids. Claves (fijadas con `personalidad` el 10/10): `{now, supplier: {name, kind, city, currency, notes, contact_name}, channel, purchase_orders: [{code, status, status_display, items: [{name, quantity, unit_price}], rate_unit_price, internal_due_on, committed_on, terms, units_done, report_link_sent_at, is_follow_up, is_new}], decisions: [{id, kind, status, summary, note, purchase_order_codes}], new_messages: [{id, text, media_url, sent_at}], web_reports: [{purchase_order_code, units_done, reported_at}], style_md, manager_name, history?: [{sender, text, sent_at}]}`. `now` es `clock.now()`; `contact_name` es el `AllowedNumber.name` de la conversación (puede estar vacío); `purchase_orders` son todos los abiertos del proveedor; `style_md` es el de `Config.agent_user`; `history` (los últimos 20 mensajes) solo va con `with_history`, cuando se perdió la sesión. Nunca lleva el nombre del cliente, la fecha prometida ni el colchón. El trato (tú o usted) no es un campo: `persona` lo saca de `notes`.
@@ -658,7 +661,8 @@ erDiagram
 - **`recover_stuck_turns()`**, al arrancar el worker (señal `worker_ready`): los turnos en `running` pasan a `error` ("worker reiniciado") y se vuelven a encolar. Ese reintento no cuenta como intento.
 - **Barrido del tick:** cada 10 s dispara `run_turn` para los turnos `pending` con `available_at <= ahora` de conversaciones sin turno `running`, por si Redis perdió una tarea. También pasa a `error` los `running` de más de 10 min (el `soft_time_limit` de `run_turn` es de ~180 s).
 - **`send_text(conversation, text, turn)`** vuelve a chequear que `conversation.allowed_number` siga activo y que no sea `simulated` si el canal es WhatsApp (`NumberNotAllowed`). Guarda el `Message` saliente con `agent` y su `turn`, y por WhatsApp lo envía con `POST /message/sendText/corpotex` usando el token de la instancia más el service token de Cloudflare Access. Completa `external_id` con el id que devuelve Evolution; si falla, el mensaje queda en `failed` y lanza `SendFailed`. En el canal `simulator` solo guarda. Con `Message.turn`, un reintento sabe qué ya envió ese turno.
-- **`message_history(conversation, limit=20)`** sirve para la tool `read_history` y para abrir una sesión nueva si se perdió el archivo de sesión.
+- **`message_history(conversation, limit=20)`** devuelve instancias de `Message` en orden cronológico; sirve para la tool `read_history` y para abrir una sesión nueva si se perdió el archivo de sesión. `latest_photo_id(message_ids)` da el id del último mensaje con imagen del lote, para `record_progress`.
+- **Horario de silencio:** `claim_next_turn` no entrega un lote de WhatsApp o simulador que sea solo proactivo (`follow_up_purchase_order_ids` o `new_purchase_order_ids`, sin mensajes, decisiones ni reportes web) si `clock.now()` cae fuera de `QUIET_HOURS = (21, 7)` (hora simulada de Lima, en settings): el Gerente no escribe primero de noche. El turno queda `pending` y el barrido del tick lo dispara pasadas las 7. Las respuestas a mensajes y el asistente del dashboard no se tocan.
 - **"Escribiendo…":** `GET /api/conversations/<id>/messages/?after=<id>` devuelve `{typing, messages}`, con `typing = true` mientras haya un `Turn` `running` en la conversación.
 - **Índices:** `Message (conversation, sent_at)` parcial con `status = received`, para que el worker encuentre rápido lo pendiente; `Message (conversation)` parcial con `author = agent` y `read_at` vacío, para los contadores; `Turn (status, available_at)`; `PurchaseOrder (next_follow_up_at)` parcial con estados abiertos.
 - **Tools del agente** (sesión `agente`): `send_message`, `confirm_purchase_order`, `record_progress`, `report_cancellation`, `escalate_to_manager` y `read_history`. Están atadas a la conversación del turno, validan el pedido con `purchase_order_for_conversation`, que compara por proveedor (`po.supplier == conversation.allowed_number.supplier`, no por `po.conversation`) y lanza `ForeignPurchaseOrder`, y llaman a los servicios de esta tabla.
@@ -789,11 +793,13 @@ erDiagram
         date since "leer desde, hora real"
         string step "suppliers, merging o vacio"
         json progress "estado por proveedor"
-        text draft_boss_md "ya anonimizado"
+        text draft_style_md "ya anonimizado"
         json draft_notes "supplier_id a texto"
+        string draft_source "onboarding o template"
         json temp_transcript "chat del txt anonimizado; se borra al terminar"
         datetime heartbeat_at "ultimo progreso, hora real"
         text error
+        datetime approved_at
     }
 ```
 
@@ -816,7 +822,7 @@ erDiagram
   - **Sin credencial, la cola se pausa.** Con credencial ausente o vencida el CLI falla en 0,4 a 3 s con `authentication_failed`; `agent/sdk.py` lo convierte en `ClaudeNotConnected` y `run_turn` llama a `mark_claude_disconnected(error_text)`: guarda `Config.claude_last_error`, abre una sola `Alert` `claude_disconnected` y devuelve el turno a `pending` sin sumar intento, porque no es culpa del turno. Mientras `claude_last_error` tenga valor, `claim_next_turn` no entrega turnos y el barrido del tick no los dispara: así no hay un loop de fallos cada 3 s. `mark_claude_connected()`, que llaman `exchange/` y `set-key/` cuando salen bien, vacía el error, resuelve la alerta y vuelve a disparar `run_turn` para todos los turnos `pending`. El tick también la llama solo si `.credentials.json` tiene un mtime posterior a `claude_last_error` (lo renovó el propio CLI o alguien lo copió al volumen), para no quedar pausados por un 401 pasajero. El dashboard ve la pausa en `claude_ok` de badges.
   - Errores con código estable, para que el dashboard muestre texto humano sin regex: `400 {error_code, detail}`. `exchange/`: `missing_state` (falta la parte después del `#`), `invalid_code` (Anthropic rechazó el canje), `unreachable` (no se llegó al endpoint). `set-key/`: `key_format` (no empieza con `sk-ant-`), `key_rejected`, `key_unverifiable`. `disconnect/` sobre nada: `not_connected`. `detail` es el texto crudo, solo para la consola.
 - **Estilo del Gerente (paso 3):** `OnboardingStyle` es una sola fila con el borrador. Lo aprobado vive en `User.style_md` de `Config.agent_user` (el `BOSS.md`) y en `Supplier.notes`.
-  - `GET /api/onboarding/style/` → `{status, error, since, step, suppliers: [{id, name, status, messages_read, error}], boss_md, notes: [{supplier_id, supplier_name, notes}], approved_at}`. `approved_at` es el `created_at` de la última `StyleVersion` `onboarding`.
+  - `GET /api/onboarding/style/` → `{status, error, since, step, suppliers: [{id, name, status, messages_read, error}], boss_md, notes: [{supplier_id, supplier_name, notes}], approved_at}`. `approved_at` se llena en `approve/`.
   - `POST extract/ {supplier_ids?, since}` lee de Evolution solo los chats de los números activos de cada proveedor, y pasa un chat por número (el `supplier_id` se repite; `persona` los agrupa). Un proveedor sin números sale como `no_phone`, y uno con números pero ninguno activo, como `not_allowed`. `POST import-txt/` (multipart `{file, manager_author, since, supplier_id?}`) guarda en `temp_transcript` el chat ya anonimizado. Las dos encolan la tarea `run_style_extraction` en la cola `style`.
   - `extract/` y `template/` reemplazan el borrador. `import-txt/` lo amplía: llama a `update_style(current_md, current_notes, chats)` de `persona`, la misma función incremental del refresco diario, y si no hay borrador parte de la plantilla. Orden antes de la demo: `extract/` (la proveedora real), `import-txt/` (Lima, con `supplier_id`), `import-txt/` (México, con `supplier_id`) y `approve/`. Los dos `.txt` son sintéticos y viven en `backend/agent/persona/fixtures/`.
   - `PUT` guarda el borrador. `POST template/` carga como borrador la `StyleVersion` con `source = template` de la BD (la que creó el seed); solo si no existe, lee `persona/templates/style.base.md`. `POST approve/` llama a `approve_style`: copia el borrador a `agent_user.style_md` y a `Supplier.notes`, y crea una `StyleVersion` `onboarding` (o `template`, si el borrador vino de la plantilla). Es idempotente.
@@ -1154,16 +1160,18 @@ Los números (1000, 400 y 600) se fijan con el guion del pitch. El diagrama `tal
 
 ## Plan de implementación
 
+El detalle por tarea (archivos, criterios de aceptación y estimados) está en `docs/planning.md`, sección B. Dos reglas de Oscar: cada PR trae los tests de lo que implementa, en `backend/tests/` con un `conftest.py` común, al menos uno por servicio (seed, rutas y proveedores incluidos), y el orquestador no mergea en rojo (`docker compose exec web pytest -q`). B1 es la puerta de todo: nada de `agente`, `personalidad` ni `disenador` se mergea antes.
+
 Cada paso se revisa solo, en este orden:
 
 1. **Proyecto:** sobre el `backend/Dockerfile`, el `pyproject.toml` y el `docker-compose.yml` de la raíz que ya están en `main` (ADR 0023). Django vive directo en `backend/` (`manage.py`, `config/` con `settings.py`, `urls.py` y `celery.py`). `core.User` antes de la primera migración, grupos por data migration, `TokenAuthentication`, drf-spectacular y settings: `ALLOWED_HOSTS` con `localhost`, `127.0.0.1`, `web` (el admin y la API entran por el rewrite de Next en desarrollo) y `corpotex.oscargicast.com`; `CSRF_TRUSTED_ORIGINS` con `http://localhost:3000`, `http://localhost:3001` y `https://corpotex.oscargicast.com`. Puertos de compose en loopback (sección 7). Sin `CLAUDE_CODE_OAUTH_TOKEN`: la cuenta se conecta desde el dashboard (ADR 0022).
-2. **Todos los modelos de una vez** (P0 y P1), con admin y una migración por app.
+2. **Todos los modelos de una vez** (P0 y P1), con admin y una migración por app. El PR B1 junta los pasos 1 y 2 más el reloj, `recover_stuck_turns` en `worker_ready` y un pytest que pase; su criterio es `docker compose up --build` con los 6 servicios arriba y `pytest -q` en verde.
 3. **Seed:** el comando `seed_demo` con el formato de la sección 8, un JSON mínimo de prueba mientras llegan los de Kenji, un token por usuario y `Config.agent_user` = Gerente.
 4. **Servicios de operaciones:** desglose, matching, ruta crítica, aprobación, confirmación con reglas de jefe, avance, entrega, cancelación, redistribución, pagos y `plan_route`.
 5. **Mensajería:** webhook con allowlist, `send_text`, la cola de turnos con `run_turn` en Celery, `turn_state` y la API del asistente.
 6. **Gerencia:** decisiones, alertas, `notify_roles`, monitor, `tick` y los endpoints del Gerente; servicios con `actor` para las tools del asistente.
 7. **API del dashboard y contrato en `docs/api/`**, con los JSON de ejemplo, los serializers por rol y `/api/me/badges/`.
-8. **Onboarding y estilo:** conexión de Claude (`core/claude_auth.py`), WhatsApp, alta e importación de proveedores, la tarea de extracción, el historial de versiones y `refresh_style`.
+8. **Onboarding y estilo:** conexión de Claude (`core/claude_auth.py`), WhatsApp y alta de proveedores. La extracción, el historial de versiones y `refresh_style` los implementa la sesión `personalidad` en `core/views_style.py`, `core/onboarding.py`, `core/style.py` y `core/tasks_style.py`.
 9. **P1:** `/api/report/<token>/` con `send_report_link`, `create_suggested_suppliers` para la tool `suggest_suppliers`, y `POST /api/style/refresh/`.
 
 ## Preguntas abiertas
