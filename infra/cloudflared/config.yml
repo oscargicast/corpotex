@@ -1,0 +1,17 @@
+# Túnel de Cloudflare para Corpotex (corpotex.oscargicast.com).
+# Cómo correrlo (desde la raíz del repo):
+#   cloudflared tunnel --config infra/cloudflared/config.yml run corpotex
+# Solo la laptop de Oscar tiene las credenciales (~/.cloudflared/<UUID>.json);
+# no están en el repo y no deben copiarse aquí.
+# Rutas: /api, /admin, /webhooks, /static y /media van a Django (:8000); el resto a Next.js (:3000).
+
+tunnel: affe37f6-b0b0-4c04-90eb-ae8c2f1777d8
+credentials-file: /Users/oscar/.cloudflared/affe37f6-b0b0-4c04-90eb-ae8c2f1777d8.json
+
+ingress:
+  - hostname: corpotex.oscargicast.com
+    path: ^/(api|admin|webhooks|static|media)(/|$)
+    service: http://localhost:8000
+  - hostname: corpotex.oscargicast.com
+    service: http://localhost:3000
+  - service: http_status:404
