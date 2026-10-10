@@ -2,7 +2,7 @@
 
 Estado: propuesta revisada el 10/10 con lo acordado entre sesiones y simplificada a pedido de Oscar. No hay nada implementado.
 
-Fuentes: `CLAUDE.md` y `docs/adr/`: Django + DRF (0002), Postgres (0005), monorepo (0008), API (0009), cola de turnos (0010), onboarding (0011), suscripción (0013), código en inglés (0014), sin rutas (0015), celulares en `AllowedNumber` (0016), asistente del dashboard (0017, reemplaza al 0007 del Pana), Celery y Redis (0018), estilo por usuario (0019), asistente proactivo (0020), seed (0021), conexión de Claude desde el dashboard (0022) y compose en la raíz (0023).
+Fuentes: `CLAUDE.md` y `docs/adr/`: Django + DRF (0002), Postgres (0005), monorepo (0008), API (0009), cola de turnos (0010), onboarding (0011), suscripción (0013), código en inglés (0014), celulares en `AllowedNumber` (0016), asistente del dashboard (0017, reemplaza al 0007 del Pana), Celery y Redis (0018), estilo por usuario (0019), asistente proactivo (0020), seed (0021), conexión de Claude desde el dashboard (0022), compose en la raíz (0023) y los 8 criterios del jurado (0024, que reemplaza al 0015: vuelven las rutas).
 
 **Idioma (ADR 0014):** todo el código va en inglés: apps, modelos, campos, valores de `choices`, servicios, excepciones, URLs y claves JSON de la API. Siguen en español este documento y lo que lee una persona: `verbose_name`, los `*_display` de la API, el admin, el dashboard y los mensajes de WhatsApp.
 
@@ -18,7 +18,7 @@ El orquestador fijó `Order`, `PurchaseOrder` y `Supplier`, y las tools del agen
 |---|---|
 | `core` → `core` | `Usuario` → `User`, `Configuracion` → `Config`, `Marca` → `Brand`, `Cliente` → `Customer`, `Producto` → `Product`, `Insumo` → `Material`, `ProductoInsumo` → `ProductMaterial`, `OnboardingEstilo` → `OnboardingStyle`, `VersionEstilo` → `StyleVersion` |
 | `proveedores` → `suppliers` | `Proveedor` → `Supplier`, `Tarifa` → `Rate`. `Calificacion` desaparece: es el campo `PurchaseOrder.rating` |
-| `operaciones` → `operations` | `Orden` → `Order`, `OrdenItem` → `OrderItem`, `Requerimiento` → `Requirement`, `Pedido` → `PurchaseOrder`, `PedidoItem` → `PurchaseOrderItem`, `Avance` → `ProgressReport`, `Entrega` → `Delivery`, `Pago` → `Payment`. `Ruta` y `ParadaRuta` no van (ADR 0015) |
+| `operaciones` → `operations` | `Orden` → `Order`, `OrdenItem` → `OrderItem`, `Requerimiento` → `Requirement`, `Pedido` → `PurchaseOrder`, `PedidoItem` → `PurchaseOrderItem`, `Avance` → `ProgressReport`, `Entrega` → `Delivery`, `Pago` → `Payment`, `Ruta` → `Route`, `ParadaRuta` → `RouteStop` (vuelven, ADR 0024) |
 | `mensajeria` → `messaging` | `NumeroPermitido` → `AllowedNumber`, `Conversacion` → `Conversation`, `Mensaje` → `Message`, `Turno` → `Turn` |
 | `gerencia` → `manager` (no `management`, que choca con `management/commands/` de Django) | `Decision` → `Decision`, `Alerta` → `Alert`, `AvisoAlerta` → `AlertNotification` (nuevo, ADR 0020) |
 | `agente` → `agent` | Sin modelos: tareas de Celery, tools y prompts del agente de WhatsApp y del asistente. Runtime del SDK en `backend/.agent/` (gitignored) |
@@ -33,22 +33,24 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | Modelo | Español → inglés |
 |---|---|
 | `User` | `username`, `password`, `first_name` e `is_staff` no cambian. Rol → `role` (propiedad que sale del grupo). `estilo_md` → `style_md`, `estilo_refrescado_en` → `style_refreshed_at` (ADR 0019) |
-| `Config` | `reloj_inicio_real` → `clock_real_start`, `reloj_inicio_simulado` → `clock_sim_start`, `reloj_factor` → `clock_factor`, `reloj_pausado` → `clock_paused`, `colchon_dias` → `buffer_days`, `duraciones_etapa` → `stage_durations`, `onboarding` → `onboarding`, `usuario_agente` → `agent_user`, `numero_agente` → `agent_phone` (nuevo), `claude_conectado_en` → `claude_connected_at` y `claude_ultimo_error` → `claude_last_error` (nuevos, ADR 0022), `horas_decision_pendiente` → `decision_pending_hours` (nuevo, ADR 0020) |
+| `Config` | `reloj_inicio_real` → `clock_real_start`, `reloj_inicio_simulado` → `clock_sim_start`, `reloj_factor` → `clock_factor`, `reloj_pausado` → `clock_paused`, `colchon_dias` → `buffer_days`, `duraciones_etapa` → `stage_durations`, `onboarding` → `onboarding`, `usuario_agente` → `agent_user`, `numero_agente` → `agent_phone` (nuevo), `planta_nombre` → `plant_name`, `planta_lat` → `plant_lat`, `planta_lng` → `plant_lng` (vuelven, ADR 0024), `claude_conectado_en` → `claude_connected_at` y `claude_ultimo_error` → `claude_last_error` y `claude_ultimo_error_en` → `claude_last_error_at` (nuevos, ADR 0022), `horas_decision_pendiente` → `decision_pending_hours` (nuevo, ADR 0020) |
 | `Brand` | `nombre` → `name`, `descripcion` → `description` |
-| `Customer` | `nombre` → `name`, `ruc` → `tax_id`, `tipo` → `kind` |
+| `Customer` | `nombre` → `name`, `ruc` → `tax_id`, `tipo` → `kind`, `direccion` → `address`, `lat`, `lng` (ADR 0024) |
 | `Product` | `codigo` → `code`, `nombre` → `name`, `imagen` → `image` |
 | `Material` | `codigo` → `sku` (código interno de Corpotex), `nombre` → `name`, `tipo` → `kind`, `unidad` → `unit`, `stock` → `stock`, `imagen` → `image` (nuevo, ADR 0021) |
 | `ProductMaterial` | `producto` → `product`, `insumo` → `material`, `cantidad_por_unidad` → `qty_per_unit` |
 | `Order` | `codigo` → `code`, `cliente` → `customer`, `marca` → `brand`, `responsable` → `owner`, `estado` → `status`, `etapa_produccion` → `production_stage`, `fecha_emision` → `issued_on`, `fecha_entrega_prometida` → `promised_on`, `fecha_estimada` → `estimated_on`, `ruta_critica` → `critical_path`, `riesgo` → `risk`, `riesgo_motivo` → `risk_reason` |
 | `OrderItem` | `orden` → `order`, `producto` → `product`, `cantidad` → `quantity`, `tallas` → `sizes`, `color` → `color`, `personalizacion` → `customization`, `precio_unitario` → `unit_price` |
 | `Requirement` | `orden` → `order`, `tipo` → `kind`, `insumo` → `material`, `producto` → `product`, `cantidad_necesaria` → `qty_needed`, `cantidad_de_stock` → `qty_from_stock` |
-| `Supplier` | `nombre` → `name`, `tipo` → `kind`, `especialidades` → `specialties`, `ciudad` → `city`, `es_propio` → `is_in_house`, `capacidad_semanal` → `weekly_capacity`, `lead_time_dias` → `lead_time_days`, `frecuencia_consulta_horas` → `follow_up_every_hours`, `moneda` → `currency` (nuevo; antes estaba en `Rate` y `PurchaseOrder`), `origen` → `source`, `estado` → `status`, `notas` → `notes`. Los celulares viven en `AllowedNumber` (ADR 0016) |
+| `Supplier` | `nombre` → `name`, `tipo` → `kind`, `especialidades` → `specialties`, `ciudad` → `city`, `direccion` → `address`, `lat`, `lng` (vuelven, ADR 0024), `es_propio` → `is_in_house`, `capacidad_semanal` → `weekly_capacity`, `lead_time_dias` → `lead_time_days`, `frecuencia_consulta_horas` → `follow_up_every_hours`, `moneda` → `currency` (nuevo; antes estaba en `Rate` y `PurchaseOrder`), `origen` → `source`, `detalle_origen` → `source_detail` (nuevo, ADR 0024: url y extracto de la fuente externa; ningún prompt lo lee), `estado` → `status`, `notas` → `notes`. Los celulares viven en `AllowedNumber` (ADR 0016) |
 | `Rate` | `proveedor` → `supplier`, `insumo` → `material`, `producto` → `product`, `precio_unitario` → `unit_price`, `vigente_desde` → `valid_from` |
-| `PurchaseOrder` | `codigo` → `code`, `proveedor` → `supplier`, `conversacion` → `conversation`, `estado` → `status`, `proveedor_sugerido` → `suggested_supplier`, `candidatos` → `candidates`, `redistribuido_de` → `redistributed_from`, `fecha_limite_interna` → `internal_due_on`, `fecha_comprometida` → `committed_on`, `proxima_consulta_en` → `next_follow_up_at`, `condiciones` → `terms`, `calificacion` → `rating` (json; reemplaza a los 6 campos `rating_*`) |
+| `PurchaseOrder` | `codigo` → `code`, `proveedor` → `supplier`, `conversacion` → `conversation`, `estado` → `status`, `proveedor_sugerido` → `suggested_supplier`, `justificacion` → `rationale`, `puntajes` → `scores` (vuelven, ADR 0024; el ranking completo vive en `Decision.detail.proposal`), `token_reporte` → `report_token`, `link_reporte_enviado_en` → `report_link_sent_at` (nuevos, ADR 0024), `redistribuido_de` → `redistributed_from`, `fecha_limite_interna` → `internal_due_on`, `fecha_comprometida` → `committed_on`, `proxima_consulta_en` → `next_follow_up_at`, `condiciones` → `terms`, `calificacion` → `rating` (json; reemplaza a los 6 campos `rating_*`) |
 | `PurchaseOrderItem` | `pedido` → `purchase_order`, `requerimiento` → `requirement`, `cantidad` → `quantity`, `precio_unitario` → `unit_price`, `cantidad_entregada` → `qty_delivered` |
-| `ProgressReport` | `pedido` → `purchase_order`, `unidades_completadas` → `units_done`, `nota` → `note`, `foto` → `photo`, `mensaje` → `message`, `reportado_en` → `reported_at` |
+| `ProgressReport` | `pedido` → `purchase_order`, `unidades_completadas` → `units_done`, `nota` → `note`, `foto` → `photo`, `mensaje` → `message`, `reportado_en` → `reported_at`, `acusado_en` → `acknowledged_at` (nuevo, ADR 0024: el agente ya acusó recibo del reporte web) |
 | `Delivery` | `pedido` → `purchase_order`, `cantidad_recibida` → `qty_received`, `cantidad_defectuosa` → `qty_defective`, `calidad` → `quality`, `recibido_por` → `received_by`, `recibido_en` → `received_at`, `nota` → `note` |
-| `Payment` | `pedido` → `purchase_order`, `tipo` → `kind`, `monto` → `amount`, `metodo` → `method`, `pagado_en` → `paid_at`, `comprobante` → `receipt` |
+| `Payment` | `pedido` → `purchase_order`, `tipo` → `kind`, `monto` → `amount`, `estado` → `status` (vuelve, ADR 0024), `metodo` → `method`, `pagado_en` → `paid_at`, `comprobante` → `receipt` |
+| `Route` (vuelve) | `fecha` → `date`, `estado` → `status`, `distancia_km` → `distance_km`, `duracion_min` → `duration_min`, `trazado` → `path`, `recalculada_de` → `recalculated_from` |
+| `RouteStop` (vuelve) | `ruta` → `route`, `posicion` → `position`, `tipo` → `kind`, `proveedor` → `supplier`, `cliente` → `customer`, `pedido` → `purchase_order`, `orden` → `order`, `nombre` → `name`, `direccion` → `address`, `lat`, `lng`, `hora_estimada` → `eta` |
 | `AllowedNumber` | `telefono` → `phone`, `lid` → `lid`, `nombre` → `name`, `proveedor` → `supplier`, `activo` → `active`, `simulado` → `simulated` |
 | `Conversation` | `canal` → `channel`, `numero` → `allowed_number`, `usuario` → `user` (solo `dashboard`), `sesion_agente` → `agent_session`, `accion_pendiente` → `pending_action` |
 | `Message` | `conversacion` → `conversation`, `autor` → `author`, `texto` → `text`, `media` → `media`, `id_externo` → `external_id`, `estado` → `status`, `error` → `error`, `enviado_en` → `sent_at`, `leido_en` → `read_at` (nuevo, ADR 0020), `turno` → `turn`, `accion` → `action`, `contexto` → `context` |
@@ -73,16 +75,19 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `OrderItem.customization` | bordado → `embroidery`, estampado → `print`, sublimado → `sublimation` |
 | `Order.critical_path[]` | tipo → `kind`: insumo → `material`, taller → `workshop`, produccion → `production`, entrega → `delivery`. estado → `status`: pendiente → `pending`, en_curso → `in_progress`, hecho → `done`, atrasado → `late` |
 | `Requirement.kind`, `Supplier.kind` | insumo/insumos → `material`, taller → `workshop`, terminado → `finished`. El pedido toma el `kind` de su proveedor |
-| `Supplier.source` | registrado → `registered`, autoregistro → `self_registered`, sugerido → `suggested` |
+| `Supplier.source` | registrado → `registered`, autoregistro → `self_registered`, externo → `external` (ADR 0024; reemplaza a `suggested`) |
 | `Supplier.status` | activo → `active`, por_revisar → `pending_review`, inactivo → `inactive` |
 | `Supplier.currency` | `PEN` y `USD` no cambian |
 | `Payment.method` | yape → `yape`, transferencia → `transfer`, efectivo → `cash` |
 | `PurchaseOrder.status` | sugerido → `suggested`, aprobado → `approved`, en_negociacion → `negotiating`, confirmado → `confirmed`, en_proceso → `in_progress`, entregado → `delivered`, rechazado_proveedor → `declined_by_supplier`, cancelado_proveedor → `cancelled_by_supplier`, cancelado → `cancelled` |
 | `Payment.kind` | adelanto → `advance`, saldo → `balance` |
+| `Payment.status` | pendiente → `pending`, pagado → `paid` |
+| `Route.status` | propuesta → `proposed`, planificada → `planned`, en_curso → `in_progress`, completada → `completed`, reemplazada → `replaced`, descartada → `discarded` |
+| `RouteStop.kind` | recojo → `pickup`, entrega → `delivery` |
 | `Conversation.channel` | whatsapp → `whatsapp`, simulador → `simulator`, dashboard → `dashboard` (asistente) |
 | `Message.author` | proveedor → `supplier`, agente → `agent`, gerente → `manager`, usuario → `user` (persona del dashboard). En la API del asistente sale como `role`: `user` → `user`, `agent` → `assistant` |
 | `Message.status` | recibido → `received`, procesado → `processed`, error → `error`, enviado → `sent`, fallido → `failed` |
-| `Turn.reason` | mensaje → `message`, decision → `decision`, seguimiento → `follow_up`, pedido_aprobado → `purchase_order_approved`, alerta → `alert` (nuevo, ADR 0020) |
+| `Turn.reason` | mensaje → `message`, decision → `decision`, seguimiento → `follow_up`, pedido_aprobado → `purchase_order_approved`, alerta → `alert` (ADR 0020), reporte_web → `web_report` (ADR 0024) |
 | `Turn.status` | pendiente → `pending`, en_curso → `running`, hecho → `done`, error → `error` |
 | `Decision.kind` | aprobar_asignacion → `approve_assignment`, precio → `price`, terminos → `terms`, otro → `other` |
 | `Decision.status` | pendiente → `pending`, aprobada → `approved`, rechazada → `rejected`, proveedor_cambiado → `supplier_changed`, cancelada → `cancelled` |
@@ -101,23 +106,23 @@ Se calculan, se repetían o nadie los iba a usar en la demo. Los que el dashboar
 | Modelo | Quitado | Por qué |
 |---|---|---|
 | `PurchaseOrder` | `kind` | Es el `kind` del proveedor |
-| | `rationale`, `scores` | Están dentro de `candidates`, en la fila del proveedor elegido |
+| | `candidates` | El ranking completo vive en `Decision.detail.proposal` de su asignación; el pedido guarda solo `rationale` y `scores` del elegido (ADR 0024) |
 | | `changed_by_manager` | Es `supplier != suggested_supplier` |
 | | `total_amount`, `currency` | Suma de los ítems; la moneda es la del proveedor |
 | | `units_done`, `last_progress_at`, `delivered_on` | Salen del último `ProgressReport` y de la última `Delivery` |
-| | `follow_up_requested_at` | El seguimiento se detecta con `next_follow_up_at <= clock.now()` (sección 3) |
+| | `follow_up_requested_at` | El seguimiento se detecta con `next_follow_up_at <= clock.now()` (sección 4) |
 | | `approved_by` | Es `Decision.resolved_by` de la asignación |
 | | `rating_delay_days`, `rating_quality`, `rating_defect_pct`, `rating_price_vs_ref_pct`, `rating_score`, `rated_at` | Un solo json `rating` |
 | `Order` | `total_amount` | Suma de los ítems |
 | | `spec_sheet`, `source` | No habrá PDFs de Comercial (ADR 0021) |
 | `Requirement` | `qty_to_order`, `status` | `qty_needed − qty_from_stock`, y el estado sale de sus `PurchaseOrderItem` |
-| `Supplier` | `contact_name`, `address`, `payment_method` | El contacto es `AllowedNumber.name`; sin rutas no hay dirección; el método de pago va en cada `Payment` |
+| `Supplier` | `contact_name`, `payment_method` | El contacto es `AllowedNumber.name`; el método de pago va en cada `Payment`. `address`, `lat` y `lng` volvieron con las rutas (ADR 0024) |
 | | `on_time_score`, `quality_score` | Promedio de `PurchaseOrder.rating` de sus pedidos cerrados, calculado |
 | `Rate` | `currency`, `source` | La moneda es la del proveedor; la fuente no se usaba |
 | `Customer` | `contact_name`, `phone` | Nadie le escribe al cliente |
 | `Product` | `category` | No se usaba |
 | `ProgressReport` | `source` | Es `whatsapp` si tiene `message`, si no, `web` |
-| `Payment` | `status`, `due_on`, `invoice_required`, `invoice_number`, `recorded_by` | `paid` es `paid_at` lleno; el resto es contabilidad fuera del alcance |
+| `Payment` | `due_on`, `invoice_required`, `invoice_number`, `recorded_by` | El vencimiento se calcula; el resto es contabilidad fuera del alcance. `status` volvió por el ADR 0024 |
 | `AllowedNumber` | `role` | Todos los números activos actúan de proveedor; el del Gerente es `Config.agent_user` |
 | `Conversation` | `status`, `last_message_at` | No se usaban; el último mensaje se consulta |
 | `Message` | `direction`, `media_type`, `payload` | Sale de `author`; el tipo, del archivo; el payload crudo va al log |
@@ -134,7 +139,7 @@ Son sync; el agente los envuelve con `sync_to_async`. Los que tienen reglas de p
 | `reloj.ahora()` | `clock.now()` | `core/clock.py` |
 | `encolar_turno(conversacion, motivo)` | `enqueue_turn(conversation, reason)` | `messaging/services.py` |
 | `tomar_siguiente_turno()` | `claim_next_turn(conversation_id=None) -> TurnBatch \| None` | `messaging/services.py` |
-| `LoteTurno` | `TurnBatch {turn, message_ids, decision_ids, follow_up_purchase_order_ids, new_purchase_order_ids, alert_ids}` | `messaging/services.py` |
+| `LoteTurno` | `TurnBatch {turn, message_ids, decision_ids, follow_up_purchase_order_ids, new_purchase_order_ids, alert_ids, web_report_ids}` | `messaging/services.py` |
 | `terminar_turno(lote, sesion_id, error=None)` | `finish_turn(batch, session_id, error=None)` | `messaging/services.py` |
 | `recuperar_turnos_colgados()` | `recover_stuck_turns()` | `messaging/services.py` |
 | `estado_turno(lote)` | `turn_state(batch) -> dict` | `messaging/services.py` |
@@ -159,6 +164,9 @@ Son sync; el agente los envuelve con `sync_to_async`. Los que tienen reglas de p
 | Marcar pago | `mark_payment_paid(payment, *, method, receipt=None, actor)` | `operations/services.py` |
 | `cancelar_por_proveedor` | `cancel_by_supplier(purchase_order, *, reason, units_done=None)` | `operations/services.py` |
 | `redistribuir` | `redistribute(purchase_order)` | `operations/services.py` |
+| Planificar ruta (ADR 0024) | `plan_route(date, *, actor=None) -> Route` | `operations/routes.py` |
+| Reporte público (P1) | `record_public_report(token, *, units_done, photo=None, note="")`, `report_url(purchase_order) -> str`, `mark_report_link_sent(purchase_order)` | `operations/services.py` |
+| Proveedores sugeridos (P1) | `create_suggested_suppliers(candidates, *, actor) -> {created, skipped}` | `suppliers/services.py` |
 | Puntajes del proveedor | `supplier_scores(supplier) -> {on_time, quality}` | `suppliers/services.py` |
 | `crear_decision` | `create_decision(*, kind, purchase_orders, summary, detail, conversation=None)` | `manager/services.py` |
 | `resolver_decision` | `resolve_decision(decision, *, action, supplier_id=None, purchase_order_id=None, note="", actor)` | `manager/services.py` |
@@ -171,7 +179,7 @@ Son sync; el agente los envuelve con `sync_to_async`. Los que tienen reglas de p
 | Extracción de estilo (onboarding) | `run_style_extraction()` | `core/onboarding.py` |
 | Estilo por usuario | `approve_style(onboarding_style, *, actor)`, `restore_style_version(version, *, actor)`, `refresh_style(user)` | `core/style.py` |
 | Tareas de Celery | `run_turn(conversation_id)`, `tick`, `run_style_extraction`, `refresh_style` | `agent/tasks.py`, `manager/tasks.py`, `core/tasks.py` |
-| Conexión de Claude (ADR 0022) | `claude_auth.start() -> {url, state}`, `exchange(code)`, `status()`, `disconnect()`, `set_api_key(api_key)`; constantes `CLIENT_ID`, `AUTHORIZE_URL`, `TOKEN_URL`, `REDIRECT_URI`, `SCOPES` copiadas de `mano` | `core/claude_auth.py` |
+| Conexión de Claude (ADR 0022) | `claude_auth.start() -> {url, state}`, `exchange(code)`, `status()`, `disconnect()`, `set_api_key(api_key)`, `mark_claude_disconnected(error_text)`, `mark_claude_connected()`; constantes `CLIENT_ID`, `AUTHORIZE_URL`, `TOKEN_URL`, `REDIRECT_URI`, `SCOPES` copiadas de `mano` | `core/claude_auth.py` |
 | Seed | `python manage.py seed_demo` | `seed/management/commands/seed_demo.py` |
 | `ReglaDeJefe(motivo)` | `ManagerApprovalRequired(reason)` | `operations/exceptions.py` |
 | `NumeroNoPermitido` | `NumberNotAllowed` | `messaging/exceptions.py` |
@@ -194,9 +202,11 @@ Todas con barra final (ADR 0009). Los filtros también van en inglés (`?status=
 | `/api/ordenes/`, `/api/ordenes/<id>/`, `/api/ordenes/<id>/confirmar/` | `/api/orders/`, `/api/orders/<id>/`, `/api/orders/<id>/confirm/` |
 | `/api/pedidos/`, `/api/pedidos/<id>/` | `/api/purchase-orders/`, `/api/purchase-orders/<id>/` |
 | Entregas y avances desde el dashboard | `/api/purchase-orders/<id>/deliveries/` (POST), `/api/purchase-orders/<id>/progress/` (POST, multipart con foto) |
-| `/api/pagos/<id>/pagar/` | `/api/payments/<id>/pay/` |
+| `/api/pagos/`, `/api/pagos/<id>/pagar/` | `/api/payments/`, `/api/payments/<id>/pay/` (multipart `{method, receipt?}`) |
+| Rutas (vuelven, ADR 0024) | `/api/routes/?current=1`, `/api/routes/<id>/` (cualquier estado), `/api/routes/plan/` (POST `{date}`, Gerente y Producción) |
+| Reporte público del taller (P1, ADR 0024) | `/api/report/<token>/` (GET y POST multipart, sin auth) |
 | `/api/alertas/<id>/reconocer/` | `/api/alerts/<id>/acknowledge/` |
-| `/api/proveedores/`, `/api/proveedores/<id>/`, `/api/proveedores/importar/`, `/api/proveedores/autoregistro/` | `/api/suppliers/`, `/api/suppliers/<id>/`, `/api/suppliers/import/`, `/api/suppliers/self-register/` |
+| `/api/proveedores/`, `/api/proveedores/<id>/`, `/api/proveedores/importar/`, `/api/proveedores/autoregistro/` | `/api/suppliers/`, `/api/suppliers/<id>/`, `/api/suppliers/import/`, `/api/suppliers/self-register/` (público, P0) |
 | Números del proveedor (ADR 0016) | `/api/suppliers/<id>/numbers/` (POST), `/api/suppliers/<id>/numbers/<number_id>/` (PATCH) |
 | `/api/simulador/contactos/`, `/api/simulador/mensajes/` | `/api/simulator/contacts/`, `/api/simulator/messages/` |
 | `/api/conversaciones/<id>/mensajes/?desde=<id>` | `/api/conversations/<id>/messages/?after=<id>` |
@@ -210,7 +220,7 @@ Todas con barra final (ADR 0009). Los filtros también van en inglés (`?status=
 
 Claves JSON: las de los modelos. Cada `status` o `kind` viaja con su `status_display` o `kind_display`, que es el texto en español.
 
-**Campos calculados en la API** (no se guardan): `Order.total_amount`; `PurchaseOrder.kind`, `total_amount`, `currency`, `units_done`, `progress_pct`, `last_progress_at`, `delivered_on`, `changed_by_manager`, `rationale` (del elegido en `candidates`), `waiting_manager`; `Requirement.qty_to_order` y `status`; `Supplier.on_time_score`, `quality_score`, `open_purchase_orders`, `load_pct`, `numbers_count`, `active_numbers_count`; `Payment.status`; `Message.direction`. Todo objeto anidado de producto o material trae `image` (URL relativa `/media/...`): ítems de la orden, requerimientos, ítems del pedido y tarifas.
+**Campos calculados en la API** (no se guardan): `Order.total_amount`; `PurchaseOrder.kind`, `total_amount`, `currency`, `units_done`, `progress_pct`, `last_progress_at`, `delivered_on`, `changed_by_manager`, `candidates` (el `proposal` de su `Decision` de asignación), `paid_amount`, `pending_amount`, `waiting_manager`; `Requirement.qty_to_order` y `status`; `Supplier.on_time_score`, `quality_score`, `open_purchase_orders`, `load_pct`, `numbers_count`, `active_numbers_count`, `payments_summary`; `Payment.due_on`; `Message.direction`. Todo objeto anidado de producto o material trae `image` (URL relativa `/media/...`): ítems de la orden, requerimientos, ítems del pedido y tarifas.
 
 ### Sin Pana ni Kenji (ADR 0017)
 
@@ -218,14 +228,14 @@ Se eliminan el contrato con Kenji, `notify_pana` y los `pana_notified_at`. Los a
 
 ## Resumen
 
-- 7 apps de Django (6 con lógica y `seed`), 26 modelos y 27 tablas propias: la 27.ª es la intermedia de `Decision.purchase_orders`. No cuenta las de Django, DRF y Celery (grupos, tokens, sesiones).
+- 7 apps de Django (6 con lógica y `seed`), 28 modelos y 29 tablas propias: la 29.ª es la intermedia de `Decision.purchase_orders`. No cuenta las de Django, DRF y Celery (grupos, tokens, sesiones).
 - Todos los modelos se crean de una vez, P0 y P1 juntos. P1 queda como lógica y endpoints, no como tablas, para que el frontend tenga el contrato completo desde el principio.
 - Las fechas del negocio usan el reloj simulado (acelerado), no la hora real. Las excepciones son los tiempos de WhatsApp y de la cola, que van en hora real.
 - Las escalaciones al Gerente son filas de `Decision`. Una decisión puede cubrir un lote de pedidos.
 - Hay dos agentes sobre la misma cola de turnos (`Turn`), uno a la vez por conversación: el de WhatsApp, que escribe por el Gerente con su estilo, y el asistente del dashboard, uno por usuario, con tools según su rol (ADR 0017) y que avisa solo cuando el monitor detecta un problema (ADR 0020).
 - Todo el trabajo en segundo plano corre en Celery con Redis, y `Turn` sigue siendo la fuente de verdad de la cola (ADR 0018).
 - Los mensajes de números que no están activos en la allowlist no se guardan: la instancia `corpotex` recibe todo lo que llega al número de Oscar, familia incluida.
-- Toda la data de la demo entra con `seed_demo` desde JSON e imágenes en `backend/seed/` (ADR 0021, sección 7).
+- Toda la data de la demo entra con `seed_demo` desde JSON e imágenes en `backend/seed/` (ADR 0021, sección 8).
 
 ## Convenciones
 
@@ -236,7 +246,7 @@ Se eliminan el contrato con Kenji, `notify_pana` y los `pana_notified_at`. Los a
 | Fechas de negocio | Todo `*_on` y todo `*_at` del dominio se escribe con `clock.now()` (hora simulada). Excepciones en hora real: `Message.sent_at`, `Message.read_at`, `Turn.available_at`, `OnboardingStyle.since`, `OnboardingStyle.heartbeat_at` y `User.style_refreshed_at`. |
 | Dinero | `Decimal(12, 2)`. La moneda es la del proveedor (`Supplier.currency`): `PEN` por defecto, `USD` solo para el de México, sin conversión automática. |
 | Estados | `TextChoices` con valor en inglés y etiqueta en español. Las transiciones viven en servicios, no en `save()`. |
-| Borrado | No se borra: se pasa a `cancelled` o `inactive`. La excepción es `seed_demo`, que borra y recrea la data de demo. |
+| Borrado | No se borra: se pasa a `cancelled`, `inactive` o `discarded`. La excepción es `seed_demo`, que borra y recrea la data de demo. |
 | Teléfonos | Formato del JID de WhatsApp, sin `+` (ej. `51900000000`). |
 | Permisos | Por rol, en dos capas: los servicios chequean `require_role(actor, ...)`, y la lectura pasa por serializers por rol, que usan también las tools del asistente y los turnos de aviso. El modelo no puede conseguir más permisos pidiéndolos. Precios, pagos y celulares (`AllowedNumber.phone`, `numbers`) solo los ve el Gerente. A `sales` y `production` tampoco les llega texto libre donde se cuelan precios o teléfonos: `PurchaseOrder.terms` y `candidates`, `Decision.summary` y `detail`, `Supplier.notes` y el texto de los mensajes de WhatsApp; ven estados, fechas, cantidades y nombres. `Alert.text` sale de plantillas sin precios ni teléfonos, así que lo ven todos. El simulador lista contactos sin teléfono. |
 | Servicios | Las vistas, el webhook, las tools de los dos agentes y las tareas de Celery llaman a `backend/*/services.py`. Nadie más escribe modelos directo. |
@@ -248,7 +258,7 @@ Se eliminan el contrato con Kenji, `notify_pana` y los `pana_notified_at`. Los a
 |---|---|---|
 | `core` | `User`, `Config`, `Brand`, `Customer`, `Product`, `Material`, `ProductMaterial`, `OnboardingStyle`, `StyleVersion` | Usuarios y roles, reloj, catálogo, inventario, onboarding y estilo por usuario |
 | `suppliers` | `Supplier`, `Rate` | Registro de proveedores y talleres, precios históricos y puntajes calculados |
-| `operations` | `Order`, `OrderItem`, `Requirement`, `PurchaseOrder`, `PurchaseOrderItem`, `ProgressReport`, `Delivery`, `Payment` | Órdenes de clientes, desglose, pedidos a proveedores, calificación y pagos |
+| `operations` | `Order`, `OrderItem`, `Requirement`, `PurchaseOrder`, `PurchaseOrderItem`, `ProgressReport`, `Delivery`, `Payment`, `Route`, `RouteStop` | Órdenes de clientes, desglose, pedidos a proveedores, calificación, pagos y rutas |
 | `messaging` | `AllowedNumber`, `Conversation`, `Message`, `Turn` | Allowlist, chats de WhatsApp, simulador y asistente, webhook, cola de turnos y envío por Evolution |
 | `manager` | `Decision`, `Alert`, `AlertNotification` | Pendientes del Gerente, monitor, avisos por rol y tick |
 | `agent` | sin modelos | Tarea `run_turn`, tools y prompts del agente de WhatsApp y del asistente (sesión `agente`); `agent/persona/` es de la sesión `personalidad` |
@@ -275,6 +285,9 @@ erDiagram
     PurchaseOrder ||--o{ ProgressReport : "reporta"
     PurchaseOrder ||--o{ Delivery : "se recibe en"
     PurchaseOrder ||--o{ Payment : "se paga en"
+    Route ||--|{ RouteStop : "tiene"
+    PurchaseOrder |o--o{ RouteStop : "se recoge en"
+    Order |o--o{ RouteStop : "se entrega en"
     Supplier |o--o{ AllowedNumber : "tiene 0 a n"
     AllowedNumber ||--o{ Conversation : "chatea en"
     User |o--o| Conversation : "asistente"
@@ -314,6 +327,9 @@ erDiagram
         string name "Caja Piura, colegios, AIDER, PIQA"
         string tax_id UK "RUC, opcional"
         string kind "company, school, ngo, individual"
+        string address "para la parada de entrega"
+        float lat "nullable; sin coordenadas no entra en la ruta"
+        float lng
     }
     Product {
         string code UK
@@ -395,12 +411,16 @@ erDiagram
         string kind "material, workshop, finished"
         array specialties "polo, camisa, buzo (talleres)"
         string city "Piura, Lima, Mexico"
+        string address
+        float lat "nullable; solo talleres de Piura"
+        float lng
         bool is_in_house "la planta propia"
         int weekly_capacity "unidades por semana (talleres)"
         int lead_time_days "plazo tipico"
         int follow_up_every_hours "cada cuanto le escribe el agente"
         string currency "PEN, USD"
-        string source "registered, self_registered, suggested"
+        string source "registered, self_registered, external"
+        json source_detail "url y extracto de la fuente externa; ningun prompt lo lee"
         string status "active, pending_review, inactive"
         text notes "trato y preferencias; lo aprobado del estilo"
     }
@@ -417,7 +437,10 @@ erDiagram
         int conversation_id FK "chat donde se negocia"
         string status "ver diagrama de estados"
         int suggested_supplier_id FK "lo que propuso el matching"
-        json candidates "ranking completo del matching"
+        text rationale "por que este proveedor"
+        json scores "puntaje por criterio del elegido"
+        uuid report_token UK "link publico /report/<token>"
+        datetime report_link_sent_at "el agente ya mando el link"
         int redistributed_from_id FK "pedido cancelado que lo origina"
         date internal_due_on "lo que se le pide al proveedor"
         date committed_on "lo que acordo el proveedor"
@@ -439,6 +462,7 @@ erDiagram
         file photo
         int message_id FK "si llego por chat"
         datetime reported_at
+        datetime acknowledged_at "reportes web: el agente ya acuso recibo"
     }
     Delivery {
         int purchase_order_id FK
@@ -453,8 +477,9 @@ erDiagram
         int purchase_order_id FK
         string kind "advance, balance"
         decimal amount
+        string status "pending, paid"
         string method "yape, transfer, cash"
-        datetime paid_at "vacio hasta que el Gerente lo marque"
+        datetime paid_at
         file receipt
     }
 ```
@@ -462,20 +487,63 @@ erDiagram
 - **Consolidación:** un `PurchaseOrder` puede cubrir requerimientos de varias órdenes y marcas, porque cada `PurchaseOrderItem` apunta a su `Requirement`. Así funciona hoy la compra: un pedido por proveedor para las 3 marcas.
 - **División de un pedido grande:** un `Requirement` de 1000 polos puede repartirse en varios `PurchaseOrderItem` de talleres distintos.
 - **Planta propia:** es un `Supplier` con `is_in_house = true` y kind `workshop`, sin números. Entra al matching y al cálculo de carga como cualquier taller. Un pedido a la planta pasa de `approved` a `confirmed` sin negociación: no abre turno ni genera `no_channel`.
-- **Calculados del pedido:** `kind` es el del proveedor; `total_amount` es la suma de `quantity × unit_price` de los ítems y `currency` la del proveedor; `units_done` y `last_progress_at` salen del último `ProgressReport`; `delivered_on` de la última `Delivery`; `changed_by_manager` es `supplier != suggested_supplier`; `rationale` es el de la fila del proveedor elegido en `candidates`.
-- **`candidates`:** `[{supplier_id, supplier_name, score, scores: {on_time, price, load, quality}, unit_price, load_pct, rationale}]`, ordenado por `score`. Alimenta la justificación y el "cambiar proveedor" del dashboard.
-- **Matching (`match_requirements`, paso 3):** usa `Rate` (precio), `supplier_scores` (cumplimiento y calidad, calculados sobre los `rating` de sus pedidos cerrados), la carga (unidades en pedidos abiertos frente a `weekly_capacity`) y el plazo. Crea los `PurchaseOrder` en `suggested` con `suggested_supplier` y `candidates`, y después una `Decision` `approve_assignment` por el lote.
+- **Calculados del pedido:** `kind` es el del proveedor; `total_amount` es la suma de `quantity × unit_price` de los ítems y `currency` la del proveedor; `units_done` y `last_progress_at` salen del último `ProgressReport`; `delivered_on` de la última `Delivery`; `changed_by_manager` es `supplier != suggested_supplier`; `paid_amount` y `pending_amount` suman sus `Payment`; `candidates` es el `proposal` de su `Decision` de asignación.
+- **Justificación del matching (ADR 0024):** el pedido guarda `rationale` (texto) y `scores` (`{on_time, price, load, quality}` del elegido), que se generan una sola vez. El ranking completo, `[{supplier_id, supplier_name, score, scores, unit_price, load_pct, rationale}]` ordenado por `score`, vive en `Decision.detail.proposal` y alimenta el "cambiar proveedor" del dashboard.
+- **Matching (`match_requirements`, paso 3):** usa `Rate` (precio), `supplier_scores` (cumplimiento y calidad, calculados sobre los `rating` de sus pedidos cerrados), la carga (unidades en pedidos abiertos frente a `weekly_capacity`) y el plazo. Crea los `PurchaseOrder` en `suggested` con `suggested_supplier`, `rationale` y `scores`, y después una `Decision` `approve_assignment` por el lote con el ranking completo en `detail.proposal`.
 - **Colchón:** `internal_due_on` = `Order.promised_on` menos `Config.buffer_days`. Es el "5 días al proveedor cuando al cliente se le prometieron 10". Con varias órdenes en un pedido, se toma la más cercana.
 - **Reglas de jefe (`confirm_purchase_order`):** si el precio pasa la `Rate` vigente o la fecha pasa `internal_due_on`, lanza `ManagerApprovalRequired(reason)` y la tool le dice al modelo que escale. Es idempotente: confirmar un pedido ya `confirmed` con los mismos términos devuelve OK.
-- **Cancelación (`cancel_by_supplier`):** pasa el pedido a `cancelled_by_supplier` y llama a `redistribute`. Es idempotente: si el pedido ya estaba cancelado, no redistribuye de nuevo.
+- **Cancelación (`cancel_by_supplier`):** pasa el pedido a `cancelled_by_supplier` y llama a `redistribute`, que además crea la ruta nueva en `proposed` (sección 3). Es idempotente: si el pedido ya estaba cancelado, no redistribuye de nuevo.
 - **Calificación automática:** al cerrar el pedido (`delivered`) se llena `rating` a partir de las `Delivery` y las fechas: `{delay_days, quality, defect_pct, price_vs_ref_pct, score, rated_at}`. `supplier_scores` promedia los `rating` del proveedor en cada consulta; con la data de la demo no hace falta cachearlo. El seed trae pedidos cerrados con `rating` para que los puntajes no salgan vacíos.
-- **Pagos:** al confirmar un pedido se crean dos `Payment` (50% `advance` y 50% `balance`) con `paid_at` vacío. `mark_payment_paid` llena `paid_at`, `method` y `receipt`; solo el Gerente. En la API, `status` es `paid` si `paid_at` tiene valor, y `due_on` se calcula: el adelanto vence al confirmar (`PurchaseOrder.created_at` del `confirmed`, en hora simulada) y el saldo el día de la última `Delivery`. La alerta `payment_due` sale de eso: un pago sin `paid_at` con `due_on` pasado.
+- **Pagos (P0, ADR 0024):** al confirmar un pedido se crean dos `Payment` (50% `advance` y 50% `balance`) en `pending`. `mark_payment_paid(payment, *, method, receipt=None, actor)` (`POST /api/payments/<id>/pay/`, multipart) los pasa a `paid` con `paid_at`; solo el Gerente. `GET /api/payments/` lista todos. En el detalle del pedido van `payments: [{id, kind, kind_display, amount, status, due_on, paid_at, method, receipt}]`, `paid_amount`, `pending_amount` y `currency`; en el detalle del proveedor y en el Monitor (solo Gerente), `payments_summary: [{currency, paid, pending, overdue_count}]` agrupado por moneda, nunca sumando PEN con USD (en el Monitor, además, por proveedor). `due_on` se calcula: el adelanto vence al confirmar (`PurchaseOrder.created_at` del `confirmed`, en hora simulada) y el saldo el día de la última `Delivery`. La alerta `payment_due` sale de eso: un pago sin `paid_at` con `due_on` pasado.
+- **Proveedores por revisar (ADR 0024):** `POST /api/suppliers/self-register/` es público (P0) y crea el `Supplier` con `source = self_registered` y `status = pending_review`. Para las fuentes externas (P1), la tool `suggest_suppliers(specialty, city)` del asistente del Gerente (la define `agente`) llama a `create_suggested_suppliers(candidates, *, actor)`: recibe `[{name, city, kind, specialty, source_url, evidence}]` ya validados, deduplica por nombre normalizado y ciudad contra los existentes, crea los `Supplier` con `source = external`, `status = pending_review` y la url y el extracto en `source_detail` (nunca en `notes`, que entra al prompt del agente de WhatsApp), y devuelve `{created, skipped}`. El Gerente los ve con `GET /api/suppliers/?status=pending_review` (con `source`, `source_detail` y `notes`) y los aprueba o descarta con `PATCH /api/suppliers/<id>/ {status: active | inactive}`.
+- **Reporte público del taller (P1, ADR 0024):** cada pedido tiene un `report_token` (uuid). `GET /api/report/<token>/` devuelve `{code, product: {name, image}, quantity, committed_on, units_done}`, sin precios ni proveedor; `POST` multipart `{units_done, photo?, note?}` llama a `record_public_report`, que registra el `ProgressReport` (`actor = None`) y encola un `Turn` `web_report` en `PurchaseOrder.conversation`, si existe, para que el agente acuse recibo. Sin auth: el token es el secreto. La tool `send_report_link(code)` del agente arma la URL con `report_url(purchase_order)` y la marca con `mark_report_link_sent`, así el modelo nunca ve el token ni repite el link (`turn_state` trae `report_link_sent_at` por pedido).
 - **Celulares (ADR 0016):** viven solo en `AllowedNumber`, de 0 a n por proveedor (por ejemplo, el dueño y el encargado del taller). Un proveedor tiene canal si tiene al menos un número activo.
   - Alta, importación y autoregistro llevan `name`, `kind`, `specialties` (en el CSV, separadas por `;`), `city`, `weekly_capacity`, `lead_time_days`, `currency` y un `phone` opcional, que crea su `AllowedNumber` con `active = false`. `follow_up_every_hours` toma 48 por defecto y `notes` queda vacío hasta el onboarding de estilo. Al importar, un proveedor ya existe si alguno de sus números coincide con el `phone`; si no, se compara por `name`.
   - El detalle del Gerente trae `numbers: [{id, phone, name, active, simulated}]`. `POST /api/suppliers/<id>/numbers/ {phone, name?}` agrega uno inactivo, y `PATCH /api/suppliers/<id>/numbers/<number_id>/ {active?, name?, phone?}` lo activa o desactiva. El `phone` solo se corrige si el número no tiene conversación. Los números no se borran: se desactivan.
   - La lista trae `numbers_count` y `active_numbers_count`, para mostrar "1 de 2 activos" o "Sin canal" sin cargar el detalle.
 
-## 3. Mensajería, asistente y cola de turnos
+## 3. Rutas (ADR 0024)
+
+```mermaid
+erDiagram
+    Route ||--|{ RouteStop : "tiene"
+    Route |o--o{ Route : "se recalcula en"
+    Supplier |o--o{ RouteStop : "recojo"
+    Customer |o--o{ RouteStop : "entrega"
+    PurchaseOrder |o--o{ RouteStop : "se recoge en"
+    Order |o--o{ RouteStop : "se entrega en"
+
+    Route {
+        date date
+        string status "proposed, planned, in_progress, completed, replaced, discarded"
+        decimal distance_km
+        int duration_min
+        json path "GeoJSON LineString, lineas rectas"
+        int recalculated_from_id FK "ruta anterior"
+    }
+    RouteStop {
+        int route_id FK
+        int position "0 y ultima son el almacen"
+        string kind "pickup, delivery"
+        int supplier_id FK "taller, en pickup"
+        int customer_id FK "cliente, en delivery"
+        int purchase_order_id FK "en pickup"
+        int order_id FK "en delivery"
+        string name "copia: almacen, taller o cliente"
+        string address
+        float lat
+        float lng
+        datetime eta
+    }
+```
+
+- **Puntos:** el almacén (`Config.plant_name`, `plant_lat`, `plant_lng`) es la primera y la última parada. Un `pickup` por cada pedido de taller con `committed_on` ese día en un taller con coordenadas; un `delivery` por cada orden `ready` cuyo cliente tiene coordenadas. Sin coordenadas, el punto no entra. Cada parada copia `name`, `address`, `lat` y `lng`, así la ruta no cambia si después se edita el proveedor.
+- **`plan_route(date, *, actor=None)`:** vecino más cercano desde el almacén más una pasada 2-opt sobre distancias haversine; sin servicio externo, `path` son líneas rectas entre paradas. `duration_min` = `distance_km` / 25 km/h × 60 + 10 min por parada; `eta` se acumula desde las 08:00 simuladas. Devuelve la ruta en `planned`; si ya había una `planned` para esa fecha, pasa a `replaced` y la nueva lleva `recalculated_from`. `POST /api/routes/plan/ {date}` lo expone a Gerente y Producción.
+- **Redistribución (criterio 8):** `redistribute` crea la ruta nueva en `proposed` con `recalculated_from` apuntando a la vigente, y `Decision.detail` lleva `before.route_id` y `after.route_id`. Al aprobar, la propuesta pasa a `planned` y la anterior a `replaced`; al rechazar, a `discarded`.
+- **API:** `GET /api/routes/?current=1` devuelve la vigente (`planned` o `in_progress`) y la `replaced` enlazada. `GET /api/routes/<id>/` devuelve cualquier ruta, en cualquier estado (`proposed`, `replaced` y `discarded` incluidas), con los mismos permisos: la escena abre `/routes?before=<id>&after=<id>` y, antes de aprobar, la de `after` está en `proposed`. Cada ruta trae `status`, `distance_km`, `duration_min`, `path` y `stops: [{position, kind, name, address, lat, lng, eta, supplier?: {id, name}, customer?: {id, name}, purchase_order?: {id, code}, order?: {id, code}}]`. El almacén sale de las paradas de inicio y fin.
+- **Seed:** coordenadas aproximadas de Piura para el almacén (bloque `plant` del README del PR de Kenji), los 3 talleres y los 4 clientes; Lima y México sin coordenadas. No trae rutas: `plan_route` corre a pedido.
+
+## 4. Mensajería, asistente y cola de turnos
 
 ```mermaid
 erDiagram
@@ -568,10 +636,11 @@ erDiagram
   - `decision_ids`: las decisiones resueltas de la conversación con `communicated_at` vacío;
   - `follow_up_purchase_order_ids`: los pedidos de esta conversación (`PurchaseOrder.conversation`) abiertos con `next_follow_up_at <= clock.now()`;
   - `new_purchase_order_ids`: los pedidos de esta conversación en `approved`;
-  - `alert_ids`: en `dashboard`, las `AlertNotification` del usuario con `sent_at` vacío cuya alerta sigue `open`.
-  Si el lote queda vacío (por ejemplo, otro turno ya atendió el seguimiento), el turno pasa a `done` sin llamar al modelo.
+  - `alert_ids`: en `dashboard`, las `AlertNotification` del usuario con `sent_at` vacío cuya alerta sigue `open`;
+  - `web_report_ids`: los `ProgressReport` con `acknowledged_at` vacío que llegaron por `/report/<token>` a pedidos de esta conversación.
+  Si el lote queda vacío en todas sus listas (por ejemplo, otro turno ya atendió el seguimiento), el turno pasa a `done` sin llamar al modelo.
 - **`turn_state(batch)`** arma el estado fresco con esos mismos ids. Trae:
-  - los pedidos abiertos del proveedor con su código, la `Rate` vigente y los `terms` aprobados;
+  - los pedidos abiertos del proveedor con su código, la `Rate` vigente, los `terms` aprobados y `report_link_sent_at`;
   - las decisiones;
   - `Supplier.notes` y el estilo de `Config.agent_user` (`User.style_md`).
   `reason` del `Turn` es solo rastro: el porqué sale de acá. Así juntar causas en un turno nunca pierde nada. En `dashboard`, el estado lo arma `assistant_turn_state`.
@@ -581,7 +650,8 @@ erDiagram
     - las decisiones reciben `communicated_at`;
     - en los seguimientos, `next_follow_up_at` pasa a `clock.now()` + `follow_up_every_hours`;
     - los pedidos nuevos pasan a `negotiating`;
-    - las `AlertNotification` del lote reciben `sent_at`.
+    - las `AlertNotification` del lote reciben `sent_at`;
+    - los reportes web del lote reciben `acknowledged_at`.
   - Con error, la fila queda en `error` con su mensaje y se vuelve a encolar con `enqueue_turn`, heredando los intentos; nada del lote se marca, así el reintento lo vuelve a tomar. Al tercer error no se encola más: se crea una `Alert` `turn_failed`, y los mensajes del lote pasan a `error` para que no reabran turnos para siempre.
   - Al terminar, si quedó otro turno `pending` en la conversación, vuelve a disparar `run_turn`: una tarea que llegó mientras la conversación estaba ocupada terminó sin hacer nada.
 - **Lo que llega mientras un turno corre** no entra en su lote; lo toma el turno siguiente.
@@ -603,7 +673,7 @@ erDiagram
   - `POST /api/simulator/messages/ {allowed_number_id, text, photo?}` escribe en la conversación del simulador de ese número. Devuelve 400 si se apunta a una conversación cuyo `channel` no es `simulator`.
   - Permisos: el simulador y `/api/conversations/` muestran texto de mensajes de proveedores, que puede traer precios. Por la regla de texto libre, son solo para el Gerente. En la demo, quienes actúan de proveedores usan la cuenta del Gerente.
 
-## 4. Gerencia, monitor y avisos
+## 5. Gerencia, monitor y avisos
 
 ```mermaid
 erDiagram
@@ -648,7 +718,7 @@ erDiagram
 ```
 
 - **Lote:** `Decision.purchase_orders` es M2M. Una decisión `approve_assignment` cubre todos los pedidos de una orden nueva o de una redistribución, así el Gerente ve una tarjeta y no cuatro. Un pedido puede tener varias decisiones en su vida: la asignación y, después, una escalada por precio. Las órdenes afectadas salen de los pedidos.
-- **`detail` de `approve_assignment`:** `{before: {estimated_on, total_amount} | null, after: {estimated_on, total_amount}, proposal: [{supplier, quantity, unit_price, committed_on, rationale}]}`. `before` es `null` en una orden nueva.
+- **`detail` de `approve_assignment`:** `{before: {estimated_on, total_amount, route_id} | null, after: {estimated_on, total_amount, route_id}, proposal: [{purchase_order_code, supplier, quantity, unit_price, committed_on, rationale, candidates: [...]}]}`. `before` es `null` en una orden nueva; `route_id` es `null` si no había ruta.
 - **`create_decision`** es idempotente:
   1. bloquea los `PurchaseOrder` del lote con `select_for_update().filter(id__in=…).order_by("id")`, ordenados para evitar un deadlock entre el agente y el matching;
   2. si ya hay una `pending` del mismo `kind` que incluye alguno de esos pedidos, la devuelve;
@@ -663,23 +733,23 @@ erDiagram
 - **`resolve_decision`:**
   - `approve_assignment` aprobada llama a `approve_purchase_orders`:
     1. los pedidos pasan a `approved`;
-    2. se recalcula la orden (fecha y costo);
-    3. se fija `PurchaseOrder.conversation` (regla de la sección 3) y se encola un `Turn` `purchase_order_approved` en esa conversación.
+    2. se recalcula la orden (fecha y costo) y la `Route` `proposed` pasa a `planned`, con la anterior en `replaced`;
+    3. se fija `PurchaseOrder.conversation` (regla de la sección 4) y se encola un `Turn` `purchase_order_approved` en esa conversación.
     Un proveedor sin ningún `AllowedNumber` activo no se puede contactar: su pedido queda en `approved` con una `Alert` `no_channel`. Con `change_supplier`, el pedido cambia de `supplier` (queda `suggested_supplier` como rastro) y la decisión queda en `supplier_changed`.
   - `price`, `terms` u `other` encolan un `Turn` `decision` en `Decision.conversation`.
-  - `rejected` en una asignación cancela los pedidos `suggested` y deja el requerimiento sin cubrir.
+  - `rejected` en una asignación cancela los pedidos `suggested`, pasa la ruta `proposed` a `discarded` y deja el requerimiento sin cubrir.
   - Al resolverse, su `Alert` `decision_pending` pasa a `resolved`.
 - **Alertas:** `POST /api/alerts/<id>/acknowledge/` llama a `acknowledge_alert`, solo para el Gerente.
 - **Sin duplicados en `Alert`:** restricción única parcial en `(kind, order, purchase_order, decision)` mientras esté `open`, con `nulls_distinct = False`.
 - **Avisos por rol (`notify_roles`, ADR 0020):** por cada `Alert` nueva, crea una `AlertNotification` por usuario activo del rol destinatario y encola un `Turn` `alert` en su conversación de asistente (la crea si no existe). Una alerta se avisa una vez por usuario. Si sigue `open` un día simulado después del último `sent_at`, el tick crea otra `AlertNotification` solo para los usuarios `manager`; ese segundo aviso llega con `repeat = true`.
 - **`tick()`** es una tarea de Celery beat, cada ~10 s reales, en la cola `periodic`:
   - encola un `Turn` `follow_up` en `PurchaseOrder.conversation` de los pedidos abiertos con `next_follow_up_at <= clock.now()` cuya conversación no tiene un turno `pending` ni `running` (si lo tiene, ese turno ya va a incluir el seguimiento en su lote);
-  - barre los turnos vencidos (sección 3);
+  - barre los turnos vencidos (sección 4);
   - llama a `run_monitor()`, que actualiza `risk`, abre o cierra alertas (incluida `instance_down` según `connectionState` y `decision_pending` para las decisiones con más de `Config.decision_pending_hours` horas simuladas sin resolver, 12 por defecto) y llama a `notify_roles` por cada alerta nueva;
   - repite los avisos al Gerente de alertas que siguen abiertas al día siguiente simulado.
 - **`GET /api/monitor/`** junta para el dashboard: `clock`, `kpis`, alertas abiertas, decisiones pendientes, órdenes en peligro y las últimas 3 `redistributions` (decisiones `approve_assignment` resueltas con un pedido que tiene `redistributed_from`).
 
-## 5. Sistema, onboarding y estilo
+## 6. Sistema, onboarding y estilo
 
 ```mermaid
 erDiagram
@@ -710,10 +780,14 @@ erDiagram
         int decision_pending_hours "horas simuladas antes de la alerta; 12"
         json stage_durations "dias por etapa en planta"
         int agent_user_id FK "dueno del numero del agente"
+        string plant_name "el almacen"
+        float plant_lat
+        float plant_lng
         string agent_phone "numero desde el que escribe el agente"
         json onboarding "pasos completados"
         datetime claude_connected_at
         text claude_last_error "error de autenticacion del CLI"
+        datetime claude_last_error_at "hora real; se compara con el mtime de la credencial"
     }
     OnboardingStyle {
         string status "not_started, extracting, draft, approved, error"
@@ -744,7 +818,7 @@ erDiagram
   - `GET /api/settings/claude/status/` → `{connected, method: oauth | api_key | none, subscription_type, expires_at, refresh_token_expires_at, expired, last_error}`.
   - `POST /api/settings/claude/disconnect/` borra el archivo. `POST /api/settings/claude/set-key/ {api_key}` guarda la key en un archivo aparte y un `apiKeyHelper` en `settings.json` del `CLAUDE_CONFIG_DIR`, excluyente con el OAuth.
   - Las constantes (`CLIENT_ID`, `AUTHORIZE_URL`, `TOKEN_URL`, `REDIRECT_URI`, `SCOPES`) se copian de `mano` (`system/auth_providers/anthropic.py`) a `backend/core/claude_auth.py`.
-  - `run_turn` clasifica los errores de autenticación del CLI, los guarda en `Config.claude_last_error` y crea una `Alert` `claude_disconnected`. Un `exchange/` o `set-key/` que sale bien vacía `claude_last_error`.
+  - **Sin credencial, la cola se pausa.** Con credencial ausente o vencida el CLI falla en 0,4 a 3 s con `authentication_failed`; `agent/sdk.py` lo convierte en `ClaudeNotConnected` y `run_turn` llama a `mark_claude_disconnected(error_text)`: guarda `Config.claude_last_error`, abre una sola `Alert` `claude_disconnected` y devuelve el turno a `pending` sin sumar intento, porque no es culpa del turno. Mientras `claude_last_error` tenga valor, `claim_next_turn` no entrega turnos y el barrido del tick no los dispara: así no hay un loop de fallos cada 3 s. `mark_claude_connected()`, que llaman `exchange/` y `set-key/` cuando salen bien, vacía el error, resuelve la alerta y vuelve a disparar `run_turn` para todos los turnos `pending`. El tick también la llama solo si `.credentials.json` tiene un mtime posterior a `claude_last_error` (lo renovó el propio CLI o alguien lo copió al volumen), para no quedar pausados por un 401 pasajero. El dashboard ve la pausa en `claude_ok` de badges.
   - Errores con código estable, para que el dashboard muestre texto humano sin regex: `400 {error_code, detail}`. `exchange/`: `missing_state` (falta la parte después del `#`), `invalid_code` (Anthropic rechazó el canje), `unreachable` (no se llegó al endpoint). `set-key/`: `key_format` (no empieza con `sk-ant-`), `key_rejected`, `key_unverifiable`. `disconnect/` sobre nada: `not_connected`. `detail` es el texto crudo, solo para la consola.
 - **Estilo del Gerente (paso 3):** `OnboardingStyle` es una sola fila con el borrador. Lo aprobado vive en `User.style_md` de `Config.agent_user` (el `BOSS.md`) y en `Supplier.notes`.
   - `GET /api/onboarding/style/` → `{status, error, since, step, suppliers: [{id, name, status, messages_read, error}], boss_md, notes: [{supplier_id, supplier_name, notes}], approved_at}`. `approved_at` es el `created_at` de la última `StyleVersion` `onboarding`.
@@ -763,12 +837,12 @@ erDiagram
 - **Volver atrás:** `POST /api/style/versions/<id>/restore/` llama a `restore_style_version`, que crea una versión nueva `rollback`, copia de la elegida, y restaura `style_md` y `Supplier.notes`. El historial nunca se reescribe.
 - **`refresh_style(user)`:** tarea de beat a las 03:00 de Lima, en hora real, en la cola `style`.
   1. Lee de la BD los mensajes `author = manager` de conversaciones `whatsapp` con número activo, desde `User.style_refreshed_at`. Si no hay mensajes nuevos, no llama al modelo.
-  2. Llama a `update_style` de `persona`. Si el resultado pasa la validación, crea una `StyleVersion` `daily` y la aplica. Si no pasa, se queda el estilo actual y se crea una `Alert` `style_refresh_failed`.
+  2. Llama a `update_style` de `persona`. Si el resultado pasa la validación, crea una `StyleVersion` `daily` y actualiza solo `User.style_md` y el `changelog`: nunca escribe `Supplier.notes`, porque el refresco se aplica sin revisión y texto de un proveedor podría colarse en el prompt de su propia conversación. Las notas cambian solo por `approve_style` o edición manual. Si no pasa, se queda el estilo actual y se crea una `Alert` `style_refresh_failed`.
   3. Siempre actualiza `style_refreshed_at`.
 - **Una tarea de estilo a la vez:** el worker es uno solo con `-c 5` y la cola `style` no limita la concurrencia por sí misma, así que la extracción y el refresco toman un lock en la BD (`pg_try_advisory_lock`, liberado en `finally`). Si no lo consiguen, se reintentan con `countdown` en vez de ocupar un slot esperando. Si el proceso muere, Postgres suelta el lock al cerrarse la conexión.
 - **API (solo Gerente):** `GET /api/style/versions/` (con `source`, `changelog` y `created_at`), `GET /api/style/versions/<id>/` (con `style_md`) y `POST .../restore/`. P1: `POST /api/style/refresh/` ("Aprender ahora"; no se usa en vivo en la demo).
 
-## 6. Trabajo en segundo plano y docker compose (ADR 0018 y 0023)
+## 7. Trabajo en segundo plano y docker compose (ADR 0018 y 0023)
 
 `docker-compose.yml` en la raíz levanta todo con `docker compose up`, Next.js incluido. Los servicios de Python salen de una misma imagen, `backend/Dockerfile` (con uv). `infra/` queda solo para el tunnel.
 
@@ -796,7 +870,7 @@ erDiagram
 - **Si Redis o el worker se caen,** se paran los turnos. Al volver, `recover_stuck_turns` (en `worker_ready`) y el barrido del tick los retoman desde `Turn`.
 - Desaparece el comando `run_agent`.
 
-## 7. Seed de la demo (ADR 0021)
+## 8. Seed de la demo (ADR 0021)
 
 `python manage.py seed_demo` es idempotente: borra y recrea la data de demo (catálogo, proveedores, órdenes, pedidos, conversaciones, decisiones, alertas y versiones de estilo), y nunca toca usuarios, tokens ni la configuración de WhatsApp (`Config.onboarding`). Crea los 3 usuarios por rol si no existen. Se corre al levantar el compose y antes de cada ensayo. Kenji genera los JSON y las imágenes con este formato; cualquier diferencia se resuelve acá antes de generar.
 
@@ -848,13 +922,16 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
 // config.json (un objeto, no un array)
 {"clock_factor": "60", "buffer_days": 5,
  "stage_durations": {"cutting": 1, "sublimation": 1, "embroidery": 1, "sewing": 3, "finishing": 1},
- "agent_user": "gerente", "agent_phone": "51907898162"}
+ "agent_user": "gerente", "agent_phone": "51907898162",
+ "plant_name": "Almacén Corpotex", "plant_lat": -5.1945, "plant_lng": -80.6328}
+// Si el PR de Kenji trae el bloque plant en README.md en vez de config.json, seed_demo lo lee de ahí.
 
 // brands.json
 [{"name": "UNICRACK", "description": "Uniformes escolares, incluye deportivos"}]
 
 // customers.json
-[{"name": "Caja Piura", "tax_id": "20100000001", "kind": "company"}]
+[{"name": "Caja Piura", "tax_id": "20100000001", "kind": "company", "address": "Av. Grau 100, Piura", "lat": -5.1950, "lng": -80.6320}]
+// lat y lng opcionales; sin ellos el cliente no entra en la ruta.
 
 // materials.json
 [{"sku": "TEL-ALG-20-1", "name": "Algodón 20/1", "kind": "fabric", "unit": "kg", "stock": "120.00"}]
@@ -868,7 +945,7 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
 
 // suppliers.json
 [{"key": "confecciones-norte", "name": "Confecciones del Norte", "kind": "workshop",
-  "specialties": ["polo", "camisa"], "city": "Piura", "is_in_house": false,
+  "specialties": ["polo", "camisa"], "city": "Piura", "address": "Calle Lima 450, Piura", "lat": -5.1890, "lng": -80.6400, "is_in_house": false,
   "weekly_capacity": 800, "lead_time_days": 7, "follow_up_every_hours": 48,
   "currency": "PEN", "source": "registered", "status": "active",
   "notes": "Trato de usted. No insistir antes del mediodía.",
@@ -892,17 +969,18 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
 [{"code": "PT-0001", "supplier": "taller-cancela", "status": "in_progress",
   "suggested_supplier": "taller-cancela", "redistributed_from": null,
   "internal_due_on": "T+4", "committed_on": "T+4", "next_follow_up_at": "T+1 09:00",
+  "rationale": "Mejor precio entre los talleres con capacidad libre esta semana", "scores": {"on_time": "0.90", "price": "0.85", "load": "0.70", "quality": "0.80"},
   "terms": "50% adelanto, 50% contra entrega",
   "items": [{"order": "CP-2026-0001", "product": "POLO-ESC-01", "quantity": "1000", "unit_price": "6.50", "qty_delivered": "0"}],
   "progress_reports": [{"units_done": 400, "note": "Avanzamos 400", "reported_at": "T-1 17:00"}],
   "deliveries": [],   // opcional
-  "payments": [{"kind": "advance", "amount": "3250.00", "method": "yape", "paid_at": "T-3 10:00"},
-               {"kind": "balance", "amount": "3250.00", "method": null, "paid_at": null}],
+  "payments": [{"kind": "advance", "amount": "3250.00", "status": "paid", "method": "yape", "paid_at": "T-3 10:00"},
+               {"kind": "balance", "amount": "3250.00", "status": "pending", "method": null, "paid_at": null}],
   "rating": null}]
 // Cada item apunta al requirement de (order, product) o (order, material).
-// candidates no se escribe: el seed corre el matching para llenarlo con los proveedores del seed.
+// report_token lo genera el seed. El ranking completo (candidates) va en decisions.json, dentro de detail.proposal.
 // Un pedido entregado lleva rating: {"delay_days": 0, "quality": 4.5, "defect_pct": "1.20", "price_vs_ref_pct": "0.00", "score": "0.92", "rated_at": "T-20 12:00"}.
-// La conversación del pedido se resuelve con la regla de la sección 3.
+// La conversación del pedido se resuelve con la regla de la sección 4.
 
 // decisions.json
 [{"kind": "price", "status": "pending", "purchase_orders": ["PI-0003"],
@@ -932,7 +1010,8 @@ Cada JSON es un array de objetos con las claves en inglés del modelo. Las imág
 
 ### Coherencia (reglas del ADR 0021)
 
-- 3 marcas, 4 clientes, ~12 materiales, ~10 productos con sus `product_materials`, 8 proveedores (1 planta propia, 3 talleres de Piura, 3 de insumos en Lima, 1 de México en `USD`), ~8 órdenes en todos los estados y 3 `StyleVersion`.
+- 3 marcas, 4 clientes, ~12 materiales, ~10 productos con sus `product_materials`, 10 proveedores (1 planta propia, 3 talleres de Piura, 3 de insumos en Lima, 1 de México en `USD`, y 2 `external` en `pending_review` sin tarifas ni números, para la pestaña "Por revisar"), ~8 órdenes en todos los estados y 3 `StyleVersion`. Coordenadas de Piura para el almacén, los 3 talleres y los 4 clientes.
+- La fuente del formato real es el PR `seed/demo-data` de Kenji (trae su `validate_seed.py`). Si algo no calza con esta sección, se ajusta `seed_demo`, no el PR.
 - Todo producto que aparece en una orden tiene filas en `product_materials`, y todo material o producto pedido tiene `Rate` en su proveedor, para que el desglose y el matching cuadren.
 - La escena precargada: la orden de Caja Piura (1000 polos UNICRACK) en `sourcing`, su pedido de taller en `in_progress` con un avance de 400, y dos talleres con `weekly_capacity` libre para absorber las 600 restantes. El seed NO trae los pedidos de redistribución, la `Decision` `approve_assignment` ni la `Alert` `order_in_danger` de esa orden: eso se crea en vivo en la escena. La decisión `pending` del seed es una de `price` o `terms` sobre otro pedido.
 - El seed falla con un mensaje claro si una referencia no existe o una fecha no respeta el formato; no carga a medias.
@@ -1016,6 +1095,23 @@ stateDiagram-v2
 
 Una fila en `error` se vuelve a encolar con `enqueue_turn` (en un turno `pending` nuevo o en el que ya exista), heredando sus intentos. Al tercer intento fallido no se encola más y se crea una `Alert` `turn_failed`.
 
+### Route
+
+```mermaid
+stateDiagram-v2
+    [*] --> planned: plan_route
+    [*] --> proposed: redistribute
+    proposed --> planned: el Gerente aprueba la asignacion
+    proposed --> discarded: el Gerente rechaza
+    planned --> in_progress
+    planned --> replaced: se planifica o aprueba otra ruta del dia
+    in_progress --> completed
+    in_progress --> replaced: se aprueba otra ruta del dia
+    completed --> [*]
+    replaced --> [*]
+    discarded --> [*]
+```
+
 ### OnboardingStyle
 
 ```mermaid
@@ -1041,9 +1137,9 @@ Los números (1000, 400 y 600) se fijan con el guion del pitch. El diagrama `tal
 
 1. `PurchaseOrder` T1 (taller, 1000 polos para Caja Piura) está `in_progress`, con un `ProgressReport` de 400 unidades. Todo viene del seed.
 2. El taller escribe que no puede seguir. El webhook (o el simulador) guarda el `Message` y encola el turno. La tool `report_cancellation` llama a `cancel_by_supplier`: T1 pasa a `cancelled_by_supplier` y se registra la `Delivery` de las 400 que ya cosió, que la planta recoge.
-3. `redistribute(T1)`: al `Requirement` le faltan 600 unidades. `match_requirements` las reparte entre talleres según `Rate`, capacidad, carga y puntajes, y crea T2 y T3 en `suggested`, con `redistributed_from = T1` y `candidates`.
-4. Se crea una `Decision` `approve_assignment` con `purchase_orders = [T2, T3]` y `detail = {before, after, proposal}`. La orden queda con `risk = in_danger` y una `Alert` `order_in_danger`; `notify_roles` avisa al Gerente (con la decisión y las cifras) y a Comercial (orden, cliente y fecha nueva, sin precios) por sus asistentes. La tarjeta "Redistribución" del dashboard muestra el antes y el después de la fecha estimada y del costo.
-5. El Gerente aprueba desde el Monitor (`POST /api/manager/decisions/<id>/ {action: "approve"}`) o pidiéndoselo a su asistente, que usa `resolve_decision` y deja una tarjeta `action` en el chat. `approve_purchase_orders` pasa T2 y T3 a `approved`, recalcula `estimated_on`, `critical_path` y `risk`, y encola un `Turn` `purchase_order_approved` en la conversación de cada taller.
+3. `redistribute(T1)`: al `Requirement` le faltan 600 unidades. `match_requirements` las reparte entre talleres según `Rate`, capacidad, carga y puntajes, y crea T2 y T3 en `suggested`, con `redistributed_from = T1`, `rationale` y `scores`. Además crea la `Route` nueva en `proposed`, con `recalculated_from` apuntando a la vigente.
+4. Se crea una `Decision` `approve_assignment` con `purchase_orders = [T2, T3]` y `detail = {before, after, proposal}`. La orden queda con `risk = in_danger` y una `Alert` `order_in_danger`; `notify_roles` avisa al Gerente (con la decisión y las cifras) y a Comercial (orden, cliente y fecha nueva, sin precios) por sus asistentes. La tarjeta "Redistribución" del dashboard muestra el antes y el después de la fecha estimada y del costo, y enlaza a `/routes?before=<id>&after=<id>` con las dos rutas.
+5. El Gerente aprueba desde el Monitor (`POST /api/manager/decisions/<id>/ {action: "approve"}`) o pidiéndoselo a su asistente, que usa `resolve_decision` y deja una tarjeta `action` en el chat. `approve_purchase_orders` pasa T2 y T3 a `approved`, recalcula `estimated_on`, `critical_path` y `risk`, pasa la ruta `proposed` a `planned` (la anterior a `replaced`), y encola un `Turn` `purchase_order_approved` en la conversación de cada taller.
 6. El agente escribe a los talleres de T2 y T3 (pasan a `negotiating`) y acuerda fechas. Con `confirm_purchase_order` quedan `confirmed`. Si la nueva `estimated_on` cumple `promised_on`, la orden sale de peligro y la alerta se resuelve.
 
 ## Criterios del jurado y dónde se cubren
@@ -1052,31 +1148,31 @@ Los números (1000, 400 y 600) se fijan con el guion del pitch. El diagrama `tal
 |---|---|
 | Registro de talleres con especialidad, capacidad, precios, calidad y cumplimiento | `Supplier`, `Rate`, puntajes calculados de `PurchaseOrder.rating` |
 | Rating automático por entrega | `Delivery` → `PurchaseOrder.rating` → `supplier_scores` |
-| Matching multicriterio con justificación | `PurchaseOrder.suggested_supplier` y `candidates` |
+| Matching multicriterio con justificación | `PurchaseOrder.suggested_supplier`, `rationale` y `scores`; el ranking completo en `Decision.detail.proposal` |
 | Dividir un pedido grande | varios `PurchaseOrderItem` sobre un mismo `Requirement` |
-| Seguimiento de pedidos y pagos | `PurchaseOrder`, `ProgressReport`, `Payment`, `Alert`, `Turn` `follow_up` y los avisos del asistente |
-| Avance con fotos | `ProgressReport.photo` (llega por WhatsApp en base64, por el simulador o por el dashboard) |
-| Rutas multiparada en Piura | Fuera de alcance (ADR 0015): los proveedores de Lima envían por Sullana Express y Corpotex recoge en la agencia. Se explica en el pitch |
-| Sugerir proveedores nuevos | `Supplier.source` (`self_registered`, `suggested`) y `status = pending_review` |
+| Seguimiento de pedidos y pagos | `PurchaseOrder`, `ProgressReport`, `Payment` (P0: depositado y saldo por pedido y por proveedor), `Alert`, `Turn` `follow_up` y los avisos del asistente |
+| Avance con fotos | `ProgressReport.photo`: por WhatsApp en base64, por el simulador, por el dashboard y por la página pública `/report/<token>` (P1) |
+| Rutas multiparada en Piura | `Route`, `RouteStop`, `plan_route`; almacén, talleres y clientes con coordenadas; la redistribución recalcula también la ruta (ADR 0024) |
+| Sugerir proveedores nuevos | Autoregistro público (P0) y tool `suggest_suppliers` (P1): `Supplier.source` (`self_registered`, `external`), `source_detail` y `status = pending_review` |
 
 ## Plan de implementación
 
 Cada paso se revisa solo, en este orden:
 
-1. **Proyecto:** sobre el `backend/Dockerfile`, el `pyproject.toml` y el `docker-compose.yml` de la raíz que ya están en `main` (ADR 0023). Django vive directo en `backend/` (`manage.py`, `config/` con `settings.py`, `urls.py` y `celery.py`). `core.User` antes de la primera migración, grupos por data migration, `TokenAuthentication`, drf-spectacular y settings (`ALLOWED_HOSTS` con `corpotex.oscargicast.com` y `localhost`). Puertos de compose en loopback (sección 6). Sin `CLAUDE_CODE_OAUTH_TOKEN`: la cuenta se conecta desde el dashboard (ADR 0022).
+1. **Proyecto:** sobre el `backend/Dockerfile`, el `pyproject.toml` y el `docker-compose.yml` de la raíz que ya están en `main` (ADR 0023). Django vive directo en `backend/` (`manage.py`, `config/` con `settings.py`, `urls.py` y `celery.py`). `core.User` antes de la primera migración, grupos por data migration, `TokenAuthentication`, drf-spectacular y settings: `ALLOWED_HOSTS` con `localhost`, `127.0.0.1`, `web` (el admin y la API entran por el rewrite de Next en desarrollo) y `corpotex.oscargicast.com`; `CSRF_TRUSTED_ORIGINS` con `http://localhost:3000`, `http://localhost:3001` y `https://corpotex.oscargicast.com`. Puertos de compose en loopback (sección 7). Sin `CLAUDE_CODE_OAUTH_TOKEN`: la cuenta se conecta desde el dashboard (ADR 0022).
 2. **Todos los modelos de una vez** (P0 y P1), con admin y una migración por app.
-3. **Seed:** el comando `seed_demo` con el formato de la sección 7, un JSON mínimo de prueba mientras llegan los de Kenji, un token por usuario y `Config.agent_user` = Gerente.
-4. **Servicios de operaciones:** desglose, matching, ruta crítica, aprobación, confirmación con reglas de jefe, avance, entrega, cancelación y redistribución.
+3. **Seed:** el comando `seed_demo` con el formato de la sección 8, un JSON mínimo de prueba mientras llegan los de Kenji, un token por usuario y `Config.agent_user` = Gerente.
+4. **Servicios de operaciones:** desglose, matching, ruta crítica, aprobación, confirmación con reglas de jefe, avance, entrega, cancelación, redistribución, pagos y `plan_route`.
 5. **Mensajería:** webhook con allowlist, `send_text`, la cola de turnos con `run_turn` en Celery, `turn_state` y la API del asistente.
 6. **Gerencia:** decisiones, alertas, `notify_roles`, monitor, `tick` y los endpoints del Gerente; servicios con `actor` para las tools del asistente.
 7. **API del dashboard y contrato en `docs/api/`**, con los JSON de ejemplo, los serializers por rol y `/api/me/badges/`.
 8. **Onboarding y estilo:** conexión de Claude (`core/claude_auth.py`), WhatsApp, alta e importación de proveedores, la tarea de extracción, el historial de versiones y `refresh_style`.
-9. **P1:** pagos, autoregistro y `POST /api/style/refresh/`.
+9. **P1:** `/api/report/<token>/` con `send_report_link`, `create_suggested_suppliers` para la tool `suggest_suppliers`, y `POST /api/style/refresh/`.
 
 ## Preguntas abiertas
 
 1. ~~¿Cuál es la tercera marca?~~ Resuelto: las marcas son UNICRACK (uniformes escolares, incluye deportivos), NEXO (ropa de trabajo de alto rendimiento) y Línea Médica Corpotex.
 2. ¿Un proveedor puede vender insumos y además confeccionar? Propuesta: un solo `kind` por proveedor.
-3. ~~¿Las rutas entran en el alcance?~~ Resuelto: no se implementan (ADR 0015).
-4. ~~Faltan los PDFs de ejemplo de Comercial.~~ Resuelto: no habrá PDFs. El seed inventa las órdenes con el formato de la sección 7.
+3. ~~¿Las rutas entran en el alcance?~~ Resuelto dos veces: no (ADR 0015) y después sí (ADR 0024, por el criterio 6 del jurado).
+4. ~~Faltan los PDFs de ejemplo de Comercial.~~ Resuelto: no habrá PDFs. El seed inventa las órdenes con el formato de la sección 8.
 5. ~~¿Cuántas horas simuladas sin resolver una decisión disparan `decision_pending`?~~ Resuelto: 12 (`Config.decision_pending_hours`, con ese valor por defecto).

@@ -34,6 +34,11 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | `Mensaje.turno`, `autor=gerente` | `Message.turn`, `author=manager` |
 | `Turno` {conversacion, motivo, decision, estado, intentos, error, disponible_en} | `Turn` {conversation, reason, decision, status, attempts, error, available_at} |
 | `Pedido.fecha_limite_interna` | `PurchaseOrder.internal_due_on` |
+| justificación y puntajes del matching | `PurchaseOrder.rationale`, `PurchaseOrder.scores` (el ranking completo va en `Decision.detail.proposal`) |
+| token y envío del link de reporte público | `PurchaseOrder.report_token`, `report_link_sent_at`; `ProgressReport.acknowledged_at` |
+| coordenadas | `Supplier.address/lat/lng`, `Customer.address/lat/lng`, `Config.plant_name/plant_lat/plant_lng` |
+| origen de un proveedor | `Supplier.source`: `registered` \| `self_registered` \| `external`; `Supplier.source_detail` (json, ningún prompt lo lee) |
+| estado de un pago | `Payment.status`: `pending` \| `paid` (se deriva de `paid_at`) |
 | roles Gerente, Comercial, Producción | `manager`, `sales`, `production` (los grupos del admin se ven en español) |
 | `estado_display` | `status_display` (el valor va en español) |
 
@@ -41,7 +46,7 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 
 | Docs | Código |
 |---|---|
-| motivo del turno | `Turn.reason`: `message`, `decision`, `follow_up`, `purchase_order_approved` |
+| motivo del turno | `Turn.reason`: `message`, `decision`, `follow_up`, `purchase_order_approved`, `alert`, `web_report` |
 | estado del turno | `Turn.status`: `pending`, `running`, `done`, `error` |
 | estado del pedido | `PurchaseOrder.status`: `suggested`, `approved`, `negotiating`, `confirmed`, `in_progress`, `delivered`, `declined_by_supplier`, `cancelled_by_supplier`, `cancelled` |
 | estado de la orden | `Order.status`: `registered`, `broken_down`, `confirmed`, `sourcing`, `in_production`, `ready`, `delivered`, `cancelled` |
@@ -72,6 +77,8 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | `resolver_decision` | `resolve_decision` |
 | desglose, confirmar orden, matching, ruta crítica | `break_down_order`, `confirm_order`, `match_requirements`, `compute_critical_path` |
 | planificar ruta de recojo y entrega | `plan_route(date, *, actor=None) -> Route` |
+| reporte web de avance | `record_public_report`, `report_url`, `mark_report_link_sent` |
+| proveedores sugeridos | `create_suggested_suppliers(candidates, *, actor) -> {created, skipped}` |
 | monitor, tick, extracción de estilo | `run_monitor`, `tick`, `run_style_extraction` |
 | refresco diario del estilo | `refresh_style` (tarea de Celery beat, 03:00 de Lima, ADR 0019) |
 | aprobar y restaurar estilo | `approve_style`, `restore_style_version` |
@@ -97,7 +104,8 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | mensajes de una conversación | `/api/conversations/<id>/messages/?after=` |
 | `/api/onboarding/estilo/` | `/api/onboarding/style/` |
 | asistente | `/api/assistant/messages/` (GET con `?after=`, POST), `/api/assistant/reset/` |
-| rutas | `/api/routes/?current=1`, `/api/routes/<id>/`, `POST /api/routes/plan/` |
+| rutas | `/api/routes/?current=1`, `/api/routes/<id>/` (cualquier estado), `POST /api/routes/plan/` |
+| pagos | `/api/payments/`, `POST /api/payments/<id>/pay/` (multipart `{method, receipt?}`) |
 | reporte público de avance | `POST /api/report/<token>/` |
 | cuenta de Claude (solo Gerente, ADR 0022) | `/api/settings/claude/start/`, `exchange/`, `status/`, `disconnect/`, `set-key/` |
 | historial del estilo | `/api/style/versions/`, `/api/style/versions/<id>/`, `<id>/restore/`; P1: `/api/style/refresh/` |
