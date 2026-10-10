@@ -140,3 +140,38 @@ def test_payments_list_is_manager_only(manager_client, sales_client, scenario):
     assert sales_client.get("/api/payments/").status_code == 403
     rows = manager_client.get("/api/payments/?status=pending").json()
     assert len(rows) == 1 and rows[0]["kind"] == "balance" and rows[0]["due_on"] == "2026-10-14"
+
+
+@pytest.mark.django_db
+def test_sales_cannot_read_conversation_messages(sales_client, manager_client, scenario, production):
+    """Supplier chats carry sensitive information: only the manager reads them (rule of 10/10)."""
+    from rest_framework.authtoken.models import Token
+    from rest_framework.test import APIClient
+
+    conversation_id = scenario["conversation"].id
+    assert sales_client.get(f"/api/conversations/{conversation_id}/messages/").status_code == 403
+    assert sales_client.get("/api/simulator/contacts/").status_code == 403
+    assert sales_client.post("/api/simulator/messages/", {"allowed_number_id": scenario["number"].id, "text": "hola"}).status_code == 403
+    production_client = APIClient()
+    production_client.credentials(HTTP_AUTHORIZATION=f"Token {Token.objects.get_or_create(user=production)[0].key}")
+    assert production_client.get(f"/api/conversations/{conversation_id}/messages/").status_code == 403
+    assert manager_client.get(f"/api/conversations/{conversation_id}/messages/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_sales_purchase_order_has_no_conversation_keys(sales_client, manager_client, scenario):
+    from django.utils import timezone
+
+    from messaging.models import Message
+
+    Message.objects.create(conversation=scenario["conversation"], author="supplier", text="el precio sube a 7", status="processed", sent_at=timezone.now())
+    po_id = scenario["purchase_order"].id
+    for url in (f"/api/purchase-orders/{po_id}/", "/api/purchase-orders/", "/api/monitor/", f"/api/orders/{scenario['order'].id}/"):
+        response = sales_client.get(url)
+        assert response.status_code == 200, url
+        keys = _flat_keys(response.json())
+        assert not keys & {"conversation", "conversation_id", "last_message"}, url
+        assert "el precio sube a 7" not in response.content.decode(), url
+    detail = sales_client.get(f"/api/purchase-orders/{po_id}/").json()
+    assert {"status", "units_done", "progress_pct", "last_progress_at", "progress_reports", "committed_on"} <= set(detail)
+    assert manager_client.get(f"/api/purchase-orders/{po_id}/").json()["conversation_id"] == scenario["conversation"].id

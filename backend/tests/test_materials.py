@@ -37,6 +37,7 @@ def test_materials_list_for_manager_and_production(scenario, manager_client, pro
     production_client.credentials(HTTP_AUTHORIZATION=f"Token {Token.objects.get_or_create(user=production)[0].key}")
     assert production_client.get("/api/materials/").status_code == 200
     assert production_client.get("/api/materials/?kind=button").json()[0]["sku"] == "BOT-01"
+    assert [m["sku"] for m in production_client.get("/api/materials/?q=algod").json()] == ["TEL-ALG-20-1"]
 
 
 @pytest.mark.django_db
