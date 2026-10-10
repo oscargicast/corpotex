@@ -27,7 +27,16 @@ Oscar quiere las carpetas `backend/` y `frontend/` en la raíz y que todo el ent
 - Los puertos se publican solo en `127.0.0.1`: en el wifi del evento nadie más entra a Postgres, Redis, Django o Next.js. El tunnel corre en el host y llega igual a `localhost`.
 - `infra/` queda solo para el tunnel de Cloudflare. Nada se instala en el host salvo Docker y `cloudflared`.
 
-Versiones (estables al 10/10/2026): Python 3.13, Django 6.1, DRF 3.18, Celery 5.6, redis 8.1 (cliente), psycopg 3.3, drf-spectacular 0.30, claude-agent-sdk 0.2.165, pydantic 2.14, django-environ 0.14, django-cors-headers 4.9; Node 24 LTS, pnpm 12, Next.js 16.4, React 19.3, TypeScript 7.0, Tailwind 4.3, SWR 2.5. Gestores: `uv` en backend, `pnpm` en frontend.
+Versiones (estables al 10/10/2026): Python 3.13, Django 6.1, DRF 3.18, Celery 5.6, redis 8.1 (cliente), psycopg 3.3, drf-spectacular 0.30, claude-agent-sdk 0.2.165, pydantic 2.14, django-environ 0.14, django-cors-headers 4.9; Node 24 LTS, pnpm 12, Next.js 16.4, React 19.3, TypeScript 7.0 (si `next build` no lo acepta, la última 6.x), Tailwind 4.3, SWR 2.5. Gestores: `uv` en backend, `pnpm` en frontend.
+
+## Trabajo en worktrees
+
+Cada sesión desarrolla en su worktree (ADR 0008), pero el compose de `main` es el único entorno completo: un `docker compose up` desde un worktree chocaría en los puertos.
+
+- Backend: el PR de B1 trae el proyecto; hasta que se mergee, `backend` corre su compose con otro nombre de proyecto y otros puertos si necesita probar (`docker compose -p corpotex-be ...`), o prueba contra el `main` ya mergeado.
+- Frontend: desde el worktree se levanta solo el servicio `frontend` contra el backend de `main`: `docker compose -p corpotex-fe up frontend --no-deps`, con un override local no versionado (`.git/info/exclude`) que publica `127.0.0.1:3001:3000` y usa `API_URL=http://host.docker.internal:8000`. El 3000 y el tunnel siguen sirviendo `main`.
+- Demo: un `docker-compose.demo.yml` (override) corre el frontend con `pnpm build && pnpm start` en vez de `pnpm dev`, para que no compile vistas en vivo ni muestre el overlay de Next en el proyector. Se prueba en el ensayo.
+- Django en desarrollo: `web` en `ALLOWED_HOSTS` y `http://localhost:3000`, `http://localhost:3001` y `https://corpotex.oscargicast.com` en `CSRF_TRUSTED_ORIGINS`, porque el admin entra por el rewrite de Next. Next usa `skipTrailingSlashRedirect` para respetar la barra final del ADR 0009.
 
 ## Consecuencias
 
