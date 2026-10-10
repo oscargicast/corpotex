@@ -113,9 +113,7 @@ Reglas de la instancia `personal-whatsapp` (número de Oscar):
 
 ## Planning
 
-- Sábado tarde: data demo, motor (desglose, asignación, ruta crítica), estilo del Gerente.
-- Sábado noche: agente WhatsApp, dashboard, reloj acelerado.
-- Domingo mañana: prueba punta a punta x2, video de respaldo, pitch, ensayo cronometrado.
+El plan por fases, con responsables, dependencias e hitos, está en `docs/planning.md`. Resumen: sábado tarde cimientos; sábado noche datos y flujo principal; madrugada asistente, onboarding y monitor; domingo mañana integración, ensayo y video.
 
 ## Pendiente de decidir (preguntar a Oscar)
 
