@@ -1,0 +1,114 @@
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { ApiError, apiFetch } from "@/lib/api";
+import { getSession, saveSession } from "@/lib/auth";
+import type { LoginResponse, User } from "@/lib/types";
+
+const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "1";
+
+export default function LoginPage() {
+  return (
+    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
+      <Suspense>
+        <LoginForm />
+      </Suspense>
+    </main>
+  );
+}
+
+// Only same-site paths, so ?next= can't send the user elsewhere.
+function safeNext(next: string | null): string {
+  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+}
+
+function LoginForm() {
+  const router = useRouter();
+  const next = safeNext(useSearchParams().get("next"));
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (getSession()) router.replace(next);
+  }, [router, next]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const login = await apiFetch<Partial<LoginResponse> & { token: string }>("/api/auth/login/", {
+        method: "POST",
+        json: { username: username.trim(), password },
+      });
+      const user =
+        login.user ??
+        (await apiFetch<User>("/api/auth/me/", { headers: { Authorization: `Token ${login.token}` } }));
+      saveSession({ token: login.token, user });
+      router.replace(next);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 400
+          ? "Usuario o contraseña incorrectos."
+          : "No se pudo conectar. Inténtalo de nuevo.",
+      );
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="w-full max-w-sm rounded-xl bg-surface p-6 shadow-sm ring-1 ring-line sm:p-8">
+      <p className="text-2xl font-black tracking-tight">CORPOTEX</p>
+      <h1 className="mt-1 text-sm text-muted">Órdenes, pedidos y talleres</h1>
+
+      <label className="mt-8 block text-sm font-medium" htmlFor="username">
+        Usuario
+      </label>
+      <input
+        id="username"
+        autoComplete="username"
+        autoCapitalize="none"
+        required
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        className="mt-1 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-base"
+      />
+
+      <label className="mt-4 block text-sm font-medium" htmlFor="password">
+        Contraseña
+      </label>
+      <input
+        id="password"
+        type="password"
+        autoComplete="current-password"
+        required
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="mt-1 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-base"
+      />
+
+      {error && (
+        <p className="mt-4 rounded-md bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={busy}
+        className="mt-6 w-full rounded-md bg-brand px-4 py-2.5 font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
+      >
+        {busy ? "Entrando…" : "Entrar"}
+      </button>
+
+      {USE_MOCKS && (
+        <p className="mt-4 text-center text-xs text-muted">
+          Datos de prueba: gerente, comercial o produccion (la contraseña es el mismo usuario).
+        </p>
+      )}
+    </form>
+  );
+}
