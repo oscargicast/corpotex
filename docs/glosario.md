@@ -10,7 +10,7 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 |---|---|
 | core → `core` | `User`, `Config` (Configuracion), `Brand` (Marca), `Customer` (Cliente), `Product` (Producto), `Material` (Insumo), `ProductMaterial` (ProductoInsumo), `OnboardingStyle` (estilo del onboarding) |
 | proveedores → `suppliers` | `Supplier` (Proveedor), `Rate` (Tarifa). La calificación son los campos `rating_*` de `PurchaseOrder` |
-| operaciones → `operations` | `Order` (Orden), `OrderItem`, `Requirement` (Requerimiento), `PurchaseOrder` (Pedido), `PurchaseOrderItem`, `ProgressReport` (Avance), `Delivery` (Entrega), `Payment` (Pago). Sin `Route` ni `RouteStop` (ADR 0015) |
+| operaciones → `operations` | `Order` (Orden), `OrderItem`, `Requirement` (Requerimiento), `PurchaseOrder` (Pedido), `PurchaseOrderItem`, `ProgressReport` (Avance), `Delivery` (Entrega), `Payment` (Pago), `Route` (Ruta), `RouteStop` (ParadaRuta) (ADR 0024) |
 | mensajeria → `messaging` | `AllowedNumber` (NumeroPermitido), `Conversation`, `Message`, `Turn` (Turno) |
 | gerencia → `manager` | `Decision`, `Alert` (Alerta) |
 | agente → `agent` | sin modelos |
@@ -71,6 +71,7 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | `crear_decision` | `create_decision(*, kind, purchase_orders, summary, detail, conversation=None, order=None)` |
 | `resolver_decision` | `resolve_decision` |
 | desglose, confirmar orden, matching, ruta crítica | `break_down_order`, `confirm_order`, `match_requirements`, `compute_critical_path` |
+| planificar ruta de recojo y entrega | `plan_route(date, *, actor=None) -> Route` |
 | monitor, tick, extracción de estilo | `run_monitor`, `tick`, `run_style_extraction` |
 | refresco diario del estilo | `refresh_style` (tarea de Celery beat, 03:00 de Lima, ADR 0019) |
 | aprobar y restaurar estilo | `approve_style`, `restore_style_version` |
@@ -96,6 +97,8 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | mensajes de una conversación | `/api/conversations/<id>/messages/?after=` |
 | `/api/onboarding/estilo/` | `/api/onboarding/style/` |
 | asistente | `/api/assistant/messages/` (GET con `?after=`, POST), `/api/assistant/reset/` |
+| rutas | `/api/routes/?current=1`, `/api/routes/<id>/`, `POST /api/routes/plan/` |
+| reporte público de avance | `POST /api/report/<token>/` |
 | cuenta de Claude (solo Gerente, ADR 0022) | `/api/settings/claude/start/`, `exchange/`, `status/`, `disconnect/`, `set-key/` |
 | historial del estilo | `/api/style/versions/`, `/api/style/versions/<id>/`, `<id>/restore/`; P1: `/api/style/refresh/` |
 | entregas y avances de un pedido | `/api/purchase-orders/<id>/deliveries/`, `/api/purchase-orders/<id>/progress/` |
@@ -129,7 +132,7 @@ El modelo las ve como `mcp__corpotex__<nombre>`.
 | `escalar_gerente` | `escalate_to_manager` |
 | `leer_historial` | `read_history` |
 
-Nombres fijados por el orquestador para que todas las sesiones coincidan: Orden = `Order`, Pedido = `PurchaseOrder`, Proveedor = `Supplier`, Gerente = `manager`.
+Nombres fijados por el orquestador para que todas las sesiones coincidan: Orden = `Order`, Pedido = `PurchaseOrder`, Proveedor = `Supplier`, Ruta = `Route`, Gerente = `manager`.
 
 ## Asistente del dashboard (ADR 0017)
 
@@ -182,6 +185,8 @@ Cada ruta usa el nombre de su modelo.
 | Pedidos y detalle (insumo, taller, terminado) | `/purchase-orders`, `/purchase-orders/[id]` |
 | Proveedores y talleres | `/suppliers`, `/suppliers/[id]` |
 | Simulador de chat | `/simulator` |
+| Mapa de rutas | `/routes` |
+| Reporte de avance público por pedido | `/report/[token]` |
 | Asistente (pantalla completa en móvil) | `/assistant` |
 | Historial del estilo (solo Gerente) | `/style` |
 | Onboarding (4 pasos) | `/onboarding/claude`, `/onboarding/whatsapp`, `/onboarding/suppliers`, `/onboarding/style` |

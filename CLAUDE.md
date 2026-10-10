@@ -50,7 +50,7 @@ Asistente del Gerente con 3 pasos: conectar WhatsApp (QR y webhook de la instanc
 ## Demo
 
 - API simulada del sistema de Comercial, envío real por Evolution API con el número de Oscar, reloj acelerado.
-- Escena que pide el jurado: un taller cancela a mitad del pedido y el sistema redistribuye y recalcula fecha y costo. La ruta no se implementa (ADR 0015).
+- Escena que pide el jurado: un taller cancela a mitad del pedido y el sistema redistribuye y recalcula fecha, costo y ruta (ADR 0024).
 - Clientes en la data: Caja Piura, colegios de Piura, AIDER, PIQA.
 - Por WhatsApp solo hay un proveedor real: Valeria (`51906746241`, constante en el seed, activo en la allowlist). El Gerente escribe desde el número de Oscar (`51907898162`). Los demás proveedores van por el simulador. Oscar no puede ser proveedor: es su propio número.
 - Plan B: simulador de chat si falla el wifi, y video de respaldo.
@@ -61,13 +61,13 @@ Asistente del Gerente con 3 pasos: conectar WhatsApp (QR y webhook de la instanc
 ## Criterios del reto
 
 - Móvil y escritorio.
-- Talleres reportan avance con fotos (web o WhatsApp).
+- Talleres reportan avance con fotos (WhatsApp, simulador y página pública `/report/<token>`, ADR 0024).
 - Registro de talleres: especialidad, capacidad, precios, calidad, cumplimiento, rating automático por entrega.
 - Matching multicriterio con justificación.
 - Dividir un pedido grande entre talleres.
-- Seguimiento de pedidos y pagos (adelantos, saldos).
-- Rutas multiparada en mapa de Piura: fuera de alcance (ADR 0015).
-- Sugerir nuevos proveedores (fuentes externas o autoregistro).
+- Seguimiento de pedidos y pagos (adelantos, saldos): P0 (ADR 0024).
+- Rutas multiparada en mapa de Piura (ADR 0024: `Route`, `plan_route`, Leaflet).
+- Sugerir nuevos proveedores: autoregistro P0 y tool `suggest_suppliers` con búsqueda web P1 (ADR 0024).
 
 ## Dominio (entrevista a Corpotex, 10/10)
 

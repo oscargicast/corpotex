@@ -1,6 +1,6 @@
 # 0015. No se implementan rutas
 
-- Estado: aceptada (decisión de Oscar)
+- Estado: reemplazada por 0024 (las rutas vuelven)
 - Fecha: 2026-10-10
 
 ## Contexto
