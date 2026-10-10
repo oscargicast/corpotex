@@ -85,7 +85,8 @@ def whatsapp_tools(conversation, batch) -> list:
     @tool(
         "confirm_purchase_order",
         "Cierra un pedido con el precio unitario, la fecha comprometida y los términos acordados. "
-        "Si pasan la tarifa o la fecha límite, se rechaza y debes escalar al Gerente.",
+        "Si el precio pasa la tarifa o la fecha pasa la fecha límite, se rechaza y debes escalar "
+        "al Gerente.",
         {
             "type": "object",
             "properties": {
@@ -168,8 +169,8 @@ def whatsapp_tools(conversation, batch) -> list:
 
     @tool(
         "escalate_to_manager",
-        "Deja una decisión pendiente para el Gerente: precio, términos u otro (por ejemplo, si "
-        "preguntan en serio si eres un bot). Tú no decides eso.",
+        "Deja una decisión pendiente para el Gerente: precio, términos u otra cosa que no te toca "
+        "decidir (por ejemplo, si te preguntan en serio si eres un bot).",
         {
             "type": "object",
             "properties": {
