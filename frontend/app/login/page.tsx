@@ -25,7 +25,9 @@ function safeNext(next: string | null): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return "/";
   try {
     const url = new URL(next, window.location.origin);
-    return url.origin === window.location.origin ? url.pathname + url.search + url.hash : "/";
+    if (url.origin !== window.location.origin) return "/";
+    // Normalizing can turn "/.//evil.com" into "//evil.com": collapse leading slashes.
+    return url.pathname.replace(/^\/+/, "/") + url.search + url.hash;
   } catch {
     return "/";
   }
