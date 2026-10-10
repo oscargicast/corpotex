@@ -1599,6 +1599,126 @@
                 }
             }
         },
+        "/api/routes/": {
+            "get": {
+                "operationId": "routes_retrieve",
+                "description": "`GET /api/routes/`: all routes (`?date=`, `?status=`), or with `?current=1` the pair\n`{current, replaced}` the map shows (ADR 0024).",
+                "tags": [
+                    "routes"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/routes/{id}/": {
+            "get": {
+                "operationId": "routes_retrieve_2",
+                "description": "Any route in any status: the scene opens `before` and `after` side by side.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "routes"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/routes/plan/": {
+            "post": {
+                "operationId": "routes_plan_create",
+                "description": "`POST /api/routes/plan/ {date}` (manager and production): plans or re-plans that day.",
+                "tags": [
+                    "routes"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RoutePlanInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RoutePlanInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RoutePlanInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/schema/": {
             "get": {
                 "operationId": "schema_retrieve",
@@ -4526,6 +4646,18 @@
                     "qty_to_order",
                     "status",
                     "status_display"
+                ]
+            },
+            "RoutePlanInRequest": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "date"
                 ]
             },
             "SimulatorMessageInRequest": {

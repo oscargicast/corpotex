@@ -543,6 +543,9 @@ class Loader:
 
     def wipe(self):
         """Demo data only: never users, tokens, the WhatsApp onboarding state nor the style."""
+        from operations.models import Route
+
+        Route.objects.all().delete()
         for model in (Message, Conversation, Alert, Decision, StatusChange, Payment, Delivery, ProgressReport, PurchaseOrderItem, PurchaseOrder, Requirement, OrderItem, Order, Rate, AllowedNumber, Supplier, ProductMaterial, Product, Material, Customer, Brand):
             model.objects.all().delete()
         from messaging.models import Turn
@@ -602,6 +605,18 @@ class Loader:
             compute_critical_path(order)
             if fixed[0]:  # The JSON decides the demo's dates and risk; keep them.
                 Order.objects.filter(pk=order.pk).update(estimated_on=fixed[0], risk=fixed[1], risk_reason=fixed[2])
+        self.plan_routes()
+
+    def plan_routes(self):
+        """A planned route for every day of the next month that has pickups or deliveries."""
+        from operations.models import Route
+        from operations.routes import candidate_stops, plan_route
+
+        Route.objects.all().delete()
+        for offset in range(0, 31):
+            day = (self.t + timedelta(days=offset)).date()
+            if candidate_stops(day):
+                plan_route(day)
 
 
 def settings_env(name: str) -> str:

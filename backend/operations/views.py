@@ -7,7 +7,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.permissions import IsManager
+from core.permissions import IsManager, IsManagerOrProduction
 from core.serializers import serializer_for
 
 from . import services
@@ -241,3 +241,66 @@ class PublicReportView(APIView):
         data.is_valid(raise_exception=True)
         report = services.record_public_report(token, **data.validated_data)
         return Response({"id": report.id, "units_done": report.units_done, "reported_at": report.reported_at}, status=201)
+
+
+class RoutePlanInSerializer(serializers.Serializer):
+    date = serializers.DateField()
+
+
+class RouteListView(APIView):
+    """`GET /api/routes/`: all routes (`?date=`, `?status=`), or with `?current=1` the pair
+    `{current, replaced}` the map shows (ADR 0024)."""
+
+    @extend_schema(responses={200: dict})
+    def get(self, request):
+        from . import routes
+        from .models import Route
+        from .serializers import RouteSerializer
+
+        params = request.query_params
+        qs = Route.objects.prefetch_related("stops__supplier", "stops__customer", "stops__purchase_order", "stops__order")
+        if params.get("current") == "1":
+            current = routes.current_route(params.get("date") or None)
+            replaced = current.recalculated_from if current and current.recalculated_from_id and current.recalculated_from.status == "replaced" else None
+            return Response(
+                {
+                    "current": RouteSerializer(qs.get(pk=current.pk)).data if current else None,
+                    "replaced": RouteSerializer(qs.get(pk=replaced.pk)).data if replaced else None,
+                }
+            )
+        for name in ("date", "status"):
+            if params.get(name):
+                qs = qs.filter(**{name: params[name]})
+        return Response(RouteSerializer(qs, many=True).data)
+
+
+class RouteDetailView(APIView):
+    """Any route in any status: the scene opens `before` and `after` side by side."""
+
+    @extend_schema(responses={200: dict})
+    def get(self, request, pk: int):
+        from .models import Route
+        from .serializers import RouteSerializer
+
+        route = Route.objects.prefetch_related("stops__supplier", "stops__customer", "stops__purchase_order", "stops__order").filter(pk=pk).first()
+        if route is None:
+            return Response(status=404)
+        return Response(RouteSerializer(route).data)
+
+
+class RoutePlanView(APIView):
+    """`POST /api/routes/plan/ {date}` (manager and production): plans or re-plans that day."""
+
+    permission_classes = [IsManagerOrProduction]
+
+    @extend_schema(request=RoutePlanInSerializer, responses={201: dict})
+    def post(self, request):
+        from . import routes
+        from .serializers import RouteSerializer
+
+        data = RoutePlanInSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        route = routes.plan_route(data.validated_data["date"], actor=request.user)
+        if route is None:
+            return Response({"detail": "La planta no tiene coordenadas (Config.plant_lat/plant_lng)."}, status=400)
+        return Response(RouteSerializer(route).data, status=201)

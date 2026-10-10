@@ -16,6 +16,8 @@ from .models import (
     PurchaseOrder,
     PurchaseOrderItem,
     Requirement,
+    Route,
+    RouteStop,
 )
 
 OPEN = PurchaseOrder.OPEN_STATUSES
@@ -520,3 +522,47 @@ class PurchaseOrderDetailSerializer(StatusHistoryMixin, PurchaseOrderListSeriali
         if not decision:
             return None
         return {"id": decision.id, "kind": decision.kind, "summary": decision.summary, "detail": decision.detail}
+
+
+class RouteStopSerializer(serializers.ModelSerializer):
+    kind_display = serializers.CharField(source="get_kind_display", read_only=True)
+    supplier = serializers.SerializerMethodField()
+    customer = serializers.SerializerMethodField()
+    purchase_order = serializers.SerializerMethodField()
+    order = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RouteStop
+        fields = ["position", "kind", "kind_display", "name", "address", "lat", "lng", "eta", "supplier", "customer", "purchase_order", "order"]
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_supplier(self, obj):
+        return {"id": obj.supplier_id, "name": obj.supplier.name} if obj.supplier_id else None
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_customer(self, obj):
+        return {"id": obj.customer_id, "name": obj.customer.name} if obj.customer_id else None
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_purchase_order(self, obj):
+        return {"id": obj.purchase_order_id, "code": obj.purchase_order.code} if obj.purchase_order_id else None
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_order(self, obj):
+        return {"id": obj.order_id, "code": obj.order.code} if obj.order_id else None
+
+
+class RouteSerializer(serializers.ModelSerializer):
+    """Routes carry no prices: every role reads them."""
+
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    stops = RouteStopSerializer(many=True, read_only=True)
+    stops_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Route
+        fields = ["id", "date", "status", "status_display", "distance_km", "duration_min", "path", "recalculated_from", "stops_count", "stops", "created_at"]
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_stops_count(self, obj):
+        return max(obj.stops.count() - 2, 0)  # Without the plant at both ends.
