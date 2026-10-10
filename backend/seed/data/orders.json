@@ -1,0 +1,263 @@
+[
+  {
+    "code": "OC-2026-0142",
+    "customer": "Caja Piura",
+    "brand": "UNICRACK",
+    "status": "in_production",
+    "production_stage": "sewing",
+    "issued_on": "T-20",
+    "promised_on": "T+10",
+    "estimated_on": "T+9",
+    "risk": "ok",
+    "risk_reason": null,
+    "total_amount": "28000.00",
+    "source": "api",
+    "items": [
+      {
+        "product": "UNI-POL-01",
+        "quantity": 1000,
+        "sizes": {
+          "S": 100,
+          "M": 300,
+          "L": 350,
+          "XL": 250
+        },
+        "color": "blanco",
+        "customization": "embroidery",
+        "unit_price": "28.00"
+      }
+    ]
+  },
+  {
+    "code": "OC-2026-0151",
+    "customer": "AIDER",
+    "brand": "NEXO",
+    "status": "sourcing",
+    "production_stage": null,
+    "issued_on": "T-6",
+    "promised_on": "T+18",
+    "estimated_on": "T+21",
+    "risk": "at_risk",
+    "risk_reason": "El drill de Hilados del Bajío sigue en negociación de precio; si no confirma esta semana la entrega se corre ~3 días.",
+    "total_amount": "39000.00",
+    "source": "pdf",
+    "items": [
+      {
+        "product": "NEX-CAM-01",
+        "quantity": 300,
+        "sizes": {
+          "S": 40,
+          "M": 110,
+          "L": 100,
+          "XL": 50
+        },
+        "color": "azul marino",
+        "customization": "embroidery",
+        "unit_price": "62.00"
+      },
+      {
+        "product": "NEX-PAN-01",
+        "quantity": 300,
+        "sizes": {
+          "28": 40,
+          "30": 90,
+          "32": 100,
+          "34": 70
+        },
+        "color": "azul marino",
+        "customization": null,
+        "unit_price": "68.00"
+      }
+    ]
+  },
+  {
+    "code": "OC-2026-0155",
+    "customer": "Colegio Los Algarrobos",
+    "brand": "UNICRACK",
+    "status": "confirmed",
+    "production_stage": null,
+    "issued_on": "T-4",
+    "promised_on": "T+25",
+    "estimated_on": "T+24",
+    "risk": "ok",
+    "risk_reason": null,
+    "total_amount": "43600.00",
+    "source": "api",
+    "items": [
+      {
+        "product": "UNI-BUZ-01",
+        "quantity": 400,
+        "sizes": {
+          "8": 60,
+          "10": 90,
+          "12": 110,
+          "14": 90,
+          "16": 50
+        },
+        "color": "verde y blanco",
+        "customization": "sublimation",
+        "unit_price": "85.00"
+      },
+      {
+        "product": "UNI-POD-01",
+        "quantity": 400,
+        "sizes": {
+          "8": 60,
+          "10": 90,
+          "12": 110,
+          "14": 90,
+          "16": 50
+        },
+        "color": "blanco",
+        "customization": "sublimation",
+        "unit_price": "24.00"
+      }
+    ]
+  },
+  {
+    "code": "OC-2026-0158",
+    "customer": "PIQA",
+    "brand": "Línea Médica Corpotex",
+    "status": "broken_down",
+    "production_stage": null,
+    "issued_on": "T-2",
+    "promised_on": "T+20",
+    "estimated_on": "T+20",
+    "risk": "ok",
+    "risk_reason": null,
+    "total_amount": "15000.00",
+    "source": "pdf",
+    "items": [
+      {
+        "product": "LMC-BAT-01",
+        "quantity": 200,
+        "sizes": {
+          "S": 40,
+          "M": 80,
+          "L": 60,
+          "XL": 20
+        },
+        "color": "blanco",
+        "customization": "embroidery",
+        "unit_price": "75.00"
+      }
+    ]
+  },
+  {
+    "code": "OC-2026-0160",
+    "customer": "Colegio Los Algarrobos",
+    "brand": "UNICRACK",
+    "status": "registered",
+    "production_stage": null,
+    "issued_on": "T-1",
+    "promised_on": "T+30",
+    "estimated_on": "T+30",
+    "risk": "ok",
+    "risk_reason": null,
+    "total_amount": "11200.00",
+    "source": "manual",
+    "items": [
+      {
+        "product": "UNI-CAM-01",
+        "quantity": 350,
+        "sizes": {
+          "8": 50,
+          "10": 70,
+          "12": 90,
+          "14": 80,
+          "16": 60
+        },
+        "color": "celeste",
+        "customization": "embroidery",
+        "unit_price": "32.00"
+      }
+    ]
+  },
+  {
+    "code": "OC-2026-0118",
+    "customer": "PIQA",
+    "brand": "NEXO",
+    "status": "ready",
+    "production_stage": null,
+    "issued_on": "T-30",
+    "promised_on": "T+2",
+    "estimated_on": "T+1",
+    "risk": "ok",
+    "risk_reason": null,
+    "total_amount": "13750.00",
+    "source": "api",
+    "items": [
+      {
+        "product": "NEX-CHA-01",
+        "quantity": 250,
+        "sizes": {
+          "M": 80,
+          "L": 110,
+          "XL": 60
+        },
+        "color": "naranja alta visibilidad",
+        "customization": "print",
+        "unit_price": "55.00"
+      }
+    ]
+  },
+  {
+    "code": "OC-2026-0097",
+    "customer": "Colegio Los Algarrobos",
+    "brand": "UNICRACK",
+    "status": "delivered",
+    "production_stage": null,
+    "issued_on": "T-60",
+    "promised_on": "T-20",
+    "estimated_on": "T-21",
+    "risk": "ok",
+    "risk_reason": null,
+    "total_amount": "18000.00",
+    "source": "api",
+    "items": [
+      {
+        "product": "UNI-CAM-01",
+        "quantity": 600,
+        "sizes": {
+          "8": 90,
+          "10": 120,
+          "12": 150,
+          "14": 140,
+          "16": 100
+        },
+        "color": "blanco",
+        "customization": "embroidery",
+        "unit_price": "30.00"
+      }
+    ]
+  },
+  {
+    "code": "OC-2026-0109",
+    "customer": "AIDER",
+    "brand": "Línea Médica Corpotex",
+    "status": "cancelled",
+    "production_stage": null,
+    "issued_on": "T-40",
+    "promised_on": "T-5",
+    "estimated_on": "T-5",
+    "risk": "ok",
+    "risk_reason": "Cliente canceló por recorte de presupuesto del proyecto.",
+    "total_amount": "7200.00",
+    "source": "manual",
+    "items": [
+      {
+        "product": "LMC-BAT-01",
+        "quantity": 100,
+        "sizes": {
+          "S": 20,
+          "M": 40,
+          "L": 30,
+          "XL": 10
+        },
+        "color": "blanco",
+        "customization": null,
+        "unit_price": "72.00"
+      }
+    ]
+  }
+]

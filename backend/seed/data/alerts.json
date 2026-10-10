@@ -1,0 +1,62 @@
+[
+  {
+    "kind": "stalled_purchase_order",
+    "severity": "warning",
+    "status": "open",
+    "order": "OC-2026-0155",
+    "purchase_order": "PED-0041",
+    "text": "Tejidos Rib Lima no reporta avance desde hace 5 días (120 de 400 cuellos).",
+    "detected_at": "T+0 08:00",
+    "resolved_at": null
+  },
+  {
+    "kind": "payment_due",
+    "severity": "info",
+    "status": "open",
+    "order": "OC-2026-0118",
+    "purchase_order": "PED-0025",
+    "text": "Saldo de S/ 650.00 a Taller Costura Castilla vencido desde hace 2 días.",
+    "detected_at": "T+0 07:30",
+    "resolved_at": null
+  },
+  {
+    "kind": "no_response",
+    "severity": "info",
+    "status": "acknowledged",
+    "order": "OC-2026-0151",
+    "purchase_order": "PED-0042",
+    "text": "Hilados del Bajío no responde la contraoferta desde hace 2 días (no insistir antes de 72 h).",
+    "detected_at": "T-1 09:00",
+    "resolved_at": null
+  },
+  {
+    "kind": "delay",
+    "severity": "warning",
+    "status": "open",
+    "order": "OC-2026-0151",
+    "purchase_order": null,
+    "text": "La fecha estimada (T+21) pasa la prometida (T+18) si el drill no se confirma esta semana.",
+    "detected_at": "T-1 09:05",
+    "resolved_at": null
+  },
+  {
+    "kind": "delay",
+    "severity": "warning",
+    "status": "resolved",
+    "order": "OC-2026-0097",
+    "purchase_order": "PED-0021",
+    "text": "Confecciones del Norte con 3 días de atraso en camisas escolares.",
+    "detected_at": "T-26 09:00",
+    "resolved_at": "T-24 15:00"
+  },
+  {
+    "kind": "no_channel",
+    "severity": "critical",
+    "status": "resolved",
+    "order": null,
+    "purchase_order": null,
+    "text": "Canal de WhatsApp desconectado por 20 minutos.",
+    "detected_at": "T-9 06:10",
+    "resolved_at": "T-9 06:30"
+  }
+]
