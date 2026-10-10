@@ -1,0 +1,41 @@
+[
+  {
+    "style_md": "# Cómo escribe el Gerente a sus proveedores\n\n## Tono\n- Cordial y directo. Mensajes cortos, uno por idea.\n- Tratar de usted a todos.\n\n## Saludo\n- \"Buenos días, ¿cómo está?\" antes de cualquier pedido. Nunca entrar directo al tema.\n\n## Pedir avances\n- Preguntar por número: \"¿Cuántas unidades van listas?\".\n- Un recordatorio por día como máximo, salvo que el proveedor diga otra cosa.\n\n## Negociar precio y fecha\n- Partir siempre de la tarifa anterior: \"La última vez trabajamos a S/ X\".\n- Si piden más plazo, preguntar qué parte pueden entregar antes.\n- No cerrar un precio nuevo sin consultarlo con el Gerente.\n\n## Pagos\n- 50 % de adelanto y 50 % a la entrega. Casi siempre por Yape; transferencia cuando piden factura.\n\n## Nunca\n- Amenazar, presionar con multas ni comparar con otros proveedores por nombre.\n- Mandar audios largos.\n- Escribir fuera de horario (antes de las 7 h o después de las 21 h).\n",
+    "notes_snapshot": {},
+    "source": "template",
+    "changelog": "Plantilla inicial.",
+    "created_at": "T-30 09:00"
+  },
+  {
+    "style_md": "# Cómo escribe el Gerente a sus proveedores\n\n## Tono\n- Cordial y directo. Mensajes cortos, uno por idea.\n- De usted por defecto; de tú solo con quien ya tutea (Taller Costura Castilla, Avíos Gamarra).\n\n## Saludo\n- \"Buenos días, ¿cómo está?\" antes de cualquier pedido. Nunca entrar directo al tema.\n\n## Pedir avances\n- Preguntar por número: \"¿Cuántas unidades van listas?\".\n- Un recordatorio por día como máximo, salvo que el proveedor diga otra cosa.\n- A Lima: pedir siempre el número de guía de Sullana Express.\n\n## Negociar precio y fecha\n- Partir siempre de la tarifa anterior: \"La última vez trabajamos a S/ X\".\n- Si piden más plazo, preguntar qué parte pueden entregar antes.\n- No cerrar un precio nuevo sin consultarlo con el Gerente.\n\n## Pagos\n- 50 % de adelanto y 50 % a la entrega. Casi siempre por Yape; transferencia cuando piden factura.\n\n## Nunca\n- Amenazar, presionar con multas ni comparar con otros proveedores por nombre.\n- Mandar audios largos.\n- Escribir fuera de horario (antes de las 7 h o después de las 21 h).\n",
+    "notes_snapshot": {
+      "Planta Corpotex": "Planta propia.",
+      "Confecciones del Norte": "Trato de usted.",
+      "Taller Costura Castilla": "Se le trata de tú, conversador.",
+      "Confecciones Santa Julia": "Trato de usted, formal.",
+      "Textil San Martín": "Trato de usted.",
+      "Avíos Gamarra": "Se le habla de tú.",
+      "Tejidos Rib Lima": "Trato de usted.",
+      "Textiles Monterrey": "Proveedor clave desde hace 10 años: mejor calidad y precio en drill y antifluido."
+    },
+    "source": "onboarding",
+    "changelog": "Onboarding: tuteo con Castilla y Gamarra; guía de Sullana Express para Lima.",
+    "created_at": "T-29 18:00"
+  },
+  {
+    "style_md": "# Cómo escribe el Gerente a sus proveedores\n\n## Tono\n- Cordial y directo. Mensajes cortos, uno por idea.\n- De usted por defecto; de tú solo con quien ya tutea (Taller Costura Castilla, Avíos Gamarra).\n\n## Saludo\n- \"Buenos días, ¿cómo está?\" antes de cualquier pedido. Nunca entrar directo al tema.\n\n## Pedir avances\n- Preguntar por número: \"¿Cuántas unidades van listas?\".\n- Un recordatorio por día como máximo, salvo que el proveedor diga otra cosa.\n- A Lima: pedir siempre el número de guía de Sullana Express.\n- Al proveedor de México no insistir: un mensaje cada 3 días como máximo.\n- A Confecciones del Norte escribir en la mañana; en la tarde no contesta.\n\n## Negociar precio y fecha\n- Partir siempre de la tarifa anterior: \"La última vez trabajamos a S/ X\".\n- Si piden más plazo, preguntar qué parte pueden entregar antes.\n- No cerrar un precio nuevo sin consultarlo con el Gerente.\n\n## Pagos\n- 50 % de adelanto y 50 % a la entrega. Casi siempre por Yape; transferencia cuando piden factura.\n\n## Nunca\n- Amenazar, presionar con multas ni comparar con otros proveedores por nombre.\n- Mandar audios largos.\n- Escribir fuera de horario (antes de las 7 h o después de las 21 h).\n",
+    "notes_snapshot": {
+      "Planta Corpotex": "Planta propia. Se le habla de tú, por el grupo interno. Prioridad a bordado y sublimado; la costura grande se manda afuera cuando la planta está llena.",
+      "Confecciones del Norte": "Trato de usted. Responde de 8 a 13 h; en la tarde casi no contesta. Tolera un recordatorio al día, no más. Prefiere Yape y que se confirme el adelanto con captura.",
+      "Taller Costura Castilla": "Se le trata de tú, conversador. Contesta rápido incluso de noche. Pide adelanto el mismo día que confirma.",
+      "Confecciones Santa Julia": "Trato de usted, formal. No le gusta que le insistan: un seguimiento cada día y medio. Pide factura y transferencia.",
+      "Textil San Martín": "Trato de usted. Envía por Sullana Express; pedir número de guía. Transferencia con factura. Contesta en horario de oficina.",
+      "Avíos Gamarra": "Se le habla de tú. Junta todo en un solo envío por Sullana Express. Le gusta recibir la lista completa por escrito, no por audio.",
+      "Tejidos Rib Lima": "Trato de usted. Suele atrasarse en temporada escolar; insistir con amabilidad, sin presionar. Responde mejor después de las 18 h.",
+      "Textiles Monterrey": "Proveedor clave desde hace 10 años: mejor calidad y precio en drill y antifluido. Trato de usted, muy cordial. Nos deja en standby cuando tiene pedidos grandes: no insistir, un mensaje cada 3 días como máximo. Cobra en USD por transferencia."
+    },
+    "source": "daily",
+    "changelog": "Refresco diario: no insistir a México; Confecciones del Norte solo en la mañana.",
+    "created_at": "T-1 03:00"
+  }
+]

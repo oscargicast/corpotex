@@ -1,0 +1,106 @@
+[
+  {
+    "sku": "TEL-ALG-20",
+    "name": "Jersey algodón 20/1",
+    "kind": "fabric",
+    "unit": "kg",
+    "stock": "180.00",
+    "image": "images/materials/TEL-ALG-20.jpg"
+  },
+  {
+    "sku": "TEL-ALG-30",
+    "name": "Jersey algodón 30/1",
+    "kind": "fabric",
+    "unit": "kg",
+    "stock": "60.00",
+    "image": "images/materials/TEL-ALG-30.jpg"
+  },
+  {
+    "sku": "TEL-FRZ-30",
+    "name": "Franela perchada (French terry) 30/1",
+    "kind": "fabric",
+    "unit": "kg",
+    "stock": "45.00",
+    "image": "images/materials/TEL-FRZ-30.jpg"
+  },
+  {
+    "sku": "TEL-DRL-NX",
+    "name": "Drill 100 % algodón 8 oz (NEXO)",
+    "kind": "fabric",
+    "unit": "m",
+    "stock": "350.00",
+    "image": "images/materials/TEL-DRL-NX.jpg"
+  },
+  {
+    "sku": "TEL-ANF-MD",
+    "name": "Tela antifluido (Línea Médica)",
+    "kind": "fabric",
+    "unit": "m",
+    "stock": "220.00",
+    "image": "images/materials/TEL-ANF-MD.jpg"
+  },
+  {
+    "sku": "RIB-CUE-01",
+    "name": "Cuello rib tejido",
+    "kind": "collar_cuff",
+    "unit": "unit",
+    "stock": "0.00",
+    "image": "images/materials/RIB-CUE-01.jpg"
+  },
+  {
+    "sku": "RIB-PUN-01",
+    "name": "Puño rib tejido",
+    "kind": "collar_cuff",
+    "unit": "unit",
+    "stock": "900.00",
+    "image": "images/materials/RIB-PUN-01.jpg"
+  },
+  {
+    "sku": "BOT-PLA-14",
+    "name": "Botón plástico 14L",
+    "kind": "button",
+    "unit": "unit",
+    "stock": "600.00",
+    "image": "images/materials/BOT-PLA-14.jpg"
+  },
+  {
+    "sku": "BOT-MET-NX",
+    "name": "Botón metálico NEXO",
+    "kind": "button",
+    "unit": "unit",
+    "stock": "300.00",
+    "image": "images/materials/BOT-MET-NX.jpg"
+  },
+  {
+    "sku": "CIE-NYL-20",
+    "name": "Cierre nylon 20 cm",
+    "kind": "zipper",
+    "unit": "unit",
+    "stock": "250.00",
+    "image": "images/materials/CIE-NYL-20.jpg"
+  },
+  {
+    "sku": "CIE-MET-18",
+    "name": "Cierre metálico 18 cm",
+    "kind": "zipper",
+    "unit": "unit",
+    "stock": "120.00",
+    "image": "images/materials/CIE-MET-18.jpg"
+  },
+  {
+    "sku": "HIL-POL-40",
+    "name": "Hilo poliéster 40/2 (cono 5000 m)",
+    "kind": "other",
+    "unit": "unit",
+    "stock": "80.00",
+    "image": "images/materials/HIL-POL-40.jpg"
+  },
+  {
+    "sku": "ETQ-TEJ-01",
+    "name": "Etiqueta tejida de marca",
+    "kind": "other",
+    "unit": "unit",
+    "stock": "3000.00",
+    "image": "images/materials/ETQ-TEJ-01.jpg"
+  }
+]

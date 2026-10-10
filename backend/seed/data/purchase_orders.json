@@ -1,0 +1,1131 @@
+[
+  {
+    "code": "PED-0031",
+    "supplier": "Textil San Martín",
+    "kind": "material",
+    "status": "delivered",
+    "suggested_supplier": "Textil San Martín",
+    "rationale": "Único proveedor con jersey 20/1 en stock inmediato y tarifa vigente.",
+    "scores": {
+      "price": 0.7,
+      "on_time": 0.86,
+      "quality": 0.78,
+      "load": 0.9,
+      "lead_time": 0.85
+    },
+    "candidates": [
+      {
+        "supplier": "Textil San Martín",
+        "score": 0.81,
+        "rationale": "Stock inmediato, envío por Sullana Express."
+      },
+      {
+        "supplier": "Textiles Monterrey",
+        "score": 0.42,
+        "rationale": "No trabaja jersey 20/1."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+5",
+    "committed_on": "T-14",
+    "delivered_on": "T-15",
+    "units_done": 0,
+    "last_progress_at": "T-15 10:00",
+    "next_follow_up_at": null,
+    "total_amount": "5200.00",
+    "currency": "PEN",
+    "terms": "Envío por Sullana Express, factura con la entrega.",
+    "items": [
+      {
+        "order": "OC-2026-0142",
+        "kind": "material",
+        "material": "TEL-ALG-20",
+        "product": null,
+        "quantity": "200.00",
+        "unit_price": "26.00",
+        "qty_delivered": "200.00"
+      }
+    ],
+    "progress_reports": [],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "2600.00",
+        "method": "transfer",
+        "status": "paid",
+        "due_on": "T-18",
+        "paid_at": "T-18 11:00",
+        "invoice_required": true,
+        "invoice_number": "F001-00872"
+      },
+      {
+        "kind": "balance",
+        "amount": "2600.00",
+        "method": "transfer",
+        "status": "paid",
+        "due_on": "T-15",
+        "paid_at": "T-15 16:00",
+        "invoice_required": true,
+        "invoice_number": "F001-00872"
+      }
+    ],
+    "deliveries": [
+      {
+        "qty_received": "200.00",
+        "qty_defective": "0.00",
+        "quality": 4,
+        "received_at": "T-15 10:00",
+        "note": "Llegó por agencia, rollos completos."
+      }
+    ],
+    "rating_delay_days": -1,
+    "rating_quality": 4,
+    "rating_defect_pct": "0.00",
+    "rating_price_vs_ref_pct": "0.00",
+    "rating_score": 0.9,
+    "rated_at": "T-15 12:00"
+  },
+  {
+    "code": "PED-0032",
+    "supplier": "Tejidos Rib Lima",
+    "kind": "material",
+    "status": "delivered",
+    "suggested_supplier": "Tejidos Rib Lima",
+    "rationale": "Especialista en rib; el único que teje cuello y puño a juego.",
+    "scores": {
+      "price": 0.75,
+      "on_time": 0.7,
+      "quality": 0.76,
+      "load": 0.8,
+      "lead_time": 0.6
+    },
+    "candidates": [
+      {
+        "supplier": "Tejidos Rib Lima",
+        "score": 0.74,
+        "rationale": "Cuello y puño a juego."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+5",
+    "committed_on": "T-13",
+    "delivered_on": "T-12",
+    "units_done": 0,
+    "last_progress_at": "T-12 09:30",
+    "next_follow_up_at": null,
+    "total_amount": "1325.00",
+    "currency": "PEN",
+    "terms": "Mismo tono de blanco que la tela; envío por Sullana Express.",
+    "items": [
+      {
+        "order": "OC-2026-0142",
+        "kind": "material",
+        "material": "RIB-CUE-01",
+        "product": null,
+        "quantity": "600.00",
+        "unit_price": "1.20",
+        "qty_delivered": "600.00"
+      },
+      {
+        "order": "OC-2026-0142",
+        "kind": "material",
+        "material": "RIB-PUN-01",
+        "product": null,
+        "quantity": "1100.00",
+        "unit_price": "0.55",
+        "qty_delivered": "1100.00"
+      }
+    ],
+    "progress_reports": [],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "662.50",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-17",
+        "paid_at": "T-17 18:30",
+        "invoice_required": false,
+        "invoice_number": null
+      },
+      {
+        "kind": "balance",
+        "amount": "662.50",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-12",
+        "paid_at": "T-12 19:00",
+        "invoice_required": false,
+        "invoice_number": null
+      }
+    ],
+    "deliveries": [
+      {
+        "qty_received": "1700.00",
+        "qty_defective": "20.00",
+        "quality": 4,
+        "received_at": "T-12 09:30",
+        "note": "20 puños con falla de tejido, se repusieron en el siguiente envío."
+      }
+    ],
+    "rating_delay_days": 1,
+    "rating_quality": 4,
+    "rating_defect_pct": "1.18",
+    "rating_price_vs_ref_pct": "0.00",
+    "rating_score": 0.78,
+    "rated_at": "T-12 11:00"
+  },
+  {
+    "code": "PED-0033",
+    "supplier": "Avíos Gamarra",
+    "kind": "material",
+    "status": "delivered",
+    "suggested_supplier": "Avíos Gamarra",
+    "rationale": "Avíos en un solo envío, el más puntual.",
+    "scores": {
+      "price": 0.8,
+      "on_time": 0.93,
+      "quality": 0.82,
+      "load": 0.85,
+      "lead_time": 0.95
+    },
+    "candidates": [
+      {
+        "supplier": "Avíos Gamarra",
+        "score": 0.87,
+        "rationale": "Puntual, envío consolidado."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+5",
+    "committed_on": "T-16",
+    "delivered_on": "T-16",
+    "units_done": 0,
+    "last_progress_at": "T-16 08:45",
+    "next_follow_up_at": null,
+    "total_amount": "370.00",
+    "currency": "PEN",
+    "terms": "Envío consolidado por Sullana Express.",
+    "items": [
+      {
+        "order": "OC-2026-0142",
+        "kind": "material",
+        "material": "BOT-PLA-14",
+        "product": null,
+        "quantity": "3000.00",
+        "unit_price": "0.06",
+        "qty_delivered": "3000.00"
+      },
+      {
+        "order": "OC-2026-0142",
+        "kind": "material",
+        "material": "HIL-POL-40",
+        "product": null,
+        "quantity": "20.00",
+        "unit_price": "9.50",
+        "qty_delivered": "20.00"
+      }
+    ],
+    "progress_reports": [],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "185.00",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-19",
+        "paid_at": "T-19 10:00",
+        "invoice_required": false,
+        "invoice_number": null
+      },
+      {
+        "kind": "balance",
+        "amount": "185.00",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-16",
+        "paid_at": "T-16 09:00",
+        "invoice_required": false,
+        "invoice_number": null
+      }
+    ],
+    "deliveries": [
+      {
+        "qty_received": "3020.00",
+        "qty_defective": "0.00",
+        "quality": 4,
+        "received_at": "T-16 08:45",
+        "note": "Completo."
+      }
+    ],
+    "rating_delay_days": 0,
+    "rating_quality": 4,
+    "rating_defect_pct": "0.00",
+    "rating_price_vs_ref_pct": "0.00",
+    "rating_score": 0.92,
+    "rated_at": "T-16 10:00"
+  },
+  {
+    "code": "PED-0038",
+    "supplier": "Confecciones del Norte",
+    "kind": "workshop",
+    "status": "in_progress",
+    "suggested_supplier": "Confecciones del Norte",
+    "rationale": "La planta está llena con OC-2026-0155 y OC-2026-0151; Confecciones del Norte tiene capacidad para las 1000 unidades en ~10 días.",
+    "scores": {
+      "price": 0.8,
+      "on_time": 0.78,
+      "quality": 0.84,
+      "load": 0.7,
+      "lead_time": 0.75
+    },
+    "candidates": [
+      {
+        "supplier": "Confecciones del Norte",
+        "score": 0.78,
+        "rationale": "Capacidad para 1000 en un solo taller."
+      },
+      {
+        "supplier": "Planta Corpotex",
+        "score": 0.66,
+        "rationale": "Mejor precio pero sin capacidad libre."
+      },
+      {
+        "supplier": "Taller Costura Castilla",
+        "score": 0.61,
+        "rationale": "Solo 400/semana."
+      },
+      {
+        "supplier": "Confecciones Santa Julia",
+        "score": 0.58,
+        "rationale": "Solo 350/semana."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+5",
+    "committed_on": "T+6",
+    "delivered_on": null,
+    "units_done": 400,
+    "last_progress_at": "T-1 12:10",
+    "next_follow_up_at": "T+0 10:00",
+    "total_amount": "3500.00",
+    "currency": "PEN",
+    "terms": "Recibe todo cortado y bordado de planta. 1000 polos a S/ 3.50. 50 % adelanto por Yape, saldo a la entrega.",
+    "items": [
+      {
+        "order": "OC-2026-0142",
+        "kind": "workshop",
+        "material": null,
+        "product": "UNI-POL-01",
+        "quantity": 1000,
+        "unit_price": "3.50",
+        "qty_delivered": 0
+      }
+    ],
+    "progress_reports": [
+      {
+        "units_done": 150,
+        "note": "Ya van 150 cosidos.",
+        "source": "whatsapp",
+        "reported_at": "T-4 11:20"
+      },
+      {
+        "units_done": 400,
+        "note": "400 listos, seguimos con las tallas L.",
+        "source": "whatsapp",
+        "reported_at": "T-1 12:10"
+      }
+    ],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "1750.00",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-8",
+        "paid_at": "T-8 10:30",
+        "invoice_required": false,
+        "invoice_number": null
+      },
+      {
+        "kind": "balance",
+        "amount": "1750.00",
+        "method": "yape",
+        "status": "pending",
+        "due_on": "T+6",
+        "paid_at": null,
+        "invoice_required": false,
+        "invoice_number": null
+      }
+    ]
+  },
+  {
+    "code": "PED-0045",
+    "supplier": "Planta Corpotex",
+    "kind": "workshop",
+    "status": "confirmed",
+    "suggested_supplier": "Planta Corpotex",
+    "rationale": "Lleva sublimado; se cose en planta para no mover piezas sublimadas.",
+    "scores": {
+      "price": 0.9,
+      "on_time": 0.92,
+      "quality": 0.9,
+      "load": 0.4,
+      "lead_time": 0.85
+    },
+    "candidates": [
+      {
+        "supplier": "Planta Corpotex",
+        "score": 0.82,
+        "rationale": "Sublimado y costura en un mismo lugar."
+      },
+      {
+        "supplier": "Taller Costura Castilla",
+        "score": 0.55,
+        "rationale": "No hace buzos."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+20",
+    "committed_on": "T+19",
+    "delivered_on": null,
+    "units_done": 0,
+    "last_progress_at": null,
+    "next_follow_up_at": "T+3 09:00",
+    "total_amount": "4160.00",
+    "currency": "PEN",
+    "terms": "Programado después de los buzos de stock.",
+    "items": [
+      {
+        "order": "OC-2026-0155",
+        "kind": "workshop",
+        "material": null,
+        "product": "UNI-BUZ-01",
+        "quantity": 400,
+        "unit_price": "7.50",
+        "qty_delivered": 0
+      },
+      {
+        "order": "OC-2026-0155",
+        "kind": "workshop",
+        "material": null,
+        "product": "UNI-POD-01",
+        "quantity": 400,
+        "unit_price": "2.90",
+        "qty_delivered": 0
+      }
+    ],
+    "progress_reports": [],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "2080.00",
+        "method": "cash",
+        "status": "pending",
+        "due_on": "T+0",
+        "paid_at": null,
+        "invoice_required": false,
+        "invoice_number": null
+      },
+      {
+        "kind": "balance",
+        "amount": "2080.00",
+        "method": "cash",
+        "status": "pending",
+        "due_on": "T+19",
+        "paid_at": null,
+        "invoice_required": false,
+        "invoice_number": null
+      }
+    ]
+  },
+  {
+    "code": "PED-0046",
+    "supplier": "Planta Corpotex",
+    "kind": "workshop",
+    "status": "approved",
+    "suggested_supplier": "Planta Corpotex",
+    "rationale": "Lleva bordado de logo; la planta lo absorbe cuando llegue el drill.",
+    "scores": {
+      "price": 0.88,
+      "on_time": 0.92,
+      "quality": 0.9,
+      "load": 0.35,
+      "lead_time": 0.85
+    },
+    "candidates": [
+      {
+        "supplier": "Planta Corpotex",
+        "score": 0.8,
+        "rationale": "Bordado en planta."
+      },
+      {
+        "supplier": "Taller Costura Castilla",
+        "score": 0.6,
+        "rationale": "Hace pantalón, no camisa drill."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+13",
+    "committed_on": null,
+    "delivered_on": null,
+    "units_done": 0,
+    "last_progress_at": null,
+    "next_follow_up_at": null,
+    "total_amount": "3750.00",
+    "currency": "PEN",
+    "terms": "A la espera del drill.",
+    "items": [
+      {
+        "order": "OC-2026-0151",
+        "kind": "workshop",
+        "material": null,
+        "product": "NEX-CAM-01",
+        "quantity": 300,
+        "unit_price": "6.00",
+        "qty_delivered": 0
+      },
+      {
+        "order": "OC-2026-0151",
+        "kind": "workshop",
+        "material": null,
+        "product": "NEX-PAN-01",
+        "quantity": 300,
+        "unit_price": "6.50",
+        "qty_delivered": 0
+      }
+    ],
+    "progress_reports": [],
+    "payments": []
+  },
+  {
+    "code": "PED-0042",
+    "supplier": "Textiles Monterrey",
+    "kind": "material",
+    "status": "negotiating",
+    "suggested_supplier": "Textiles Monterrey",
+    "rationale": "Mejor drill y precio histórico; Textil San Martín como respaldo.",
+    "scores": {
+      "price": 0.92,
+      "on_time": 0.74,
+      "quality": 0.96,
+      "load": 0.7,
+      "lead_time": 0.4
+    },
+    "candidates": [
+      {
+        "supplier": "Textiles Monterrey",
+        "score": 0.79,
+        "rationale": "Calidad 4.8, mejor precio."
+      },
+      {
+        "supplier": "Textil San Martín",
+        "score": 0.68,
+        "rationale": "Más caro en drill pero llega en 7 días."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+13",
+    "committed_on": null,
+    "delivered_on": null,
+    "units_done": 0,
+    "last_progress_at": null,
+    "next_follow_up_at": "T+2 10:00",
+    "total_amount": "1984.00",
+    "currency": "USD",
+    "terms": "Tarifa vigente USD 3.10/m; el proveedor pidió USD 3.45/m.",
+    "items": [
+      {
+        "order": "OC-2026-0151",
+        "kind": "material",
+        "material": "TEL-DRL-NX",
+        "product": null,
+        "quantity": "640.00",
+        "unit_price": "3.10",
+        "qty_delivered": "0.00"
+      }
+    ],
+    "progress_reports": [],
+    "payments": []
+  },
+  {
+    "code": "PED-0044",
+    "supplier": "Avíos Gamarra",
+    "kind": "material",
+    "status": "confirmed",
+    "suggested_supplier": "Avíos Gamarra",
+    "rationale": "Pedido consolidado de avíos para NEXO, UNICRACK y Línea Médica en un solo envío.",
+    "scores": {
+      "price": 0.82,
+      "on_time": 0.93,
+      "quality": 0.82,
+      "load": 0.85,
+      "lead_time": 0.95
+    },
+    "candidates": [
+      {
+        "supplier": "Avíos Gamarra",
+        "score": 0.88,
+        "rationale": "Tiene todo el surtido, un solo flete."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+13",
+    "committed_on": "T+5",
+    "delivered_on": null,
+    "units_done": 0,
+    "last_progress_at": null,
+    "next_follow_up_at": "T+1 10:00",
+    "total_amount": "1392.00",
+    "currency": "PEN",
+    "terms": "Un solo envío por Sullana Express para las 3 órdenes.",
+    "items": [
+      {
+        "order": "OC-2026-0151",
+        "kind": "material",
+        "material": "BOT-MET-NX",
+        "product": null,
+        "quantity": "2700.00",
+        "unit_price": "0.35",
+        "qty_delivered": "0.00"
+      },
+      {
+        "order": "OC-2026-0151",
+        "kind": "material",
+        "material": "CIE-MET-18",
+        "product": null,
+        "quantity": "180.00",
+        "unit_price": "1.60",
+        "qty_delivered": "0.00"
+      },
+      {
+        "order": "OC-2026-0155",
+        "kind": "material",
+        "material": "CIE-NYL-20",
+        "product": null,
+        "quantity": "150.00",
+        "unit_price": "0.90",
+        "qty_delivered": "0.00"
+      },
+      {
+        "order": "OC-2026-0158",
+        "kind": "material",
+        "material": "BOT-PLA-14",
+        "product": null,
+        "quantity": "400.00",
+        "unit_price": "0.06",
+        "qty_delivered": "0.00"
+      }
+    ],
+    "progress_reports": [],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "696.00",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-1",
+        "paid_at": "T-1 17:00",
+        "invoice_required": false,
+        "invoice_number": null
+      },
+      {
+        "kind": "balance",
+        "amount": "696.00",
+        "method": "yape",
+        "status": "pending",
+        "due_on": "T+5",
+        "paid_at": null,
+        "invoice_required": false,
+        "invoice_number": null
+      }
+    ]
+  },
+  {
+    "code": "PED-0041",
+    "supplier": "Tejidos Rib Lima",
+    "kind": "material",
+    "status": "in_progress",
+    "suggested_supplier": "Tejidos Rib Lima",
+    "rationale": "Cuellos para polo deportivo; único con rib a juego.",
+    "scores": {
+      "price": 0.75,
+      "on_time": 0.7,
+      "quality": 0.76,
+      "load": 0.6,
+      "lead_time": 0.6
+    },
+    "candidates": [
+      {
+        "supplier": "Tejidos Rib Lima",
+        "score": 0.7,
+        "rationale": "Rib a juego."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+20",
+    "committed_on": "T+8",
+    "delivered_on": null,
+    "units_done": 120,
+    "last_progress_at": "T-5 19:10",
+    "next_follow_up_at": "T+0 18:30",
+    "total_amount": "480.00",
+    "currency": "PEN",
+    "terms": "Envío por Sullana Express.",
+    "items": [
+      {
+        "order": "OC-2026-0155",
+        "kind": "material",
+        "material": "RIB-CUE-01",
+        "product": null,
+        "quantity": "400.00",
+        "unit_price": "1.20",
+        "qty_delivered": "0.00"
+      }
+    ],
+    "progress_reports": [
+      {
+        "units_done": 120,
+        "note": "Avanzamos 120 cuellos.",
+        "source": "whatsapp",
+        "reported_at": "T-5 19:10"
+      }
+    ],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "240.00",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-3",
+        "paid_at": "T-3 19:00",
+        "invoice_required": false,
+        "invoice_number": null
+      },
+      {
+        "kind": "balance",
+        "amount": "240.00",
+        "method": "yape",
+        "status": "pending",
+        "due_on": "T+8",
+        "paid_at": null,
+        "invoice_required": false,
+        "invoice_number": null
+      }
+    ]
+  },
+  {
+    "code": "PED-0043",
+    "supplier": "Textil San Martín",
+    "kind": "material",
+    "status": "suggested",
+    "suggested_supplier": "Textil San Martín",
+    "rationale": "Monterrey está en standby; San Martín llega en 7 días y cubre lo que falta sobre el stock.",
+    "scores": {
+      "price": 0.7,
+      "on_time": 0.86,
+      "quality": 0.78,
+      "load": 0.8,
+      "lead_time": 0.85
+    },
+    "candidates": [
+      {
+        "supplier": "Textil San Martín",
+        "score": 0.77,
+        "rationale": "Llega a tiempo."
+      },
+      {
+        "supplier": "Textiles Monterrey",
+        "score": 0.71,
+        "rationale": "Mejor calidad, 15 días."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T+15",
+    "committed_on": null,
+    "delivered_on": null,
+    "units_done": 0,
+    "last_progress_at": null,
+    "next_follow_up_at": null,
+    "total_amount": "3256.00",
+    "currency": "PEN",
+    "terms": "Por aprobar.",
+    "items": [
+      {
+        "order": "OC-2026-0158",
+        "kind": "material",
+        "material": "TEL-ANF-MD",
+        "product": null,
+        "quantity": "220.00",
+        "unit_price": "14.80",
+        "qty_delivered": "0.00"
+      }
+    ],
+    "progress_reports": [],
+    "payments": []
+  },
+  {
+    "code": "PED-0020",
+    "supplier": "Textil San Martín",
+    "kind": "material",
+    "status": "delivered",
+    "suggested_supplier": "Textil San Martín",
+    "rationale": "Jersey 30/1 en stock.",
+    "scores": {
+      "price": 0.7,
+      "on_time": 0.86,
+      "quality": 0.78,
+      "load": 0.9,
+      "lead_time": 0.85
+    },
+    "candidates": [
+      {
+        "supplier": "Textil San Martín",
+        "score": 0.8,
+        "rationale": "Stock inmediato."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T-25",
+    "committed_on": "T-48",
+    "delivered_on": "T-47",
+    "units_done": 0,
+    "last_progress_at": null,
+    "next_follow_up_at": null,
+    "total_amount": "3575.00",
+    "currency": "PEN",
+    "terms": "Envío por Sullana Express.",
+    "items": [
+      {
+        "order": "OC-2026-0097",
+        "kind": "material",
+        "material": "TEL-ALG-30",
+        "product": null,
+        "quantity": "130.00",
+        "unit_price": "27.50",
+        "qty_delivered": "130.00"
+      }
+    ],
+    "progress_reports": [],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "1787.50",
+        "method": "transfer",
+        "status": "paid",
+        "due_on": "T-55",
+        "paid_at": "T-55 10:00",
+        "invoice_required": true,
+        "invoice_number": "F001-00791"
+      },
+      {
+        "kind": "balance",
+        "amount": "1787.50",
+        "method": "transfer",
+        "status": "paid",
+        "due_on": "T-47",
+        "paid_at": "T-47 15:00",
+        "invoice_required": true,
+        "invoice_number": "F001-00791"
+      }
+    ],
+    "deliveries": [
+      {
+        "qty_received": "130.00",
+        "qty_defective": "0.00",
+        "quality": 4,
+        "received_at": "T-47 09:00",
+        "note": "Completo."
+      }
+    ],
+    "rating_delay_days": 1,
+    "rating_quality": 4,
+    "rating_defect_pct": "0.00",
+    "rating_price_vs_ref_pct": "0.00",
+    "rating_score": 0.85,
+    "rated_at": "T-47 12:00"
+  },
+  {
+    "code": "PED-0021",
+    "supplier": "Confecciones del Norte",
+    "kind": "workshop",
+    "status": "delivered",
+    "suggested_supplier": "Confecciones Santa Julia",
+    "rationale": "El Gerente cambió a Confecciones del Norte: ya conoce el molde de camisa escolar.",
+    "scores": {
+      "price": 0.75,
+      "on_time": 0.78,
+      "quality": 0.84,
+      "load": 0.8,
+      "lead_time": 0.75
+    },
+    "candidates": [
+      {
+        "supplier": "Confecciones Santa Julia",
+        "score": 0.76,
+        "rationale": "Mejor puntaje sugerido."
+      },
+      {
+        "supplier": "Confecciones del Norte",
+        "score": 0.74,
+        "rationale": "Conoce el molde."
+      }
+    ],
+    "changed_by_manager": true,
+    "redistributed_from": null,
+    "internal_due_on": "T-25",
+    "committed_on": "T-27",
+    "delivered_on": "T-24",
+    "units_done": 600,
+    "last_progress_at": null,
+    "next_follow_up_at": null,
+    "total_amount": "2880.00",
+    "currency": "PEN",
+    "terms": "600 camisas a S/ 4.80; 50 % Yape adelanto, saldo a la entrega.",
+    "items": [
+      {
+        "order": "OC-2026-0097",
+        "kind": "workshop",
+        "material": null,
+        "product": "UNI-CAM-01",
+        "quantity": 600,
+        "unit_price": "4.80",
+        "qty_delivered": 600
+      }
+    ],
+    "progress_reports": [
+      {
+        "units_done": 250,
+        "note": "250 cosidas.",
+        "source": "whatsapp",
+        "reported_at": "T-32 11:00"
+      },
+      {
+        "units_done": 600,
+        "note": "Todo listo para recoger.",
+        "source": "whatsapp",
+        "reported_at": "T-24 10:00"
+      }
+    ],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "1440.00",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-40",
+        "paid_at": "T-40 10:00",
+        "invoice_required": false,
+        "invoice_number": null
+      },
+      {
+        "kind": "balance",
+        "amount": "1440.00",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-24",
+        "paid_at": "T-24 16:00",
+        "invoice_required": false,
+        "invoice_number": null
+      }
+    ],
+    "deliveries": [
+      {
+        "qty_received": 600,
+        "qty_defective": 9,
+        "quality": 4,
+        "received_at": "T-24 15:00",
+        "note": "9 con costura torcida, se corrigieron en planta."
+      }
+    ],
+    "rating_delay_days": 3,
+    "rating_quality": 4,
+    "rating_defect_pct": "1.50",
+    "rating_price_vs_ref_pct": "0.00",
+    "rating_score": 0.72,
+    "rated_at": "T-24 17:00"
+  },
+  {
+    "code": "PED-0025",
+    "supplier": "Taller Costura Castilla",
+    "kind": "workshop",
+    "status": "delivered",
+    "suggested_supplier": "Taller Costura Castilla",
+    "rationale": "Hace chalecos y tenía capacidad libre.",
+    "scores": {
+      "price": 0.8,
+      "on_time": 0.88,
+      "quality": 0.8,
+      "load": 0.9,
+      "lead_time": 0.8
+    },
+    "candidates": [
+      {
+        "supplier": "Taller Costura Castilla",
+        "score": 0.84,
+        "rationale": "Capacidad libre, experiencia en chalecos."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T-3",
+    "committed_on": "T-5",
+    "delivered_on": "T-4",
+    "units_done": 250,
+    "last_progress_at": null,
+    "next_follow_up_at": null,
+    "total_amount": "1300.00",
+    "currency": "PEN",
+    "terms": "250 chalecos a S/ 5.20; nueva fecha acordada T-5.",
+    "items": [
+      {
+        "order": "OC-2026-0118",
+        "kind": "workshop",
+        "material": null,
+        "product": "NEX-CHA-01",
+        "quantity": 250,
+        "unit_price": "5.20",
+        "qty_delivered": 250
+      }
+    ],
+    "progress_reports": [
+      {
+        "units_done": 250,
+        "note": "Listos los 250.",
+        "source": "whatsapp",
+        "reported_at": "T-4 20:15"
+      }
+    ],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "650.00",
+        "method": "yape",
+        "status": "paid",
+        "due_on": "T-15",
+        "paid_at": "T-15 09:00",
+        "invoice_required": false,
+        "invoice_number": null
+      },
+      {
+        "kind": "balance",
+        "amount": "650.00",
+        "method": "yape",
+        "status": "pending",
+        "due_on": "T-2",
+        "paid_at": null,
+        "invoice_required": false,
+        "invoice_number": null
+      }
+    ],
+    "deliveries": [
+      {
+        "qty_received": 250,
+        "qty_defective": 2,
+        "quality": 4,
+        "received_at": "T-4 21:00",
+        "note": "Bien."
+      }
+    ],
+    "rating_delay_days": 1,
+    "rating_quality": 4,
+    "rating_defect_pct": "0.80",
+    "rating_price_vs_ref_pct": "0.00",
+    "rating_score": 0.86,
+    "rated_at": "T-3 09:00"
+  },
+  {
+    "code": "PED-0027",
+    "supplier": "Confecciones Santa Julia",
+    "kind": "workshop",
+    "status": "cancelled",
+    "suggested_supplier": "Confecciones Santa Julia",
+    "rationale": "Especialista en batas.",
+    "scores": {
+      "price": 0.78,
+      "on_time": 0.84,
+      "quality": 0.88,
+      "load": 0.9,
+      "lead_time": 0.8
+    },
+    "candidates": [
+      {
+        "supplier": "Confecciones Santa Julia",
+        "score": 0.83,
+        "rationale": "Especialista en batas."
+      }
+    ],
+    "changed_by_manager": false,
+    "redistributed_from": null,
+    "internal_due_on": "T-10",
+    "committed_on": "T-12",
+    "delivered_on": null,
+    "units_done": 40,
+    "last_progress_at": "T-20 10:00",
+    "next_follow_up_at": null,
+    "total_amount": "720.00",
+    "currency": "PEN",
+    "terms": "Cancelado a mitad porque el cliente canceló la orden; se pagaron las 40 hechas.",
+    "items": [
+      {
+        "order": "OC-2026-0109",
+        "kind": "workshop",
+        "material": null,
+        "product": "LMC-BAT-01",
+        "quantity": 100,
+        "unit_price": "7.20",
+        "qty_delivered": 40
+      }
+    ],
+    "progress_reports": [
+      {
+        "units_done": 40,
+        "note": "40 batas listas.",
+        "source": "web",
+        "reported_at": "T-20 10:00"
+      }
+    ],
+    "payments": [
+      {
+        "kind": "advance",
+        "amount": "360.00",
+        "method": "transfer",
+        "status": "paid",
+        "due_on": "T-30",
+        "paid_at": "T-30 10:00",
+        "invoice_required": true,
+        "invoice_number": "E001-00133"
+      },
+      {
+        "kind": "balance",
+        "amount": "360.00",
+        "method": "transfer",
+        "status": "pending",
+        "due_on": "T-12",
+        "paid_at": null,
+        "invoice_required": true,
+        "invoice_number": null
+      }
+    ],
+    "deliveries": [
+      {
+        "qty_received": 40,
+        "qty_defective": 0,
+        "quality": 5,
+        "received_at": "T-19 11:00",
+        "note": "Se recogieron las 40 terminadas al cancelar."
+      }
+    ]
+  }
+]

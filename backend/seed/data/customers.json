@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Caja Piura",
+    "tax_id": "20102345671",
+    "kind": "company",
+    "contact_name": "Rosa Albújar"
+  },
+  {
+    "name": "Colegio Los Algarrobos",
+    "tax_id": "20530011223",
+    "kind": "school",
+    "contact_name": "Hno. Martín Cieza"
+  },
+  {
+    "name": "AIDER",
+    "tax_id": "20187766554",
+    "kind": "ngo",
+    "contact_name": "Lucía Montenegro"
+  },
+  {
+    "name": "PIQA",
+    "tax_id": "20601234987",
+    "kind": "company",
+    "contact_name": "Diego Seminario"
+  }
+]

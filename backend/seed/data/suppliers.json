@@ -1,0 +1,471 @@
+[
+  {
+    "source": "registered",
+    "status": "active",
+    "is_in_house": true,
+    "weekly_capacity": 1500,
+    "name": "Planta Corpotex",
+    "kind": "workshop",
+    "specialties": [
+      "polo",
+      "camisa",
+      "buzo",
+      "pantalón",
+      "bata",
+      "bordado",
+      "sublimado"
+    ],
+    "contact_name": "Jefe de planta",
+    "city": "Piura",
+    "address": "Zona Industrial, Mz. C Lt. 4, Piura",
+    "lead_time_days": 7,
+    "follow_up_every_hours": 24,
+    "payment_method": "cash",
+    "on_time_score": "0.92",
+    "quality_score": "4.6",
+    "notes": "Planta propia. Se le habla de tú, por el grupo interno. Prioridad a bordado y sublimado; la costura grande se manda afuera cuando la planta está llena.",
+    "rates": [
+      {
+        "material": null,
+        "product": "UNI-POL-01",
+        "unit_price": "3.20",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "UNI-BUZ-01",
+        "unit_price": "7.50",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "UNI-POD-01",
+        "unit_price": "2.90",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "NEX-CAM-01",
+        "unit_price": "6.00",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "NEX-PAN-01",
+        "unit_price": "6.50",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "LMC-BAT-01",
+        "unit_price": "7.00",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      }
+    ]
+  },
+  {
+    "source": "registered",
+    "status": "active",
+    "is_in_house": false,
+    "weekly_capacity": 1200,
+    "name": "Confecciones del Norte",
+    "kind": "workshop",
+    "specialties": [
+      "polo",
+      "camisa"
+    ],
+    "contact_name": "Encargada",
+    "city": "Piura",
+    "address": "Av. Sánchez Cerro 1450, Piura",
+    "lead_time_days": 10,
+    "follow_up_every_hours": 12,
+    "payment_method": "yape",
+    "on_time_score": "0.78",
+    "quality_score": "4.2",
+    "notes": "Trato de usted. Responde de 8 a 13 h; en la tarde casi no contesta. Tolera un recordatorio al día, no más. Prefiere Yape y que se confirme el adelanto con captura.",
+    "rates": [
+      {
+        "material": null,
+        "product": "UNI-POL-01",
+        "unit_price": "3.30",
+        "currency": "PEN",
+        "valid_from": "T-500",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "UNI-POL-01",
+        "unit_price": "3.50",
+        "currency": "PEN",
+        "valid_from": "T-120",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "UNI-CAM-01",
+        "unit_price": "4.80",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "UNI-POD-01",
+        "unit_price": "3.00",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      }
+    ]
+  },
+  {
+    "source": "registered",
+    "status": "active",
+    "is_in_house": false,
+    "weekly_capacity": 400,
+    "name": "Taller Costura Castilla",
+    "kind": "workshop",
+    "specialties": [
+      "polo",
+      "chaleco",
+      "pantalón"
+    ],
+    "contact_name": "Julio Ancajima",
+    "city": "Piura",
+    "address": "Jr. Ayacucho 320, Castilla, Piura",
+    "lead_time_days": 8,
+    "follow_up_every_hours": 24,
+    "payment_method": "yape",
+    "on_time_score": "0.88",
+    "quality_score": "4.0",
+    "notes": "Se le trata de tú, conversador. Contesta rápido incluso de noche. Pide adelanto el mismo día que confirma.",
+    "rates": [
+      {
+        "material": null,
+        "product": "UNI-POL-01",
+        "unit_price": "3.60",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "NEX-CHA-01",
+        "unit_price": "5.20",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "NEX-PAN-01",
+        "unit_price": "6.80",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      }
+    ]
+  },
+  {
+    "source": "registered",
+    "status": "active",
+    "is_in_house": false,
+    "weekly_capacity": 350,
+    "name": "Confecciones Santa Julia",
+    "kind": "workshop",
+    "specialties": [
+      "polo",
+      "bata",
+      "uniforme médico"
+    ],
+    "contact_name": "Carmen Zapata",
+    "city": "Piura",
+    "address": "Calle Los Tallanes 112, Urb. Santa Julia, Piura",
+    "lead_time_days": 9,
+    "follow_up_every_hours": 36,
+    "payment_method": "transfer",
+    "on_time_score": "0.84",
+    "quality_score": "4.4",
+    "notes": "Trato de usted, formal. No le gusta que le insistan: un seguimiento cada día y medio. Pide factura y transferencia.",
+    "rates": [
+      {
+        "material": null,
+        "product": "UNI-POL-01",
+        "unit_price": "3.70",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "LMC-BAT-01",
+        "unit_price": "7.20",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "LMC-CHQ-01",
+        "unit_price": "5.00",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": null,
+        "product": "LMC-PAN-01",
+        "unit_price": "4.50",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      }
+    ]
+  },
+  {
+    "source": "registered",
+    "status": "active",
+    "is_in_house": false,
+    "weekly_capacity": null,
+    "name": "Textil San Martín",
+    "kind": "material",
+    "specialties": [
+      "tela",
+      "jersey",
+      "antifluido",
+      "franela"
+    ],
+    "contact_name": "Óscar Villena",
+    "city": "Lima",
+    "address": "Jr. Gamarra 780, La Victoria, Lima",
+    "lead_time_days": 7,
+    "follow_up_every_hours": 24,
+    "payment_method": "transfer",
+    "on_time_score": "0.86",
+    "quality_score": "3.9",
+    "notes": "Trato de usted. Envía por Sullana Express; pedir número de guía. Transferencia con factura. Contesta en horario de oficina.",
+    "rates": [
+      {
+        "material": "TEL-ALG-20",
+        "product": null,
+        "unit_price": "24.50",
+        "currency": "PEN",
+        "valid_from": "T-500",
+        "source": "historical"
+      },
+      {
+        "material": "TEL-ALG-20",
+        "product": null,
+        "unit_price": "26.00",
+        "currency": "PEN",
+        "valid_from": "T-150",
+        "source": "historical"
+      },
+      {
+        "material": "TEL-ALG-30",
+        "product": null,
+        "unit_price": "27.50",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": "TEL-FRZ-30",
+        "product": null,
+        "unit_price": "29.00",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": "TEL-ANF-MD",
+        "product": null,
+        "unit_price": "14.80",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": "TEL-DRL-NX",
+        "product": null,
+        "unit_price": "13.50",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      }
+    ]
+  },
+  {
+    "source": "registered",
+    "status": "active",
+    "is_in_house": false,
+    "weekly_capacity": null,
+    "name": "Avíos Gamarra",
+    "kind": "material",
+    "specialties": [
+      "botón",
+      "cierre",
+      "hilo",
+      "etiqueta"
+    ],
+    "contact_name": "Milagros Huamán",
+    "city": "Lima",
+    "address": "Av. Aviación 1022, La Victoria, Lima",
+    "lead_time_days": 5,
+    "follow_up_every_hours": 24,
+    "payment_method": "yape",
+    "on_time_score": "0.93",
+    "quality_score": "4.1",
+    "notes": "Se le habla de tú. Junta todo en un solo envío por Sullana Express. Le gusta recibir la lista completa por escrito, no por audio.",
+    "rates": [
+      {
+        "material": "BOT-PLA-14",
+        "product": null,
+        "unit_price": "0.06",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": "BOT-MET-NX",
+        "product": null,
+        "unit_price": "0.35",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": "CIE-NYL-20",
+        "product": null,
+        "unit_price": "0.90",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": "CIE-MET-18",
+        "product": null,
+        "unit_price": "1.60",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": "HIL-POL-40",
+        "product": null,
+        "unit_price": "9.50",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": "ETQ-TEJ-01",
+        "product": null,
+        "unit_price": "0.12",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      }
+    ]
+  },
+  {
+    "source": "registered",
+    "status": "active",
+    "is_in_house": false,
+    "weekly_capacity": null,
+    "name": "Tejidos Rib Lima",
+    "kind": "material",
+    "specialties": [
+      "cuello",
+      "puño",
+      "rib"
+    ],
+    "contact_name": "Fernando Quispe",
+    "city": "Lima",
+    "address": "Jr. Hipólito Unanue 1501, La Victoria, Lima",
+    "lead_time_days": 10,
+    "follow_up_every_hours": 24,
+    "payment_method": "yape",
+    "on_time_score": "0.70",
+    "quality_score": "3.8",
+    "notes": "Trato de usted. Suele atrasarse en temporada escolar; insistir con amabilidad, sin presionar. Responde mejor después de las 18 h.",
+    "rates": [
+      {
+        "material": "RIB-CUE-01",
+        "product": null,
+        "unit_price": "1.10",
+        "currency": "PEN",
+        "valid_from": "T-500",
+        "source": "historical"
+      },
+      {
+        "material": "RIB-CUE-01",
+        "product": null,
+        "unit_price": "1.20",
+        "currency": "PEN",
+        "valid_from": "T-100",
+        "source": "historical"
+      },
+      {
+        "material": "RIB-PUN-01",
+        "product": null,
+        "unit_price": "0.55",
+        "currency": "PEN",
+        "valid_from": "T-400",
+        "source": "historical"
+      }
+    ]
+  },
+  {
+    "source": "registered",
+    "status": "active",
+    "is_in_house": false,
+    "weekly_capacity": null,
+    "name": "Textiles Monterrey",
+    "kind": "material",
+    "specialties": [
+      "tela",
+      "drill",
+      "antifluido"
+    ],
+    "contact_name": "Ing. Ramiro Garza",
+    "city": "México",
+    "address": "Parque Industrial Escobedo, Monterrey, N.L., México",
+    "lead_time_days": 15,
+    "follow_up_every_hours": 72,
+    "payment_method": "transfer",
+    "on_time_score": "0.74",
+    "quality_score": "4.8",
+    "notes": "Proveedor clave desde hace 10 años: mejor calidad y precio en drill y antifluido. Trato de usted, muy cordial. Nos deja en standby cuando tiene pedidos grandes: no insistir, un mensaje cada 3 días como máximo. Cobra en USD por transferencia.",
+    "rates": [
+      {
+        "material": "TEL-DRL-NX",
+        "product": null,
+        "unit_price": "3.10",
+        "currency": "USD",
+        "valid_from": "T-400",
+        "source": "historical"
+      },
+      {
+        "material": "TEL-ANF-MD",
+        "product": null,
+        "unit_price": "3.40",
+        "currency": "USD",
+        "valid_from": "T-400",
+        "source": "historical"
+      }
+    ]
+  }
+]
