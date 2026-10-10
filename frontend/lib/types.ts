@@ -365,6 +365,32 @@ export interface AssistantMessage {
   created_at: string;
 }
 
+// Routes (ADR 0024): straight lines between stops, no routing service.
+export interface RouteStop {
+  position: number;
+  kind: "pickup" | "delivery";
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  eta: string | null;
+  supplier?: { id: number; name: string } | null;
+  customer?: { id: number; name: string } | null;
+  purchase_order?: Ref | null;
+  order?: Ref | null;
+}
+
+export interface Route {
+  id: number;
+  date: string;
+  status: "proposed" | "planned" | "in_progress" | "completed" | "replaced" | "discarded";
+  distance_km: string | number;
+  duration_min: number;
+  path: { type: "LineString"; coordinates: [number, number][] } | null; // [lng, lat]
+  recalculated_from: number | null;
+  stops: RouteStop[];
+}
+
 // Simulator (ADR 0017 demo decision: one real supplier on WhatsApp, the rest here).
 export interface SimulatorContact {
   id: number; // AllowedNumber id

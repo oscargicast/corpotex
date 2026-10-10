@@ -12,16 +12,19 @@
     "gen:types": "pnpm dlx --package=openapi-typescript@7.13.0 --package=typescript@5.9.3 openapi-typescript /docs-api/openapi.json -o lib/api-types.ts"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.54.0",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "swr": "2.5.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
+    "@types/leaflet": "^1.9.22",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",

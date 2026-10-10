@@ -6,6 +6,7 @@ import monitorSeed from "@/mocks/monitor.json";
 import ordersSeed from "@/mocks/orders.json";
 import poDetailsSeed from "@/mocks/purchase-order-details.json";
 import purchaseOrdersSeed from "@/mocks/purchase-orders.json";
+import routesSeed from "@/mocks/routes.json";
 import simulatorContactsSeed from "@/mocks/simulator-contacts.json";
 import suppliersSeed from "@/mocks/suppliers.json";
 import users from "@/mocks/users.json";
@@ -21,6 +22,7 @@ import type {
   PurchaseOrderDetail,
   PurchaseOrderListItem,
   Role,
+  Route,
   SimulatorContact,
   SupplierDetail,
   SupplierListItem,
@@ -292,6 +294,7 @@ function createOrder(body: Record<string, unknown>): Response {
 }
 
 const monitor = structuredClone(monitorSeed) as Monitor;
+const routes = structuredClone(routesSeed) as Record<string, Route>;
 
 function monitorFor(role: Role): Monitor {
   const kpis = { ...monitor.kpis, pending_decisions: monitor.decisions.length, open_alerts: monitor.alerts.length };
@@ -313,6 +316,11 @@ function resolveDecision(id: number, action: string): Response {
   const status = action === "approve" ? "approved" : action === "reject" ? "rejected" : "supplier_changed";
   const resolved = { ...decision, status, status_display: status };
   if (action === "approve" && decision.detail.cancelled) monitor.redistributions = [resolved, ...monitor.redistributions];
+  // Approving the redistribution swaps the routes; rejecting discards the proposal.
+  const before = decision.detail.before?.route_id;
+  const after = decision.detail.after?.route_id;
+  if (after && routes[after]) routes[after].status = action === "reject" ? "discarded" : "planned";
+  if (before && routes[before] && action !== "reject") routes[before].status = "replaced";
   return json(200, resolved);
 }
 
@@ -522,6 +530,14 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     return json(404, { detail: "No existe." });
   }
   flushAgentQueue();
+  if (route === "GET /api/routes/") {
+    const all = Object.values(routes);
+    const current = all.find((r) => r.status === "planned" || r.status === "in_progress") ?? null;
+    const replaced = current?.recalculated_from ? routes[current.recalculated_from] ?? null : null;
+    return json(200, { current, replaced });
+  }
+  const routeMatch = route.match(/^GET \/api\/routes\/(\d+)\/$/);
+  if (routeMatch) return routes[routeMatch[1]] ? json(200, routes[routeMatch[1]]) : json(404, { detail: "No existe." });
   if (route === "GET /api/simulator/contacts/") {
     return json(
       200,
