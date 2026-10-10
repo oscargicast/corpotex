@@ -76,7 +76,7 @@ Asistente del Gerente con 3 pasos: conectar WhatsApp (QR y webhook de la instanc
 - ~10 proveedores de insumos, mayoría de Lima: telas (algodón 20/1, 30/1), botones, cierres, cuellos y puños (rib). Un proveedor clave de México (10 años) da la mejor calidad y precio, pero los deja en standby y no tiene alternativa.
 - Una orden de cliente se reparte entre varios proveedores (tela, botones, cierre, cuello). El Gerente junta los pedidos de las 3 marcas en uno por proveedor. Cuando llega todo: corte, confección, bordado/sublimado.
 - Plazos: proveedor 15 días para 5000+ unidades, 7-10 días para pedidos chicos. Producción propia ~7 días.
-- No cotizan: usan precios históricos 2024-2025; solo cotizan productos nuevos.
+- No cotizan: usan precios históricos 2024-2025; solo cotizan productos nuevos. Regla para el agente: en el primer contacto propone el precio de referencia y la fecha, nunca pide cotización al proveedor.
 - Pagos: 50% adelanto y 50% a la entrega, casi todo por Yape, a veces transferencia y factura. Solo paga el Gerente; si se atrasa, el proveedor deja de atenderlos.
 - Seguimiento: llamada o WhatsApp al día 3-4 de un plazo de 5, nada queda anotado. Al proveedor le incomoda que insistan (varía por proveedor). Caso real: un pedido de 10 días sin avance que nadie notó.
 - Su sistema de producción nuevo genera orden/ficha técnica en PDF o Excel (código, cliente, RUC, marca, estado, responsable, fechas de emisión y entrega, precios, detalle, imagen; estados corte/sublimado/bordado/costura). Poca adopción. No tenemos PDFs de ejemplo: los datos de órdenes se inventan en el seed.
