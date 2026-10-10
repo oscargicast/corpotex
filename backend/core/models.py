@@ -212,11 +212,15 @@ class OnboardingStyle(TimeStamped):
     since = models.DateField(null=True, blank=True)
     step = models.CharField(max_length=20, choices=Step.choices, blank=True)
     progress = models.JSONField(default=dict, help_text="Per-supplier status.")
-    draft_boss_md = models.TextField(blank=True)
+    draft_style_md = models.TextField(blank=True)
     draft_notes = models.JSONField(default=dict, help_text="supplier_id -> notes")
+    draft_source = models.CharField(
+        max_length=20, blank=True, help_text="StyleVersion.Source the draft came from (onboarding or template)."
+    )
     temp_transcript = models.JSONField(null=True, blank=True)
     heartbeat_at = models.DateTimeField(null=True, blank=True)
     error = models.TextField(blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "onboarding de estilo"

@@ -58,7 +58,7 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `Decision` | `tipo` → `kind`, `estado` → `status`, `pedidos` → `purchase_orders` (M2M), `conversacion` → `conversation`, `resumen` → `summary`, `detalle` → `detail`, `nota` → `note`, `resuelta_por` → `resolved_by`, `resuelta_en` → `resolved_at`, `comunicada_en` → `communicated_at` |
 | `Alert` | `tipo` → `kind`, `severidad` → `severity`, `estado` → `status`, `orden` → `order`, `pedido` → `purchase_order`, `decision` → `decision` (nuevo, para `decision_pending`), `mensaje` → `text`, `detectada_en` → `detected_at`, `resuelta_en` → `resolved_at` |
 | `AlertNotification` (nuevo) | `alerta` → `alert`, `usuario` → `user`, `turno` → `turn`, `enviada_en` → `sent_at` |
-| `OnboardingStyle` | `estado` → `status`, `desde` → `since`, `paso` → `step`, `progreso` → `progress`, `borrador_boss_md` → `draft_boss_md`, `borrador_notas` → `draft_notes`, `transcript_temporal` → `temp_transcript`, `latido` → `heartbeat_at`, `error` → `error` |
+| `OnboardingStyle` | `estado` → `status`, `desde` → `since`, `paso` → `step`, `progreso` → `progress`, `borrador_md` → `draft_style_md`, `borrador_notas` → `draft_notes`, `borrador_origen` → `draft_source` (onboarding o template), `transcript_temporal` → `temp_transcript`, `latido` → `heartbeat_at`, `error` → `error`, `aprobado_en` → `approved_at` |
 | `StyleVersion` | `usuario` → `user`, `estilo_md` → `style_md`, `notas` → `notes_snapshot`, `origen` → `source`, `cambios` → `changelog` |
 
 ### Valores de `choices`
@@ -127,7 +127,6 @@ Se calculan, se repetían o nadie los iba a usar en la demo. Los que el dashboar
 | `Message` | `direction`, `media_type`, `payload` | Sale de `author`; el tipo, del archivo; el payload crudo va al log |
 | `Turn` | `decision` | Era solo rastro; el porqué sale del estado fresco |
 | `Decision` | `order`, `new_supplier`, `channel` | La orden sale de los pedidos; el proveedor nuevo queda en el pedido; el canal no se usaba |
-| `OnboardingStyle` | `approved_at` | Es el `created_at` de la `StyleVersion` `onboarding` |
 
 ### Servicios y excepciones
 
@@ -794,11 +793,13 @@ erDiagram
         date since "leer desde, hora real"
         string step "suppliers, merging o vacio"
         json progress "estado por proveedor"
-        text draft_boss_md "ya anonimizado"
+        text draft_style_md "ya anonimizado"
         json draft_notes "supplier_id a texto"
+        string draft_source "onboarding o template"
         json temp_transcript "chat del txt anonimizado; se borra al terminar"
         datetime heartbeat_at "ultimo progreso, hora real"
         text error
+        datetime approved_at
     }
 ```
 
@@ -821,7 +822,7 @@ erDiagram
   - **Sin credencial, la cola se pausa.** Con credencial ausente o vencida el CLI falla en 0,4 a 3 s con `authentication_failed`; `agent/sdk.py` lo convierte en `ClaudeNotConnected` y `run_turn` llama a `mark_claude_disconnected(error_text)`: guarda `Config.claude_last_error`, abre una sola `Alert` `claude_disconnected` y devuelve el turno a `pending` sin sumar intento, porque no es culpa del turno. Mientras `claude_last_error` tenga valor, `claim_next_turn` no entrega turnos y el barrido del tick no los dispara: así no hay un loop de fallos cada 3 s. `mark_claude_connected()`, que llaman `exchange/` y `set-key/` cuando salen bien, vacía el error, resuelve la alerta y vuelve a disparar `run_turn` para todos los turnos `pending`. El tick también la llama solo si `.credentials.json` tiene un mtime posterior a `claude_last_error` (lo renovó el propio CLI o alguien lo copió al volumen), para no quedar pausados por un 401 pasajero. El dashboard ve la pausa en `claude_ok` de badges.
   - Errores con código estable, para que el dashboard muestre texto humano sin regex: `400 {error_code, detail}`. `exchange/`: `missing_state` (falta la parte después del `#`), `invalid_code` (Anthropic rechazó el canje), `unreachable` (no se llegó al endpoint). `set-key/`: `key_format` (no empieza con `sk-ant-`), `key_rejected`, `key_unverifiable`. `disconnect/` sobre nada: `not_connected`. `detail` es el texto crudo, solo para la consola.
 - **Estilo del Gerente (paso 3):** `OnboardingStyle` es una sola fila con el borrador. Lo aprobado vive en `User.style_md` de `Config.agent_user` (el `BOSS.md`) y en `Supplier.notes`.
-  - `GET /api/onboarding/style/` → `{status, error, since, step, suppliers: [{id, name, status, messages_read, error}], boss_md, notes: [{supplier_id, supplier_name, notes}], approved_at}`. `approved_at` es el `created_at` de la última `StyleVersion` `onboarding`.
+  - `GET /api/onboarding/style/` → `{status, error, since, step, suppliers: [{id, name, status, messages_read, error}], boss_md, notes: [{supplier_id, supplier_name, notes}], approved_at}`. `approved_at` se llena en `approve/`.
   - `POST extract/ {supplier_ids?, since}` lee de Evolution solo los chats de los números activos de cada proveedor, y pasa un chat por número (el `supplier_id` se repite; `persona` los agrupa). Un proveedor sin números sale como `no_phone`, y uno con números pero ninguno activo, como `not_allowed`. `POST import-txt/` (multipart `{file, manager_author, since, supplier_id?}`) guarda en `temp_transcript` el chat ya anonimizado. Las dos encolan la tarea `run_style_extraction` en la cola `style`.
   - `extract/` y `template/` reemplazan el borrador. `import-txt/` lo amplía: llama a `update_style(current_md, current_notes, chats)` de `persona`, la misma función incremental del refresco diario, y si no hay borrador parte de la plantilla. Orden antes de la demo: `extract/` (la proveedora real), `import-txt/` (Lima, con `supplier_id`), `import-txt/` (México, con `supplier_id`) y `approve/`. Los dos `.txt` son sintéticos y viven en `backend/agent/persona/fixtures/`.
   - `PUT` guarda el borrador. `POST template/` carga como borrador la `StyleVersion` con `source = template` de la BD (la que creó el seed); solo si no existe, lee `persona/templates/style.base.md`. `POST approve/` llama a `approve_style`: copia el borrador a `agent_user.style_md` y a `Supplier.notes`, y crea una `StyleVersion` `onboarding` (o `template`, si el borrador vino de la plantilla). Es idempotente.
