@@ -70,6 +70,9 @@ class PaymentViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
         return serializer_for(Payment, "manager")
 
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), "role": "manager"}
+
     def get_queryset(self):
         qs = super().get_queryset()
         status = self.request.query_params.get("status")

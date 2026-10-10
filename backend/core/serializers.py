@@ -55,7 +55,8 @@ class DisplayMixin:
             if name in data:
                 getter = getattr(instance, f"get_{name}_display", None)
                 data[f"{name}_display"] = getter() if getter else data[name]
-        if self.context.get("role") not in (None, "manager"):
+        # Fail closed: only an explicit manager role keeps the manager-only keys.
+        if self.context.get("role") != "manager":
             data = strip_manager_only(data)
         return data
 

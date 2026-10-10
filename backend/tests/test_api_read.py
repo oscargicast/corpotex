@@ -114,6 +114,28 @@ def test_monitor_shape_by_role(manager_client, sales_client, scenario):
 
 
 @pytest.mark.django_db
+def test_user_without_role_is_denied_and_nested_payloads_fail_closed(db, scenario):
+    from rest_framework.authtoken.models import Token
+    from rest_framework.test import APIClient
+
+    from core.models import User
+    from core.serializers import serializer_for
+    from operations.models import Order
+
+    nobody = User.objects.create_user(username="nadie", password="nadie")
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Token {Token.objects.create(user=nobody).key}")
+    assert client.get("/api/orders/").status_code == 403
+    assert client.get("/api/monitor/").status_code == 403
+    assert client.get("/api/auth/me/").status_code == 403
+
+    # A serializer rendered without a role in the context strips the manager-only keys.
+    detail = serializer_for(Order, None, detail=True)(scenario["order"], context={}).data
+    assert "unit_price" not in detail["items"][0]
+    assert "total_amount" not in detail
+
+
+@pytest.mark.django_db
 def test_payments_list_is_manager_only(manager_client, sales_client, scenario):
     assert sales_client.get("/api/payments/").status_code == 403
     rows = manager_client.get("/api/payments/?status=pending").json()

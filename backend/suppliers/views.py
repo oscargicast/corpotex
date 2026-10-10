@@ -15,6 +15,9 @@ class SupplierViewSet(viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
         return serializer_for(Supplier, "manager", detail=self.action == "retrieve")
 
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), "role": "manager"}
+
     def get_queryset(self):
         qs = super().get_queryset()
         params = self.request.query_params
