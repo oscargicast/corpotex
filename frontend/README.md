@@ -12,6 +12,16 @@ docker compose exec frontend pnpm typecheck
 docker compose exec frontend pnpm build
 ```
 
+## Tipos de la API
+
+`lib/api-types.ts` se genera desde `docs/api/openapi.json`; no se edita a mano. El contenedor solo monta `frontend/`, así que se corre con `docs/api` montado:
+
+```sh
+docker compose run --rm --no-deps -v "$PWD/docs/api:/docs-api:ro" frontend pnpm gen:types
+```
+
+`openapi-typescript` usa la API JS del compilador, que TypeScript 7 no trae: el script lo corre con `pnpm dlx` y su propio TypeScript 5.9.
+
 ## Carpetas nuevas
 
 Turbopack dentro de Docker no ve las carpetas nuevas (rutas como `app/(dashboard)/orders/[id]/` o componentes como `components/assistant/`) hasta reiniciar: `docker compose restart frontend`. Los cambios en archivos que ya existen sí recargan solos.
