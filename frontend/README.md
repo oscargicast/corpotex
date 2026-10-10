@@ -34,6 +34,17 @@ Con `NEXT_PUBLIC_USE_MOCKS=1`, el navegador responde la API sin backend (`lib/mo
 
 El token vive en `sessionStorage`, así dos ventanas del mismo navegador pueden tener roles distintos (Gerente y Comercial lado a lado). `localStorage` solo abre pestañas nuevas con el último login. "Salir" cierra la sesión de esa pestaña sin revocar el token, para no sacar a las otras ventanas del mismo usuario.
 
+## Modo demo
+
+`docker-compose.demo.yml` (en la raíz) sirve el build de producción: sin esperas de compilación ni overlay de errores en el proyector. El build corre al arrancar (un minuto):
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build
+docker compose logs -f frontend   # "Ready" cuando sirve
+```
+
+Desde un worktree hay que listar también el override local: `-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.demo.yml`.
+
 ## Worktree (ADR 0023)
 
 Desde un worktree, solo el frontend, en `127.0.0.1:3001` y contra el backend de main, con un `docker-compose.override.yml` local (no versionado):
