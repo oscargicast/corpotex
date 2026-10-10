@@ -417,6 +417,7 @@ class Loader:
             po = (self.purchase_orders.get(code) if code else None) or default_po
             entry["purchase_order"] = {"id": po.id, "code": po.code} if po else None
             entry.setdefault("candidates", [])
+            entry.setdefault("currency", (po.supplier.currency if po else None) or (detail.get("after") or {}).get("currency") or "PEN")
             entry["committed_on"] = self.rel_date(entry.get("committed_on")).isoformat() if entry.get("committed_on") else None
             normalized.append(entry)
         if proposal is not None:
@@ -425,6 +426,7 @@ class Loader:
             block = detail.get(key)
             if isinstance(block, dict):
                 block.setdefault("route_id", None)
+                block.setdefault("currency", (default_po.supplier.currency if default_po else None) or "PEN")
                 if block.get("estimated_on"):
                     block["estimated_on"] = self.rel_date(block["estimated_on"]).isoformat()
         return detail

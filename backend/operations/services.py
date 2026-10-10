@@ -393,7 +393,9 @@ def _snapshot(orders) -> dict:
         (i.quantity * i.unit_price for po in _order_purchase_orders(order).filter(status__in=PurchaseOrder.OPEN_STATUSES + ("suggested", "delivered")) for i in po.items.all()),
         Decimal("0"),
     )
-    return {"estimated_on": order.estimated_on.isoformat() if order.estimated_on else None, "total_amount": str(total), "route_id": None}
+    currencies = {po.supplier.currency for po in _order_purchase_orders(order).select_related("supplier")}
+    currency = currencies.pop() if len(currencies) == 1 else "PEN"  # Mixed currencies: the UI shows per-line amounts.
+    return {"estimated_on": order.estimated_on.isoformat() if order.estimated_on else None, "total_amount": str(total), "currency": currency, "route_id": None}
 
 
 def _covered(requirement: Requirement) -> Decimal:
