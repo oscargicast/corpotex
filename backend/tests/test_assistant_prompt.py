@@ -57,7 +57,7 @@ def test_alerts_only_turn_never_asks_for_confirmation():
 
 def test_alert_data_is_rendered_with_spanish_names_and_dates():
     text = turn_text(scenario_state("aviso_comercial_sin_precios"))
-    assert '<orden codigo="ORD-0012" cliente="Caja Piura"' in text
+    assert '<orden codigo="CP-2026-0012" cliente="Caja Piura"' in text
     assert 'fecha_estimada="mar 27/10"' in text
 
 

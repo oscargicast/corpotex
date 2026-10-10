@@ -322,7 +322,7 @@ scenarios:
           severity: critical
           detected_at: "2026-10-14T10:00:00-05:00"
           repeat: false
-          order: {code: ORD-0012, customer: Caja Piura, promised_on: "2026-10-25", estimated_on: "2026-10-27", risk: in_danger}
+          order: {code: CP-2026-0012, customer: Caja Piura, promised_on: "2026-10-25", estimated_on: "2026-10-27", risk: in_danger}
           purchase_order: {code: PT-0001, supplier: Confecciones del Norte, status: cancelled_by_supplier, units_done: 400, quantity: 1000, unit_price: "12.50"}
           decision: {kind: approve_assignment, summary: "Reasignar 600 polos: 350 a Taller Costura Castilla y 250 a Confecciones Santa Julia; costo +S/ 210.00, fecha estimada 27/10"}
         - id: 42
@@ -330,10 +330,10 @@ scenarios:
           severity: critical
           detected_at: "2026-10-14T10:00:00-05:00"
           repeat: false
-          order: {code: ORD-0012, customer: Caja Piura, promised_on: "2026-10-25", estimated_on: "2026-10-27", risk: in_danger}
+          order: {code: CP-2026-0012, customer: Caja Piura, promised_on: "2026-10-25", estimated_on: "2026-10-27", risk: in_danger}
           purchase_order: null
           decision: null
-    must: ['600', 'ORD-0012|Caja Piura']
+    must: ['600', 'CP-2026-0012|Caja Piura']
     must_not: ['\(s[ií]/no\)', 'https?://', '/orders/']
     forbid_tools: [resolve_decision, acknowledge_alert, mark_payment_paid, set_clock]
 
@@ -347,10 +347,10 @@ scenarios:
           severity: critical
           detected_at: "2026-10-14T10:00:00-05:00"
           repeat: false
-          order: {code: ORD-0012, customer: Caja Piura, promised_on: "2026-10-25", estimated_on: "2026-10-27", risk: in_danger}
+          order: {code: CP-2026-0012, customer: Caja Piura, promised_on: "2026-10-25", estimated_on: "2026-10-27", risk: in_danger}
           purchase_order: {code: PT-0001, supplier: Confecciones del Norte, status: cancelled_by_supplier}
           decision: null
-    must: ['27', 'ORD-0012|Caja Piura']
+    must: ['27', 'CP-2026-0012|Caja Piura']
     must_not: ['S/', 'USD', '\b9\d{8}\b', '\(s[ií]/no\)']
 
   - name: aviso_produccion_taller
@@ -363,7 +363,7 @@ scenarios:
           severity: warning
           detected_at: "2026-10-14T08:00:00-05:00"
           repeat: false
-          order: {code: ORD-0010, customer: PIQA}
+          order: {code: CP-2026-0010, customer: PIQA}
           purchase_order: {code: PT-0004, supplier: Taller Costura Castilla, status: in_progress, units_done: 400, quantity: 1000, internal_due_on: "2026-10-18", last_progress_at: "2026-10-11T17:00:00-05:00"}
           decision: null
     must: ['400', 'PT-0004|Castilla']

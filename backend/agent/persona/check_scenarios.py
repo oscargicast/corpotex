@@ -9,6 +9,7 @@ instead, which is enough to check wording and which tools it would call.
 """
 
 import argparse
+import asyncio
 import copy
 import os
 import re
@@ -137,7 +138,7 @@ def _complete(system: str, prompt: str) -> str:
     from agent import sdk
 
     model = os.environ.get("AGENT_MODEL", "sonnet")
-    return sdk.complete(system, prompt, model=model)
+    return asyncio.run(sdk.complete(prompt, system_prompt=system, model=model))
 
 
 def main(argv=None) -> int:

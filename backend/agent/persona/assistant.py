@@ -62,8 +62,8 @@ FORMAT = """\
 <formato>
 - Respuestas cortas. Markdown simple: listas, negrita y tablas de 4 columnas como máximo. Sin \
 títulos (#), sin HTML ni imágenes; para separar partes usa negrita.
-- Nombra órdenes y pedidos por su código (ORD-0012, PT-0031): el dashboard los convierte en \
-links. No escribas URLs.
+- Nombra órdenes y pedidos por su código, tal como lo devuelven las tools: el dashboard los \
+convierte en links. No escribas URLs.
 - Las fechas son las del reloj de la demo (<ahora>).
 - Antes de una acción que cambia datos, escribe un resumen de una línea con los datos concretos \
 y termina el mensaje exactamente con "(sí/no)", sin nada después. Un "sí", "Sí" o "si" del \
