@@ -27,7 +27,13 @@ def assistant_tools(conversation, batch) -> list:
         return []  # an alert-only turn informs; it never acts or prepares an action (ADR 0020)
     user = conversation.user
     writes = {
-        "manager": [_resolve_decision, _acknowledge_alert, _mark_payment_paid, _set_clock],
+        "manager": [
+            _resolve_decision,
+            _acknowledge_alert,
+            _mark_payment_paid,
+            _set_clock,
+            _suggest_suppliers,
+        ],
         "production": [_confirm_order, _record_delivery, _record_progress],
         # TODO(A3, after B4): sales gets find_client and register_order once their
         # endpoints exist; until then sales only reads.
@@ -176,6 +182,33 @@ def _same(a: dict, b: dict) -> bool:
     return json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
 
 
+NOT_CONFIRMED = (
+    "El usuario no confirmó esto en su último mensaje, o los datos cambiaron. "
+    "Vuelve a proponerlo con confirmed=false."
+)
+
+
+def _store_pending(conversation, name: str, args: dict, turn, data=None) -> None:
+    pending = {"tool": name, "args": args, "turn_id": turn.pk}
+    if data is not None:
+        pending["data"] = data  # kept for the confirm step; persona only renders `args`
+    _conversations(conversation).update(pending_action=pending)
+
+
+def _take_pending(conversation, name: str, args: dict, turn) -> dict | None:
+    """The pending action, if the previous turn proposed exactly this. Always consumes it."""
+    pending = _conversations(conversation).values_list("pending_action", flat=True).get()
+    _conversations(conversation).update(pending_action=None)
+    if (
+        pending
+        and pending.get("tool") == name
+        and pending.get("turn_id") != turn.pk
+        and _same(pending.get("args") or {}, args)
+    ):
+        return pending
+    return None
+
+
 def clear_stale_pending_action(conversation, turn_id: int) -> None:
     """End of a dashboard turn: a pending action is only valid for the next turn."""
     pending = _conversations(conversation).values_list("pending_action", flat=True).get()
@@ -199,8 +232,6 @@ def confirmable(conversation, turn, user, *, name, description, properties, requ
     the card ({title, summary, links}) that record_assistant_action stores."""
     from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 
-    from messaging.services import record_assistant_action
-
     schema = {
         "type": "object",
         "properties": {
@@ -215,24 +246,14 @@ def confirmable(conversation, turn, user, *, name, description, properties, requ
 
     def propose(args):
         text = preview(args)
-        pending = {"tool": name, "args": args, "turn_id": turn.pk}
-        _conversations(conversation).update(pending_action=pending)
+        _store_pending(conversation, name, args, turn)
         return text
 
     def execute(args):
-        pending = _conversations(conversation).values_list("pending_action", flat=True).get()
-        _conversations(conversation).update(pending_action=None)
-        valid = (
-            pending
-            and pending.get("tool") == name
-            and pending.get("turn_id") != turn.pk
-            and _same(pending.get("args") or {}, args)
-        )
-        if not valid:
-            return refuse(
-                "El usuario no confirmó esto en su último mensaje, o los datos cambiaron. "
-                "Vuelve a proponerlo con confirmed=false."
-            )
+        from messaging.services import record_assistant_action
+
+        if _take_pending(conversation, name, args, turn) is None:
+            return refuse(NOT_CONFIRMED)
         try:
             action = run(args)
         except PermissionDenied:
@@ -272,8 +293,6 @@ def _card(title: str, summary: str = "", links=(), status: str = "done") -> dict
 
 
 def _resolve_decision(conversation, turn, user):
-    from manager.services import resolve_decision
-
     from manager.models import Decision
 
     def preview(args):
@@ -282,6 +301,8 @@ def _resolve_decision(conversation, turn, user):
         return f"{verb[args['action']]} la decisión {decision.pk}: {decision.summary}"
 
     def run(args):
+        from manager.services import resolve_decision
+
         decision = Decision.objects.get(pk=args["decision_id"])
         resolve_decision(
             decision,
@@ -312,14 +333,14 @@ def _resolve_decision(conversation, turn, user):
 
 
 def _acknowledge_alert(conversation, turn, user):
-    from manager.services import acknowledge_alert
-
     from manager.models import Alert
 
     def preview(args):
         return f"Marcar como vista la alerta {args['alert_id']}: {Alert.objects.get(pk=args['alert_id']).text}"
 
     def run(args):
+        from manager.services import acknowledge_alert
+
         alert = Alert.objects.get(pk=args["alert_id"])
         acknowledge_alert(alert, actor=user)
         return _card(f"Alerta {alert.pk} vista", alert.text)
@@ -338,8 +359,6 @@ def _acknowledge_alert(conversation, turn, user):
 
 
 def _mark_payment_paid(conversation, turn, user):
-    from operations.services import mark_payment_paid
-
     from operations.models import Payment
 
     def describe(payment):
@@ -351,6 +370,8 @@ def _mark_payment_paid(conversation, turn, user):
         return f"Marcar como pagado el {describe(payment)} por {args['method']}"
 
     def run(args):
+        from operations.services import mark_payment_paid
+
         payment = Payment.objects.select_related("purchase_order").get(pk=args["payment_id"])
         mark_payment_paid(payment, method=args["method"], actor=user)
         links = [{"kind": "purchase_order", "id": payment.purchase_order_id}]
@@ -373,8 +394,6 @@ def _mark_payment_paid(conversation, turn, user):
 
 
 def _set_clock(conversation, turn, user):
-    from core.clock import set_clock
-
     def describe(args):
         parts = []
         if args.get("advance_hours"):
@@ -386,6 +405,8 @@ def _set_clock(conversation, turn, user):
         return ", ".join(parts) or "sin cambios"
 
     def run(args):
+        from core.clock import set_clock
+
         set_clock(
             factor=args.get("factor"),
             paused=args.get("paused"),
@@ -415,11 +436,11 @@ def _set_clock(conversation, turn, user):
 
 
 def _confirm_order(conversation, turn, user):
-    from operations.services import confirm_order
-
     from operations.models import Order
 
     def run(args):
+        from operations.services import confirm_order
+
         order = Order.objects.get(code=args["code"])
         confirm_order(order, actor=user)
         return _card(
@@ -442,8 +463,6 @@ def _confirm_order(conversation, turn, user):
 
 
 def _record_delivery(conversation, turn, user):
-    from operations.services import record_delivery
-
     from operations.models import PurchaseOrder
 
     def describe(args):
@@ -453,6 +472,8 @@ def _record_delivery(conversation, turn, user):
         )
 
     def run(args):
+        from operations.services import record_delivery
+
         po = PurchaseOrder.objects.get(code=args["code"])
         record_delivery(
             po,
@@ -488,11 +509,11 @@ def _record_delivery(conversation, turn, user):
 
 
 def _record_progress(conversation, turn, user):
-    from operations.services import record_progress
-
     from operations.models import PurchaseOrder
 
     def run(args):
+        from operations.services import record_progress
+
         po = PurchaseOrder.objects.get(code=args["code"])
         record_progress(po, units_done=args["units_done"], note=args.get("note", ""), actor=user)
         title = f"Avance de {po.code}: {args['units_done']} unidades"
@@ -517,3 +538,128 @@ def _record_progress(conversation, turn, user):
         preview=preview,
         run=run,
     )
+
+
+# --- external suppliers (ADR 0024, manager only) ---------------------------------------
+
+SUGGEST_MAX = 5
+CANDIDATES_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "candidates": {
+            "type": "array",
+            "maxItems": SUGGEST_MAX,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "city": {"type": "string"},
+                    "kind": {"type": "string", "enum": ["workshop", "material"]},
+                    "specialty": {"type": "string"},
+                    "source_url": {"type": "string"},
+                    "evidence": {"type": "string"},
+                },
+                "required": ["name", "city", "kind", "specialty", "source_url", "evidence"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["candidates"],
+    "additionalProperties": False,
+}
+
+
+def clean_candidates(found: dict) -> list[dict]:
+    """Web data is untrusted: cap every field, require an http(s) source, drop duplicates."""
+    seen, out = set(), []
+    for c in found.get("candidates") or []:
+        url = str(c.get("source_url", "")).strip()
+        name = " ".join(str(c.get("name", "")).split())[:80]
+        city = " ".join(str(c.get("city", "")).split())[:40]
+        key = (name.lower(), city.lower())
+        if not name or not url.startswith(("http://", "https://")) or key in seen:
+            continue
+        seen.add(key)
+        out.append(
+            {
+                "name": name,
+                "city": city,
+                "kind": c.get("kind") if c.get("kind") in ("workshop", "material") else "workshop",
+                "specialty": " ".join(str(c.get("specialty", "")).split())[:60],
+                "source_url": url[:500],
+                "evidence": " ".join(str(c.get("evidence", "")).split())[:300],
+            }
+        )
+    return out[:SUGGEST_MAX]
+
+
+def _domain(url: str) -> str:
+    from urllib.parse import urlparse
+
+    host = urlparse(url).netloc.lower()
+    return host.removeprefix("www.")
+
+
+def _suggest_suppliers(conversation, turn, user):
+    """Search runs in an isolated WebSearch-only call; the assistant itself never browses.
+    The model sees name, city, specialty and the source domain, never the web excerpt."""
+    from agent import sdk
+
+    name = "suggest_suppliers"
+    schema = {
+        "type": "object",
+        "properties": {
+            "specialty": {
+                "type": "string",
+                "description": "Ej.: costura de polos, tela algodón 30/1",
+            },
+            "city": {"type": "string", "enum": ["Piura", "Lima"]},
+            "confirmed": {
+                "type": "boolean",
+                "description": "false para buscar y proponer; true solo cuando el usuario ya confirmó",
+            },
+        },
+        "required": ["specialty", "city", "confirmed"],
+    }
+
+    def create(pending):
+        from messaging.services import record_assistant_action
+        from suppliers.services import create_suggested_suppliers
+
+        result = create_suggested_suppliers(pending["data"], actor=user)
+        created, skipped = len(result["created"]), len(result["skipped"])
+        card = _card(f"{created} proveedores por revisar", f"{skipped} ya existían")
+        record_assistant_action(conversation, turn, {"kind": "tool", "tool": name, **card})
+        return ok(f"Hecho: {created} creados como por revisar, {skipped} ya existían.")
+
+    @tool(
+        name,
+        "Busca en la web talleres o proveedores de insumos en Piura o Lima y, si el usuario "
+        "confirma, los agrega como por revisar. No activa números ni escribe por WhatsApp.",
+        schema,
+    )
+    async def handler(args):
+        args = dict(args)
+        if args.pop("confirmed", False):
+            pending = await sync_to_async(_take_pending)(conversation, name, args, turn)
+            if pending is None:
+                return refuse(NOT_CONFIRMED)
+            return await sync_to_async(create)(pending)
+        prompt = (
+            f"Busca proveedores o talleres de {args['specialty']} en {args['city']}, Perú. "
+            f"Máximo {SUGGEST_MAX}, cada uno con la página donde aparece."
+        )
+        candidates = clean_candidates(await sdk.search(prompt, schema=CANDIDATES_SCHEMA))
+        if not candidates:
+            return ok("No encontré proveedores con una fuente verificable. Dilo así.")
+        await sync_to_async(_store_pending)(conversation, name, args, turn, data=candidates)
+        rows = "\n".join(
+            f"- {c['name']} | {c['city']} | {c['specialty']} | {_domain(c['source_url'])}"
+            for c in candidates
+        )
+        return ok(
+            f"Encontrados:\n{rows}\nMuéstralos en una tabla corta (nombre, ciudad, especialidad, "
+            "fuente) y pregunta si los agregas como por revisar, terminando en (sí/no)."
+        )
+
+    return handler
