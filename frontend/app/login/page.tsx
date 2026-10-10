@@ -18,9 +18,17 @@ export default function LoginPage() {
   );
 }
 
-// Only same-site paths, so ?next= can't send the user elsewhere.
+// Only same-origin paths, so ?next= can't send the user elsewhere. Browsers
+// read "\" as "/", so "/\evil.com" must be resolved, not just prefix-checked.
 function safeNext(next: string | null): string {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  if (typeof window === "undefined") return "/";
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return "/";
+  try {
+    const url = new URL(next, window.location.origin);
+    return url.origin === window.location.origin ? url.pathname + url.search + url.hash : "/";
+  } catch {
+    return "/";
+  }
 }
 
 function LoginForm() {
