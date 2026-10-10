@@ -12,9 +12,23 @@ docker compose exec frontend pnpm typecheck
 docker compose exec frontend pnpm build
 ```
 
+## Tipos de la API
+
+`lib/api-types.ts` se genera desde `docs/api/openapi.json`; no se edita a mano. El contenedor solo monta `frontend/`, así que se corre con `docs/api` montado:
+
+```sh
+docker compose run --rm --no-deps -v "$PWD/docs/api:/docs-api:ro" frontend pnpm gen:types
+```
+
+`openapi-typescript` usa la API JS del compilador, que TypeScript 7 no trae: el script lo corre con `pnpm dlx` y su propio TypeScript 5.9.
+
+## Carpetas nuevas
+
+Turbopack dentro de Docker no ve las carpetas nuevas (rutas como `app/(dashboard)/orders/[id]/` o componentes como `components/assistant/`) hasta reiniciar: `docker compose restart frontend`. Los cambios en archivos que ya existen sí recargan solos.
+
 ## Mocks
 
-Con `NEXT_PUBLIC_USE_MOCKS=1`, el navegador responde `auth`, `clock` y `me/badges` sin backend (`lib/mock-fetch.ts`). Usuarios: `gerente`, `comercial` y `produccion`, con la contraseña igual al usuario.
+Con `NEXT_PUBLIC_USE_MOCKS=1`, el navegador responde la API sin backend (`lib/mock-fetch.ts`, datos en `mocks/`): auth, clock, badges, monitor, decisiones, alertas, órdenes, pedidos y `settings/claude`. El estado vive en memoria de la pestaña y vuelve al inicio al recargar. Usuarios: `gerente`, `comercial` y `produccion`, con la contraseña igual al usuario.
 
 ## Sesión por pestaña
 

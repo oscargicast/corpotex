@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
 import { getSession, saveSession } from "@/lib/auth";
-import type { LoginResponse, User } from "@/lib/types";
+import { type LoginResponse, ROLE_LABELS, type User } from "@/lib/types";
 
 const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
@@ -57,6 +57,12 @@ function LoginForm() {
       const user =
         login.user ??
         (await apiFetch<User>("/api/auth/me/", { headers: { Authorization: `Token ${login.token}` } }));
+      // The API answers 403 to users without a role group (the admin superuser, for one).
+      if (!(user.role in ROLE_LABELS)) {
+        setError("Tu usuario no tiene rol (Gerente, Comercial o Producción). Pídele al Gerente que te lo asigne en el admin.");
+        setBusy(false);
+        return;
+      }
       saveSession({ token: login.token, user });
       router.replace(next);
     } catch (err) {

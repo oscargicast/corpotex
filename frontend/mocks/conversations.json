@@ -1,0 +1,12 @@
+{
+  "1": [
+    { "id": 101, "direction": "outbound", "author": "agent", "text": "Hola, ¿cómo vas con los 1000 polos de Caja Piura? Te recuerdo que la entrega es el 17.", "media": null, "media_kind": null, "sent_at": "2026-10-11T13:00:00Z" },
+    { "id": 102, "direction": "inbound", "author": "supplier", "text": "Ya van 400 listos, mañana seguimos con las tallas L.", "media": null, "media_kind": null, "sent_at": "2026-10-11T15:00:00Z" },
+    { "id": 103, "direction": "inbound", "author": "supplier", "text": "Oye, tuve un problema con dos máquinas y no voy a poder terminar el pedido. Te devuelvo lo que falta.", "media": null, "media_kind": null, "sent_at": "2026-10-12T12:35:00Z" },
+    { "id": 104, "direction": "outbound", "author": "agent", "text": "Entendido, gracias por avisar a tiempo. Coordino con el Gerente y te confirmo cómo recogemos los 400 que ya tienes.", "media": null, "media_kind": null, "sent_at": "2026-10-12T12:37:00Z" }
+  ],
+  "2": [
+    { "id": 201, "direction": "inbound", "author": "supplier", "text": "Primeros 180 buzos listos, foto adjunta.", "media": null, "media_kind": "image", "sent_at": "2026-10-12T11:30:00Z" },
+    { "id": 202, "direction": "outbound", "author": "agent", "text": "Bien ahí. Registré 180 de 600. ¿Llegas a los 300 para el 17?", "media": null, "media_kind": null, "sent_at": "2026-10-12T11:31:00Z" }
+  ]
+}
