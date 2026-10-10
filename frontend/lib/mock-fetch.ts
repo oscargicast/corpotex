@@ -2,7 +2,31 @@
 // Enabled with NEXT_PUBLIC_USE_MOCKS=1. Shapes follow docs/backend/modelo-de-datos.md.
 import badgesByRole from "@/mocks/badges.json";
 import users from "@/mocks/users.json";
-import type { Badges, Clock, Role, User } from "./types";
+import type { Badges, ClaudeStatus, Clock, Role, User } from "./types";
+
+const DISCONNECTED: ClaudeStatus = {
+  connected: false,
+  method: "none",
+  subscription_type: null,
+  expires_at: null,
+  refresh_token_expires_at: null,
+  expired: false,
+  last_error: null,
+};
+let claude: ClaudeStatus = { ...DISCONNECTED };
+
+function connectedStatus(method: ClaudeStatus["method"]): ClaudeStatus {
+  const in30Days = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+  return {
+    connected: true,
+    method,
+    subscription_type: method === "oauth" ? "max" : null,
+    expires_at: method === "oauth" ? new Date(Date.now() + 8 * 3600 * 1000).toISOString() : null,
+    refresh_token_expires_at: method === "oauth" ? in30Days : null,
+    expired: false,
+    last_error: null,
+  };
+}
 
 const clock = {
   realStart: Date.now(),
@@ -73,6 +97,32 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     }
     case "GET /api/me/badges/":
       return json(200, (badgesByRole as Record<Role, Badges>)[user.role]);
+  }
+
+  if (path.startsWith("/api/settings/claude/") && user.role !== "manager") {
+    return json(403, { detail: "Solo el Gerente." });
+  }
+  switch (route) {
+    case "GET /api/settings/claude/status/":
+      return json(200, claude);
+    case "POST /api/settings/claude/start/":
+      return json(200, { url: "about:blank#mock-claude-oauth", state: "mock-verifier" });
+    case "POST /api/settings/claude/exchange/": {
+      const code = String(readBody(init.body).code ?? "");
+      if (!code.includes("#")) return json(400, { error_code: "missing_state", detail: "missing state" });
+      if (code.startsWith("bad")) return json(400, { error_code: "invalid_code", detail: "invalid_grant" });
+      claude = connectedStatus("oauth");
+      return json(200, claude);
+    }
+    case "POST /api/settings/claude/set-key/": {
+      const key = String(readBody(init.body).api_key ?? "");
+      if (!key.startsWith("sk-ant-")) return json(400, { error_code: "key_format", detail: "invalid api key format" });
+      claude = connectedStatus("api_key");
+      return json(200, claude);
+    }
+    case "POST /api/settings/claude/disconnect/":
+      claude = { ...DISCONNECTED };
+      return json(200, claude);
   }
   return json(404, { detail: `mock: ${route} not implemented` });
 }
