@@ -25,7 +25,7 @@ def build(owner=None) -> dict:
         name="Confecciones del Norte", kind="workshop", city="Piura", weekly_capacity=800, notes="Trato de usted."
     )
     number = AllowedNumber.objects.create(phone="51906746241", supplier=workshop, active=True)
-    AllowedNumber.objects.create(phone="sim-confecciones-norte", name="Simulador", supplier=workshop, active=True, simulated=True)
+    AllowedNumber.objects.create(phone="sim-confecciones-norte", name="", supplier=workshop, active=True, simulated=True)
     Rate.objects.create(supplier=workshop, product=polo, unit_price=Decimal("6.50"), valid_from=date(2026, 1, 1))
     conversation = Conversation.objects.create(channel="whatsapp", allowed_number=number)
 

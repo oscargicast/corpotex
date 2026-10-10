@@ -175,3 +175,16 @@ def test_sales_purchase_order_has_no_conversation_keys(sales_client, manager_cli
     detail = sales_client.get(f"/api/purchase-orders/{po_id}/").json()
     assert {"status", "units_done", "progress_pct", "last_progress_at", "progress_reports", "committed_on"} <= set(detail)
     assert manager_client.get(f"/api/purchase-orders/{po_id}/").json()["conversation_id"] == scenario["conversation"].id
+
+
+@pytest.mark.django_db
+def test_sales_cannot_use_simulator(sales_client, production, scenario):
+    """The simulator shows supplier chats and writes as a supplier: manager only."""
+    from rest_framework.authtoken.models import Token
+    from rest_framework.test import APIClient
+
+    production_client = APIClient()
+    production_client.credentials(HTTP_AUTHORIZATION=f"Token {Token.objects.get_or_create(user=production)[0].key}")
+    for client in (sales_client, production_client):
+        assert client.get("/api/simulator/contacts/").status_code == 403
+        assert client.post("/api/simulator/messages/", {"allowed_number_id": scenario["number"].id, "text": "hola"}).status_code == 403
