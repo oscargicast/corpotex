@@ -10,6 +10,7 @@ Stack: backend Django + Django REST Framework, frontend Next.js, Postgres, agent
 
 - Código en inglés: identificadores, comentarios, docstrings, endpoints y claves JSON (ADR 0014). Equivalencias español → inglés en `docs/glosario.md`.
 - En español: la documentación y los textos para personas (dashboard, admin, WhatsApp, el texto del estilo del Gerente).
+- Tests con pytest en cada PR de backend (`docker compose exec web pytest -q` en verde antes de mergear); `pnpm typecheck` y `pnpm build` en cada PR de frontend. Sin verde no se mergea.
 
 ## Qué construimos
 

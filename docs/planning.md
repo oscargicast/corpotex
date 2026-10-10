@@ -308,6 +308,8 @@ Reglas de propiedad: `backend/agent/` es de `agente` y `backend/agent/persona/` 
 | Frontend | `pnpm typecheck` y `pnpm build` en cada PR; sin tests de UI: los criterios de aceptación de F se verifican a mano en dos ventanas y en un celular | disenador |
 | Todo junto | `docker compose exec web pytest -q` en verde antes de cada PR a `main`; el orquestador lo corre al mergear | orquestador |
 
+Regla (Oscar, 10/10): cada PR de backend trae los tests de lo que implementa, en `backend/tests/`; el orquestador corre `docker compose exec web pytest -q` antes de mergear y no mergea en rojo. Los tests de seed, rutas y suppliers que `backend` había dejado para "si sobra tiempo" vuelven a ser obligatorios en su PR, aunque sea un test por servicio.
+
 Manual, sin automatizar: WhatsApp real (A2.3), el flujo OAuth de Claude (B4.3), el onboarding completo (F3.3), el modo presentación y el celular por el tunnel (F3.9).
 
 **Checklist de integración, domingo 05:00 a 08:00**
