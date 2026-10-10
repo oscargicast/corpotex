@@ -1,0 +1,17 @@
+{
+  "code": "CP-2026-0101",
+  "customer": "Caja Piura",
+  "brand": "UNICRACK",
+  "issued_on": "2026-10-11",
+  "promised_on": "2026-10-25",
+  "items": [
+    {
+      "product": "POLO-ESC-01",
+      "quantity": 1000,
+      "sizes": {"S": 300, "M": 400, "L": 300},
+      "color": "azul",
+      "customization": "embroidery",
+      "unit_price": "18.00"
+    }
+  ]
+}

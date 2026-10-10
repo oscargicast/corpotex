@@ -9,6 +9,7 @@ from .permissions import IsManager
 
 class NotImplementedView(APIView):
     permission_classes = [IsManager]
+    schema = None  # Out of the OpenAPI schema until implemented.
 
     def _todo(self, request, *args, **kwargs):
         return Response({"detail": "Pendiente: lo implementa personalidad (B4.6/B4.7)."}, status=501)

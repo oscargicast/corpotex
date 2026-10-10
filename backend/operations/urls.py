@@ -1,1 +1,10 @@
-urlpatterns: list = []  # Order, purchase order, payment and route endpoints arrive with B2.3, B3.8 and B4.8.
+from rest_framework.routers import SimpleRouter
+
+from . import views
+
+router = SimpleRouter()
+router.register("orders", views.OrderViewSet, basename="order")
+router.register("purchase-orders", views.PurchaseOrderViewSet, basename="purchase-order")
+router.register("payments", views.PaymentViewSet, basename="payment")
+
+urlpatterns = router.urls

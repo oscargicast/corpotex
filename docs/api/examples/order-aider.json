@@ -1,0 +1,17 @@
+{
+  "code": "CP-2026-0103",
+  "customer": "AIDER",
+  "brand": "NEXO",
+  "issued_on": "2026-10-11",
+  "promised_on": "2026-10-28",
+  "items": [
+    {
+      "product": "CAMISA-TRAB-01",
+      "quantity": 200,
+      "sizes": {"S": 40, "M": 80, "L": 60, "XL": 20},
+      "color": "beige",
+      "customization": "embroidery",
+      "unit_price": "38.00"
+    }
+  ]
+}

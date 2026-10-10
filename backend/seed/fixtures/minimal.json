@@ -1,0 +1,457 @@
+[
+  {
+    "model": "core.brand",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.284Z",
+      "updated_at": "2026-10-10T23:00:25.284Z",
+      "name": "UNICRACK",
+      "description": "Uniformes escolares"
+    }
+  },
+  {
+    "model": "core.customer",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.285Z",
+      "updated_at": "2026-10-10T23:00:25.285Z",
+      "name": "Caja Piura",
+      "tax_id": "20100000001",
+      "kind": "company",
+      "address": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.285Z",
+      "updated_at": "2026-10-10T23:00:25.285Z",
+      "code": "POLO-ESC-01",
+      "name": "Polo escolar",
+      "image": ""
+    }
+  },
+  {
+    "model": "core.material",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.285Z",
+      "updated_at": "2026-10-10T23:00:25.285Z",
+      "sku": "TEL-ALG-20-1",
+      "name": "Algodón 20/1",
+      "kind": "fabric",
+      "unit": "kg",
+      "stock": "120.00",
+      "image": ""
+    }
+  },
+  {
+    "model": "core.productmaterial",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.286Z",
+      "updated_at": "2026-10-10T23:00:25.286Z",
+      "product": 1,
+      "material": 1,
+      "qty_per_unit": "0.2500"
+    }
+  },
+  {
+    "model": "suppliers.supplier",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.286Z",
+      "updated_at": "2026-10-10T23:00:25.286Z",
+      "name": "Confecciones del Norte",
+      "kind": "workshop",
+      "specialties": "[]",
+      "city": "Piura",
+      "address": "",
+      "lat": null,
+      "lng": null,
+      "is_in_house": false,
+      "weekly_capacity": 800,
+      "lead_time_days": 7,
+      "follow_up_every_hours": 48,
+      "currency": "PEN",
+      "source": "registered",
+      "source_detail": null,
+      "status": "active",
+      "notes": "Trato de usted."
+    }
+  },
+  {
+    "model": "suppliers.rate",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.287Z",
+      "updated_at": "2026-10-10T23:00:25.287Z",
+      "supplier": 1,
+      "material": null,
+      "product": 1,
+      "unit_price": "6.50",
+      "valid_from": "2026-01-01"
+    }
+  },
+  {
+    "model": "operations.orderitem",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.289Z",
+      "updated_at": "2026-10-10T23:00:25.289Z",
+      "order": 1,
+      "product": 1,
+      "quantity": 1000,
+      "sizes": {
+        "M": 1000
+      },
+      "color": "",
+      "customization": "",
+      "unit_price": "18.00"
+    }
+  },
+  {
+    "model": "operations.requirement",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.289Z",
+      "updated_at": "2026-10-10T23:00:25.289Z",
+      "order": 1,
+      "kind": "workshop",
+      "material": null,
+      "product": 1,
+      "qty_needed": "1000.00",
+      "qty_from_stock": "0.00"
+    }
+  },
+  {
+    "model": "operations.purchaseorder",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.290Z",
+      "updated_at": "2026-10-10T23:00:25.290Z",
+      "code": "PT-0001",
+      "supplier": 1,
+      "conversation": 1,
+      "status": "in_progress",
+      "suggested_supplier": 1,
+      "rationale": "Mejor precio con capacidad libre",
+      "scores": {
+        "load": 0.7,
+        "price": 0.85,
+        "on_time": 0.9,
+        "quality": 0.8
+      },
+      "report_token": "9b21c1e1-c1c2-482f-bcd9-a3afcd86dc39",
+      "report_link_sent_at": null,
+      "redistributed_from": null,
+      "internal_due_on": "2026-10-14",
+      "committed_on": "2026-10-14",
+      "next_follow_up_at": "2026-10-10T23:00:25.284Z",
+      "terms": "50% adelanto",
+      "rating": null
+    }
+  },
+  {
+    "model": "operations.purchaseorderitem",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.290Z",
+      "updated_at": "2026-10-10T23:00:25.290Z",
+      "purchase_order": 1,
+      "requirement": 1,
+      "quantity": "1000.00",
+      "unit_price": "6.50",
+      "qty_delivered": "0.00"
+    }
+  },
+  {
+    "model": "operations.progressreport",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.291Z",
+      "updated_at": "2026-10-10T23:00:25.291Z",
+      "purchase_order": 1,
+      "units_done": 400,
+      "note": "",
+      "photo": "",
+      "message": null,
+      "reported_at": "2026-10-10T23:00:25.284Z",
+      "acknowledged_at": null
+    }
+  },
+  {
+    "model": "operations.payment",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.291Z",
+      "updated_at": "2026-10-10T23:00:25.291Z",
+      "purchase_order": 1,
+      "kind": "advance",
+      "amount": "3250.00",
+      "method": "yape",
+      "paid_at": "2026-10-10T23:00:25.284Z",
+      "receipt": ""
+    }
+  },
+  {
+    "model": "operations.payment",
+    "pk": 2,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.291Z",
+      "updated_at": "2026-10-10T23:00:25.291Z",
+      "purchase_order": 1,
+      "kind": "balance",
+      "amount": "3250.00",
+      "method": "",
+      "paid_at": null,
+      "receipt": ""
+    }
+  },
+  {
+    "model": "messaging.allowednumber",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.287Z",
+      "updated_at": "2026-10-10T23:00:25.287Z",
+      "phone": "51906746241",
+      "lid": "",
+      "name": "",
+      "supplier": 1,
+      "active": true,
+      "simulated": false
+    }
+  },
+  {
+    "model": "messaging.allowednumber",
+    "pk": 2,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.287Z",
+      "updated_at": "2026-10-10T23:00:25.287Z",
+      "phone": "sim-confecciones-norte",
+      "lid": "",
+      "name": "Simulador",
+      "supplier": 1,
+      "active": true,
+      "simulated": true
+    }
+  },
+  {
+    "model": "manager.alert",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.292Z",
+      "updated_at": "2026-10-10T23:00:25.292Z",
+      "kind": "order_in_danger",
+      "severity": "critical",
+      "status": "open",
+      "order": 1,
+      "purchase_order": null,
+      "decision": null,
+      "text": "La orden llegaría tarde",
+      "detected_at": "2026-10-10T23:00:25.284Z",
+      "resolved_at": null
+    }
+  },
+  {
+    "model": "auth.group",
+    "fields": {
+      "name": "Gerente",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "fields": {
+      "name": "Comercial",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "fields": {
+      "name": "Produccion",
+      "permissions": []
+    }
+  },
+  {
+    "model": "core.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1500000$C0bnfBFThjtkHE6D7mByzD$GUKxgE/KMYYE+xBnA3iNYqaUk14qLEwBpcZWy0jA1p8=",
+      "last_login": "2026-10-10T22:53:50.898Z",
+      "is_superuser": true,
+      "username": "admin",
+      "first_name": "",
+      "last_name": "",
+      "email": "admin@corpotex.local",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-10-10T22:51:44.665Z",
+      "style_md": "",
+      "style_refreshed_at": null,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "core.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1500000$vciKfBTjA4mpE454eidgZ6$9LjGJUCxLccvVrO6epljk+MwtiSCGF0H3VpgLIkdteQ=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "gerente",
+      "first_name": "Gerente",
+      "last_name": "",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-10-10T23:00:24.809Z",
+      "style_md": "",
+      "style_refreshed_at": null,
+      "groups": [
+        [
+          "Gerente"
+        ]
+      ],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "core.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1500000$SpucAt9jW5HJC9ziwxm1AG$PEuFERuOE0HFPX/TqFYuWOx84AH0mmXPYNoAn55as5k=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "comercial",
+      "first_name": "Comercial",
+      "last_name": "",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-10-10T23:00:24.969Z",
+      "style_md": "",
+      "style_refreshed_at": null,
+      "groups": [
+        [
+          "Comercial"
+        ]
+      ],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "core.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1500000$XnZtMSKMMQEcSy1I2cC3mM$BE4uO4EQLAftwLfIvPYlDTmsdZ3GSMc4iHP90AFb970=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "produccion",
+      "first_name": "Produccion",
+      "last_name": "",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-10-10T23:00:25.126Z",
+      "style_md": "",
+      "style_refreshed_at": null,
+      "groups": [
+        [
+          "Produccion"
+        ]
+      ],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "core.config",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.294Z",
+      "updated_at": "2026-10-10T23:00:25.294Z",
+      "clock_real_start": "2026-10-10T23:00:25.293Z",
+      "clock_sim_start": "2026-10-10T23:00:25.293Z",
+      "clock_factor": "1.00",
+      "clock_paused": false,
+      "buffer_days": 5,
+      "decision_pending_hours": 12,
+      "stage_durations": {
+        "sewing": 3,
+        "cutting": 1,
+        "finishing": 1,
+        "embroidery": 1,
+        "sublimation": 1
+      },
+      "agent_user": [
+        "gerente"
+      ],
+      "agent_phone": "51907898162",
+      "plant_name": "Almacén Corpotex",
+      "plant_lat": -5.1945,
+      "plant_lng": -80.6328,
+      "onboarding": {},
+      "claude_connected_at": null,
+      "claude_last_error": "",
+      "claude_last_error_at": null
+    }
+  },
+  {
+    "model": "operations.order",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.288Z",
+      "updated_at": "2026-10-10T23:00:25.288Z",
+      "code": "CP-2026-0001",
+      "customer": 1,
+      "brand": 1,
+      "owner": [
+        "comercial"
+      ],
+      "status": "sourcing",
+      "production_stage": "",
+      "issued_on": "2026-10-04",
+      "promised_on": "2026-10-19",
+      "estimated_on": "2026-10-17",
+      "critical_path": [],
+      "risk": "in_danger",
+      "risk_reason": "El taller se atrasó"
+    }
+  },
+  {
+    "model": "messaging.conversation",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.288Z",
+      "updated_at": "2026-10-10T23:00:25.288Z",
+      "channel": "whatsapp",
+      "allowed_number": 1,
+      "user": null,
+      "agent_session": "",
+      "pending_action": null
+    }
+  },
+  {
+    "model": "manager.decision",
+    "pk": 1,
+    "fields": {
+      "created_at": "2026-10-10T23:00:25.292Z",
+      "updated_at": "2026-10-10T23:00:25.292Z",
+      "kind": "price",
+      "status": "pending",
+      "conversation": 1,
+      "summary": "Pide subir el precio a 7.00",
+      "detail": {
+        "proposed_price": "7.00"
+      },
+      "note": "",
+      "resolved_by": null,
+      "resolved_at": null,
+      "communicated_at": null,
+      "purchase_orders": [
+        1
+      ]
+    }
+  }
+]

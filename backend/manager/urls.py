@@ -1,1 +1,7 @@
-urlpatterns: list = []  # Manager, monitor and alert endpoints arrive with B2.3 and B4.2.
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path("monitor/", views.MonitorView.as_view(), name="monitor"),
+]
