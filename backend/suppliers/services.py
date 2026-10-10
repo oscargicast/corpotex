@@ -236,7 +236,11 @@ def import_suppliers_csv(text: str, *, actor) -> dict:
             continue
         phone = row.get("phone", "")
         number = AllowedNumber.objects.filter(phone=phone).select_related("supplier").first() if phone else None
-        existing = number.supplier if number and number.supplier_id else Supplier.objects.filter(name__iexact=name).first()
+        existing = number.supplier if number and number.supplier_id else None
+        if existing is None:
+            existing = Supplier.objects.filter(name__iexact=name).first()
+            if existing:
+                data.pop("name")  # Matched by name: the stored spelling stays.
         if existing:
             for field, value in data.items():
                 if value not in (None, "", []):
