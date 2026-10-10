@@ -40,7 +40,7 @@ function Supplier() {
           {supplier.status !== "active" && <Pill tone="warning">{supplier.status_display}</Pill>}
         </div>
         <p className="mt-1 text-sm text-muted">
-          {supplier.kind_display} · {supplier.city} · {supplier.specialties.join(", ")} · cobra en {supplier.currency}
+          {[supplier.kind_display, supplier.city, supplier.specialties.join(", "), `cobra en ${supplier.currency}`].filter(Boolean).join(" · ")}
         </p>
       </header>
 

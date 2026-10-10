@@ -1,34 +1,85 @@
 [
   {
-    "label": "Caja Piura · 500 polos UNICRACK",
+    "label": "Caja Piura · 1000 prendas UNICRACK",
+    "source": "docs/api/examples/order-caja-piura.json",
+    "promised_in_days": 14,
     "payload": {
-      "customer": { "name": "Caja Piura", "tax_id": "20100000001" },
+      "customer": "Caja Piura",
       "brand": "UNICRACK",
-      "promised_on_in_days": 14,
       "items": [
-        { "product_code": "POLO-UNI-01", "quantity": 500, "sizes": { "S": 100, "M": 200, "L": 150, "XL": 50 }, "color": "Blanco", "customization": "Bordado del logo en el pecho", "unit_price": "28.50" }
+        {
+          "product": "POLO-ESC-01",
+          "quantity": 1000,
+          "sizes": {
+            "S": 300,
+            "M": 400,
+            "L": 300
+          },
+          "color": "azul",
+          "customization": "embroidery",
+          "unit_price": "18.00"
+        }
       ]
     }
   },
   {
-    "label": "Colegio San José · 300 buzos NEXO",
+    "label": "Colegio San Miguel de Piura · 900 prendas UNICRACK",
+    "source": "docs/api/examples/order-colegio.json",
+    "promised_in_days": 19,
     "payload": {
-      "customer": { "name": "Colegio San José", "tax_id": "20500000002" },
+      "customer": "Colegio San Miguel de Piura",
+      "brand": "UNICRACK",
+      "items": [
+        {
+          "product": "POLO-ESC-01",
+          "quantity": 450,
+          "sizes": {
+            "8": 100,
+            "10": 120,
+            "12": 130,
+            "14": 100
+          },
+          "color": "blanco",
+          "customization": "embroidery",
+          "unit_price": "16.50"
+        },
+        {
+          "product": "BUZO-ESC-01",
+          "quantity": 450,
+          "sizes": {
+            "8": 100,
+            "10": 120,
+            "12": 130,
+            "14": 100
+          },
+          "color": "azul marino",
+          "customization": "sublimation",
+          "unit_price": "42.00"
+        }
+      ]
+    }
+  },
+  {
+    "label": "AIDER · 200 prendas NEXO",
+    "source": "docs/api/examples/order-aider.json",
+    "promised_in_days": 17,
+    "payload": {
+      "customer": "AIDER",
       "brand": "NEXO",
-      "promised_on_in_days": 21,
       "items": [
-        { "product_code": "BUZO-ESC-01", "quantity": 300, "sizes": { "8": 60, "10": 80, "12": 90, "14": 70 }, "color": "Verde", "customization": "Sublimado de la insignia", "unit_price": "65.00" }
-      ]
-    }
-  },
-  {
-    "label": "AIDER · 120 casacas",
-    "payload": {
-      "customer": { "name": "AIDER", "tax_id": "20300000003" },
-      "brand": "Línea Médica Corpotex",
-      "promised_on_in_days": 18,
-      "items": [
-        { "product_code": "CASACA-01", "quantity": 120, "sizes": { "M": 50, "L": 50, "XL": 20 }, "color": "Negro", "customization": "Estampado en la espalda", "unit_price": "89.00" }
+        {
+          "product": "CAMISA-TRAB-01",
+          "quantity": 200,
+          "sizes": {
+            "S": 40,
+            "M": 80,
+            "L": 60,
+            "XL": 20
+          },
+          "color": "beige",
+          "customization": "embroidery",
+          "unit_price": "38.00"
+        }
       ]
     }
   }

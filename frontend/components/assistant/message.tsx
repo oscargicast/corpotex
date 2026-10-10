@@ -11,6 +11,9 @@ import { Pill, SEVERITY_TONE } from "../ui";
 
 // The assistant names orders and purchase orders by code, never by URL:
 // codes become links here, outside inline code spans.
+// Only the routes codes link to; anything else in the model's text stays plain.
+const INTERNAL_HREF = /^\/(?:(?:orders|purchase-orders|suppliers)\/[A-Za-z0-9-]+)?$/;
+
 function linkCodes(text: string): string {
   return text
     .split(/(`[^`]*`)/)
@@ -41,7 +44,7 @@ export function MessageBubble({ message }: { message: AssistantMessage }) {
                 h3: "strong",
                 img: () => null,
                 a: ({ href = "", children }) =>
-                  href.startsWith("/") ? (
+                  INTERNAL_HREF.test(href) ? (
                     <Link href={href} className="whitespace-nowrap font-medium text-accent underline">
                       {children}
                     </Link>

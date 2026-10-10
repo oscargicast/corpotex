@@ -212,11 +212,11 @@ function createOrder(body: Record<string, unknown>): Response {
   const existing = orders.find((o) => o.code === code);
   if (existing) return json(200, existing); // idempotent by code, like the API
   const items = (body.items as { quantity: number }[]) ?? [];
-  const customer = body.customer as { name: string };
+  const customer = String(body.customer);
   const order: OrderListItem = {
     id: Math.max(...orders.map((o) => o.id)) + 1,
     code,
-    customer: { id: 90 + orders.length, name: customer.name },
+    customer: { id: 90 + orders.length, name: customer },
     brand: { id: 9, name: String(body.brand) },
     status: "broken_down",
     status_display: "Desglosada",

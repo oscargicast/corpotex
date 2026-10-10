@@ -57,8 +57,9 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
             <li key={number.id} className="py-2.5 first:pt-0">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="text-sm">
-                  <p className="font-medium tabular-nums">+{number.phone}</p>
-                  {number.name && <p className="text-xs text-muted">{number.name}</p>}
+                  {/* Simulated numbers are ids like "sim-confecciones-norte", not phones. */}
+                  <p className="font-medium tabular-nums">{number.simulated ? "Número del simulador" : `+${number.phone}`}</p>
+                  {number.name && !(number.simulated && number.name === "Simulador") && <p className="text-xs text-muted">{number.name}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   {number.simulated && <Pill tone="info">Simulador</Pill>}

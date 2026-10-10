@@ -132,7 +132,8 @@ export interface PurchaseOrderDetail extends PurchaseOrderListItem {
   paid_amount: string | null;
   pending_amount: string | null;
   conversation_id: number | null;
-  pending_decision: Decision | null;
+  // Reduced in the API: {id, kind, summary, detail}.
+  pending_decision: DecisionLike | null;
   suggested_supplier: { id: number; name: string } | null;
   redistributed_into: (Ref & { supplier_name: string; quantity: number; status_display: string })[];
   rating: { delay_days: number; quality: number; defect_pct: number; score: number; rated_at: string } | null;
@@ -314,6 +315,22 @@ export interface Monitor {
 }
 
 export type DecisionAction = "approve" | "reject" | "change_supplier";
+
+export type DecisionLike = Pick<Decision, "id" | "kind" | "summary" | "detail"> & Partial<Decision>;
+
+export const DECISION_KIND: Record<string, string> = {
+  approve_assignment: "Aprobar asignación",
+  price: "Precio",
+  terms: "Términos",
+  other: "Otro",
+};
+
+export const CUSTOMIZATION: Record<string, string> = {
+  embroidery: "Bordado",
+  sublimation: "Sublimado",
+  print: "Estampado",
+  screen_print: "Serigrafía",
+};
 
 // Assistant chat (ADR 0017 and 0020).
 export type LinkKind = "order" | "purchase_order" | "decision" | "supplier";

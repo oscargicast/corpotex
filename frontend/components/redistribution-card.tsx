@@ -1,7 +1,7 @@
 import { ArrowRight, Map } from "lucide-react";
 import Link from "next/link";
 import { daysBetween, formatDay, formatMoney } from "@/lib/format";
-import type { Decision } from "@/lib/types";
+import type { Decision, DecisionLike } from "@/lib/types";
 
 // Scene for the jury: a workshop cancels and the rest is split (ADR 0024).
 // Orange stays reserved for the primary action.
@@ -17,7 +17,7 @@ export function RedistributionCard({ decision }: { decision: Decision }) {
 }
 
 // Split bar, before and after, and the route link. Also used inside the pending decision.
-export function RedistributionBody({ decision, withCancelLine = true }: { decision: Decision; withCancelLine?: boolean }) {
+export function RedistributionBody({ decision, withCancelLine = true }: { decision: DecisionLike; withCancelLine?: boolean }) {
   const { before, after, proposal = [], cancelled } = decision.detail;
   const total = cancelled?.quantity ?? proposal.reduce((sum, p) => sum + p.quantity, 0);
   const shift = before && after ? daysBetween(before.estimated_on, after.estimated_on) : null;

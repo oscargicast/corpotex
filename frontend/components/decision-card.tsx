@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDay, formatMoney } from "@/lib/format";
-import type { Decision, DecisionAction, ProposalItem } from "@/lib/types";
+import { DECISION_KIND, type DecisionAction, type DecisionLike, type ProposalItem } from "@/lib/types";
 import { RedistributionBody } from "./redistribution-card";
 import { Button, CRITERIA_LABELS, Pill, ScoreBar } from "./ui";
 
@@ -14,7 +14,7 @@ interface ResolveBody {
   purchase_order_id?: number;
 }
 
-export function DecisionCard({ decision, onResolved }: { decision: Decision; onResolved: () => void }) {
+export function DecisionCard({ decision, onResolved }: { decision: DecisionLike; onResolved: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -38,8 +38,8 @@ export function DecisionCard({ decision, onResolved }: { decision: Decision; onR
   return (
     <article className="rounded-lg bg-surface p-4 ring-1 ring-line">
       <div className="flex flex-wrap items-center gap-2">
-        <Pill tone="warning">{decision.kind_display}</Pill>
-        {decision.orders.map((order) => (
+        <Pill tone="warning">{decision.kind_display ?? DECISION_KIND[decision.kind] ?? decision.kind}</Pill>
+        {(decision.orders ?? []).map((order) => (
           <Link key={order.id} href={`/orders/${order.id}`} className="text-xs font-medium text-accent hover:underline">
             {order.code} · {order.customer_name}
           </Link>

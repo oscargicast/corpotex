@@ -8,7 +8,7 @@ import { apiFetch } from "@/lib/api";
 import type { Clock, OrderListItem } from "@/lib/types";
 import { Button } from "./ui";
 
-// Stand-in for Comercial's system: posts an example order to POST /api/orders/.
+// Stand-in for Comercial's system: posts one of docs/api/examples/order-*.json to POST /api/orders/.
 // The code is generated once per click, so a retry stays idempotent.
 export function SimulateOrder() {
   const router = useRouter();
@@ -19,14 +19,16 @@ export function SimulateOrder() {
   async function send(index: number) {
     setBusy(true);
     setError(null);
-    const { promised_on_in_days, ...payload } = examples[index].payload;
+    const { payload, promised_in_days } = examples[index];
     const code = `CP-${Date.now()}`;
     try {
+      // Dates relative to the simulated clock, so the demo works any day.
       const clock = await apiFetch<Clock>("/api/clock/");
-      const promised = new Date(new Date(clock.now).getTime() + promised_on_in_days * 86_400_000);
+      const today = new Date(clock.now);
+      const promised = new Date(today.getTime() + promised_in_days * 86_400_000);
       const order = await apiFetch<OrderListItem>("/api/orders/", {
         method: "POST",
-        json: { ...payload, code, promised_on: promised.toISOString().slice(0, 10) },
+        json: { ...payload, code, issued_on: today.toISOString().slice(0, 10), promised_on: promised.toISOString().slice(0, 10) },
       });
       dialog.current?.close();
       router.push(`/orders/${order.id}`);

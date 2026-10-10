@@ -15,7 +15,7 @@ import { Button, Card, Pill, RISK_LABEL, RISK_TONE, SectionTitle } from "@/compo
 import { apiFetch, fetcher } from "@/lib/api";
 import { formatDay, formatMoney } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
-import type { OrderDetail } from "@/lib/types";
+import { CUSTOMIZATION, type OrderDetail } from "@/lib/types";
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -100,8 +100,9 @@ export default function OrderDetailPage() {
                     {item.quantity} × {item.product.name}
                   </p>
                   <p className="text-muted">
-                    {item.color} · {item.customization}
-                    {item.unit_price ? ` · ${formatMoney(item.unit_price)} c/u` : ""}
+                    {[item.color, CUSTOMIZATION[item.customization] ?? item.customization, item.unit_price && `${formatMoney(item.unit_price)} c/u`]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                   <p className="mt-1 flex flex-wrap gap-1">
                     {Object.entries(item.sizes).map(([size, qty]) => (
