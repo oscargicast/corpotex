@@ -3,6 +3,7 @@ took from it and what is left."""
 
 from decimal import Decimal
 
+from django.db.models import Q
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.response import Response
@@ -59,7 +60,7 @@ class MaterialRequirementSerializer(serializers.ModelSerializer):
 
 
 class MaterialListView(APIView):
-    """`GET /api/materials/`: every material ordered by kind and name. `committed` is the sum of
+    """`GET /api/materials/`: every material ordered by kind and name; `?kind=`, `?q=` (sku or name). `committed` is the sum of
     `Requirement.qty_from_stock` of open orders; `available = stock - committed`."""
 
     permission_classes = [IsManagerOrProduction]
@@ -69,6 +70,9 @@ class MaterialListView(APIView):
         queryset = Material.objects.order_by("kind", "name")
         if request.query_params.get("kind"):
             queryset = queryset.filter(kind=request.query_params["kind"])
+        if request.query_params.get("q"):
+            text = request.query_params["q"].strip()
+            queryset = queryset.filter(Q(sku__icontains=text) | Q(name__icontains=text))
         context = {"request": request, "committed": _committed_by_material()}
         return Response(MaterialSerializer(queryset, many=True, context=context).data)
 

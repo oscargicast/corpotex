@@ -318,7 +318,7 @@ def turn_state(batch: TurnBatch, *, with_history: bool = False) -> dict:
             "city": supplier.city if supplier else "",
             "currency": supplier.currency if supplier else "PEN",
             "notes": supplier.notes if supplier else "",
-            "contact_name": number.name if number else "",
+            "contact_name": number.name if number and not number.simulated else "",
         },
         "purchase_orders": [
             {

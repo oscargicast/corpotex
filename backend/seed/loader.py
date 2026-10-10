@@ -232,7 +232,7 @@ class Loader:
             if not supplier.is_in_house and source != "external":
                 ascii_name = unicodedata.normalize("NFKD", supplier.name).encode("ascii", "ignore").decode()
                 slug = re.sub(r"[^a-z0-9]+", "-", ascii_name.lower()).strip("-")
-                AllowedNumber.objects.create(phone=f"sim-{slug}"[:40], name="Simulador", supplier=supplier, active=True, simulated=True)
+                AllowedNumber.objects.create(phone=f"sim-{slug}"[:40], name="", supplier=supplier, active=True, simulated=True)
             for number in row.get("numbers") or []:
                 phone = number.get("phone", "")
                 if not phone or phone.startswith("sim-"):
