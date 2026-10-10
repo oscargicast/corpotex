@@ -100,6 +100,7 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | `/api/pagos/<id>/pagar/` | `/api/payments/<id>/pay/` |
 | `/api/alertas/<id>/reconocer/` | `/api/alerts/<id>/acknowledge/` |
 | `/api/proveedores/` | `/api/suppliers/` (y `import/`, `self-register/`) |
+| inventario de insumos | `/api/materials/`, `/api/materials/<id>/` (Gerente y Producción) |
 | simulador | `/api/simulator/contacts/`, `/api/simulator/messages/` |
 | mensajes de una conversación | `/api/conversations/<id>/messages/?after=` |
 | `/api/onboarding/estilo/` | `/api/onboarding/style/` |
@@ -192,6 +193,7 @@ Cada ruta usa el nombre de su modelo.
 | Órdenes y detalle | `/orders`, `/orders/[id]` |
 | Pedidos y detalle (insumo, taller, terminado) | `/purchase-orders`, `/purchase-orders/[id]` |
 | Proveedores y talleres | `/suppliers`, `/suppliers/[id]` |
+| Inventario de insumos (Gerente y Producción) | `/inventory` |
 | Simulador de chat | `/simulator` |
 | Mapa de rutas | `/routes` |
 | Reporte de avance público por pedido | `/report/[token]` |
