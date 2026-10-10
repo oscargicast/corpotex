@@ -1,0 +1,212 @@
+[
+  {
+    "product": "UNI-POL-01",
+    "material": "TEL-ALG-20",
+    "qty_per_unit": "0.35"
+  },
+  {
+    "product": "UNI-POL-01",
+    "material": "RIB-CUE-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "UNI-POL-01",
+    "material": "RIB-PUN-01",
+    "qty_per_unit": "2"
+  },
+  {
+    "product": "UNI-POL-01",
+    "material": "BOT-PLA-14",
+    "qty_per_unit": "3"
+  },
+  {
+    "product": "UNI-POL-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.02"
+  },
+  {
+    "product": "UNI-POL-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "UNI-POD-01",
+    "material": "TEL-ALG-30",
+    "qty_per_unit": "0.25"
+  },
+  {
+    "product": "UNI-POD-01",
+    "material": "RIB-CUE-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "UNI-POD-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.02"
+  },
+  {
+    "product": "UNI-POD-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "UNI-CAM-01",
+    "material": "TEL-ALG-30",
+    "qty_per_unit": "0.30"
+  },
+  {
+    "product": "UNI-CAM-01",
+    "material": "BOT-PLA-14",
+    "qty_per_unit": "8"
+  },
+  {
+    "product": "UNI-CAM-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.03"
+  },
+  {
+    "product": "UNI-CAM-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "UNI-BUZ-01",
+    "material": "TEL-FRZ-30",
+    "qty_per_unit": "0.75"
+  },
+  {
+    "product": "UNI-BUZ-01",
+    "material": "CIE-NYL-20",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "UNI-BUZ-01",
+    "material": "RIB-PUN-01",
+    "qty_per_unit": "2"
+  },
+  {
+    "product": "UNI-BUZ-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.04"
+  },
+  {
+    "product": "UNI-BUZ-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "NEX-CAM-01",
+    "material": "TEL-DRL-NX",
+    "qty_per_unit": "1.80"
+  },
+  {
+    "product": "NEX-CAM-01",
+    "material": "BOT-MET-NX",
+    "qty_per_unit": "9"
+  },
+  {
+    "product": "NEX-CAM-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.04"
+  },
+  {
+    "product": "NEX-CAM-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "NEX-PAN-01",
+    "material": "TEL-DRL-NX",
+    "qty_per_unit": "1.50"
+  },
+  {
+    "product": "NEX-PAN-01",
+    "material": "CIE-MET-18",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "NEX-PAN-01",
+    "material": "BOT-MET-NX",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "NEX-PAN-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.05"
+  },
+  {
+    "product": "NEX-PAN-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "NEX-CHA-01",
+    "material": "TEL-DRL-NX",
+    "qty_per_unit": "1.10"
+  },
+  {
+    "product": "NEX-CHA-01",
+    "material": "CIE-NYL-20",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "NEX-CHA-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.03"
+  },
+  {
+    "product": "NEX-CHA-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "LMC-BAT-01",
+    "material": "TEL-ANF-MD",
+    "qty_per_unit": "2.20"
+  },
+  {
+    "product": "LMC-BAT-01",
+    "material": "BOT-PLA-14",
+    "qty_per_unit": "5"
+  },
+  {
+    "product": "LMC-BAT-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.04"
+  },
+  {
+    "product": "LMC-BAT-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "LMC-CHQ-01",
+    "material": "TEL-ANF-MD",
+    "qty_per_unit": "1.30"
+  },
+  {
+    "product": "LMC-CHQ-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.03"
+  },
+  {
+    "product": "LMC-CHQ-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  },
+  {
+    "product": "LMC-PAN-01",
+    "material": "TEL-ANF-MD",
+    "qty_per_unit": "1.20"
+  },
+  {
+    "product": "LMC-PAN-01",
+    "material": "HIL-POL-40",
+    "qty_per_unit": "0.03"
+  },
+  {
+    "product": "LMC-PAN-01",
+    "material": "ETQ-TEJ-01",
+    "qty_per_unit": "1"
+  }
+]
