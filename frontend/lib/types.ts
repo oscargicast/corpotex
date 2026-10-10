@@ -137,6 +137,47 @@ export interface PurchaseOrderDetail extends PurchaseOrderListItem {
   rating: { delay_days: number; quality: number; defect_pct: number; score: number; rated_at: string } | null;
 }
 
+export interface SupplierListItem {
+  id: number;
+  name: string;
+  kind: "materials" | "workshop" | "finished";
+  kind_display: string;
+  specialties: string[];
+  city: string;
+  weekly_capacity: number | null;
+  lead_time_days: number | null;
+  currency: Currency;
+  load_pct: number | null;
+  on_time_score: number | null; // 0 to 1
+  quality_score: number | null; // 1 to 5
+  open_purchase_orders: number;
+  numbers_count: number;
+  active_numbers_count: number;
+  source: "registered" | "self_registered" | "external";
+  source_display: string;
+  status: "active" | "pending_review" | "inactive";
+  status_display: string;
+  is_in_house: boolean;
+}
+
+export interface SupplierNumber {
+  id: number;
+  phone: string;
+  name: string;
+  active: boolean;
+}
+
+export interface SupplierDetail extends SupplierListItem {
+  notes: string;
+  follow_up_every_hours: number;
+  source_detail: { url: string; excerpt: string } | null;
+  numbers: SupplierNumber[];
+  rates: { id: number; item_name: string; unit_price: string; currency: Currency; valid_from: string }[];
+  ratings: { purchase_order_code: string; delay_days: number; quality: number; defect_pct: number; score: number; rated_at: string }[];
+  purchase_orders: PurchaseOrderListItem[];
+  payments_summary: { currency: Currency; paid: string; pending: string; overdue_count: number }[];
+}
+
 export interface Named {
   id: number;
   name: string;

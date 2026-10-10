@@ -6,6 +6,7 @@ import monitorSeed from "@/mocks/monitor.json";
 import ordersSeed from "@/mocks/orders.json";
 import poDetailsSeed from "@/mocks/purchase-order-details.json";
 import purchaseOrdersSeed from "@/mocks/purchase-orders.json";
+import suppliersSeed from "@/mocks/suppliers.json";
 import users from "@/mocks/users.json";
 import type {
   Badges,
@@ -18,6 +19,8 @@ import type {
   PurchaseOrderDetail,
   PurchaseOrderListItem,
   Role,
+  SupplierDetail,
+  SupplierListItem,
   User,
 } from "./types";
 
@@ -51,6 +54,68 @@ function purchaseOrderDetailFor(po: PurchaseOrderListItem, role: Role): Purchase
     detail.items = detail.items.map((item) => ({ ...item, unit_price: null }));
   }
   return detail;
+}
+
+const suppliers = structuredClone(suppliersSeed.list) as SupplierListItem[];
+const supplierDetails = structuredClone(suppliersSeed.detail) as Record<string, Partial<SupplierDetail>>;
+
+function supplierDetailFor(supplier: SupplierListItem): SupplierDetail {
+  const extra = (supplierDetails[supplier.id] ??= {});
+  const numbers = extra.numbers ?? [];
+  return {
+    notes: "",
+    follow_up_every_hours: 48,
+    source_detail: null,
+    rates: [],
+    ratings: [],
+    payments_summary: [],
+    ...extra,
+    ...supplier,
+    numbers,
+    numbers_count: numbers.length || supplier.numbers_count,
+    active_numbers_count: numbers.length ? numbers.filter((n) => n.active).length : supplier.active_numbers_count,
+    purchase_orders: purchaseOrders.filter((po) => po.supplier.id === supplier.id),
+  } as SupplierDetail;
+}
+
+function supplierRoutes(route: string, body: BodyInit | null | undefined): Response | null {
+  if (route === "GET /api/suppliers/" || route.startsWith("GET /api/suppliers/?")) return null;
+  let match = route.match(/^GET \/api\/suppliers\/(\d+)\/$/);
+  const find = (id: string) => suppliers.find((s) => s.id === Number(id));
+  if (match) {
+    const supplier = find(match[1]);
+    return supplier ? json(200, supplierDetailFor(supplier)) : json(404, { detail: "No existe." });
+  }
+  match = route.match(/^PATCH \/api\/suppliers\/(\d+)\/$/);
+  if (match) {
+    const supplier = find(match[1]);
+    if (!supplier) return json(404, { detail: "No existe." });
+    const patch = readBody(body);
+    if (patch.status) {
+      supplier.status = patch.status as SupplierListItem["status"];
+      supplier.status_display = patch.status === "active" ? "Activo" : patch.status === "inactive" ? "Inactivo" : "Por revisar";
+    }
+    if (typeof patch.notes === "string") (supplierDetails[supplier.id] ??= {}).notes = patch.notes;
+    return json(200, supplierDetailFor(supplier));
+  }
+  match = route.match(/^POST \/api\/suppliers\/(\d+)\/numbers\/$/);
+  if (match) {
+    const supplier = find(match[1]);
+    if (!supplier) return json(404, { detail: "No existe." });
+    const { phone, name } = readBody(body);
+    const detail = (supplierDetails[supplier.id] ??= {});
+    const number = { id: Date.now(), phone: String(phone), name: String(name ?? ""), active: false };
+    detail.numbers = [...(detail.numbers ?? []), number];
+    return json(201, number);
+  }
+  match = route.match(/^PATCH \/api\/suppliers\/(\d+)\/numbers\/(\d+)\/$/);
+  if (match) {
+    const number = supplierDetails[match[1]]?.numbers?.find((n) => n.id === Number(match![2]));
+    if (!number) return json(404, { detail: "No existe." });
+    Object.assign(number, readBody(body));
+    return json(200, number);
+  }
+  return null;
 }
 
 function formValue(body: BodyInit | null | undefined, key: string): FormDataEntryValue | null {
@@ -253,6 +318,16 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
   if (orderMatch) {
     const order = orders.find((o) => o.id === Number(orderMatch[1]));
     return order ? json(200, orderDetailFor(order, user.role)) : json(404, { detail: "No existe." });
+  }
+  if (path.startsWith("/api/suppliers/")) {
+    if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
+    if (route === "GET /api/suppliers/") {
+      const status = new URL(path, "http://mock").searchParams.get("status");
+      const list = suppliers.filter((s) => (status ? s.status === status : s.status !== "pending_review"));
+      return json(200, list.map((s) => ({ ...s, ...(supplierDetails[s.id]?.numbers && { numbers_count: supplierDetailFor(s).numbers_count, active_numbers_count: supplierDetailFor(s).active_numbers_count }) })));
+    }
+    const handled = supplierRoutes(route, init.body);
+    if (handled) return handled;
   }
   if (route === "GET /api/purchase-orders/") {
     const params = new URL(path, "http://mock").searchParams;
