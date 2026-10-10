@@ -112,6 +112,7 @@ export interface ChatMessage {
 }
 
 export interface PurchaseOrderDetail extends PurchaseOrderListItem {
+  status_history?: StatusHistoryEntry[];
   rationale: string | null;
   scores: Record<string, number> | null;
   candidates: Candidate[] | null;
@@ -222,7 +223,17 @@ export interface CriticalStep {
   purchase_order_id: number | null;
 }
 
+// One row per status change (system, agent or a user), oldest first.
+export interface StatusHistoryEntry {
+  status: string;
+  status_display: string;
+  at: string;
+  actor: string | null; // system | agent | user | a username
+  note?: string | null;
+}
+
 export interface OrderDetail extends OrderListItem {
+  status_history?: StatusHistoryEntry[];
   issued_on: string;
   production_stage: string | null;
   owner: { id: number; first_name: string } | null;

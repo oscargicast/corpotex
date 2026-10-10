@@ -10,6 +10,7 @@ import { CriticalPath } from "@/components/critical-path";
 import { PurchaseOrderList } from "@/components/purchase-order-list";
 import { RedistributionCard } from "@/components/redistribution-card";
 import { useUser } from "@/components/require-auth";
+import { StatusTimeline } from "@/components/status-timeline";
 import { Thumb } from "@/components/thumb";
 import { Button, Card, Pill, RISK_LABEL, RISK_TONE, SectionTitle } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
@@ -78,6 +79,11 @@ export default function OrderDetailPage() {
         />
       </div>
       {order.risk_reason && <p className="rounded-lg bg-warning-soft px-4 py-2 text-sm text-warning">{order.risk_reason}</p>}
+
+      <Card>
+        <SectionTitle>Estado</SectionTitle>
+        <StatusTimeline flow="order" status={order.status} statusDisplay={order.status_display} history={order.status_history} />
+      </Card>
 
       <Card>
         <SectionTitle>Ruta crítica</SectionTitle>

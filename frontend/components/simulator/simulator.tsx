@@ -7,7 +7,6 @@ import useSWR from "swr";
 import { apiFetch, fetcher } from "@/lib/api";
 import type { ChatMessage, SimulatorContact } from "@/lib/types";
 import { ChatThread } from "../chat-thread";
-import { Clock } from "../clock";
 import { SimulateOrder } from "../simulate-order";
 import { Pill } from "../ui";
 
@@ -167,7 +166,6 @@ export function Simulator() {
         <div className="flex flex-wrap items-center gap-3 rounded-xl bg-surface px-4 py-2 ring-1 ring-line">
           <span className="text-xl font-black tracking-tight">CORPOTEX · Simulador</span>
           <div className="ml-auto flex flex-wrap items-center gap-3">
-            <Clock />
             <SimulateOrder />
             <button type="button" onClick={togglePresent} className="rounded-md p-2 hover:bg-canvas" title="Salir del modo presentación (P)">
               <Minimize2 size={20} />

@@ -11,7 +11,6 @@ import { ROLE_LABELS } from "@/lib/types";
 import { AssistantPanel } from "./assistant/panel";
 import { AssistantToast } from "./assistant/toast";
 import { ClaudeBanner } from "./claude-banner";
-import { Clock } from "./clock";
 import { useUser } from "./require-auth";
 
 function Count({ value, className = "" }: { value: number | null | undefined; className?: string }) {
@@ -83,7 +82,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
             CORPOTEX
           </Link>
           <div className="ml-auto flex items-center gap-3">
-            <Clock />
             <button
               type="button"
               onClick={() => setAssistantOpen((open) => !open)}
