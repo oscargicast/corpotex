@@ -59,7 +59,13 @@ for im in [x["image"] for x in d["materials"] + d["products"]]:
 # proveedores
 for s in d["suppliers"]:
     w = s["name"]; enum(s["kind"], {"material","workshop","finished"}, w); enum(s["city"], {"Piura","Lima","México"}, w)
-    enum(s["payment_method"], {"yape","transfer","cash"}, w); enum(s["source"], {"registered","self_registered","suggested"}, w); enum(s["status"], {"active","pending_review","inactive"}, w)
+    enum(s["source"], {"registered","self_registered","suggested","external"}, w); enum(s["status"], {"active","pending_review","inactive"}, w)
+    for k in ("lat","lng"):
+        if k in s and not isinstance(s[k], (int, float)): err(f"{w}: {k} no numérico")
+    if s["status"] == "pending_review":
+        if s["rates"]: err(f"{w}: pendiente con rates")
+        continue
+    enum(s["payment_method"], {"yape","transfer","cash"}, w)
     if not 0 <= float(s["on_time_score"]) <= 1 or not 1 <= float(s["quality_score"]) <= 5: err(f"{w}: score fuera de rango")
     if s["kind"] == "workshop" and not s.get("weekly_capacity"): err(f"{w}: taller sin capacidad")
     for r in s["rates"]:

@@ -73,7 +73,9 @@
         "valid_from": "T-400",
         "source": "historical"
       }
-    ]
+    ],
+    "lat": -5.172,
+    "lng": -80.658
   },
   {
     "source": "registered",
@@ -128,7 +130,9 @@
         "valid_from": "T-400",
         "source": "historical"
       }
-    ]
+    ],
+    "lat": -5.188,
+    "lng": -80.64
   },
   {
     "source": "registered",
@@ -176,7 +180,9 @@
         "valid_from": "T-400",
         "source": "historical"
       }
-    ]
+    ],
+    "lat": -5.2035,
+    "lng": -80.615
   },
   {
     "source": "registered",
@@ -232,7 +238,9 @@
         "valid_from": "T-400",
         "source": "historical"
       }
-    ]
+    ],
+    "lat": -5.177,
+    "lng": -80.68
   },
   {
     "source": "registered",
@@ -467,5 +475,50 @@
         "source": "historical"
       }
     ]
+  },
+  {
+    "source": "external",
+    "status": "pending_review",
+    "is_in_house": false,
+    "kind": "workshop",
+    "city": "Piura",
+    "contact_name": null,
+    "payment_method": null,
+    "on_time_score": null,
+    "quality_score": null,
+    "weekly_capacity": null,
+    "lead_time_days": null,
+    "follow_up_every_hours": null,
+    "rates": [],
+    "name": "Confecciones Tallán E.I.R.L.",
+    "specialties": [
+      "polo",
+      "buzo"
+    ],
+    "address": "Av. Grau 2150, Piura",
+    "notes": "Encontrado en el directorio de socios de la Cámara de Comercio y Producción de Piura (sección confecciones). Sin contacto previo ni precios; falta validar capacidad y calidad."
+  },
+  {
+    "source": "external",
+    "status": "pending_review",
+    "is_in_house": false,
+    "kind": "workshop",
+    "city": "Piura",
+    "contact_name": null,
+    "payment_method": null,
+    "on_time_score": null,
+    "quality_score": null,
+    "weekly_capacity": null,
+    "lead_time_days": null,
+    "follow_up_every_hours": null,
+    "rates": [],
+    "name": "Textil Señor de Locuto",
+    "specialties": [
+      "camisa",
+      "pantalón",
+      "bordado"
+    ],
+    "address": "Urb. Miraflores, Castilla, Piura",
+    "notes": "Aparece en el directorio de proveedores de la Cámara de Comercio y Producción de Piura. Sin contacto previo ni precios; pedir muestra antes de asignar."
   }
 ]

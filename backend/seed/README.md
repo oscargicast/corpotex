@@ -41,3 +41,13 @@ Siempre por clave natural: material por `sku`, producto/orden/pedido por `code`,
 - Valores monetarios como string con 2 decimales; `scores`/`rating_score` como número 0–1.
 - Escena de la demo: OC-2026-0142 + PED-0038 en `in_progress` con 400/1000; sin pedidos de redistribución, sin `approve_assignment` ni `order_in_danger` de esa orden (pasan en vivo).
 - Imágenes: todas generadas (ver `images/credits.md`); 1024 px, < 300 KB.
+
+## Planta (`plant`)
+
+Se carga a `Config.plant_name`, `plant_lat`, `plant_lng`. Inventada, en Piura.
+
+```json
+{"plant": {"name": "Planta y Almacén Corpotex, Zona Industrial Piura", "lat": -5.1720, "lng": -80.6580}}
+```
+
+Los talleres de Piura y los 4 clientes traen `lat`/`lng` (WGS84). Los proveedores de Lima y México no, van por agencia.
