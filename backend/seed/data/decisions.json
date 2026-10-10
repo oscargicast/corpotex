@@ -6,7 +6,7 @@
       "PED-0042"
     ],
     "order": "OC-2026-0151",
-    "summary": "Textiles Monterrey pide USD 3.45/m por el drill (tarifa vigente USD 3.10/m, +11 %). ¿Aceptamos o pasamos a Textil San Martín?",
+    "summary": "Hilados del Bajío pide USD 3.45/m por el drill (tarifa vigente USD 3.10/m, +11 %). ¿Aceptamos o pasamos a Textiles Lima Norte S.A.C.?",
     "detail": {
       "before": {
         "unit_price": "3.10",
@@ -19,7 +19,7 @@
         "total_amount": "2208.00"
       },
       "proposal": {
-        "supplier": "Textiles Monterrey",
+        "supplier": "Hilados del Bajío",
         "unit_price": "3.45",
         "quantity": "640.00",
         "committed_on": "T+12"

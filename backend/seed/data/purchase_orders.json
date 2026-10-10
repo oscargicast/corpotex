@@ -1,10 +1,10 @@
 [
   {
     "code": "PED-0031",
-    "supplier": "Textil San Martín",
+    "supplier": "Textiles Lima Norte S.A.C.",
     "kind": "material",
     "status": "delivered",
-    "suggested_supplier": "Textil San Martín",
+    "suggested_supplier": "Textiles Lima Norte S.A.C.",
     "rationale": "Único proveedor con jersey 20/1 en stock inmediato y tarifa vigente.",
     "scores": {
       "price": 0.7,
@@ -15,12 +15,12 @@
     },
     "candidates": [
       {
-        "supplier": "Textil San Martín",
+        "supplier": "Textiles Lima Norte S.A.C.",
         "score": 0.81,
         "rationale": "Stock inmediato, envío por Sullana Express."
       },
       {
-        "supplier": "Textiles Monterrey",
+        "supplier": "Hilados del Bajío",
         "score": 0.42,
         "rationale": "No trabaja jersey 20/1."
       }
@@ -506,11 +506,11 @@
   },
   {
     "code": "PED-0042",
-    "supplier": "Textiles Monterrey",
+    "supplier": "Hilados del Bajío",
     "kind": "material",
     "status": "negotiating",
-    "suggested_supplier": "Textiles Monterrey",
-    "rationale": "Mejor drill y precio histórico; Textil San Martín como respaldo.",
+    "suggested_supplier": "Hilados del Bajío",
+    "rationale": "Mejor drill y precio histórico; Textiles Lima Norte S.A.C. como respaldo.",
     "scores": {
       "price": 0.92,
       "on_time": 0.74,
@@ -520,12 +520,12 @@
     },
     "candidates": [
       {
-        "supplier": "Textiles Monterrey",
+        "supplier": "Hilados del Bajío",
         "score": 0.79,
         "rationale": "Calidad 4.8, mejor precio."
       },
       {
-        "supplier": "Textil San Martín",
+        "supplier": "Textiles Lima Norte S.A.C.",
         "score": 0.68,
         "rationale": "Más caro en drill pero llega en 7 días."
       }
@@ -725,11 +725,11 @@
   },
   {
     "code": "PED-0043",
-    "supplier": "Textil San Martín",
+    "supplier": "Textiles Lima Norte S.A.C.",
     "kind": "material",
     "status": "suggested",
-    "suggested_supplier": "Textil San Martín",
-    "rationale": "Monterrey está en standby; San Martín llega en 7 días y cubre lo que falta sobre el stock.",
+    "suggested_supplier": "Textiles Lima Norte S.A.C.",
+    "rationale": "Hilados del Bajío está en standby; Lima Norte llega en 7 días y cubre lo que falta sobre el stock.",
     "scores": {
       "price": 0.7,
       "on_time": 0.86,
@@ -739,12 +739,12 @@
     },
     "candidates": [
       {
-        "supplier": "Textil San Martín",
+        "supplier": "Textiles Lima Norte S.A.C.",
         "score": 0.77,
         "rationale": "Llega a tiempo."
       },
       {
-        "supplier": "Textiles Monterrey",
+        "supplier": "Hilados del Bajío",
         "score": 0.71,
         "rationale": "Mejor calidad, 15 días."
       }
@@ -776,10 +776,10 @@
   },
   {
     "code": "PED-0020",
-    "supplier": "Textil San Martín",
+    "supplier": "Textiles Lima Norte S.A.C.",
     "kind": "material",
     "status": "delivered",
-    "suggested_supplier": "Textil San Martín",
+    "suggested_supplier": "Textiles Lima Norte S.A.C.",
     "rationale": "Jersey 30/1 en stock.",
     "scores": {
       "price": 0.7,
@@ -790,7 +790,7 @@
     },
     "candidates": [
       {
-        "supplier": "Textil San Martín",
+        "supplier": "Textiles Lima Norte S.A.C.",
         "score": 0.8,
         "rationale": "Stock inmediato."
       }

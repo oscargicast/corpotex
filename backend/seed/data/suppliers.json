@@ -239,7 +239,7 @@
     "status": "active",
     "is_in_house": false,
     "weekly_capacity": null,
-    "name": "Textil San Martín",
+    "name": "Textiles Lima Norte S.A.C.",
     "kind": "material",
     "specialties": [
       "tela",
@@ -247,7 +247,7 @@
       "antifluido",
       "franela"
     ],
-    "contact_name": "Óscar Villena",
+    "contact_name": "Sr. Ramírez",
     "city": "Lima",
     "address": "Jr. Gamarra 780, La Victoria, Lima",
     "lead_time_days": 7,
@@ -433,16 +433,16 @@
     "status": "active",
     "is_in_house": false,
     "weekly_capacity": null,
-    "name": "Textiles Monterrey",
+    "name": "Hilados del Bajío",
     "kind": "material",
     "specialties": [
       "tela",
       "drill",
       "antifluido"
     ],
-    "contact_name": "Ing. Ramiro Garza",
+    "contact_name": "Ing. Castañeda",
     "city": "México",
-    "address": "Parque Industrial Escobedo, Monterrey, N.L., México",
+    "address": "Parque Industrial Castro del Río, Irapuato, Gto., México",
     "lead_time_days": 15,
     "follow_up_every_hours": 72,
     "payment_method": "transfer",
