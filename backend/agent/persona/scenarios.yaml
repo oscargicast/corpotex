@@ -14,7 +14,7 @@
 defaults:
   whatsapp:
     now: "2026-10-14T10:30:00-05:00"
-    manager_name: Oscar
+    manager_name: Martín
     style_md: "@template"
     channel: whatsapp
     supplier:
@@ -42,7 +42,7 @@ defaults:
     web_reports: []
   assistant:
     now: "2026-10-14T10:30:00-05:00"
-    user: {first_name: Oscar, role: manager}
+    user: {first_name: Martín, role: manager}
     context: {path: "/", view: monitor}
     new_messages: []
     pending_action: null

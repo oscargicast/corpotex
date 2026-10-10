@@ -1,5 +1,3 @@
-import sys
-import types
 from datetime import date
 from pathlib import Path
 
@@ -30,15 +28,10 @@ ANALYSIS = {
 }
 
 
-class FakeSdk(types.ModuleType):
-    class ClaudeNotConnected(Exception):
-        pass
-
-    class ClaudeSDKError(Exception):
-        pass
+class FakeSdk:
+    """Stands in for the model: records the calls and answers by system prompt."""
 
     def __init__(self, replies=None, connected=True):
-        super().__init__("agent.sdk")
         self.replies = replies or {}
         self.connected = connected
         self.calls = []
@@ -56,10 +49,15 @@ class FakeSdk(types.ModuleType):
 
 @pytest.fixture
 def fake_sdk(monkeypatch):
+    """Patch the real `agent.sdk` (A1): replacing the module in sys.modules is not enough
+    once other tests imported it, because `from agent import sdk` reads the package attribute."""
+    import agent.sdk as real_sdk
+
     def install(**kwargs):
-        sdk = FakeSdk(**kwargs)
-        monkeypatch.setitem(sys.modules, "agent.sdk", sdk)
-        return sdk
+        fake = FakeSdk(**kwargs)
+        monkeypatch.setattr(real_sdk, "complete", fake.complete)
+        monkeypatch.setattr(real_sdk, "is_connected", fake.is_connected)
+        return fake
 
     return install
 
@@ -67,7 +65,11 @@ def fake_sdk(monkeypatch):
 def lima_chat():
     content = (FIXTURES / "textiles-lima-norte.txt").read_text(encoding="utf-8")
     chat = style.parse_whatsapp_export(
-        content, "Oscar", since=date(2026, 1, 1), supplier_id=5, supplier_name="Textiles Lima Norte"
+        content,
+        "Gerente",
+        since=date(2026, 1, 1),
+        supplier_id=5,
+        supplier_name="Textiles Lima Norte",
     )
     return chat
 
@@ -93,7 +95,7 @@ def test_extract_style_runs_one_analysis_per_supplier_and_one_draft(fake_sdk):
         [lima_chat()],
         date(2026, 1, 1),
         on_progress=lambda *args, **kwargs: progress.append((args, kwargs)),
-        manager_names=("Oscar",),
+        manager_names=("Gerente",),
     )
 
     assert result["style_md"].startswith("# Estilo del Gerente")

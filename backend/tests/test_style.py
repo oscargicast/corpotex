@@ -41,24 +41,24 @@ def test_fixtures_parse(filename):
     supplier_name, contact = FIXTURE_SUPPLIERS[filename]
     content = (FIXTURES / filename).read_text(encoding="utf-8")
     chat = parse_whatsapp_export(
-        content, "Oscar", since=date(2026, 1, 1), supplier_name=supplier_name
+        content, "Gerente", since=date(2026, 1, 1), supplier_name=supplier_name
     )
 
     assert len(chat["messages"]) >= 50
     assert {m["sender"] for m in chat["messages"]} == {"manager", "supplier"}
     joined = "\n".join(m["text"] for m in chat["messages"])
-    for leaked in (contact, "Oscar", "20999999999", "999 999 999", "S/ 26.50", "USD 3.10"):
+    for leaked in (contact, "20999999999", "999 999 999", "S/ 26.50", "USD 3.10"):
         assert leaked not in joined
 
 
 def test_parse_export_handles_multiline_messages():
     content = (
-        "02/10/26, 09:06 - Oscar: le paso el pedido del mes:\n"
+        "02/10/26, 09:06 - Gerente: le paso el pedido del mes:\n"
         "- jersey 30/1 blanco 300 kilos\n"
         "al precio de siempre\n"
         "02/10/26, 10:40 - Sr. Ramírez: Conforme\n"
     )
-    chat = parse_whatsapp_export(content, "Oscar", since=date(2026, 1, 1))
+    chat = parse_whatsapp_export(content, "Gerente", since=date(2026, 1, 1))
     assert [m["sender"] for m in chat["messages"]] == ["manager", "supplier"]
     assert chat["messages"][0]["text"].count("\n") == 2
     assert chat["contact_names"] == ["Sr. Ramírez"]
@@ -66,18 +66,18 @@ def test_parse_export_handles_multiline_messages():
 
 def test_parse_export_reads_ios_format_and_filters_since():
     content = (
-        "[01/07/26, 9:00:12] Oscar: muy antiguo\n"
-        "[14/10/26, 10:05:00] Oscar: buenos días\n"
+        "[01/07/26, 9:00:12] Gerente: muy antiguo\n"
+        "[14/10/26, 10:05:00] Gerente: buenos días\n"
         "[14/10/26, 10:06:00] Encargada: imagen omitida\n"
         "[14/10/26, 10:07:00] Encargada: Se eliminó este mensaje\n"
     )
-    chat = parse_whatsapp_export(content, "Oscar", since=date(2026, 10, 10))
+    chat = parse_whatsapp_export(content, "Gerente", since=date(2026, 10, 10))
     assert [m["text"] for m in chat["messages"]] == ["buenos días", "[imagen]"]
 
 
 def test_anonymize_removes_phones_ruc_and_names():
     text = (
-        "Sr. Ramírez dice que Ramírez no está; Oscar paga S/ 26.50 o USD 3.10. "
+        "Sr. Ramírez dice que Ramírez no está; Martín paga S/ 26.50 o USD 3.10. "
         "RUC 20999999999, cel 987 654 321, correo ventas@textiles.pe, "
         "https://textiles.pe. Textiles Lima Norte S.A.C. envía desde Lima"
     )
@@ -85,11 +85,11 @@ def test_anonymize_removes_phones_ruc_and_names():
         text,
         contact_names=["Sr. Ramírez"],
         supplier_names=["Textiles Lima Norte S.A.C."],
-        manager_names=["Oscar"],
+        manager_names=["Martín"],
     )
     for leaked in (
         "Ramírez",
-        "Oscar",
+        "Martín",
         "26.50",
         "3.10",
         "20999999999",

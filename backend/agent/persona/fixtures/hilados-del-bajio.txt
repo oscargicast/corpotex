@@ -1,53 +1,53 @@
-20/07/26, 10:00 - Oscar: buenos días Ing. Castañeda, ¿cómo está? ¿cómo va todo por León?
-20/07/26, 10:01 - Oscar: le escribo para el drill de la campaña de agosto
-20/07/26, 13:25 - Ing. Castañeda: Buenos días Oscar, qué gusto saludarlo. Todo bien por acá. Cuénteme
-20/07/26, 13:30 - Oscar: le paso un pedido de drill 100% algodón azul noche, 1,200 metros a USD 3.10 el metro como la última vez, para salir el 7 de agosto. ¿me confirma si se puede? 🙏
-20/07/26, 13:31 - Oscar: sin apuro, cuando pueda me contesta nomás
-23/07/26, 09:40 - Ing. Castañeda: Oscar, disculpe la demora. Tenemos un pedido grande de una cadena y estamos a tope. Le puedo confirmar la próxima semana
-23/07/26, 09:52 - Oscar: ya, entiendo Ing. no se preocupe, quedo atento
-28/07/26, 10:15 - Oscar: buenos días Ing., ¿cómo va todo? cuando tenga noticias del drill me avisa nomás 🙏
-29/07/26, 18:30 - Ing. Castañeda: Buenas tardes Oscar. Ya le tengo respuesta: 1,200 m de drill azul noche sale el 14 de agosto. El precio subió a USD 3.45 por el algodón
-29/07/26, 18:45 - Oscar: buenas tardes Ing., gracias por avisar
-29/07/26, 18:46 - Oscar: la última vez trabajamos a USD 3.10, ¿no me lo deja igual? déjeme revisarlo con calma y le confirmo
-30/07/26, 11:20 - Oscar: Ing., lo revisé. ¿le parece USD 3.25? así lo cerramos hoy
-01/08/26, 09:05 - Ing. Castañeda: Oscar, por ser usted le dejo USD 3.25. Sale el 14
-01/08/26, 09:20 - Oscar: de una, muchas gracias Ing. 👍
-01/08/26, 09:21 - Oscar: cerramos: 1,200 m de drill azul noche a USD 3.25, sale el 14. el adelanto del 50 % por transferencia como siempre
+20/07/26, 10:00 - Gerente: buenos días Ing. Castañeda, ¿cómo está? ¿cómo va todo por León?
+20/07/26, 10:01 - Gerente: le escribo para el drill de la campaña de agosto
+20/07/26, 13:25 - Ing. Castañeda: Buenos días, qué gusto saludarlo. Todo bien por acá. Cuénteme
+20/07/26, 13:30 - Gerente: le paso un pedido de drill 100% algodón azul noche, 1,200 metros a USD 3.10 el metro como la última vez, para salir el 7 de agosto. ¿me confirma si se puede? 🙏
+20/07/26, 13:31 - Gerente: sin apuro, cuando pueda me contesta nomás
+23/07/26, 09:40 - Ing. Castañeda: Disculpe la demora. Tenemos un pedido grande de una cadena y estamos a tope. Le puedo confirmar la próxima semana
+23/07/26, 09:52 - Gerente: ya, entiendo Ing. no se preocupe, quedo atento
+28/07/26, 10:15 - Gerente: buenos días Ing., ¿cómo va todo? cuando tenga noticias del drill me avisa nomás 🙏
+29/07/26, 18:30 - Ing. Castañeda: Buenas tardes. Ya le tengo respuesta: 1,200 m de drill azul noche sale el 14 de agosto. El precio subió a USD 3.45 por el algodón
+29/07/26, 18:45 - Gerente: buenas tardes Ing., gracias por avisar
+29/07/26, 18:46 - Gerente: la última vez trabajamos a USD 3.10, ¿no me lo deja igual? déjeme revisarlo con calma y le confirmo
+30/07/26, 11:20 - Gerente: Ing., lo revisé. ¿le parece USD 3.25? así lo cerramos hoy
+01/08/26, 09:05 - Ing. Castañeda: Por ser usted le dejo USD 3.25. Sale el 14
+01/08/26, 09:20 - Gerente: de una, muchas gracias Ing. 👍
+01/08/26, 09:21 - Gerente: cerramos: 1,200 m de drill azul noche a USD 3.25, sale el 14. el adelanto del 50 % por transferencia como siempre
 01/08/26, 09:22 - Ing. Castañeda: Perfecto. Le mando la proforma
 01/08/26, 09:23 - Ing. Castañeda: <Multimedia omitido>
-02/08/26, 15:00 - Oscar: Ing., ya salió la transferencia del adelanto. le paso el comprobante
-02/08/26, 15:00 - Oscar: <Multimedia omitido>
-05/08/26, 12:10 - Ing. Castañeda: Recibido Oscar, gracias
-14/08/26, 19:00 - Ing. Castañeda: Oscar, salió el drill. Va a Lima con la paquetería de siempre, número de rastreo MX-55821
-14/08/26, 19:10 - Oscar: muchas gracias Ing. 🙏 de Lima lo mandamos por Sullana Express
-22/08/26, 10:30 - Oscar: buenos días Ing., ya llegó el drill a Piura, todo conforme
-22/08/26, 10:31 - Oscar: el saldo se lo hacemos esta semana
-22/08/26, 16:00 - Ing. Castañeda: Qué bueno, gracias Oscar
-05/09/26, 09:30 - Oscar: buenos días Ing., ¿cómo está? ¿y la familia?
-05/09/26, 09:32 - Oscar: le quería consultar por tela antifluido para uniformes médicos, unos 800 metros. ¿la tiene en celeste y verde quirófano?
-05/09/26, 09:33 - Oscar: sin apuro, cuando pueda
-08/09/26, 10:00 - Oscar: buenos días Ing., le recuerdo lo del antifluido, sin presión 🙏
-08/09/26, 17:45 - Ing. Castañeda: Buenas tardes Oscar. Sí la tenemos. Celeste en stock, verde quirófano en 3 semanas. USD 4.10 el metro
-08/09/26, 18:00 - Oscar: gracias Ing. déjeme revisarlo con la planta y le confirmo
-10/09/26, 09:15 - Oscar: Ing., vamos con 500 m celeste y 300 m verde a USD 4.10
-10/09/26, 09:16 - Oscar: el celeste cuando pueda y el verde apenas lo tenga. ¿así se puede?
-13/09/26, 12:00 - Ing. Castañeda: Sí Oscar, confirmado. El celeste sale el 18, el verde a inicios de octubre
-13/09/26, 12:05 - Oscar: de una 👍 muchas gracias
-14/09/26, 09:10 - Oscar: Ing., ya salió el adelanto del antifluido
-14/09/26, 09:10 - Oscar: <Multimedia omitido>
+02/08/26, 15:00 - Gerente: Ing., ya salió la transferencia del adelanto. le paso el comprobante
+02/08/26, 15:00 - Gerente: <Multimedia omitido>
+05/08/26, 12:10 - Ing. Castañeda: Recibido, gracias
+14/08/26, 19:00 - Ing. Castañeda: Salió el drill. Va a Lima con la paquetería de siempre, número de rastreo MX-55821
+14/08/26, 19:10 - Gerente: muchas gracias Ing. 🙏 de Lima lo mandamos por Sullana Express
+22/08/26, 10:30 - Gerente: buenos días Ing., ya llegó el drill a Piura, todo conforme
+22/08/26, 10:31 - Gerente: el saldo se lo hacemos esta semana
+22/08/26, 16:00 - Ing. Castañeda: Qué bueno, gracias
+05/09/26, 09:30 - Gerente: buenos días Ing., ¿cómo está? ¿y la familia?
+05/09/26, 09:32 - Gerente: le quería consultar por tela antifluido para uniformes médicos, unos 800 metros. ¿la tiene en celeste y verde quirófano?
+05/09/26, 09:33 - Gerente: sin apuro, cuando pueda
+08/09/26, 10:00 - Gerente: buenos días Ing., le recuerdo lo del antifluido, sin presión 🙏
+08/09/26, 17:45 - Ing. Castañeda: Buenas tardes. Sí la tenemos. Celeste en stock, verde quirófano en 3 semanas. USD 4.10 el metro
+08/09/26, 18:00 - Gerente: gracias Ing. déjeme revisarlo con la planta y le confirmo
+10/09/26, 09:15 - Gerente: Ing., vamos con 500 m celeste y 300 m verde a USD 4.10
+10/09/26, 09:16 - Gerente: el celeste cuando pueda y el verde apenas lo tenga. ¿así se puede?
+13/09/26, 12:00 - Ing. Castañeda: Sí, confirmado. El celeste sale el 18, el verde a inicios de octubre
+13/09/26, 12:05 - Gerente: de una 👍 muchas gracias
+14/09/26, 09:10 - Gerente: Ing., ya salió el adelanto del antifluido
+14/09/26, 09:10 - Gerente: <Multimedia omitido>
 16/09/26, 11:30 - Ing. Castañeda: Recibido, gracias
 18/09/26, 20:10 - Ing. Castañeda: Salió el celeste. Rastreo MX-56930
-18/09/26, 20:15 - Oscar: gracias Ing. 🙏
-26/09/26, 10:40 - Oscar: buenos días Ing., llegó el celeste, quedó muy bien en las primeras chaquetas
-26/09/26, 10:41 - Oscar: <Multimedia omitido>
-26/09/26, 13:15 - Ing. Castañeda: Qué bien se ven, Oscar. Me alegra
-02/10/26, 10:00 - Oscar: buenos días Ing., ¿cómo va el verde quirófano? sin apuro, solo para organizarme
-05/10/26, 10:00 - Oscar: buenos días Ing., cuando tenga fecha del verde me avisa nomás
-06/10/26, 16:40 - Ing. Castañeda: Oscar, disculpe. Estamos atrasados, el verde sale el 15. Le pido paciencia
-06/10/26, 16:50 - Oscar: ya, entiendo Ing. no se preocupe. el 15 está bien
-06/10/26, 16:51 - Oscar: cualquier cosa me avisa nomás
-06/10/26, 17:05 - Ing. Castañeda: Gracias por la comprensión, Oscar. Como siempre
+18/09/26, 20:15 - Gerente: gracias Ing. 🙏
+26/09/26, 10:40 - Gerente: buenos días Ing., llegó el celeste, quedó muy bien en las primeras chaquetas
+26/09/26, 10:41 - Gerente: <Multimedia omitido>
+26/09/26, 13:15 - Ing. Castañeda: Qué bien se ven. Me alegra
+02/10/26, 10:00 - Gerente: buenos días Ing., ¿cómo va el verde quirófano? sin apuro, solo para organizarme
+05/10/26, 10:00 - Gerente: buenos días Ing., cuando tenga fecha del verde me avisa nomás
+06/10/26, 16:40 - Ing. Castañeda: Disculpe. Estamos atrasados, el verde sale el 15. Le pido paciencia
+06/10/26, 16:50 - Gerente: ya, entiendo Ing. no se preocupe. el 15 está bien
+06/10/26, 16:51 - Gerente: cualquier cosa me avisa nomás
+06/10/26, 17:05 - Ing. Castañeda: Gracias por la comprensión. Como siempre
 06/10/26, 17:06 - Ing. Castañeda: Para el próximo año le paso la lista de precios nueva
 Viene con un pequeño ajuste por el algodón
-06/10/26, 17:20 - Oscar: ya, gracias Ing. lo vemos con calma en su momento
-06/10/26, 17:21 - Oscar: un abrazo, hablamos
+06/10/26, 17:20 - Gerente: ya, gracias Ing. lo vemos con calma en su momento
+06/10/26, 17:21 - Gerente: un abrazo, hablamos
