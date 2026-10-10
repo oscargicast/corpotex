@@ -10,7 +10,7 @@ x-backend: &backend
   environment:
     DATABASE_URL: postgres://corpotex:${POSTGRES_PASSWORD:-corpotex}@postgres:5432/corpotex
     REDIS_URL: redis://redis:6379/0
-    CLAUDE_CONFIG_DIR: /app/.agent
+    CLAUDE_CONFIG_DIR: /app/.agent/config
   volumes:
     - ./backend:/app
     - agent-home:/app/.agent
