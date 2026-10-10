@@ -65,7 +65,10 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
       )}
       {after && !decision.detail.cancelled && (
         <p className="mt-2 text-xs text-muted">
-          Nueva fecha estimada {formatDay(after.estimated_on)} · total {formatMoney(after.total_amount)}
+          {/* A price decision carries only the new total; assignments also move the date. */}
+          {[after.estimated_on && `Nueva fecha estimada ${formatDay(after.estimated_on)}`, after.total_amount && `total ${formatMoney(after.total_amount, proposal[0]?.currency)}`]
+            .filter(Boolean)
+            .join(" · ")}
         </p>
       )}
 
