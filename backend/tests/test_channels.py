@@ -1,9 +1,9 @@
 from types import SimpleNamespace
 
 import pytest
-from agent_fakes import install
 
 from agent import channels
+from tests.agent_fakes import install
 
 
 def conversation(channel="whatsapp", active=True, simulated=False, has_number=True):

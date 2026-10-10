@@ -1,10 +1,10 @@
 from types import SimpleNamespace
 
 import pytest
-from agent_fakes import install
 from claude_agent_sdk import tool
 
 from agent import sdk, tasks, worker
+from tests.agent_fakes import install
 
 
 @pytest.fixture(autouse=True)

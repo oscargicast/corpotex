@@ -4,9 +4,15 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
-from agent_fakes import FOREIGN_CODE, MISSING_CODE, REPORT_URL, ManagerApprovalRequired, install
 
 from agent import tools
+from tests.agent_fakes import (
+    FOREIGN_CODE,
+    MISSING_CODE,
+    REPORT_URL,
+    ManagerApprovalRequired,
+    install,
+)
 
 
 def conversation(active=True):

@@ -3,9 +3,9 @@ from types import SimpleNamespace
 from typing import ClassVar
 
 import pytest
-from agent_fakes import MISSING_CODE, install
 
 from agent import assistant_tools, sdk
+from tests.agent_fakes import MISSING_CODE, install
 
 
 class Rows:
