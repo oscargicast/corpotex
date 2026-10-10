@@ -61,17 +61,69 @@ def services(calls, name):
 APPROVE = {"decision_id": 5, "action": "approve"}
 
 
+READS = {"list_orders", "get_order", "list_purchase_orders", "get_purchase_order", "list_alerts"}
+
+
 @pytest.mark.parametrize(
     "role, expected",
     [
-        ("manager", {"resolve_decision", "acknowledge_alert", "mark_payment_paid", "set_clock"}),
-        ("production", {"confirm_order", "record_delivery", "record_progress"}),
-        ("sales", set()),
+        (
+            "manager",
+            READS
+            | {"list_pending", "list_suppliers", "get_supplier"}
+            | {"resolve_decision", "acknowledge_alert", "mark_payment_paid", "set_clock"},
+        ),
+        ("production", READS | {"confirm_order", "record_delivery", "record_progress"}),
+        ("sales", READS),
     ],
 )
 def test_toolset_depends_on_role(monkeypatch, role, expected):
     install(monkeypatch)
     assert set(tools_for(conversation(role), 1)) == expected
+
+
+def fake_api(responses, seen):
+    def api_get(user, path, params=None):
+        seen.append((path, params))
+        return responses[path]
+
+    return api_get
+
+
+def test_get_order_resolves_code_then_reads_detail_as_the_user(monkeypatch):
+    install(monkeypatch)
+    seen = []
+    responses = {
+        "/api/orders/": (200, [{"id": 4, "code": "CP-2026-0001"}]),
+        "/api/orders/4/": (200, {"code": "CP-2026-0001", "risk": "in_danger"}),
+    }
+    monkeypatch.setattr(assistant_tools, "api_get", fake_api(responses, seen))
+    is_error, text = call(conversation("sales"), 1, "get_order", {"code": "CP-2026-0001"})
+    assert not is_error and '"risk": "in_danger"' in text
+    assert seen == [("/api/orders/", {"code": "CP-2026-0001"}), ("/api/orders/4/", None)]
+
+
+def test_forbidden_read_tells_model_the_role_does_not_see_it(monkeypatch):
+    install(monkeypatch)
+    monkeypatch.setattr(assistant_tools, "api_get", fake_api({"/api/orders/": (403, {})}, []))
+    assert call(conversation("sales"), 1, "list_orders", {}) == (True, "Tu rol no ve eso.")
+
+
+def test_long_reads_are_truncated(monkeypatch):
+    install(monkeypatch)
+    rows = [{"code": f"PT-{i:04d}", "notes": "x" * 100} for i in range(200)]
+    monkeypatch.setattr(assistant_tools, "api_get", fake_api({"/api/orders/": (200, rows)}, []))
+    _, text = call(conversation(), 1, "list_orders", {})
+    assert len(text) < assistant_tools.READ_LIMIT + 50 and text.endswith("filtra más)")
+
+
+@pytest.mark.django_db
+def test_reads_go_through_the_real_api_with_the_users_role(sales):
+    status, orders = assistant_tools.api_get(sales, "/api/orders/")
+    assert (status, orders) == (200, [])
+    status, monitor = assistant_tools.api_get(sales, "/api/monitor/")
+    assert status == 200 and monitor["decisions"] == []
+    assert monitor["kpis"]["pending_decisions"] is None
 
 
 def test_sales_toolset_has_no_manager_tools(monkeypatch):

@@ -1,6 +1,7 @@
 """Tools of the dashboard assistant, built per user role (ADR 0017, 0020).
 
-Writes never run on the model's say-so: the first call (confirmed=false) stores a
+Reads go through the same API views the dashboard uses, as the user: same role
+serializers, same permissions, nothing to keep in sync. Writes never run on the model's say-so: the first call (confirmed=false) stores a
 pending action and returns a preview; the second (confirmed=true) runs only if the
 previous turn proposed exactly the same arguments. A new turn needs a new message
 from the user, so the model cannot confirm itself. Services re-check the role.
@@ -14,6 +15,7 @@ from claude_agent_sdk import tool
 from agent.tools import ok, refuse
 
 DECISION_ACTIONS = ("approve", "reject", "change_supplier")
+READ_LIMIT = 8000  # characters of JSON the model reads per call
 
 
 def is_alert_only(batch) -> bool:
@@ -28,7 +30,137 @@ def assistant_tools(conversation, batch) -> list:
         "manager": [_resolve_decision, _acknowledge_alert, _mark_payment_paid, _set_clock],
         "production": [_confirm_order, _record_delivery, _record_progress],
     }.get(user.role, [])
-    return [build(conversation, batch.turn, user) for build in writes]
+    return _reads(user) + [build(conversation, batch.turn, user) for build in writes]
+
+
+# --- reads ------------------------------------------------------------------------------
+
+
+def api_get(user, path: str, params: dict | None = None):
+    """GET one of our API views as `user`. Returns (status_code, data)."""
+    from django.urls import resolve
+    from rest_framework.test import APIRequestFactory, force_authenticate
+
+    query = {k: v for k, v in (params or {}).items() if v not in (None, "")}
+    request = APIRequestFactory().get(path, query)
+    force_authenticate(request, user=user)
+    match = resolve(path)
+    response = match.func(request, *match.args, **match.kwargs)
+    return response.status_code, response.data
+
+
+def _reads(user) -> list:
+    def answer(status: int, data) -> dict:
+        if status == 403:
+            return refuse("Tu rol no ve eso.")
+        if status >= 400:
+            return refuse(f"No se pudo leer (HTTP {status}).")
+        text = json.dumps(data, ensure_ascii=False, default=str)
+        if len(text) > READ_LIMIT:
+            text = text[:READ_LIMIT] + " …(recortado: filtra más)"
+        return ok(text)
+
+    def get(path, params=None):
+        return answer(*api_get(user, path, params))
+
+    def by_code(collection: str, code: str):
+        status, rows = api_get(user, f"/api/{collection}/", {"code": code})
+        if status >= 400 or not rows:
+            return refuse(f"No existe {code}.") if status < 400 else answer(status, rows)
+        return get(f"/api/{collection}/{rows[0]['id']}/")
+
+    def purchase_orders(args):
+        params = {"status": args.get("status")}
+        if args.get("order_code"):
+            status, rows = api_get(user, "/api/orders/", {"code": args["order_code"]})
+            if status >= 400 or not rows:
+                return refuse(f"No existe {args['order_code']}.")
+            params["order"] = rows[0]["id"]
+        if args.get("waiting_manager"):
+            params["waiting_manager"] = 1
+        return get("/api/purchase-orders/", params)
+
+    def monitor_part(*keys):
+        def read(args):
+            status, data = api_get(user, "/api/monitor/")
+            return answer(status, {k: data.get(k) for k in keys} if status < 400 else data)
+
+        return read
+
+    specs = [
+        (
+            "list_orders",
+            "Lista órdenes de clientes con estado, fecha estimada y riesgo.",
+            {"status": {"type": "string"}, "risk": {"type": "string"}},
+            lambda a: get("/api/orders/", {"status": a.get("status"), "risk": a.get("risk")}),
+        ),
+        (
+            "get_order",
+            "Detalle de una orden por su código: ítems, fechas, riesgo y ruta crítica.",
+            {"code": {"type": "string"}},
+            lambda a: by_code("orders", a["code"]),
+        ),
+        (
+            "list_purchase_orders",
+            "Lista pedidos a proveedores y talleres: proveedor, estado, fechas y avance.",
+            {
+                "order_code": {"type": "string"},
+                "status": {"type": "string"},
+                "waiting_manager": {"type": "boolean"},
+            },
+            purchase_orders,
+        ),
+        (
+            "get_purchase_order",
+            "Detalle de un pedido por su código: ítems, fechas, avance y entregas.",
+            {"code": {"type": "string"}},
+            lambda a: by_code("purchase-orders", a["code"]),
+        ),
+        (
+            "list_alerts",
+            "Alertas abiertas que ve este usuario.",
+            {},
+            monitor_part("alerts"),
+        ),
+    ]
+    if user.role == "manager":
+        specs += [
+            (
+                "list_pending",
+                "Pendientes del Gerente: decisiones por tomar, órdenes en peligro y alertas.",
+                {},
+                monitor_part("decisions", "orders_in_danger", "alerts"),
+            ),
+            (
+                "list_suppliers",
+                "Proveedores y talleres con números, tarifas y puntajes.",
+                {"kind": {"type": "string"}, "status": {"type": "string"}},
+                lambda a: get(
+                    "/api/suppliers/", {"kind": a.get("kind"), "status": a.get("status")}
+                ),
+            ),
+            (
+                "get_supplier",
+                "Detalle de un proveedor por su id.",
+                {"supplier_id": {"type": "integer"}},
+                lambda a: get(f"/api/suppliers/{int(a['supplier_id'])}/"),
+            ),
+        ]
+    return [
+        _read_tool(name, description, properties, run)
+        for name, description, properties, run in specs
+    ]
+
+
+def _read_tool(name, description, properties, run):
+    required = [k for k in ("code", "supplier_id") if k in properties]
+    schema = {"type": "object", "properties": properties, "required": required}
+
+    @tool(name, description, schema)
+    async def handler(args):
+        return await sync_to_async(run)(dict(args))
+
+    return handler
 
 
 # --- pending action -----------------------------------------------------------------
@@ -64,6 +196,7 @@ def confirmable(conversation, turn, user, *, name, description, properties, requ
     """A write tool. `preview(args) -> str` and `run(args) -> action` are sync; `action` is
     the card ({title, summary, links}) that record_assistant_action stores."""
     from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+
     from messaging.services import record_assistant_action
 
     schema = {
@@ -137,8 +270,9 @@ def _card(title: str, summary: str = "", links=(), status: str = "done") -> dict
 
 
 def _resolve_decision(conversation, turn, user):
-    from manager.models import Decision
     from manager.services import resolve_decision
+
+    from manager.models import Decision
 
     def preview(args):
         decision = Decision.objects.get(pk=args["decision_id"])
@@ -176,8 +310,9 @@ def _resolve_decision(conversation, turn, user):
 
 
 def _acknowledge_alert(conversation, turn, user):
-    from manager.models import Alert
     from manager.services import acknowledge_alert
+
+    from manager.models import Alert
 
     def preview(args):
         return f"Marcar como vista la alerta {args['alert_id']}: {Alert.objects.get(pk=args['alert_id']).text}"
@@ -201,8 +336,9 @@ def _acknowledge_alert(conversation, turn, user):
 
 
 def _mark_payment_paid(conversation, turn, user):
-    from operations.models import Payment
     from operations.services import mark_payment_paid
+
+    from operations.models import Payment
 
     def describe(payment):
         po = payment.purchase_order
@@ -277,8 +413,9 @@ def _set_clock(conversation, turn, user):
 
 
 def _confirm_order(conversation, turn, user):
-    from operations.models import Order
     from operations.services import confirm_order
+
+    from operations.models import Order
 
     def run(args):
         order = Order.objects.get(code=args["code"])
@@ -303,8 +440,9 @@ def _confirm_order(conversation, turn, user):
 
 
 def _record_delivery(conversation, turn, user):
-    from operations.models import PurchaseOrder
     from operations.services import record_delivery
+
+    from operations.models import PurchaseOrder
 
     def describe(args):
         return (
@@ -348,8 +486,9 @@ def _record_delivery(conversation, turn, user):
 
 
 def _record_progress(conversation, turn, user):
-    from operations.models import PurchaseOrder
     from operations.services import record_progress
+
+    from operations.models import PurchaseOrder
 
     def run(args):
         po = PurchaseOrder.objects.get(code=args["code"])
