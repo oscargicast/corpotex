@@ -150,6 +150,11 @@ def install(monkeypatch, **overrides):
             "acknowledge_alert": recorder("acknowledge_alert"),
         },
         "manager.models": {"Decision": Decision, "Alert": Alert},
+        "suppliers.services": {
+            "create_suggested_suppliers": recorder(
+                "create_suggested_suppliers", returns={"created": [1, 2], "skipped": []}
+            )
+        },
         "core.clock": {"set_clock": recorder("set_clock")},
         "core.claude_account": {"mark_claude_disconnected": mark_claude_disconnected},
         "agent.persona": {
