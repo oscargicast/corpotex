@@ -4,10 +4,6 @@
   "meta": {
     "title": "Flujo 3 · demo: un taller cancela a mitad del pedido",
     "output": "docs/arquitectura/diagramas/taller-cancela/taller-cancela.html",
-    "viewBox": [
-      1080,
-      670
-    ],
     "column_fit": "spread",
     "quality_profile": "showcase",
     "locale": "es",
@@ -454,230 +450,268 @@
   },
   "participants": [
     {
-      "id": "tallerA",
+      "id": "workshopA",
       "type": "external",
       "icon": "person",
-      "label": "Taller A",
-      "sublabel": "cancela"
+      "label": "Taller de T1",
+      "sublabel": "cancela a mitad"
     },
     {
-      "id": "tallerB",
+      "id": "workshops",
       "type": "external",
       "icon": "person",
-      "label": "Taller B",
-      "sublabel": "recibe parte"
+      "label": "Talleres",
+      "sublabel": "T2 y T3: las 600"
     },
     {
-      "id": "worker",
+      "id": "agent",
       "type": "backend",
-      "label": "Worker",
-      "sublabel": "agente"
+      "label": "Agente",
+      "sublabel": "WhatsApp · run_turn"
     },
     {
-      "id": "backend",
+      "id": "svc",
       "type": "backend",
       "label": "Django",
-      "sublabel": "motor + API"
+      "sublabel": "services.py · API"
     },
     {
       "id": "pg",
       "type": "database",
       "label": "Postgres",
-      "sublabel": "pedidos · talleres"
+      "sublabel": "pedidos · Decision"
     },
     {
-      "id": "gerente",
+      "id": "dash",
+      "type": "frontend",
+      "label": "Tablero",
+      "sublabel": "Monitor"
+    },
+    {
+      "id": "manager",
       "type": "external",
       "icon": "person",
       "label": "Gerente",
-      "sublabel": "Pana"
-    },
-    {
-      "id": "tablero",
-      "type": "frontend",
-      "label": "Tablero",
-      "sublabel": "monitor"
+      "sublabel": "rol manager"
     }
   ],
   "segments": [
     {
-      "from": 150,
-      "to": 254,
+      "from": 166,
+      "to": 282,
       "label": "Cancela"
     },
     {
-      "from": 258,
-      "to": 336,
-      "label": "Recalcula"
+      "from": 308,
+      "to": 424,
+      "label": "Redistribuye"
     },
     {
-      "from": 340,
-      "to": 414,
-      "label": "Aprueba"
+      "from": 450,
+      "to": 622,
+      "label": "El Gerente aprueba"
     },
     {
-      "from": 416,
-      "to": 562,
-      "label": "Confirma"
+      "from": 648,
+      "to": 792,
+      "label": "Los talleres nuevos confirman"
     }
   ],
   "messages": [
     {
-      "id": "cancela",
-      "from": "tallerA",
-      "to": "worker",
-      "y": 164,
-      "label": "no llego con las 300 prendas",
-      "note": "llega como turno normal (flujo 1)"
+      "id": "cancels",
+      "from": "workshopA",
+      "to": "agent",
+      "y": 186,
+      "label": "ya no puedo seguir con T1",
+      "note": "turno normal (flujo 1); T1: 1000 polos para Caja Piura, 400 cosidos"
     },
     {
-      "id": "reporta",
-      "from": "worker",
-      "to": "backend",
-      "y": 188,
-      "label": "tool: reportar_cancelacion",
+      "id": "report",
+      "from": "agent",
+      "to": "svc",
+      "y": 214,
+      "label": "tool report_cancellation",
       "variant": "emphasis"
     },
     {
-      "id": "lee",
-      "from": "backend",
+      "id": "cancel",
+      "from": "svc",
       "to": "pg",
-      "y": 212,
-      "label": "avance, capacidad e histórico"
+      "y": 242,
+      "label": "cancel_by_supplier(T1)",
+      "note": "T1 → cancelled_by_supplier; Delivery de las 400 ya cosidas"
     },
     {
-      "id": "disponibles",
-      "from": "pg",
-      "to": "backend",
-      "y": 240,
-      "label": "talleres disponibles",
+      "id": "ack",
+      "from": "agent",
+      "to": "workshopA",
+      "y": 270,
+      "label": "entendido, coordinamos el recojo",
       "variant": "return"
     },
     {
-      "id": "propone",
-      "from": "backend",
+      "id": "redistribute",
+      "from": "svc",
       "to": "pg",
-      "y": 268,
-      "label": "guarda propuesta: B y C",
-      "note": "matching multicriterio; recalcula fecha por ruta crítica, costo y ruta de recojo"
+      "y": 328,
+      "label": "redistribute(T1) → match_requirements",
+      "note": "600 sin cubrir; reparte según Rate, capacidad, carga y puntajes"
     },
     {
-      "id": "justifica",
-      "from": "backend",
-      "to": "worker",
-      "y": 296,
-      "label": "propuesta + justificación",
-      "variant": "return"
+      "id": "suggested",
+      "from": "svc",
+      "to": "pg",
+      "y": 356,
+      "label": "T2 y T3 en suggested",
+      "note": "redistributed_from = T1, con rationale y candidates"
     },
     {
-      "id": "escala",
-      "from": "worker",
-      "to": "gerente",
-      "y": 324,
-      "label": "aprobar el cambio",
+      "id": "decision",
+      "from": "svc",
+      "to": "pg",
+      "y": 384,
+      "label": "create_decision(approve_assignment)",
       "variant": "emphasis",
-      "note": "por su Pana (flujo 2); la orden queda en peligro"
+      "note": "purchase_orders [T2, T3]; detail: before y after de estimated_on y total_amount"
     },
     {
-      "id": "aprueba",
-      "from": "gerente",
-      "to": "backend",
-      "y": 352,
-      "label": "aprueba (POST decisión)",
-      "variant": "security"
-    },
-    {
-      "id": "aplica",
-      "from": "backend",
+      "id": "danger",
+      "from": "svc",
       "to": "pg",
-      "y": 380,
-      "label": "crea pedidos B y C, nueva fecha y costo"
+      "y": 412,
+      "label": "risk in_danger + Alert",
+      "variant": "dashed",
+      "note": "Alert order_in_danger"
     },
     {
-      "id": "estado",
-      "from": "backend",
-      "to": "gerente",
-      "y": 408,
-      "label": "estado nuevo",
-      "variant": "return"
+      "id": "poll",
+      "from": "dash",
+      "to": "svc",
+      "y": 470,
+      "label": "GET /api/monitor/",
+      "note": "polling cada 3 s"
     },
     {
-      "id": "ofrece",
-      "from": "worker",
-      "to": "tallerB",
-      "y": 422,
-      "label": "ofrece su parte con fecha y precio"
+      "id": "card",
+      "from": "svc",
+      "to": "dash",
+      "y": 498,
+      "label": "tarjeta Redistribución: antes → después",
+      "variant": "return",
+      "note": "estimated_on y total_amount; también suma en el contador del menú"
     },
     {
-      "id": "acepta",
-      "from": "tallerB",
-      "to": "worker",
-      "y": 450,
+      "id": "approves",
+      "from": "manager",
+      "to": "dash",
+      "y": 526,
+      "label": "aprueba"
+    },
+    {
+      "id": "post",
+      "from": "dash",
+      "to": "svc",
+      "y": 554,
+      "label": "POST /api/manager/decisions/<id>/",
+      "variant": "security",
+      "note": "{action: approve}; o con su asistente, resolve_decision con channel assistant"
+    },
+    {
+      "id": "approve-pos",
+      "from": "svc",
+      "to": "pg",
+      "y": 582,
+      "label": "approve_purchase_orders([T2, T3])",
+      "variant": "emphasis",
+      "note": "approved; recalcula estimated_on, critical_path, total_amount y risk"
+    },
+    {
+      "id": "enqueue",
+      "from": "svc",
+      "to": "agent",
+      "y": 610,
+      "label": "enqueue_turn: purchase_order_approved",
+      "variant": "dashed",
+      "note": "un turno en la conversación de cada taller"
+    },
+    {
+      "id": "offer",
+      "from": "agent",
+      "to": "workshops",
+      "y": 668,
+      "label": "ofrece su parte con fecha y precio",
+      "variant": "emphasis",
+      "note": "T2 y T3 → negotiating"
+    },
+    {
+      "id": "accepts",
+      "from": "workshops",
+      "to": "agent",
+      "y": 696,
       "label": "acepta",
       "variant": "return"
     },
     {
-      "id": "confirma",
-      "from": "worker",
+      "id": "confirm",
+      "from": "agent",
+      "to": "svc",
+      "y": 724,
+      "label": "tool confirm_purchase_order",
+      "note": "dentro de la Rate y de internal_due_on; si no, escala (flujo 2)"
+    },
+    {
+      "id": "confirmed",
+      "from": "svc",
       "to": "pg",
-      "y": 464,
-      "label": "pedido B confirmado",
-      "note": "lo mismo con el taller C"
+      "y": 752,
+      "label": "T2 y T3 confirmed"
     },
     {
-      "id": "monitor",
-      "from": "tablero",
-      "to": "backend",
-      "y": 492,
-      "label": "GET monitor"
-    },
-    {
-      "id": "orden",
-      "from": "backend",
-      "to": "tablero",
-      "y": 520,
-      "label": "nueva fecha, costo y ruta",
-      "variant": "return"
-    },
-    {
-      "id": "sale",
-      "from": "backend",
-      "to": "gerente",
-      "y": 548,
+      "id": "safe",
+      "from": "svc",
+      "to": "dash",
+      "y": 780,
       "label": "la orden sale de peligro",
       "variant": "dashed",
-      "note": "si la nueva fecha cumple el plazo del cliente"
+      "note": "si la nueva estimated_on cumple promised_on; la alerta se resuelve"
     }
   ],
   "activations": [
     {
-      "participant": "worker",
-      "from": 160,
-      "to": 330,
+      "participant": "agent",
+      "from": 181,
+      "to": 276,
       "type": "backend"
     },
     {
-      "participant": "backend",
-      "from": 184,
-      "to": 302,
+      "participant": "svc",
+      "from": 209,
+      "to": 418,
       "type": "backend"
     },
     {
-      "participant": "backend",
-      "from": 348,
-      "to": 414,
+      "participant": "dash",
+      "from": 465,
+      "to": 560,
+      "type": "frontend"
+    },
+    {
+      "participant": "svc",
+      "from": 549,
+      "to": 616,
       "type": "backend"
     },
     {
-      "participant": "worker",
-      "from": 418,
-      "to": 470,
+      "participant": "agent",
+      "from": 605,
+      "to": 730,
       "type": "backend"
     },
     {
-      "participant": "backend",
-      "from": 488,
-      "to": 554,
+      "participant": "svc",
+      "from": 719,
+      "to": 786,
       "type": "backend"
     }
   ],
@@ -687,8 +721,8 @@
       "title": "Qué ve el jurado",
       "items": [
         "El sistema redistribuye solo y justifica la elección",
-        "El Gerente aprueba desde su Pana",
-        "El monitor muestra la nueva fecha, costo y ruta"
+        "La tarjeta Redistribución muestra el antes y el después de la fecha y el costo",
+        "El Gerente aprueba en el tablero o con su asistente"
       ]
     },
     {
@@ -696,8 +730,8 @@
       "title": "Reglas",
       "items": [
         "Cambiar de taller siempre pasa por el Gerente",
-        "La fecha sale de la ruta crítica de la orden",
-        "El costo usa precios históricos, no cotizaciones"
+        "La fecha sale de la ruta crítica de la orden; el costo, de la Rate",
+        "Sin rutas ni mapa: el recojo es en la agencia (ADR 0015)"
       ]
     }
   ]

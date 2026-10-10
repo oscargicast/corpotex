@@ -19,10 +19,6 @@ Abrir los `.html` en el navegador (funcionan sin servidor).
 
 Cada carpeta guarda `candidate.json` (la fuente del diagrama) y los recibos de validación de archify.
 
-Los diagramas de archify todavía usan los nombres en español de antes del ADR 0014; las equivalencias están en [docs/glosario.md](../glosario.md).
-
-El diagrama del flujo 2 todavía muestra el flujo anterior del ADR 0007, ya reemplazado. Ahora la decisión aparece en el Monitor y el Gerente la resuelve en el dashboard o con su asistente (ADR 0017).
-
 ## Componentes y responsabilidades
 
 | Componente | Dónde corre | Responsabilidad | Origen |

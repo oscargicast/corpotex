@@ -20,7 +20,7 @@ No hay datos reales de Corpotex (no llegaron los PDFs de Comercial). La demo nec
   - Órdenes en todos los estados, con fechas relativas al reloj simulado (`T+N días`) para que la demo funcione cualquier día.
   - La escena de la demo precargada: la orden de Caja Piura (1000 polos UNICRACK), el pedido del taller que va a cancelar con 400 unidades avanzadas, y dos talleres con capacidad para absorber las 600 restantes.
   - 3 `StyleVersion` con changelog y un `BOSS.md` base.
-- Los números simulados de proveedores (ADR 0016) se crean en el seed; el real sale de `SEED_WHATSAPP_SUPPLIER_PHONE`.
+- Los números simulados de proveedores (ADR 0016) se crean en el seed. Los dos números reales de la demo van como constantes en el script de seed (decisión de Oscar), no en `.env`: el de la proveedora real (`51906746241`, activo) y el del Gerente (`51907898162`, el número desde el que escribe el agente). El repo es público y Oscar lo acepta.
 
 ## Consecuencias
 

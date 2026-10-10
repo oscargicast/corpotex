@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "4b1388e3-c76e-447f-a584-22d916502278",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/candidate.json",
+  "output": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/taller-cancela/taller-cancela.html",
+  "specification": {
+    "sha256": "05849bbc7c187cdca332e479a07129b1124b609993a30c3854f73e900ba68466",
+    "bytes": 35814
+  },
+  "artifact": {
+    "sha256": "fbc55638579bd4c73733cb5ff145195ff3a9ecbf76a24d5cc34b67f5f2b842ee",
+    "bytes": 771741
+  }
+}

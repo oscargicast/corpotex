@@ -4,10 +4,6 @@
   "meta": {
     "title": "Flujo 1 · mensaje de un proveedor y turno del agente",
     "output": "docs/arquitectura/diagramas/turno-proveedor/turno-proveedor.html",
-    "viewBox": [
-      1080,
-      640
-    ],
     "column_fit": "spread",
     "quality_profile": "showcase",
     "locale": "es",
@@ -454,7 +450,7 @@
   },
   "participants": [
     {
-      "id": "proveedor",
+      "id": "supplier",
       "type": "external",
       "icon": "person",
       "label": "Proveedor",
@@ -467,190 +463,244 @@
       "sublabel": "instancia corpotex"
     },
     {
-      "id": "django",
+      "id": "web",
       "type": "backend",
-      "label": "Django",
-      "sublabel": "webhook"
+      "label": "web",
+      "sublabel": "Django · webhook"
     },
     {
       "id": "pg",
       "type": "database",
       "label": "Postgres",
-      "sublabel": "mensajes · turnos"
+      "sublabel": "Message · Turn"
+    },
+    {
+      "id": "redis",
+      "type": "messagebus",
+      "label": "Redis",
+      "sublabel": "cola turns"
     },
     {
       "id": "worker",
       "type": "backend",
-      "label": "Worker",
-      "sublabel": "agente"
+      "label": "celery-worker",
+      "sublabel": "run_turn"
     },
     {
       "id": "claude",
       "type": "cloud",
-      "label": "Anthropic API",
+      "label": "Claude",
       "sublabel": "Agent SDK"
     }
   ],
   "segments": [
     {
-      "from": 150,
-      "to": 262,
+      "from": 166,
+      "to": 338,
       "label": "Recepción"
     },
     {
-      "from": 270,
-      "to": 530,
+      "from": 364,
+      "to": 648,
       "label": "Turno del agente"
     }
   ],
   "messages": [
     {
-      "id": "escribe",
-      "from": "proveedor",
+      "id": "writes",
+      "from": "supplier",
       "to": "evo",
-      "y": 164,
+      "y": 186,
       "label": "escribe por WhatsApp"
     },
     {
       "id": "webhook",
       "from": "evo",
-      "to": "django",
-      "y": 192,
+      "to": "web",
+      "y": 214,
       "label": "POST /webhooks/evolution/…",
       "variant": "emphasis",
-      "note": "MESSAGES_UPSERT con secreto en la URL"
+      "note": "MESSAGES_UPSERT; el secreto va en la URL"
     },
     {
-      "id": "guarda",
-      "from": "django",
+      "id": "allowlist",
+      "from": "web",
       "to": "pg",
-      "y": 220,
-      "label": "guarda mensaje y turno",
-      "note": "descarta fromMe, grupos y números fuera de la allowlist"
+      "y": 242,
+      "label": "¿número activo en AllowedNumber?",
+      "variant": "security",
+      "note": "si no está activo, se descarta sin guardar ni responder"
+    },
+    {
+      "id": "store",
+      "from": "web",
+      "to": "pg",
+      "y": 270,
+      "label": "Message + enqueue_turn",
+      "note": "un Turn pending por conversación; available_at = ahora + 5 s, tope 20 s"
+    },
+    {
+      "id": "dispatch",
+      "from": "web",
+      "to": "redis",
+      "y": 298,
+      "label": "run_turn con countdown",
+      "variant": "dashed",
+      "note": "al confirmar la transacción (on_commit)"
     },
     {
       "id": "ok",
-      "from": "django",
+      "from": "web",
       "to": "evo",
-      "y": 248,
+      "y": 326,
       "label": "200 OK",
       "variant": "return"
     },
     {
-      "id": "toma",
-      "from": "worker",
-      "to": "pg",
-      "y": 286,
-      "label": "toma el siguiente turno",
-      "note": "uno a la vez por chat"
+      "id": "task",
+      "from": "redis",
+      "to": "worker",
+      "y": 384,
+      "label": "run_turn(conversation_id)"
     },
     {
-      "id": "estado",
+      "id": "claim",
+      "from": "worker",
+      "to": "pg",
+      "y": 412,
+      "label": "claim_next_turn",
+      "note": "select_for_update(skip_locked): un turno a la vez por conversación"
+    },
+    {
+      "id": "batch",
       "from": "pg",
       "to": "worker",
-      "y": 314,
-      "label": "mensaje + estado fresco",
-      "variant": "return"
+      "y": 440,
+      "label": "TurnBatch + turn_state",
+      "variant": "return",
+      "note": "estado fresco: pedidos, Rate, decisiones, notas y estilo"
     },
     {
-      "id": "reanuda",
+      "id": "resume",
       "from": "worker",
       "to": "claude",
-      "y": 342,
-      "label": "reanuda la sesión del chat",
-      "variant": "emphasis"
+      "y": 468,
+      "label": "build_prompt + reanuda la sesión",
+      "variant": "emphasis",
+      "note": "Agent SDK aislado, solo con nuestras tools"
     },
     {
-      "id": "tool-update",
+      "id": "tool-domain",
       "from": "claude",
       "to": "worker",
-      "y": 370,
-      "label": "tool: actualizar_pedido",
-      "variant": "return"
+      "y": 496,
+      "label": "tool: confirm_purchase_order",
+      "variant": "return",
+      "note": "o record_progress, report_cancellation, escalate_to_manager, read_history"
     },
     {
-      "id": "update",
+      "id": "services",
       "from": "worker",
       "to": "pg",
-      "y": 398,
-      "label": "actualiza pedido y orden"
+      "y": 524,
+      "label": "services.py valida y escribe",
+      "note": "reglas de jefe en código: ManagerApprovalRequired pide escalar"
     },
     {
       "id": "tool-send",
       "from": "claude",
       "to": "worker",
-      "y": 426,
-      "label": "tool: enviar_whatsapp",
+      "y": 552,
+      "label": "tool: send_message(text)",
       "variant": "return"
     },
     {
       "id": "send",
       "from": "worker",
       "to": "evo",
-      "y": 454,
-      "label": "sendText + service token",
+      "y": 580,
+      "label": "send_text → sendText/corpotex",
       "variant": "security",
-      "note": "pasa por Cloudflare Access"
+      "note": "rechequea AllowedNumber; pasa por Cloudflare Access con service token"
     },
     {
-      "id": "respuesta",
+      "id": "reply",
       "from": "evo",
-      "to": "proveedor",
-      "y": 482,
+      "to": "supplier",
+      "y": 608,
       "label": "respuesta del agente",
       "variant": "return"
     },
     {
-      "id": "cierra",
+      "id": "finish",
       "from": "worker",
       "to": "pg",
-      "y": 512,
-      "label": "cierra el turno",
-      "variant": "dashed"
+      "y": 636,
+      "label": "finish_turn",
+      "variant": "dashed",
+      "note": "mensajes processed y agent_session; si quedó otro Turn pending, relanza run_turn"
     }
   ],
   "activations": [
     {
       "participant": "evo",
-      "from": 160,
-      "to": 254,
+      "from": 181,
+      "to": 332,
       "type": "backend"
     },
     {
-      "participant": "django",
-      "from": 188,
-      "to": 254,
+      "participant": "web",
+      "from": 209,
+      "to": 332,
       "type": "backend"
     },
     {
       "participant": "pg",
-      "from": 215,
-      "to": 226,
+      "from": 237,
+      "to": 276,
       "type": "database"
     },
     {
+      "participant": "redis",
+      "from": 293,
+      "to": 390,
+      "type": "messagebus"
+    },
+    {
       "participant": "worker",
-      "from": 281,
-      "to": 518,
+      "from": 379,
+      "to": 642,
       "type": "backend"
     },
     {
       "participant": "pg",
-      "from": 281,
-      "to": 320,
+      "from": 407,
+      "to": 446,
       "type": "database"
     },
     {
       "participant": "claude",
-      "from": 337,
-      "to": 432,
+      "from": 463,
+      "to": 558,
       "type": "cloud"
     },
     {
+      "participant": "pg",
+      "from": 519,
+      "to": 530,
+      "type": "database"
+    },
+    {
       "participant": "evo",
-      "from": 449,
-      "to": 488,
+      "from": 575,
+      "to": 614,
       "type": "backend"
+    },
+    {
+      "participant": "pg",
+      "from": 631,
+      "to": 642,
+      "type": "database"
     }
   ],
   "cards": [
@@ -659,23 +709,26 @@
       "title": "Recepción",
       "items": [
         "El webhook responde 200 sin esperar al agente",
-        "Lo que no es de la allowlist no se guarda ni se responde"
+        "Solo números activos en AllowedNumber (ADR 0016); el resto no se guarda",
+        "Los mensajes seguidos se juntan en un turno (5 s, tope 20 s)"
       ]
     },
     {
       "dot": "violet",
-      "title": "Turno",
+      "title": "Tools del agente (ADR 0010)",
       "items": [
-        "Un solo turno a la vez por chat",
-        "El estado se lee fresco de la BD; la sesión solo guarda el hilo",
-        "El agente solo tiene nuestras tools (ADR 0004)"
+        "send_message, confirm_purchase_order, record_progress",
+        "report_cancellation, escalate_to_manager, read_history",
+        "Atadas a la conversación del turno; llaman a services.py, nunca a los modelos"
       ]
     },
     {
       "dot": "amber",
-      "title": "Si es decisión de jefe",
+      "title": "Celery y Claude",
       "items": [
-        "En vez de cerrar, escala al Gerente: ver flujo 2"
+        "run_turn es idempotente: la tabla Turn decide qué corre (ADR 0018)",
+        "Agent SDK con CLAUDE_CODE_OAUTH_TOKEN, sin archivos ni bash (ADR 0013)",
+        "Si es decisión de jefe, escala al Gerente: ver flujo 2"
       ]
     }
   ]

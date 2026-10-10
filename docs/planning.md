@@ -52,9 +52,8 @@ Horas en hora real. Las estimaciones son de cada sesión; el orquestador las aju
 | # | Quién | Qué | Listo cuando |
 |---|---|---|---|
 | 0.1 | Oscar | "Arranquen" | Las 4 sesiones abren su worktree desde `main` |
-| 0.2 | Oscar | `claude setup-token` → `CLAUDE_CODE_OAUTH_TOKEN` en `.env` | `agente` corre el spike |
+| 0.2 | Oscar | Para el spike de `agente`: `claude setup-token` en una terminal y pasarle el token a `agente` fuera del repo. La conexión real se hace después desde `/settings/claude` (ADR 0022) | `agente` corre el spike |
 | 0.3 | Oscar | Service token de Cloudflare Access → `.env` | El backend puede llamar a Evolution |
-| 0.4 | Oscar | Celular de la proveedora real → `SEED_WHATSAPP_SUPPLIER_PHONE` en `.env` | El seed la carga |
 | 0.5 | Oscar | Ignore Groups activado y webhook guardado en Evolution | `GET webhook/find/corpotex` lo muestra |
 | 0.6 | Kenji | Data e imágenes del seed | Carpeta `seed/` entregada |
 
@@ -85,10 +84,10 @@ Hito 2 (23:30): un mensaje por el simulador llega al agente y el agente responde
 
 | # | Quién | Qué | Depende de | Estimado |
 |---|---|---|---|---|
-| B4 | backend | API del asistente, `/api/manager/*`, onboarding (WhatsApp, proveedores, estilo), `/api/style/versions/`, simulador con chats reales en solo lectura, `/api/me/badges/` | B3 | 2 h |
+| B4 | backend | API del asistente, `/api/manager/*`, onboarding (Claude, WhatsApp, proveedores, estilo), `/api/settings/claude/*` (ADR 0022), `/api/style/versions/`, simulador con chats reales en solo lectura, `/api/me/badges/` | B3 | 2.5 h |
 | B5 | backend | `run_monitor`, `notify_roles`, `AlertNotification`, tick en beat, `refresh_style` a las 03:00, lock de estilo | B3 | 1.5 h |
 | A3 | agente | Asistente del dashboard: tools por rol, confirmación con `pending_action`, turnos `alert` | A1, B4, B5, P2 | 2 h |
-| F3 | disenador | Panel del asistente con tarjetas y contador, simulador en modo presentación, onboarding de 3 pasos, `/style` con historial | B4 | 3 h |
+| F3 | disenador | Panel del asistente con tarjetas y contador, simulador en modo presentación, onboarding de 4 pasos (Claude, WhatsApp, proveedores, estilo), `/settings/claude` con conectar/reconectar (ADR 0022), `/style` con historial | B4 | 3.5 h |
 
 Hito 3 (03:00): el Gerente aprueba una decisión desde el asistente; Comercial recibe un aviso distinto de la misma escena.
 

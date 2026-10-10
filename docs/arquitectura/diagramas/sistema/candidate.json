@@ -452,11 +452,11 @@
       "id": "evoPersonal",
       "type": "backend",
       "label": "personal-whatsapp",
-      "sublabel": "flujo personal en n8n",
+      "sublabel": "n8n personal · no se toca",
       "tag": "no se toca",
       "pos": [
-        620,
-        40
+        520,
+        70
       ],
       "size": [
         200,
@@ -470,11 +470,11 @@
       "label": "Proveedores",
       "sublabel": "talleres e insumos",
       "pos": [
-        40,
+        32,
         200
       ],
       "size": [
-        160,
+        150,
         64
       ]
     },
@@ -484,7 +484,7 @@
       "label": "WhatsApp",
       "sublabel": "número de Oscar",
       "pos": [
-        290,
+        262,
         200
       ],
       "size": [
@@ -499,7 +499,7 @@
       "sublabel": "instancia Baileys",
       "tag": "ADR 0001",
       "pos": [
-        620,
+        520,
         200
       ],
       "size": [
@@ -511,14 +511,14 @@
       "id": "access",
       "type": "security",
       "label": "Cloudflare Access",
-      "sublabel": "service token",
+      "sublabel": "protege Evolution",
       "tag": "ADR 0006",
       "pos": [
-        1220,
+        860,
         200
       ],
       "size": [
-        180,
+        160,
         64
       ]
     },
@@ -529,11 +529,11 @@
       "label": "Usuarios del tablero",
       "sublabel": "manager · sales · production",
       "pos": [
-        40,
+        32,
         440
       ],
       "size": [
-        180,
+        170,
         64
       ]
     },
@@ -544,7 +544,7 @@
       "sublabel": "corpotex.oscargicast.com",
       "tag": "cloudflared",
       "pos": [
-        620,
+        520,
         440
       ],
       "size": [
@@ -555,11 +555,11 @@
     {
       "id": "nextjs",
       "type": "frontend",
-      "label": "Next.js",
+      "label": "Next.js · host",
       "sublabel": "tablero · asistente · simulador",
-      "tag": "host :3000",
+      "tag": ":3000",
       "pos": [
-        940,
+        800,
         440
       ],
       "size": [
@@ -571,10 +571,10 @@
       "id": "web",
       "type": "backend",
       "label": "web · Django + DRF",
-      "sublabel": "API · admin · webhook",
+      "sublabel": "API · admin · webhook · :8000",
       "tag": ":8000",
       "pos": [
-        620,
+        520,
         640
       ],
       "size": [
@@ -588,7 +588,7 @@
       "label": "postgres",
       "sublabel": "datos · cola Turn",
       "pos": [
-        940,
+        800,
         640
       ],
       "size": [
@@ -601,13 +601,13 @@
       "type": "backend",
       "icon": "clock",
       "label": "celery-beat",
-      "sublabel": "tick 10 s · refresh_style 03:00",
+      "sublabel": "tick · refresh_style 03:00",
       "pos": [
-        290,
+        262,
         820
       ],
       "size": [
-        190,
+        170,
         64
       ]
     },
@@ -617,7 +617,7 @@
       "label": "redis",
       "sublabel": "broker de Celery",
       "pos": [
-        620,
+        520,
         820
       ],
       "size": [
@@ -632,7 +632,7 @@
       "sublabel": "agente · asistente · tick · estilo",
       "tag": "turns · periodic · style",
       "pos": [
-        940,
+        800,
         820
       ],
       "size": [
@@ -644,10 +644,10 @@
       "id": "claude",
       "type": "cloud",
       "label": "Claude",
-      "sublabel": "suscripción de Oscar",
+      "sublabel": "suscripción · sin API key",
       "tag": "sin API key",
       "pos": [
-        940,
+        800,
         1000
       ],
       "size": [
@@ -677,7 +677,7 @@
         "redis",
         "worker"
       ],
-      "pad": 40
+      "pad": 32
     },
     {
       "kind": "region",
@@ -689,7 +689,7 @@
         "redis",
         "worker"
       ],
-      "pad": 18
+      "pad": 16
     }
   ],
   "connections": [
@@ -714,7 +714,13 @@
       "label": "mismo número",
       "variant": "dashed",
       "fromSide": "top",
-      "toSide": "left"
+      "toSide": "left",
+      "via": [
+        [
+          337,
+          102
+        ]
+      ]
     },
     {
       "id": "evo-tunnel",
@@ -784,14 +790,26 @@
       "id": "worker-access",
       "from": "worker",
       "to": "access",
-      "label": "sendText/corpotex",
-      "variant": "security"
+      "label": "service token",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "right",
+      "via": [
+        [
+          1100,
+          852
+        ],
+        [
+          1100,
+          232
+        ]
+      ]
     },
     {
       "id": "access-evo",
       "from": "access",
       "to": "evoCorpotex",
-      "label": "Service Auth",
+      "label": "sendText/corpotex",
       "variant": "security"
     }
   ],
@@ -818,7 +836,7 @@
       "dot": "violet",
       "title": "Segundo plano (ADR 0018)",
       "items": [
-        "celery-worker corre los turnos del agente de WhatsApp y del asistente, el tick y las tareas de estilo",
+        "celery-worker (colas turns, periodic y style) corre los turnos del agente de WhatsApp y del asistente, el tick y las tareas de estilo",
         "celery-beat lanza el tick cada ~10 s y refresh_style a las 03:00 de Lima (ADR 0019)",
         "La tabla Turn en Postgres manda: un turno a la vez por conversación"
       ]

@@ -2,12 +2,8 @@
   "schema_version": 1,
   "diagram_type": "sequence",
   "meta": {
-    "title": "Flujo 2 · escalamiento al Gerente por su Pana",
+    "title": "Flujo 2 · escalamiento al Gerente en el tablero",
     "output": "docs/arquitectura/diagramas/escalamiento-gerente/escalamiento-gerente.html",
-    "viewBox": [
-      1080,
-      680
-    ],
     "column_fit": "spread",
     "quality_profile": "showcase",
     "locale": "es",
@@ -454,253 +450,324 @@
   },
   "participants": [
     {
-      "id": "proveedor",
+      "id": "supplier",
       "type": "external",
       "icon": "person",
       "label": "Proveedor",
-      "sublabel": "vía Evolution"
+      "sublabel": "WhatsApp"
     },
     {
-      "id": "worker",
+      "id": "agent",
       "type": "backend",
-      "label": "Worker",
-      "sublabel": "agente"
+      "label": "Agente",
+      "sublabel": "WhatsApp · run_turn"
     },
     {
       "id": "pg",
       "type": "database",
       "label": "Postgres",
-      "sublabel": "decisiones"
+      "sublabel": "Decision · Turn"
     },
     {
-      "id": "django",
+      "id": "assistant",
       "type": "backend",
-      "label": "Django",
-      "sublabel": "API del Gerente"
+      "label": "Asistente",
+      "sublabel": "tools de manager"
     },
     {
-      "id": "bridge",
-      "type": "messagebus",
-      "label": "Bridge",
-      "sublabel": "Kenji"
-    },
-    {
-      "id": "trick",
+      "id": "web",
       "type": "backend",
-      "label": "Trick",
-      "sublabel": "com.oscar.corpotex"
+      "label": "web",
+      "sublabel": "Django · API"
     },
     {
-      "id": "gerente",
+      "id": "dash",
+      "type": "frontend",
+      "label": "Tablero",
+      "sublabel": "Monitor · chat"
+    },
+    {
+      "id": "manager",
       "type": "external",
       "icon": "person",
       "label": "Gerente",
-      "sublabel": "app Pana"
+      "sublabel": "rol manager"
     }
   ],
   "segments": [
     {
-      "from": 150,
-      "to": 270,
+      "from": 166,
+      "to": 254,
       "label": "El agente escala"
     },
     {
-      "from": 276,
-      "to": 480,
-      "label": "El Gerente decide"
+      "from": 280,
+      "to": 368,
+      "label": "Aviso en el tablero"
     },
     {
-      "from": 486,
-      "to": 570,
-      "label": "El agente sigue"
+      "from": 394,
+      "to": 482,
+      "label": "A · resuelve en el Monitor"
+    },
+    {
+      "from": 508,
+      "to": 736,
+      "label": "B · o se lo pide a su asistente"
+    },
+    {
+      "from": 762,
+      "to": 878,
+      "label": "El agente le avisa al proveedor"
     }
   ],
   "messages": [
     {
-      "id": "pide",
-      "from": "proveedor",
-      "to": "worker",
-      "y": 164,
+      "id": "asks",
+      "from": "supplier",
+      "to": "agent",
+      "y": 186,
       "label": "pide subir el precio",
       "note": "llega como un turno normal (flujo 1)"
     },
     {
-      "id": "decision",
-      "from": "worker",
+      "id": "escalate",
+      "from": "agent",
       "to": "pg",
-      "y": 192,
-      "label": "crea Decisión pendiente",
-      "note": "tool escalar_gerente; el agente no decide precio ni términos"
-    },
-    {
-      "id": "notifica",
-      "from": "worker",
-      "to": "bridge",
-      "y": 220,
-      "label": "POST /incoming",
+      "y": 214,
+      "label": "escalate_to_manager → create_decision",
       "variant": "emphasis",
-      "note": "source corpotex · [Corpotex] {tipo, id, resumen}"
+      "note": "Decision pending, kind price; el agente no decide precio ni términos"
     },
     {
-      "id": "espera",
-      "from": "worker",
-      "to": "proveedor",
-      "y": 244,
+      "id": "holds",
+      "from": "agent",
+      "to": "supplier",
+      "y": 242,
       "label": "lo consulto y te confirmo",
       "variant": "return"
     },
     {
-      "id": "aviso",
-      "from": "bridge",
-      "to": "gerente",
-      "y": 256,
-      "label": "notificación",
-      "variant": "emphasis"
+      "id": "poll",
+      "from": "dash",
+      "to": "web",
+      "y": 300,
+      "label": "GET /api/monitor/",
+      "note": "polling cada 3 s; sin websockets"
     },
     {
-      "id": "pregunta",
-      "from": "gerente",
-      "to": "trick",
-      "y": 290,
-      "label": "¿qué tengo pendiente?"
-    },
-    {
-      "id": "pendientes",
-      "from": "trick",
-      "to": "django",
-      "y": 316,
-      "label": "GET /api/gerente/pendientes",
-      "variant": "security",
-      "note": "por la tailnet, con el token del Gerente"
-    },
-    {
-      "id": "lista",
-      "from": "django",
-      "to": "trick",
-      "y": 344,
-      "label": "decisiones, alertas, órdenes en peligro",
-      "variant": "return"
-    },
-    {
-      "id": "resumen",
-      "from": "trick",
-      "to": "gerente",
-      "y": 358,
-      "label": "resumen",
-      "variant": "return"
-    },
-    {
-      "id": "aprueba",
-      "from": "gerente",
-      "to": "trick",
-      "y": 386,
-      "label": "aprueba"
-    },
-    {
-      "id": "post",
-      "from": "trick",
-      "to": "django",
-      "y": 400,
-      "label": "POST /api/gerente/decisiones/<id>",
-      "variant": "security",
-      "note": "{accion: aprobar} · idempotente"
-    },
-    {
-      "id": "aplica",
-      "from": "django",
+      "id": "pending",
+      "from": "web",
       "to": "pg",
-      "y": 428,
-      "label": "aplica la decisión y encola turno"
+      "y": 328,
+      "label": "pendientes y kpis"
     },
     {
-      "id": "nuevo",
-      "from": "django",
-      "to": "trick",
-      "y": 456,
-      "label": "estado nuevo",
+      "id": "shows",
+      "from": "web",
+      "to": "dash",
+      "y": 356,
+      "label": "Decision en el Monitor + contador del menú",
       "variant": "return"
     },
     {
-      "id": "confirma",
-      "from": "trick",
-      "to": "gerente",
+      "id": "approve-card",
+      "from": "manager",
+      "to": "dash",
+      "y": 414,
+      "label": "aprueba en la tarjeta"
+    },
+    {
+      "id": "post-decision",
+      "from": "dash",
+      "to": "web",
+      "y": 442,
+      "label": "POST /api/manager/decisions/<id>/",
+      "variant": "security",
+      "note": "{action: approve}; idempotente; channel dashboard"
+    },
+    {
+      "id": "resolve-api",
+      "from": "web",
+      "to": "pg",
       "y": 470,
-      "label": "confirmado",
+      "label": "resolve_decision → enqueue_turn",
+      "variant": "emphasis",
+      "note": "require_role manager; Turn decision en la conversación del proveedor"
+    },
+    {
+      "id": "ask-assistant",
+      "from": "manager",
+      "to": "dash",
+      "y": 528,
+      "label": "«apruébale el precio»"
+    },
+    {
+      "id": "post-assistant",
+      "from": "dash",
+      "to": "web",
+      "y": 556,
+      "label": "POST /api/assistant/messages/"
+    },
+    {
+      "id": "assistant-turn",
+      "from": "web",
+      "to": "assistant",
+      "y": 584,
+      "label": "enqueue_turn → run_turn",
+      "variant": "dashed",
+      "note": "sin la espera de 5 s"
+    },
+    {
+      "id": "preview",
+      "from": "assistant",
+      "to": "pg",
+      "y": 612,
+      "label": "resolve_decision(confirmed=false)",
+      "note": "guarda Conversation.pending_action; no ejecuta"
+    },
+    {
+      "id": "confirm-ask",
+      "from": "assistant",
+      "to": "dash",
+      "y": 640,
+      "label": "resumen: ¿apruebo? responde sí",
       "variant": "return"
     },
     {
-      "id": "toma",
-      "from": "worker",
-      "to": "pg",
-      "y": 500,
-      "label": "toma el turno de seguimiento"
+      "id": "yes",
+      "from": "manager",
+      "to": "dash",
+      "y": 668,
+      "label": "sí",
+      "note": "mensaje nuevo: otro turno del asistente"
     },
     {
-      "id": "continua",
+      "id": "execute",
+      "from": "assistant",
+      "to": "pg",
+      "y": 696,
+      "label": "resolve_decision(confirmed=true)",
+      "variant": "security",
+      "note": "ejecuta solo si coincide con pending_action; channel assistant; también encola el Turn"
+    },
+    {
+      "id": "action-card",
+      "from": "assistant",
+      "to": "dash",
+      "y": 724,
+      "label": "tarjeta de acción (Message.action)",
+      "variant": "return"
+    },
+    {
+      "id": "claim",
+      "from": "agent",
+      "to": "pg",
+      "y": 782,
+      "label": "run_turn → claim_next_turn",
+      "note": "TurnBatch.decision_ids: resueltas sin communicated_at"
+    },
+    {
+      "id": "resolved",
       "from": "pg",
-      "to": "worker",
-      "y": 528,
+      "to": "agent",
+      "y": 810,
       "label": "decisión aprobada",
       "variant": "return"
     },
     {
-      "id": "cierra",
-      "from": "worker",
-      "to": "proveedor",
-      "y": 556,
-      "label": "confirma precio y fecha",
-      "variant": "emphasis"
+      "id": "tells",
+      "from": "agent",
+      "to": "supplier",
+      "y": 838,
+      "label": "te confirmo el precio",
+      "variant": "emphasis",
+      "note": "send_message; después confirm_purchase_order"
+    },
+    {
+      "id": "communicated",
+      "from": "agent",
+      "to": "pg",
+      "y": 866,
+      "label": "finish_turn → communicated_at",
+      "variant": "dashed"
     }
   ],
   "activations": [
     {
-      "participant": "worker",
-      "from": 160,
-      "to": 250,
+      "participant": "agent",
+      "from": 181,
+      "to": 248,
       "type": "backend"
     },
     {
-      "participant": "trick",
-      "from": 286,
+      "participant": "pg",
+      "from": 209,
+      "to": 220,
+      "type": "database"
+    },
+    {
+      "participant": "web",
+      "from": 295,
+      "to": 362,
+      "type": "backend"
+    },
+    {
+      "participant": "dash",
+      "from": 409,
+      "to": 448,
+      "type": "frontend"
+    },
+    {
+      "participant": "web",
+      "from": 437,
       "to": 476,
       "type": "backend"
     },
     {
-      "participant": "django",
-      "from": 312,
-      "to": 462,
+      "participant": "dash",
+      "from": 523,
+      "to": 562,
+      "type": "frontend"
+    },
+    {
+      "participant": "assistant",
+      "from": 579,
+      "to": 730,
       "type": "backend"
     },
     {
-      "participant": "worker",
-      "from": 496,
-      "to": 562,
+      "participant": "agent",
+      "from": 777,
+      "to": 872,
       "type": "backend"
     }
   ],
   "cards": [
     {
       "dot": "amber",
-      "title": "Contrato con Kenji (ADR 0007)",
+      "title": "Dónde lo ve el Gerente (ADR 0017)",
       "items": [
-        "Pendientes: GET /api/gerente/pendientes",
-        "Decisión: POST /api/gerente/decisiones/<id> con aprobar, rechazar o cambiar_proveedor",
-        "Devuelve el estado nuevo; si llega dos veces no duplica"
+        "Las decisiones pendientes aparecen en el Monitor y en el contador del menú",
+        "El Monitor usa /api/manager/pending/ y /api/manager/decisions/<id>/",
+        "Reemplaza al flujo del ADR 0007"
       ]
     },
     {
       "dot": "rose",
-      "title": "Seguridad",
+      "title": "El «sí» se exige en código",
       "items": [
-        "Kenji entra por la tailnet, no por el tunnel",
-        "Token del Gerente guardado en el trick, nunca en el repo"
+        "Con confirmed=false, la tool guarda pending_action y devuelve una vista previa",
+        "Con confirmed=true, ejecuta solo si esa acción quedó guardada en un turno anterior",
+        "Cada turno necesita un mensaje nuevo del usuario: el modelo no se confirma solo"
       ]
     },
     {
       "dot": "slate",
-      "title": "Si Kenji no responde",
+      "title": "Después de resolver",
       "items": [
-        "El Gerente ve y decide lo mismo en el tablero"
+        "resolve_decision encola un Turn decision en la conversación del proveedor",
+        "communicated_at marca que el agente ya se lo dijo"
       ]
     }
   ]

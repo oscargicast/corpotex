@@ -1,6 +1,6 @@
 # 0013. El agente usa la suscripción de Claude de Oscar en la demo
 
-- Estado: aceptada (decisión de Oscar). Reemplaza la parte de "API key" de 0004.
+- Estado: aceptada (decisión de Oscar). Reemplaza la parte de "API key" de 0004. La forma de conectar la cuenta cambió en el ADR 0022: desde el dashboard, sin `claude setup-token` ni token en `.env`.
 - Fecha: 2026-10-10
 
 ## Contexto

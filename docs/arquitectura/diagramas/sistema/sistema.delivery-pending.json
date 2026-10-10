@@ -1,8 +1,0 @@
-{
-  "schemaVersion": 1,
-  "command": "deliver",
-  "status": "pending",
-  "receiptId": "cb537e82-c965-4cd8-a562-0a1038d5e54d",
-  "input": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/candidate.json",
-  "output": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html"
-}

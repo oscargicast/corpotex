@@ -1,24 +1,27 @@
 {
   "schemaVersion": 1,
-  "ok": false,
+  "ok": true,
   "command": "finalize",
-  "status": "fail",
+  "status": "pass",
   "type": "architecture",
   "quality": "showcase",
-  "startedAt": "2026-10-10T21:25:25.930Z",
+  "startedAt": "2026-10-10T21:28:43.546Z",
   "specification": {
     "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/candidate.json",
-    "sha256": "5ffeb43e9b287e48a94023a6be818860cb55c5e57c63ab98ecc36142b1efa954",
-    "bytes": 36953
+    "sha256": "a900ba7279951a06faee8d2a8c18a38fb1655dfd5e218fb33d0a4c6013752a33",
+    "bytes": 37257
   },
   "artifact": {
-    "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html"
+    "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
+    "sha256": "2aa41517c9f8b22a9acd7c21a0d21c705b0f8f49505badf1ad09e4d24a5381b8",
+    "bytes": 780825
   },
   "stages": {
     "validate": {
-      "status": "fail",
-      "exitCode": 1,
+      "status": "pass",
+      "exitCode": 0,
       "durationMs": null,
+      "execution": "embedded-in-deliver",
       "command": [
         "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
         "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
@@ -32,219 +35,60 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "ok": false,
+        "ok": true,
+        "command": "validate",
+        "specification": {
+          "sha256": "a900ba7279951a06faee8d2a8c18a38fb1655dfd5e218fb33d0a4c6013752a33",
+          "bytes": 37257
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        }
+      }
+    },
+    "deliver": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 210,
+      "command": [
+        "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
+        "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
+        "deliver",
+        "architecture",
+        "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/candidate.json",
+        "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "receiptId": "6c8d09d7-49d3-4c73-827e-53c5e03bd202",
+        "ok": true,
         "command": "deliver",
-        "receiptId": "cb537e82-c965-4cd8-a562-0a1038d5e54d",
-        "stage": "check",
         "type": "architecture",
         "input": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/candidate.json",
         "output": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
-        "error": "Final artifact check failed; the previous artifact was preserved.",
-        "diagnostics": [
-          {
-            "code": "composition/desktop-readability",
-            "severity": "error",
-            "message": "Final artifact failed composition/desktop-readability.",
-            "subject": {
-              "check": "composition"
-            },
-            "evidence": {
-              "owner": {
-                "kind": "edge",
-                "id": "sup-wa",
-                "from": "suppliers",
-                "to": "whatsapp"
-              },
-              "viewportWidth": 1440,
-              "viewportHeight": 900,
-              "availableDiagramWidth": 930,
-              "budgetBasis": "legacy-930",
-              "readerContract": "declared-wide-v1",
-              "requestedTargetPx": 7.5,
-              "requestedTargetMet": false,
-              "budgetLimit": "legacy",
-              "viewBoxWidth": 1440,
-              "scale": 0.6458333333333334,
-              "text": "mensajes",
-              "detail": "edge",
-              "sourceFontPx": 8,
-              "projectedFontPx": 5.166666666666667,
-              "minimumProjectedFontPx": 6
-            },
-            "supportedFixes": [
-              "Preserve the semantic text and any supplied coordinates, routes, sides, channels, and labels. Compactly reflow automatic spacing and empty corridors so the complete viewBox width is at most 1240px (current 1440px; 8px source text at 930px desktop budget). If supplied geometry fixes that width, use a renderer-supported semantic text-size setting or renderer-level fix instead. Position-only label controls cannot repair its projection."
-            ]
-          }
-        ],
-        "provenance": "absent",
-        "checker": {
-          "ok": false,
-          "file": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
-          "artifact": {
-            "sha256": "f7af8528d8d7566c1f31eac275ff88f03dea7a04e56d75414c50facf84bbaf94",
-            "bytes": 781769
-          },
-          "checks": [
-            {
-              "name": "single_svg",
-              "ok": true,
-              "details": [
-                "found 1 <svg> block(s)"
-              ]
-            },
-            {
-              "name": "finite_svg",
-              "ok": true,
-              "details": []
-            },
-            {
-              "name": "orthogonal_arrows",
-              "ok": true,
-              "details": []
-            },
-            {
-              "name": "label_route_clearance",
-              "ok": true,
-              "details": []
-            },
-            {
-              "name": "relationship_crossings",
-              "ok": true,
-              "details": []
-            },
-            {
-              "name": "relationship_corridors",
-              "ok": true,
-              "details": []
-            },
-            {
-              "name": "container_border_runs",
-              "ok": true,
-              "details": []
-            },
-            {
-              "name": "route_rhythm",
-              "ok": true,
-              "details": []
-            },
-            {
-              "name": "legend_clearance",
-              "ok": true,
-              "details": []
-            }
-          ],
-          "composition": {
-            "schemaVersion": 1,
-            "profile": "showcase",
-            "status": "fail",
-            "summary": {
-              "errors": 1,
-              "warnings": 0
-            },
-            "metrics": {
-              "properCrossings": 0,
-              "resolvedCrossovers": 0,
-              "ambiguousCorridors": 0,
-              "arrowheadCollisions": 0,
-              "containerBorderRuns": 0,
-              "labelRouteClearanceIssues": 0,
-              "labelCanvasOverflowIssues": 0,
-              "minLabelRouteClearance": 33.6,
-              "desktopReadabilityIssues": 1,
-              "viewportHeightIssues": 0,
-              "minProjectedNodeTextPx": 5.166666666666667,
-              "maxBends": 3,
-              "routesOverSuggestedBends": 1,
-              "maxStretch": 1,
-              "routesOverSuggestedStretch": 0,
-              "minSegmentPx": 24,
-              "minInteriorSegmentPx": 104,
-              "shortSegmentCount": 0,
-              "shortEndpointSegmentCount": 0,
-              "shortInteriorSegmentCount": 0,
-              "microSegmentCount": 0
-            },
-            "suggestedLimits": {
-              "bendsPerRelationship": 2,
-              "stretch": 1.35,
-              "segmentPx": 16,
-              "microSegmentPx": 8
-            },
-            "routeReview": {
-              "crossings": [],
-              "detours": [
-                {
-                  "relationship": {
-                    "id": "wa-personal",
-                    "from": "whatsapp",
-                    "to": "evoPersonal",
-                    "label": "mismo número",
-                    "collectionIndex": 2,
-                    "artifactIndex": 3
-                  },
-                  "bends": 3,
-                  "stretch": 1
-                }
-              ]
-            },
-            "leadingSpace": {
-              "measured": true,
-              "emptyTopPx": 10,
-              "emptyTopRatio": 0.009,
-              "occupiedTop": 10,
-              "viewBoxTop": 0,
-              "canvasHeight": 1132,
-              "typicalNodeHeight": 64,
-              "reviewSuggested": false
-            },
-            "desktopReadability": {
-              "budgetBasis": "legacy-930",
-              "readerContract": "declared-wide-v1",
-              "availableDiagramWidth": 930,
-              "actualBudgetPx": 930,
-              "limit": "legacy",
-              "requestedTargetPx": 7.5,
-              "requestedTargetMet": false,
-              "hardFloorPx": 6,
-              "hardFloorMet": false,
-              "minimumOwner": {
-                "kind": "edge",
-                "id": "sup-wa",
-                "from": "suppliers",
-                "to": "whatsapp"
-              },
-              "minimumSourceTextPx": 8,
-              "minimumProjectedTextPx": 5.166666666666667,
-              "semanticTextCount": 46
-            },
-            "issues": [
-              {
-                "severity": "error",
-                "code": "composition/desktop-readability",
-                "owner": {
-                  "kind": "edge",
-                  "id": "sup-wa",
-                  "from": "suppliers",
-                  "to": "whatsapp"
-                },
-                "viewportWidth": 1440,
-                "viewportHeight": 900,
-                "availableDiagramWidth": 930,
-                "budgetBasis": "legacy-930",
-                "readerContract": "declared-wide-v1",
-                "requestedTargetPx": 7.5,
-                "requestedTargetMet": false,
-                "budgetLimit": "legacy",
-                "viewBoxWidth": 1440,
-                "scale": 0.6458333333333334,
-                "text": "mensajes",
-                "detail": "edge",
-                "sourceFontPx": 8,
-                "projectedFontPx": 5.166666666666667,
-                "minimumProjectedFontPx": 6
-              }
-            ]
-          }
+        "specification": {
+          "sha256": "a900ba7279951a06faee8d2a8c18a38fb1655dfd5e218fb33d0a4c6013752a33",
+          "bytes": 37257
+        },
+        "artifact": {
+          "sha256": "2aa41517c9f8b22a9acd7c21a0d21c705b0f8f49505badf1ad09e4d24a5381b8",
+          "bytes": 780825
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
         },
         "update": {
           "status": "unavailable",
@@ -257,58 +101,897 @@
           "noticeText": null,
           "reason": "disabled"
         }
-      },
-      "execution": "embedded-in-deliver"
+      }
     },
-    "deliver": {
-      "status": "not-run",
-      "execution": "blocked-by-validate"
+    "check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 104,
+      "command": [
+        "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
+        "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
+        "check",
+        "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
+        "--require-provenance"
+      ],
+      "receipt": {
+        "ok": true,
+        "file": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
+        "artifact": {
+          "sha256": "2aa41517c9f8b22a9acd7c21a0d21c705b0f8f49505badf1ad09e4d24a5381b8",
+          "bytes": 780825
+        },
+        "checks": [
+          {
+            "name": "single_svg",
+            "ok": true,
+            "details": [
+              "found 1 <svg> block(s)"
+            ]
+          },
+          {
+            "name": "finite_svg",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "orthogonal_arrows",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "label_route_clearance",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_crossings",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_corridors",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "container_border_runs",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "route_rhythm",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "legend_clearance",
+            "ok": true,
+            "details": []
+          }
+        ],
+        "composition": {
+          "schemaVersion": 1,
+          "profile": "showcase",
+          "status": "pass",
+          "summary": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "metrics": {
+            "properCrossings": 0,
+            "resolvedCrossovers": 0,
+            "ambiguousCorridors": 0,
+            "arrowheadCollisions": 0,
+            "containerBorderRuns": 0,
+            "labelRouteClearanceIssues": 0,
+            "labelCanvasOverflowIssues": 0,
+            "minLabelRouteClearance": 62.5,
+            "desktopReadabilityIssues": 0,
+            "viewportHeightIssues": 0,
+            "minProjectedNodeTextPx": 6.321155480033985,
+            "maxBends": 2,
+            "routesOverSuggestedBends": 0,
+            "maxStretch": 1.254,
+            "routesOverSuggestedStretch": 0,
+            "minSegmentPx": 80,
+            "minInteriorSegmentPx": 620,
+            "shortSegmentCount": 0,
+            "shortEndpointSegmentCount": 0,
+            "shortInteriorSegmentCount": 0,
+            "microSegmentCount": 0
+          },
+          "suggestedLimits": {
+            "bendsPerRelationship": 2,
+            "stretch": 1.35,
+            "segmentPx": 16,
+            "microSegmentPx": 8
+          },
+          "routeReview": {
+            "crossings": [],
+            "detours": []
+          },
+          "leadingSpace": {
+            "measured": true,
+            "emptyTopPx": 40,
+            "emptyTopRatio": 0.035,
+            "occupiedTop": 40,
+            "viewBoxTop": 0,
+            "canvasHeight": 1132,
+            "typicalNodeHeight": 64,
+            "reviewSuggested": false
+          },
+          "desktopReadability": {
+            "budgetBasis": "legacy-930",
+            "readerContract": "declared-wide-v1",
+            "availableDiagramWidth": 930,
+            "actualBudgetPx": 930,
+            "limit": "legacy",
+            "requestedTargetPx": 7.5,
+            "requestedTargetMet": false,
+            "hardFloorPx": 6,
+            "hardFloorMet": true,
+            "minimumOwner": {
+              "kind": "edge",
+              "id": "sup-wa",
+              "from": "suppliers",
+              "to": "whatsapp"
+            },
+            "minimumSourceTextPx": 8,
+            "minimumProjectedTextPx": 6.321155480033985,
+            "semanticTextCount": 46
+          },
+          "issues": []
+        },
+        "provenance": "current",
+        "deliveryReceiptId": "6c8d09d7-49d3-4c73-827e-53c5e03bd202"
+      }
+    },
+    "browser-check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 853,
+      "command": [
+        "/Users/oscar/.nvm/versions/node/v22.20.0/bin/node",
+        "/Users/oscar/.agents/skills/archify/bin/archify.mjs",
+        "browser-check",
+        "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
+        "--json",
+        "--require-provenance"
+      ],
+      "execution": "in-process",
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "browser-check",
+        "evidenceKind": "automated-browser",
+        "status": "pass",
+        "visualReview": "not-requested",
+        "provenance": "current",
+        "deliveryReceiptId": "6c8d09d7-49d3-4c73-827e-53c5e03bd202",
+        "artifact": {
+          "path": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.html",
+          "sha256": "2aa41517c9f8b22a9acd7c21a0d21c705b0f8f49505badf1ad09e4d24a5381b8",
+          "bytes": 780825
+        },
+        "state": {
+          "detail": "read",
+          "motion": "still"
+        },
+        "chrome": {
+          "status": "available",
+          "executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        },
+        "diagnostics": [],
+        "containment": {
+          "status": "pass",
+          "policy": "fit-or-reader-declared-readable-vertical-scroll",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 1086,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1011,
+              "diagramWidth": 981,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 52,
+                "diagramChromePx": 78,
+                "svgPx": 943,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 6.667799490229397,
+              "minimumProjectedNonEdgeTextPx": 7.501274426508072,
+              "minimumProjectedEdgeTextPx": 6.667799490229397,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1152,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1011,
+              "diagramWidth": 981,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 943,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 6.667799490229397,
+              "minimumProjectedNonEdgeTextPx": 7.501274426508072,
+              "minimumProjectedEdgeTextPx": 6.667799490229397,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1152,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1011,
+              "diagramWidth": 981,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 943,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 6.667799490229397,
+              "minimumProjectedNonEdgeTextPx": 7.501274426508072,
+              "minimumProjectedEdgeTextPx": 6.667799490229397,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1175,
+              "diagramWidth": 1125,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 68,
+                "diagramChromePx": 94,
+                "svgPx": 1082,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 7.646559048428207,
+              "minimumProjectedNonEdgeTextPx": 8.602378929481732,
+              "minimumProjectedEdgeTextPx": 7.646559048428207,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "themeStates": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            }
+          ]
+        },
+        "readability": {
+          "status": "pass",
+          "minimumProjectedNodeTextPx": 6,
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 1086,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1011,
+              "diagramWidth": 981,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 52,
+                "diagramChromePx": 78,
+                "svgPx": 943,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 6.667799490229397,
+              "minimumProjectedNonEdgeTextPx": 7.501274426508072,
+              "minimumProjectedEdgeTextPx": 6.667799490229397,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1152,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1011,
+              "diagramWidth": 981,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 943,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 6.667799490229397,
+              "minimumProjectedNonEdgeTextPx": 7.501274426508072,
+              "minimumProjectedEdgeTextPx": 6.667799490229397,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1152,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1011,
+              "diagramWidth": 981,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 943,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 6.667799490229397,
+              "minimumProjectedNonEdgeTextPx": 7.501274426508072,
+              "minimumProjectedEdgeTextPx": 6.667799490229397,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1175,
+              "diagramWidth": 1125,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 68,
+                "diagramChromePx": 94,
+                "svgPx": 1082,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 7.646559048428207,
+              "minimumProjectedNonEdgeTextPx": 8.602378929481732,
+              "minimumProjectedEdgeTextPx": 7.646559048428207,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "viewerChrome": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 1086,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1011,
+              "diagramWidth": 981,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 52,
+                "diagramChromePx": 78,
+                "svgPx": 943,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 6.667799490229397,
+              "minimumProjectedNonEdgeTextPx": 7.501274426508072,
+              "minimumProjectedEdgeTextPx": 6.667799490229397,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1152,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1011,
+              "diagramWidth": 981,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 943,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 6.667799490229397,
+              "minimumProjectedNonEdgeTextPx": 7.501274426508072,
+              "minimumProjectedEdgeTextPx": 6.667799490229397,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1152,
+              "overflowX": false,
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
+              "readerLayout": "adaptive",
+              "readerOverflow": "authored",
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1011,
+              "diagramWidth": 981,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 60,
+                "diagramChromePx": 84,
+                "svgPx": 943,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 6.667799490229397,
+              "minimumProjectedNonEdgeTextPx": 7.501274426508072,
+              "minimumProjectedEdgeTextPx": 6.667799490229397,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1175,
+              "diagramWidth": 1125,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 68,
+                "diagramChromePx": 94,
+                "svgPx": 1082,
+                "cardsPx": 0,
+                "viewBoxHeight": 1132
+              },
+              "viewBoxWidth": 1177,
+              "minimumProjectedNodeTextPx": 7.646559048428207,
+              "minimumProjectedNonEdgeTextPx": 8.602378929481732,
+              "minimumProjectedEdgeTextPx": 7.646559048428207,
+              "minimumProjectedNodeText": "mensajes",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "sup-wa",
+                "from": "suppliers",
+                "to": "whatsapp"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "captures": {
+          "status": "not-requested",
+          "screenshots": [],
+          "contactSheet": null
+        },
+        "sidecars": {
+          "receipt": "sistema.browser-check.json",
+          "files": []
+        }
+      }
     }
   },
-  "diagnostics": [
-    {
-      "code": "composition/desktop-readability",
-      "severity": "error",
-      "message": "Final artifact failed composition/desktop-readability.",
-      "subject": {
-        "check": "composition"
-      },
-      "evidence": {
-        "owner": {
-          "kind": "edge",
-          "id": "sup-wa",
-          "from": "suppliers",
-          "to": "whatsapp"
-        },
-        "viewportWidth": 1440,
-        "viewportHeight": 900,
-        "availableDiagramWidth": 930,
-        "budgetBasis": "legacy-930",
-        "readerContract": "declared-wide-v1",
-        "requestedTargetPx": 7.5,
-        "requestedTargetMet": false,
-        "budgetLimit": "legacy",
-        "viewBoxWidth": 1440,
-        "scale": 0.6458333333333334,
-        "text": "mensajes",
-        "detail": "edge",
-        "sourceFontPx": 8,
-        "projectedFontPx": 5.166666666666667,
-        "minimumProjectedFontPx": 6
-      },
-      "supportedFixes": [
-        "Preserve the semantic text and any supplied coordinates, routes, sides, channels, and labels. Compactly reflow automatic spacing and empty corridors so the complete viewBox width is at most 1240px (current 1440px; 8px source text at 930px desktop budget). If supplied geometry fixes that width, use a renderer-supported semantic text-size setting or renderer-level fix instead. Position-only label controls cannot repair its projection."
-      ]
-    }
-  ],
+  "diagnostics": [],
   "evidence": {
     "receipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.finalize.json",
-    "summaryReceipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.finalize-summary.json"
+    "summaryReceipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.finalize-summary.json",
+    "browserCheckReceipt": "/Users/oscar/Projects/corpotex/docs/arquitectura/diagramas/sistema/sistema.browser-check.json"
   },
   "visualReview": "not-requested",
-  "failedStage": "validate",
-  "finishedAt": "2026-10-10T21:25:26.157Z",
-  "durationMs": 227,
+  "finishedAt": "2026-10-10T21:28:44.868Z",
+  "durationMs": 1321,
   "update": {
     "status": "current",
     "installedVersion": "3.0.1",
