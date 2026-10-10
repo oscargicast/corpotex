@@ -1,0 +1,15 @@
+{
+  "event": "messages.upsert",
+  "instance": "corpotex",
+  "data": {
+    "key": {
+      "remoteJid": "51906746241@s.whatsapp.net",
+      "fromMe": false,
+      "id": "3EB0C8F5A1B2C3D4E5F6"
+    },
+    "pushName": "Confecciones del Norte",
+    "message": {"conversation": "Buenas, vamos 400 polos. Mañana le mando foto."},
+    "messageType": "conversation",
+    "messageTimestamp": 1791900000
+  }
+}

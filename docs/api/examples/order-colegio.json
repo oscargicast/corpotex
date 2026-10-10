@@ -1,0 +1,25 @@
+{
+  "code": "CP-2026-0102",
+  "customer": "Colegio San Miguel de Piura",
+  "brand": "UNICRACK",
+  "issued_on": "2026-10-11",
+  "promised_on": "2026-10-30",
+  "items": [
+    {
+      "product": "POLO-ESC-01",
+      "quantity": 450,
+      "sizes": {"8": 100, "10": 120, "12": 130, "14": 100},
+      "color": "blanco",
+      "customization": "embroidery",
+      "unit_price": "16.50"
+    },
+    {
+      "product": "BUZO-ESC-01",
+      "quantity": 450,
+      "sizes": {"8": 100, "10": 120, "12": 130, "14": 100},
+      "color": "azul marino",
+      "customization": "sublimation",
+      "unit_price": "42.00"
+    }
+  ]
+}

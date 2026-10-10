@@ -1,0 +1,2117 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Corpotex API",
+        "version": "0.1.0",
+        "description": "Supplier and workshop management with a WhatsApp agent."
+    },
+    "paths": {
+        "/api/auth/login/": {
+            "post": {
+                "operationId": "auth_login_create",
+                "tags": [
+                    "auth"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/auth/logout/": {
+            "post": {
+                "operationId": "auth_logout_create",
+                "description": "Does not revoke the token: in the demo the same user has two windows open, and a\nrevocation would log the other one out. The client just forgets the token.",
+                "tags": [
+                    "auth"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/auth/me/": {
+            "get": {
+                "operationId": "auth_me_retrieve",
+                "tags": [
+                    "auth"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/clock/": {
+            "get": {
+                "operationId": "clock_retrieve",
+                "tags": [
+                    "clock"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Clock"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "clock_partial_update",
+                "tags": [
+                    "clock"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedClockPatchRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedClockPatchRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedClockPatchRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Clock"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/monitor/": {
+            "get": {
+                "operationId": "monitor_retrieve",
+                "description": "Everything the Monitor page shows, in one call. Shape agreed with `disenador`\n(frontend/mocks/monitor.json); manager-only parts are `null` for the other roles.",
+                "tags": [
+                    "monitor"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/orders/": {
+            "get": {
+                "operationId": "orders_list",
+                "tags": [
+                    "orders"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OrderList"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/orders/{id}/": {
+            "get": {
+                "operationId": "orders_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este orden.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/payments/": {
+            "get": {
+                "operationId": "payments_list",
+                "tags": [
+                    "payments"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Payment"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/payments/{id}/": {
+            "get": {
+                "operationId": "payments_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este pago.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/purchase-orders/": {
+            "get": {
+                "operationId": "purchase_orders_list",
+                "tags": [
+                    "purchase-orders"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PurchaseOrderList"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/purchase-orders/{id}/": {
+            "get": {
+                "operationId": "purchase_orders_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este pedido.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "purchase-orders"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PurchaseOrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/schema/": {
+            "get": {
+                "operationId": "schema_retrieve",
+                "description": "OpenApi3 schema for this API. Format can be selected via content negotiation.\n\n- YAML: application/vnd.oai.openapi\n- JSON: application/vnd.oai.openapi+json",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "format",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "json",
+                                "yaml"
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "lang",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "af",
+                                "ar",
+                                "ar-dz",
+                                "ast",
+                                "az",
+                                "be",
+                                "bg",
+                                "bn",
+                                "br",
+                                "bs",
+                                "ca",
+                                "ckb",
+                                "cs",
+                                "cy",
+                                "da",
+                                "de",
+                                "dsb",
+                                "el",
+                                "en",
+                                "en-au",
+                                "en-gb",
+                                "eo",
+                                "es",
+                                "es-ar",
+                                "es-co",
+                                "es-mx",
+                                "es-ni",
+                                "es-ve",
+                                "et",
+                                "eu",
+                                "fa",
+                                "fi",
+                                "fr",
+                                "fy",
+                                "ga",
+                                "gd",
+                                "gl",
+                                "he",
+                                "hi",
+                                "hr",
+                                "hsb",
+                                "ht",
+                                "hu",
+                                "hy",
+                                "ia",
+                                "id",
+                                "ig",
+                                "io",
+                                "is",
+                                "it",
+                                "ja",
+                                "ka",
+                                "kab",
+                                "kk",
+                                "km",
+                                "kn",
+                                "ko",
+                                "ky",
+                                "lb",
+                                "lt",
+                                "lv",
+                                "mk",
+                                "ml",
+                                "mn",
+                                "mr",
+                                "ms",
+                                "my",
+                                "nb",
+                                "ne",
+                                "nl",
+                                "nn",
+                                "os",
+                                "pa",
+                                "pl",
+                                "pt",
+                                "pt-br",
+                                "ro",
+                                "ru",
+                                "sk",
+                                "sl",
+                                "sq",
+                                "sr",
+                                "sr-latn",
+                                "sv",
+                                "sw",
+                                "ta",
+                                "te",
+                                "tg",
+                                "th",
+                                "tk",
+                                "tr",
+                                "tt",
+                                "udm",
+                                "ug",
+                                "uk",
+                                "ur",
+                                "uz",
+                                "vi",
+                                "zh-hans",
+                                "zh-hant"
+                            ]
+                        }
+                    }
+                ],
+                "tags": [
+                    "schema"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/vnd.oai.openapi": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            },
+                            "application/yaml": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            },
+                            "application/vnd.oai.openapi+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/suppliers/": {
+            "get": {
+                "operationId": "suppliers_list",
+                "description": "Suppliers and workshops. Manager only: the list carries phone numbers and prices.",
+                "tags": [
+                    "suppliers"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SupplierList"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/suppliers/{id}/": {
+            "get": {
+                "operationId": "suppliers_retrieve",
+                "description": "Suppliers and workshops. Manager only: the list carries phone numbers and prices.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este proveedor.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "suppliers"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SupplierDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AllowedNumber": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "phone": {
+                        "type": "string",
+                        "description": "JID digits without +, or sim-<slug> if simulated.",
+                        "maxLength": 40
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Owner, manager or contact name.",
+                        "maxLength": 80
+                    },
+                    "active": {
+                        "type": "boolean"
+                    },
+                    "simulated": {
+                        "type": "boolean",
+                        "description": "Simulator only, never WhatsApp."
+                    }
+                },
+                "required": [
+                    "id",
+                    "phone"
+                ]
+            },
+            "BlankEnum": {
+                "enum": [
+                    ""
+                ]
+            },
+            "Clock": {
+                "type": "object",
+                "properties": {
+                    "now": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "factor": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    },
+                    "paused": {
+                        "type": "boolean",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "factor",
+                    "now",
+                    "paused"
+                ]
+            },
+            "CurrencyEnum": {
+                "enum": [
+                    "PEN",
+                    "USD"
+                ],
+                "type": "string",
+                "description": "* `PEN` - PEN\n* `USD` - USD"
+            },
+            "CustomizationEnum": {
+                "enum": [
+                    "embroidery",
+                    "print",
+                    "sublimation"
+                ],
+                "type": "string",
+                "description": "* `embroidery` - Bordado\n* `print` - Estampado\n* `sublimation` - Sublimado"
+            },
+            "KindC64Enum": {
+                "enum": [
+                    "material",
+                    "workshop",
+                    "finished"
+                ],
+                "type": "string",
+                "description": "* `material` - Insumos\n* `workshop` - Taller\n* `finished` - Producto terminado"
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "password",
+                    "username"
+                ]
+            },
+            "LoginResponse": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/User"
+                    }
+                },
+                "required": [
+                    "token",
+                    "user"
+                ]
+            },
+            "MaterialRef": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "sku": {
+                        "type": "string",
+                        "description": "Corpotex's internal code.",
+                        "maxLength": 40
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "unit": {
+                        "$ref": "#/components/schemas/UnitEnum"
+                    },
+                    "image": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "image",
+                    "name",
+                    "sku",
+                    "unit"
+                ]
+            },
+            "MethodEnum": {
+                "enum": [
+                    "yape",
+                    "transfer",
+                    "cash"
+                ],
+                "type": "string",
+                "description": "* `yape` - Yape\n* `transfer` - Transferencia\n* `cash` - Efectivo"
+            },
+            "OrderDetail": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "code": {
+                        "type": "string",
+                        "description": "Code from the sales system.",
+                        "maxLength": 40
+                    },
+                    "customer": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "brand": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusFd6Enum"
+                    },
+                    "production_stage": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductionStageEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ]
+                    },
+                    "risk": {
+                        "$ref": "#/components/schemas/RiskEnum"
+                    },
+                    "risk_reason": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "issued_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "promised_on": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Promised to the customer."
+                    },
+                    "estimated_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "From the critical path."
+                    },
+                    "slack_days": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "total_units": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "total_amount": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "purchase_orders_summary": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "owner": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "critical_path": {},
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItem"
+                        },
+                        "readOnly": true
+                    },
+                    "requirements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Requirement"
+                        },
+                        "readOnly": true
+                    },
+                    "purchase_orders": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "alerts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "redistributions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "alerts",
+                    "brand",
+                    "code",
+                    "customer",
+                    "id",
+                    "issued_on",
+                    "items",
+                    "owner",
+                    "promised_on",
+                    "purchase_orders",
+                    "purchase_orders_summary",
+                    "redistributions",
+                    "requirements",
+                    "slack_days",
+                    "total_amount",
+                    "total_units"
+                ]
+            },
+            "OrderItem": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "product": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductRef"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": 0
+                    },
+                    "sizes": {
+                        "description": "Quantity per size."
+                    },
+                    "color": {
+                        "type": "string",
+                        "maxLength": 60
+                    },
+                    "customization": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/CustomizationEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ]
+                    },
+                    "unit_price": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "id",
+                    "product",
+                    "quantity",
+                    "unit_price"
+                ]
+            },
+            "OrderList": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "code": {
+                        "type": "string",
+                        "description": "Code from the sales system.",
+                        "maxLength": 40
+                    },
+                    "customer": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "brand": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusFd6Enum"
+                    },
+                    "production_stage": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductionStageEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ]
+                    },
+                    "risk": {
+                        "$ref": "#/components/schemas/RiskEnum"
+                    },
+                    "risk_reason": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "issued_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "promised_on": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Promised to the customer."
+                    },
+                    "estimated_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "From the critical path."
+                    },
+                    "slack_days": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "total_units": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "total_amount": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "purchase_orders_summary": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "brand",
+                    "code",
+                    "customer",
+                    "id",
+                    "issued_on",
+                    "promised_on",
+                    "purchase_orders_summary",
+                    "slack_days",
+                    "total_amount",
+                    "total_units"
+                ]
+            },
+            "PatchedClockPatchRequest": {
+                "type": "object",
+                "properties": {
+                    "factor": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$"
+                    },
+                    "paused": {
+                        "type": "boolean"
+                    },
+                    "advance_hours": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                }
+            },
+            "Payment": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "purchase_order": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/PaymentKindEnum"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "status": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "due_on": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "paid_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "method": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/MethodEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ]
+                    },
+                    "receipt": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "amount",
+                    "due_on",
+                    "id",
+                    "kind",
+                    "purchase_order",
+                    "receipt",
+                    "status",
+                    "status_display"
+                ]
+            },
+            "PaymentKindEnum": {
+                "enum": [
+                    "advance",
+                    "balance"
+                ],
+                "type": "string",
+                "description": "* `advance` - Adelanto\n* `balance` - Saldo"
+            },
+            "ProductRef": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "code": {
+                        "type": "string",
+                        "maxLength": 40
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "image": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "code",
+                    "id",
+                    "image",
+                    "name"
+                ]
+            },
+            "ProductionStageEnum": {
+                "enum": [
+                    "cutting",
+                    "sublimation",
+                    "embroidery",
+                    "sewing",
+                    "finishing"
+                ],
+                "type": "string",
+                "description": "* `cutting` - Corte\n* `sublimation` - Sublimado\n* `embroidery` - Bordado\n* `sewing` - Costura\n* `finishing` - Acabado"
+            },
+            "ProgressReport": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "units_done": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": 0
+                    },
+                    "note": {
+                        "type": "string"
+                    },
+                    "photo": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "source": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "reported_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "photo",
+                    "reported_at",
+                    "source",
+                    "units_done"
+                ]
+            },
+            "PurchaseOrderDetail": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "code": {
+                        "type": "string",
+                        "maxLength": 40
+                    },
+                    "kind": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/Status979Enum"
+                    },
+                    "waiting_manager": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "supplier": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SupplierRef"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "orders": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "total_units": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "units_done": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "progress_pct": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
+                    "internal_due_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "What we ask the supplier."
+                    },
+                    "committed_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "What the supplier agreed."
+                    },
+                    "last_progress_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "next_follow_up_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "total_amount": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "currency": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "redistributed_from": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "alert_severity": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "suggested_supplier": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SupplierRef"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "changed_by_manager": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "rationale": {
+                        "type": "string",
+                        "description": "Why this supplier (matching)."
+                    },
+                    "scores": {
+                        "description": "Per-criterion score of the chosen supplier."
+                    },
+                    "candidates": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "terms": {
+                        "type": "string"
+                    },
+                    "delivered_on": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PurchaseOrderItem"
+                        },
+                        "readOnly": true
+                    },
+                    "progress_reports": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProgressReport"
+                        },
+                        "readOnly": true
+                    },
+                    "payments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Payment"
+                        },
+                        "readOnly": true
+                    },
+                    "paid_amount": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "pending_amount": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "redistributed_into": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "pending_decision": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "conversation_id": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Chat where this purchase order is negotiated.",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "alert_severity",
+                    "candidates",
+                    "changed_by_manager",
+                    "code",
+                    "conversation_id",
+                    "currency",
+                    "delivered_on",
+                    "id",
+                    "items",
+                    "kind",
+                    "last_progress_at",
+                    "orders",
+                    "paid_amount",
+                    "payments",
+                    "pending_amount",
+                    "pending_decision",
+                    "progress_pct",
+                    "progress_reports",
+                    "redistributed_from",
+                    "redistributed_into",
+                    "suggested_supplier",
+                    "supplier",
+                    "total_amount",
+                    "total_units",
+                    "units_done",
+                    "waiting_manager"
+                ]
+            },
+            "PurchaseOrderItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "requirement": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "quantity": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "unit_price": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "qty_delivered": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
+                    "id",
+                    "quantity",
+                    "requirement",
+                    "unit_price"
+                ]
+            },
+            "PurchaseOrderList": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "code": {
+                        "type": "string",
+                        "maxLength": 40
+                    },
+                    "kind": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/Status979Enum"
+                    },
+                    "waiting_manager": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "supplier": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SupplierRef"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "orders": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "total_units": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "units_done": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "progress_pct": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
+                    "internal_due_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "What we ask the supplier."
+                    },
+                    "committed_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "What the supplier agreed."
+                    },
+                    "last_progress_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "next_follow_up_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "total_amount": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "currency": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "redistributed_from": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "alert_severity": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "alert_severity",
+                    "code",
+                    "currency",
+                    "id",
+                    "kind",
+                    "last_progress_at",
+                    "orders",
+                    "progress_pct",
+                    "redistributed_from",
+                    "supplier",
+                    "total_amount",
+                    "total_units",
+                    "units_done",
+                    "waiting_manager"
+                ]
+            },
+            "Rate": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "item_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "image": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "unit_price": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "valid_from": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "id",
+                    "image",
+                    "item_name",
+                    "unit_price",
+                    "valid_from"
+                ]
+            },
+            "Requirement": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/KindC64Enum"
+                    },
+                    "material": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MaterialRef"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "product": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductRef"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "qty_needed": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "qty_from_stock": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "qty_to_order": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "pending: nothing ordered; ordered: live purchase orders cover it; covered: delivered.",
+                        "readOnly": true
+                    },
+                    "purchase_orders": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "kind",
+                    "material",
+                    "product",
+                    "purchase_orders",
+                    "qty_needed",
+                    "qty_to_order",
+                    "status"
+                ]
+            },
+            "RiskEnum": {
+                "enum": [
+                    "ok",
+                    "at_risk",
+                    "in_danger"
+                ],
+                "type": "string",
+                "description": "* `ok` - OK\n* `at_risk` - En riesgo\n* `in_danger` - En peligro"
+            },
+            "SourceEnum": {
+                "enum": [
+                    "registered",
+                    "self_registered",
+                    "external"
+                ],
+                "type": "string",
+                "description": "* `registered` - Registrado\n* `self_registered` - Autoregistro\n* `external` - Fuente externa"
+            },
+            "Status979Enum": {
+                "enum": [
+                    "suggested",
+                    "approved",
+                    "negotiating",
+                    "confirmed",
+                    "in_progress",
+                    "delivered",
+                    "declined_by_supplier",
+                    "cancelled_by_supplier",
+                    "cancelled"
+                ],
+                "type": "string",
+                "description": "* `suggested` - Sugerido\n* `approved` - Aprobado\n* `negotiating` - En negociación\n* `confirmed` - Confirmado\n* `in_progress` - En proceso\n* `delivered` - Entregado\n* `declined_by_supplier` - Rechazado por el proveedor\n* `cancelled_by_supplier` - Cancelado por el proveedor\n* `cancelled` - Cancelado"
+            },
+            "StatusB81Enum": {
+                "enum": [
+                    "active",
+                    "pending_review",
+                    "inactive"
+                ],
+                "type": "string",
+                "description": "* `active` - Activo\n* `pending_review` - Por revisar\n* `inactive` - Inactivo"
+            },
+            "StatusFd6Enum": {
+                "enum": [
+                    "registered",
+                    "broken_down",
+                    "confirmed",
+                    "sourcing",
+                    "in_production",
+                    "ready",
+                    "delivered",
+                    "cancelled"
+                ],
+                "type": "string",
+                "description": "* `registered` - Registrada\n* `broken_down` - Desglosada\n* `confirmed` - Confirmada\n* `sourcing` - En abastecimiento\n* `in_production` - En producción\n* `ready` - Lista\n* `delivered` - Entregada\n* `cancelled` - Cancelada"
+            },
+            "SupplierDetail": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/KindC64Enum"
+                    },
+                    "specialties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "maxLength": 60
+                        }
+                    },
+                    "city": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "lat": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "is_in_house": {
+                        "type": "boolean",
+                        "description": "Corpotex's own plant."
+                    },
+                    "weekly_capacity": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "lead_time_days": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0
+                    },
+                    "currency": {
+                        "$ref": "#/components/schemas/CurrencyEnum"
+                    },
+                    "source": {
+                        "$ref": "#/components/schemas/SourceEnum"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusB81Enum"
+                    },
+                    "on_time_score": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
+                    "quality_score": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
+                    "open_purchase_orders": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "load_pct": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
+                    "numbers_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "active_numbers_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "has_style_notes": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "address": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "follow_up_every_hours": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "How to treat them; approved style notes."
+                    },
+                    "source_detail": {
+                        "nullable": true,
+                        "description": "url and excerpt of an external source; no prompt reads it."
+                    },
+                    "numbers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AllowedNumber"
+                        },
+                        "readOnly": true
+                    },
+                    "rates": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Rate"
+                        },
+                        "readOnly": true
+                    },
+                    "ratings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "purchase_orders": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "payments_summary": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "active_numbers_count",
+                    "has_style_notes",
+                    "id",
+                    "kind",
+                    "load_pct",
+                    "name",
+                    "numbers",
+                    "numbers_count",
+                    "on_time_score",
+                    "open_purchase_orders",
+                    "payments_summary",
+                    "purchase_orders",
+                    "quality_score",
+                    "rates",
+                    "ratings"
+                ]
+            },
+            "SupplierList": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields`, and\nstrips manager-only fields from every nested payload when the context role is not the\nmanager (nested serializers do not go through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/KindC64Enum"
+                    },
+                    "specialties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "maxLength": 60
+                        }
+                    },
+                    "city": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "lat": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "is_in_house": {
+                        "type": "boolean",
+                        "description": "Corpotex's own plant."
+                    },
+                    "weekly_capacity": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "lead_time_days": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0
+                    },
+                    "currency": {
+                        "$ref": "#/components/schemas/CurrencyEnum"
+                    },
+                    "source": {
+                        "$ref": "#/components/schemas/SourceEnum"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusB81Enum"
+                    },
+                    "on_time_score": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
+                    "quality_score": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
+                    "open_purchase_orders": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "load_pct": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
+                    "numbers_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "active_numbers_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "has_style_notes": {
+                        "type": "boolean",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "active_numbers_count",
+                    "has_style_notes",
+                    "id",
+                    "kind",
+                    "load_pct",
+                    "name",
+                    "numbers_count",
+                    "on_time_score",
+                    "open_purchase_orders",
+                    "quality_score"
+                ]
+            },
+            "SupplierRef": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/KindC64Enum"
+                    }
+                },
+                "required": [
+                    "id",
+                    "kind",
+                    "name"
+                ]
+            },
+            "UnitEnum": {
+                "enum": [
+                    "m",
+                    "kg",
+                    "unit"
+                ],
+                "type": "string",
+                "description": "* `m` - m\n* `kg` - kg\n* `unit` - unidad"
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "username": {
+                        "type": "string",
+                        "title": "Nombre de usuario",
+                        "description": "Requerido. 150 carácteres como máximo. Únicamente letras, dígitos y @/./+/-/_ ",
+                        "pattern": "^[\\w.@+-]+$",
+                        "maxLength": 150
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "title": "Nombre",
+                        "maxLength": 150
+                    },
+                    "role": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "is_staff": {
+                        "type": "boolean",
+                        "title": "Es staff",
+                        "description": "Indica si el usuario puede entrar en este sitio de administración."
+                    }
+                },
+                "required": [
+                    "id",
+                    "role",
+                    "username"
+                ]
+            }
+        },
+        "securitySchemes": {
+            "cookieAuth": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "sessionid"
+            },
+            "tokenAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "Authorization",
+                "description": "Token-based authentication with required prefix \"Token\""
+            }
+        }
+    }
+}
