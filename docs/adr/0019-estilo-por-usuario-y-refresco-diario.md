@@ -14,7 +14,7 @@ Oscar quiere que el estilo aprenda solo, todos los días, y que el `BOSS.md` sea
 - Tabla `StyleVersion` {user, style_md, notes_snapshot, source: onboarding | daily | template | manual | rollback, changelog, created_at}. Guarda el historial. Volver atrás crea una versión nueva (`rollback`) que copia la anterior, así no se pierde nada.
 - Tarea diaria `refresh_style` (Celery beat, ADR 0018), a las 03:00 de Lima, en hora real y no con el reloj simulado:
   - lee de nuestra BD, no de Evolution, los mensajes escritos a mano por el Gerente (`author=manager`) desde la última corrida, solo de conversaciones con números activos. Si no hay mensajes nuevos, no llama al modelo;
-  - es incremental: estilo actual + mensajes nuevos anonimizados → estilo y notas por proveedor actualizados, más un changelog;
+  - es incremental: estilo actual + mensajes nuevos anonimizados → `style_md` actualizado, más un changelog. Nunca escribe `Supplier.notes`: las notas cambian solo cuando el Gerente aprueba en el onboarding o las edita a mano. Si el refresco nota algo nuevo de un proveedor, lo deja en el changelog como sugerencia ("con Hilados del Bajío ahora escribes de usted"), sin aplicarlo;
   - se aplica sola si pasa la validación: schema, secciones obligatorias, sin teléfonos ni RUC, largo razonable. Si no pasa, se queda el estilo actual y se crea una `Alert`;
   - el changelog ("hoy aprendí…") se muestra en el dashboard, solo como información.
 - La reconstrucción completa sigue siendo el paso Estilo del onboarding (ADR 0011), que sí pasa por la revisión del Gerente.

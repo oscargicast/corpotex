@@ -48,7 +48,7 @@ Seed: coordenadas reales aproximadas de Piura para el almacén, los 3 talleres y
 ## C. Acceso web para talleres (criterio 1)
 
 - `PurchaseOrder.report_token` (uuid, único). Página pública `/report/<token>` (móvil primero): muestra el pedido (producto, cantidad, fecha), un campo de unidades completadas y subida de foto. `POST /api/report/<token>/` llama a `record_progress(..., source=web)` y, si el proveedor tiene conversación, encola un `Turn` con motivo `web_report`; el lote trae `web_report_ids` (avances web sin acusar) para que el agente acuse recibo por WhatsApp.
-- El agente manda el link con la tool `send_report_link(code)`: el handler arma el texto con la plantilla de `personalidad` y la URL completa, así el token nunca pasa por el prompt. El modelo decide cuándo (primer contacto, o si el taller pregunta cómo reportar). Para la demo es P1; la foto llega igual por WhatsApp y por el simulador.
+- El agente manda el link con la tool `send_report_link(code, intro)`: el modelo escribe la frase de introducción con el estilo y el trato de ese proveedor (tú o usted), y el handler le agrega la URL completa, así el token nunca pasa por el prompt. Hay una plantilla neutra de respaldo si el modelo no manda `intro`. El modelo decide cuándo (primer contacto, o si el taller pregunta cómo reportar). Para la demo es P1; la foto llega igual por WhatsApp y por el simulador.
 
 ## D. Lo que la simplificación quitó y vuelve
 
