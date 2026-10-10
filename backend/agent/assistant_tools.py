@@ -126,11 +126,23 @@ def _reads(user) -> list:
         ),
         (
             "list_alerts",
-            "Alertas abiertas que ve este usuario.",
+            "Alertas abiertas que le corresponden a este usuario.",
             {},
-            monitor_part("alerts"),
+            lambda a: get("/api/alerts/", {"mine": "1"}),
         ),
     ]
+    if user.role in ("manager", "production"):
+        specs.append(
+            (
+                "list_materials",
+                (
+                    "Inventario de insumos: stock, comprometido en órdenes abiertas y disponible. "
+                    "Filtra por tipo o por texto en el nombre o el código."
+                ),
+                {"kind": {"type": "string"}, "query": {"type": "string"}},
+                lambda a: get("/api/materials/", {"kind": a.get("kind"), "q": a.get("query")}),
+            )
+        )
     if user.role == "manager":
         specs += [
             (
