@@ -57,6 +57,10 @@ class Supplier(TimeStamped):
         return self.name
 
 
+SUPPLIER_SOURCE = Supplier.Source.choices  # module-level for ENUM_NAME_OVERRIDES
+SUPPLIER_STATUS = Supplier.Status.choices
+
+
 class Rate(TimeStamped):
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name="rates")
     material = models.ForeignKey(

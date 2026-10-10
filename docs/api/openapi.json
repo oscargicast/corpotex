@@ -6,6 +6,208 @@
         "description": "Supplier and workshop management with a WhatsApp agent."
     },
     "paths": {
+        "/api/alerts/": {
+            "get": {
+                "operationId": "alerts_retrieve",
+                "description": "Open alerts. `?mine=1` keeps only the ones that concern the caller's role, with the same\nrule the assistant uses to notify (ADR 0020). `?status=` filters; default `open`.",
+                "tags": [
+                    "alerts"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/alerts/{id}/acknowledge/": {
+            "post": {
+                "operationId": "alerts_acknowledge_create",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "alerts"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/assistant/messages/": {
+            "get": {
+                "operationId": "assistant_messages_retrieve",
+                "tags": [
+                    "assistant"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "assistant_messages_create",
+                "tags": [
+                    "assistant"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssistantMessageInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssistantMessageInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssistantMessageInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AssistantMessage"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/assistant/messages/read/": {
+            "post": {
+                "operationId": "assistant_messages_read_create",
+                "tags": [
+                    "assistant"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/assistant/reset/": {
+            "post": {
+                "operationId": "assistant_reset_create",
+                "tags": [
+                    "assistant"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/auth/login/": {
             "post": {
                 "operationId": "auth_login_create",
@@ -172,6 +374,236 @@
                 }
             }
         },
+        "/api/conversations/{id}/messages/": {
+            "get": {
+                "operationId": "conversations_messages_retrieve",
+                "description": "Read-only chat for the simulator and the purchase order detail (manager only: supplier\nmessages may carry prices).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "conversations"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/manager/decisions/{id}/": {
+            "post": {
+                "operationId": "manager_decisions_create",
+                "description": "Idempotent: the same action again returns 200 with the current state; a different one, 409.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "manager"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DecisionActionRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DecisionActionRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DecisionActionRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/manager/pending/": {
+            "get": {
+                "operationId": "manager_pending_retrieve",
+                "tags": [
+                    "manager"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/materials/": {
+            "get": {
+                "operationId": "materials_list",
+                "description": "`GET /api/materials/`: every material ordered by kind and name. `committed` is the sum of\n`Requirement.qty_from_stock` of open orders; `available = stock - committed`.",
+                "tags": [
+                    "materials"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Material"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/materials/{id}/": {
+            "get": {
+                "operationId": "materials_retrieve",
+                "description": "`GET /api/materials/<id>/`: the list row plus the open orders that take from it.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "materials"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Material"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/me/badges/": {
+            "get": {
+                "operationId": "me_badges_retrieve",
+                "description": "Counters for the menu and the assistant button, polled every 5 s (ADR 0020, 0022).",
+                "tags": [
+                    "me"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/monitor/": {
             "get": {
                 "operationId": "monitor_retrieve",
@@ -194,6 +626,436 @@
                                 "schema": {
                                     "type": "object",
                                     "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/onboarding/style/": {
+            "get": {
+                "operationId": "onboarding_style_retrieve",
+                "tags": [
+                    "onboarding"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OnboardingStyle"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "onboarding_style_update",
+                "tags": [
+                    "onboarding"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StyleDraftRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StyleDraftRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StyleDraftRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OnboardingStyle"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/onboarding/style/approve/": {
+            "post": {
+                "operationId": "onboarding_style_approve",
+                "tags": [
+                    "onboarding"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OnboardingStyle"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/onboarding/style/extract/": {
+            "post": {
+                "operationId": "onboarding_style_extract",
+                "tags": [
+                    "onboarding"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StyleExtractRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StyleExtractRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StyleExtractRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OnboardingStyle"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/onboarding/style/import-txt/": {
+            "post": {
+                "operationId": "onboarding_style_import_txt",
+                "tags": [
+                    "onboarding"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StyleImportTxtRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OnboardingStyle"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/onboarding/style/template/": {
+            "post": {
+                "operationId": "onboarding_style_template",
+                "tags": [
+                    "onboarding"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OnboardingStyle"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/onboarding/whatsapp/": {
+            "get": {
+                "operationId": "onboarding_whatsapp_retrieve",
+                "tags": [
+                    "onboarding"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WhatsAppOnboarding"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OnboardingError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/onboarding/whatsapp/qr/": {
+            "post": {
+                "operationId": "onboarding_whatsapp_qr_create",
+                "tags": [
+                    "onboarding"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WhatsAppQr"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OnboardingError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/onboarding/whatsapp/webhook/": {
+            "post": {
+                "operationId": "onboarding_whatsapp_webhook_create",
+                "tags": [
+                    "onboarding"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WhatsAppOnboarding"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OnboardingError"
                                 }
                             }
                         },
@@ -225,6 +1087,65 @@
                                     "items": {
                                         "$ref": "#/components/schemas/OrderList"
                                     }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "orders_create",
+                "description": "Register an order (sales or manager). Idempotent by `code`: 201 when new, 200 when it existed.",
+                "tags": [
+                    "orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OrderInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OrderInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OrderInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
                                 }
                             }
                         },
@@ -264,6 +1185,47 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/OrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/orders/{id}/confirm/": {
+            "post": {
+                "operationId": "orders_confirm_create",
+                "description": "Production confirms the breakdown; the matching proposes suppliers.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este orden.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
                                 }
                             }
                         },
@@ -342,6 +1304,66 @@
                 }
             }
         },
+        "/api/payments/{id}/pay/": {
+            "post": {
+                "operationId": "payments_pay_create",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este pago.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/purchase-orders/": {
             "get": {
                 "operationId": "purchase_orders_list",
@@ -404,6 +1426,216 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/PurchaseOrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/purchase-orders/{id}/deliveries/": {
+            "post": {
+                "operationId": "purchase_orders_deliveries_create",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este pedido.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "purchase-orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DeliveryInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DeliveryInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DeliveryInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/purchase-orders/{id}/progress/": {
+            "post": {
+                "operationId": "purchase_orders_progress_create",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este pedido.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "purchase-orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProgressInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProgressInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProgressInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/report/{token}/": {
+            "get": {
+                "operationId": "report_retrieve",
+                "description": "The workshop's public page (`/report/<token>`): no login, the token is the secret.\nNever prices nor the supplier (ADR 0024 C).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "token",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "report"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "report_create",
+                "description": "The workshop's public page (`/report/<token>`): no login, the token is the secret.\nNever prices nor the supplier (ADR 0024 C).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "token",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "report"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PublicReportInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PublicReportInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PublicReportInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
                                 }
                             }
                         },
@@ -582,6 +1814,458 @@
                 }
             }
         },
+        "/api/settings/claude/": {
+            "get": {
+                "operationId": "settings_claude_retrieve",
+                "tags": [
+                    "settings"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaudeStatus"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/settings/claude/disconnect/": {
+            "post": {
+                "operationId": "settings_claude_disconnect_create",
+                "tags": [
+                    "settings"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaudeStatus"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaudeError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/settings/claude/exchange/": {
+            "post": {
+                "operationId": "settings_claude_exchange_create",
+                "tags": [
+                    "settings"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClaudeExchangeRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClaudeExchangeRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClaudeExchangeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaudeStatus"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaudeError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/settings/claude/set-key/": {
+            "post": {
+                "operationId": "settings_claude_set_key_create",
+                "tags": [
+                    "settings"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClaudeApiKeyRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClaudeApiKeyRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClaudeApiKeyRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaudeStatus"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaudeError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/settings/claude/start/": {
+            "post": {
+                "operationId": "settings_claude_start_create",
+                "tags": [
+                    "settings"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaudeStart"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/settings/claude/status/": {
+            "get": {
+                "operationId": "settings_claude_status_retrieve",
+                "tags": [
+                    "settings"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaudeStatus"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/simulator/contacts/": {
+            "get": {
+                "operationId": "simulator_contacts_retrieve",
+                "description": "Active numbers with their simulator and WhatsApp conversations, never the phone.",
+                "tags": [
+                    "simulator"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/simulator/messages/": {
+            "post": {
+                "operationId": "simulator_messages_create",
+                "description": "A team member acting as a supplier writes here; the agent answers in the same chat.",
+                "tags": [
+                    "simulator"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SimulatorMessageInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SimulatorMessageInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SimulatorMessageInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Message"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/style/refresh/": {
+            "post": {
+                "operationId": "style_refresh",
+                "tags": [
+                    "style"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleError"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/style/versions/": {
+            "get": {
+                "operationId": "style_versions_list",
+                "tags": [
+                    "style"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/StyleVersion"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/style/versions/{id}/": {
+            "get": {
+                "operationId": "style_versions_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "style"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleVersionDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/style/versions/{id}/restore/": {
+            "post": {
+                "operationId": "style_versions_restore",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "style"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StyleVersionDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/suppliers/": {
             "get": {
                 "operationId": "suppliers_list",
@@ -657,6 +2341,15 @@
     },
     "components": {
         "schemas": {
+            "ActionEnum": {
+                "enum": [
+                    "approve",
+                    "reject",
+                    "change_supplier"
+                ],
+                "type": "string",
+                "description": "* `approve` - approve\n* `reject` - reject\n* `change_supplier` - change_supplier"
+            },
             "AllowedNumber": {
                 "type": "object",
                 "properties": {
@@ -687,10 +2380,182 @@
                     "phone"
                 ]
             },
+            "AssistantMessage": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "role": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "action": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "read_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Assistant messages only."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "action",
+                    "created_at",
+                    "id",
+                    "role"
+                ]
+            },
+            "AssistantMessageInRequest": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "context": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                },
+                "required": [
+                    "text"
+                ]
+            },
             "BlankEnum": {
                 "enum": [
                     ""
                 ]
+            },
+            "ClaudeApiKeyRequest": {
+                "type": "object",
+                "properties": {
+                    "api_key": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "api_key"
+                ]
+            },
+            "ClaudeError": {
+                "type": "object",
+                "properties": {
+                    "error_code": {
+                        "type": "string"
+                    },
+                    "detail": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "detail",
+                    "error_code"
+                ]
+            },
+            "ClaudeExchangeRequest": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "`<code>#<state>` as shown by Anthropic."
+                    }
+                },
+                "required": [
+                    "code"
+                ]
+            },
+            "ClaudeStart": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "state": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "state",
+                    "url"
+                ]
+            },
+            "ClaudeStatus": {
+                "type": "object",
+                "properties": {
+                    "connected": {
+                        "type": "boolean"
+                    },
+                    "method": {
+                        "$ref": "#/components/schemas/ClaudeStatusMethodEnum"
+                    },
+                    "subscription_type": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "expires_at": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Epoch milliseconds."
+                    },
+                    "refresh_token_expires_at": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "expired": {
+                        "type": "boolean"
+                    },
+                    "connected_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "last_error": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "last_error_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "connected",
+                    "connected_at",
+                    "expired",
+                    "expires_at",
+                    "last_error",
+                    "last_error_at",
+                    "method",
+                    "refresh_token_expires_at",
+                    "subscription_type"
+                ]
+            },
+            "ClaudeStatusMethodEnum": {
+                "enum": [
+                    "oauth",
+                    "api_key",
+                    "none"
+                ],
+                "type": "string",
+                "description": "* `oauth` - oauth\n* `api_key` - api_key\n* `none` - none"
             },
             "Clock": {
                 "type": "object",
@@ -725,23 +2590,57 @@
                 "type": "string",
                 "description": "* `PEN` - PEN\n* `USD` - USD"
             },
-            "CustomizationEnum": {
-                "enum": [
-                    "embroidery",
-                    "print",
-                    "sublimation"
-                ],
-                "type": "string",
-                "description": "* `embroidery` - Bordado\n* `print` - Estampado\n* `sublimation` - Sublimado"
+            "DecisionActionRequest": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "$ref": "#/components/schemas/ActionEnum"
+                    },
+                    "supplier_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "purchase_order_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "note": {
+                        "type": "string",
+                        "default": ""
+                    }
+                },
+                "required": [
+                    "action"
+                ]
             },
-            "KindC64Enum": {
-                "enum": [
-                    "material",
-                    "workshop",
-                    "finished"
-                ],
-                "type": "string",
-                "description": "* `material` - Insumos\n* `workshop` - Taller\n* `finished` - Producto terminado"
+            "DeliveryInRequest": {
+                "type": "object",
+                "properties": {
+                    "qty_received": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "qty_defective": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "default": "0.00"
+                    },
+                    "quality": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "default": 5
+                    },
+                    "note": {
+                        "type": "string",
+                        "default": ""
+                    }
+                },
+                "required": [
+                    "qty_received"
+                ]
             },
             "LoginRequest": {
                 "type": "object",
@@ -775,6 +2674,80 @@
                     "user"
                 ]
             },
+            "Material": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "sku": {
+                        "type": "string",
+                        "description": "Corpotex's internal code.",
+                        "maxLength": 40
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/MaterialKindEnum"
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "unit": {
+                        "$ref": "#/components/schemas/MaterialUnitEnum"
+                    },
+                    "unit_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "stock": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "committed": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "available": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "image": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true,
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "available",
+                    "committed",
+                    "id",
+                    "image",
+                    "kind",
+                    "kind_display",
+                    "name",
+                    "sku",
+                    "unit",
+                    "unit_display"
+                ]
+            },
+            "MaterialKindEnum": {
+                "enum": [
+                    "fabric",
+                    "button",
+                    "zipper",
+                    "collar_cuff",
+                    "other"
+                ],
+                "type": "string",
+                "description": "* `fabric` - Tela\n* `button` - Botón\n* `zipper` - Cierre\n* `collar_cuff` - Cuello y puño\n* `other` - Otro"
+            },
             "MaterialRef": {
                 "type": "object",
                 "properties": {
@@ -792,7 +2765,7 @@
                         "maxLength": 160
                     },
                     "unit": {
-                        "$ref": "#/components/schemas/UnitEnum"
+                        "$ref": "#/components/schemas/MaterialUnitEnum"
                     },
                     "image": {
                         "type": "string",
@@ -807,14 +2780,181 @@
                     "unit"
                 ]
             },
-            "MethodEnum": {
+            "MaterialUnitEnum": {
                 "enum": [
-                    "yape",
-                    "transfer",
-                    "cash"
+                    "m",
+                    "kg",
+                    "unit"
                 ],
                 "type": "string",
-                "description": "* `yape` - Yape\n* `transfer` - Transferencia\n* `cash` - Efectivo"
+                "description": "* `m` - m\n* `kg` - kg\n* `unit` - unidad"
+            },
+            "Message": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "direction": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "author": {
+                        "$ref": "#/components/schemas/MessageAuthorEnum"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "media": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/MessageStatusEnum"
+                    },
+                    "sent_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Real time."
+                    },
+                    "turn_id": {
+                        "type": "integer",
+                        "nullable": true,
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "author",
+                    "direction",
+                    "id",
+                    "media",
+                    "sent_at",
+                    "status",
+                    "turn_id"
+                ]
+            },
+            "MessageAuthorEnum": {
+                "enum": [
+                    "supplier",
+                    "agent",
+                    "manager",
+                    "user"
+                ],
+                "type": "string",
+                "description": "* `supplier` - Proveedor\n* `agent` - Agente\n* `manager` - Gerente\n* `user` - Usuario del dashboard"
+            },
+            "MessageStatusEnum": {
+                "enum": [
+                    "received",
+                    "processed",
+                    "error",
+                    "sent",
+                    "failed"
+                ],
+                "type": "string",
+                "description": "* `received` - Recibido\n* `processed` - Procesado\n* `error` - Error\n* `sent` - Enviado\n* `failed` - Fallido"
+            },
+            "NullEnum": {
+                "enum": [
+                    null
+                ]
+            },
+            "OnboardingError": {
+                "type": "object",
+                "properties": {
+                    "error_code": {
+                        "type": "string"
+                    },
+                    "detail": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "detail",
+                    "error_code"
+                ]
+            },
+            "OnboardingStyle": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/OnboardingStyleStatusEnum"
+                    },
+                    "status_display": {
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": "string"
+                    },
+                    "since": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "step": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/OnboardingStyleStepEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
+                    },
+                    "suppliers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StyleSupplierProgress"
+                        }
+                    },
+                    "style_md": {
+                        "type": "string"
+                    },
+                    "notes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StyleNotes"
+                        }
+                    },
+                    "approved_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "approved_at",
+                    "error",
+                    "notes",
+                    "since",
+                    "status",
+                    "status_display",
+                    "step",
+                    "style_md",
+                    "suppliers"
+                ]
+            },
+            "OnboardingStyleStatusEnum": {
+                "enum": [
+                    "not_started",
+                    "extracting",
+                    "draft",
+                    "approved",
+                    "error"
+                ],
+                "type": "string",
+                "description": "* `not_started` - Sin iniciar\n* `extracting` - Extrayendo\n* `draft` - Borrador\n* `approved` - Aprobado\n* `error` - Error"
+            },
+            "OnboardingStyleStepEnum": {
+                "enum": [
+                    "suppliers",
+                    "merging"
+                ],
+                "type": "string",
+                "description": "* `suppliers` - Proveedores\n* `merging` - Juntando"
             },
             "OrderDetail": {
                 "type": "object",
@@ -840,12 +2980,12 @@
                         "readOnly": true
                     },
                     "status": {
-                        "$ref": "#/components/schemas/StatusFd6Enum"
+                        "$ref": "#/components/schemas/OrderStatusEnum"
                     },
                     "production_stage": {
                         "oneOf": [
                             {
-                                "$ref": "#/components/schemas/ProductionStageEnum"
+                                "$ref": "#/components/schemas/OrderStageEnum"
                             },
                             {
                                 "$ref": "#/components/schemas/BlankEnum"
@@ -853,7 +2993,7 @@
                         ]
                     },
                     "risk": {
-                        "$ref": "#/components/schemas/RiskEnum"
+                        "$ref": "#/components/schemas/OrderRiskEnum"
                     },
                     "risk_reason": {
                         "type": "string",
@@ -973,6 +3113,47 @@
                     "total_units"
                 ]
             },
+            "OrderInRequest": {
+                "type": "object",
+                "description": "The simulated sales system payload (`docs/api/examples/order-*.json`).",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "customer": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Customer name."
+                    },
+                    "brand": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Brand name."
+                    },
+                    "issued_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "promised_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemInRequest"
+                        }
+                    }
+                },
+                "required": [
+                    "brand",
+                    "code",
+                    "customer",
+                    "items",
+                    "promised_on"
+                ]
+            },
             "OrderItem": {
                 "type": "object",
                 "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
@@ -1004,7 +3185,7 @@
                     "customization": {
                         "oneOf": [
                             {
-                                "$ref": "#/components/schemas/CustomizationEnum"
+                                "$ref": "#/components/schemas/OrderItemCustomizationEnum"
                             },
                             {
                                 "$ref": "#/components/schemas/BlankEnum"
@@ -1025,6 +3206,49 @@
                 "required": [
                     "customization_display",
                     "id",
+                    "product",
+                    "quantity",
+                    "unit_price"
+                ]
+            },
+            "OrderItemCustomizationEnum": {
+                "enum": [
+                    "embroidery",
+                    "print",
+                    "sublimation"
+                ],
+                "type": "string",
+                "description": "* `embroidery` - Bordado\n* `print` - Estampado\n* `sublimation` - Sublimado"
+            },
+            "OrderItemInRequest": {
+                "type": "object",
+                "properties": {
+                    "product": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Product code."
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "sizes": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    },
+                    "color": {
+                        "type": "string"
+                    },
+                    "customization": {
+                        "type": "string"
+                    },
+                    "unit_price": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    }
+                },
+                "required": [
                     "product",
                     "quantity",
                     "unit_price"
@@ -1054,12 +3278,12 @@
                         "readOnly": true
                     },
                     "status": {
-                        "$ref": "#/components/schemas/StatusFd6Enum"
+                        "$ref": "#/components/schemas/OrderStatusEnum"
                     },
                     "production_stage": {
                         "oneOf": [
                             {
-                                "$ref": "#/components/schemas/ProductionStageEnum"
+                                "$ref": "#/components/schemas/OrderStageEnum"
                             },
                             {
                                 "$ref": "#/components/schemas/BlankEnum"
@@ -1067,7 +3291,7 @@
                         ]
                     },
                     "risk": {
-                        "$ref": "#/components/schemas/RiskEnum"
+                        "$ref": "#/components/schemas/OrderRiskEnum"
                     },
                     "risk_reason": {
                         "type": "string",
@@ -1137,6 +3361,40 @@
                     "total_units"
                 ]
             },
+            "OrderRiskEnum": {
+                "enum": [
+                    "ok",
+                    "at_risk",
+                    "in_danger"
+                ],
+                "type": "string",
+                "description": "* `ok` - OK\n* `at_risk` - En riesgo\n* `in_danger` - En peligro"
+            },
+            "OrderStageEnum": {
+                "enum": [
+                    "cutting",
+                    "sublimation",
+                    "embroidery",
+                    "sewing",
+                    "finishing"
+                ],
+                "type": "string",
+                "description": "* `cutting` - Corte\n* `sublimation` - Sublimado\n* `embroidery` - Bordado\n* `sewing` - Costura\n* `finishing` - Acabado"
+            },
+            "OrderStatusEnum": {
+                "enum": [
+                    "registered",
+                    "broken_down",
+                    "confirmed",
+                    "sourcing",
+                    "in_production",
+                    "ready",
+                    "delivered",
+                    "cancelled"
+                ],
+                "type": "string",
+                "description": "* `registered` - Registrada\n* `broken_down` - Desglosada\n* `confirmed` - Confirmada\n* `sourcing` - En abastecimiento\n* `in_production` - En producción\n* `ready` - Lista\n* `delivered` - Entregada\n* `cancelled` - Cancelada"
+            },
             "PatchedClockPatchRequest": {
                 "type": "object",
                 "properties": {
@@ -1153,6 +3411,21 @@
                         "format": "double"
                     }
                 }
+            },
+            "PayInRequest": {
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "$ref": "#/components/schemas/PaymentMethodEnum"
+                    },
+                    "receipt": {
+                        "type": "string",
+                        "format": "binary"
+                    }
+                },
+                "required": [
+                    "method"
+                ]
             },
             "Payment": {
                 "type": "object",
@@ -1196,7 +3469,7 @@
                     "method": {
                         "oneOf": [
                             {
-                                "$ref": "#/components/schemas/MethodEnum"
+                                "$ref": "#/components/schemas/PaymentMethodEnum"
                             },
                             {
                                 "$ref": "#/components/schemas/BlankEnum"
@@ -1239,6 +3512,15 @@
                 "type": "string",
                 "description": "* `advance` - Adelanto\n* `balance` - Saldo"
             },
+            "PaymentMethodEnum": {
+                "enum": [
+                    "yape",
+                    "transfer",
+                    "cash"
+                ],
+                "type": "string",
+                "description": "* `yape` - Yape\n* `transfer` - Transferencia\n* `cash` - Efectivo"
+            },
             "ProductRef": {
                 "type": "object",
                 "properties": {
@@ -1266,16 +3548,25 @@
                     "name"
                 ]
             },
-            "ProductionStageEnum": {
-                "enum": [
-                    "cutting",
-                    "sublimation",
-                    "embroidery",
-                    "sewing",
-                    "finishing"
-                ],
-                "type": "string",
-                "description": "* `cutting` - Corte\n* `sublimation` - Sublimado\n* `embroidery` - Bordado\n* `sewing` - Costura\n* `finishing` - Acabado"
+            "ProgressInRequest": {
+                "type": "object",
+                "properties": {
+                    "units_done": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "note": {
+                        "type": "string",
+                        "default": ""
+                    },
+                    "photo": {
+                        "type": "string",
+                        "format": "binary"
+                    }
+                },
+                "required": [
+                    "units_done"
+                ]
             },
             "ProgressReport": {
                 "type": "object",
@@ -1313,6 +3604,26 @@
                     "units_done"
                 ]
             },
+            "PublicReportInRequest": {
+                "type": "object",
+                "properties": {
+                    "units_done": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "note": {
+                        "type": "string",
+                        "default": ""
+                    },
+                    "photo": {
+                        "type": "string",
+                        "format": "binary"
+                    }
+                },
+                "required": [
+                    "units_done"
+                ]
+            },
             "PurchaseOrderDetail": {
                 "type": "object",
                 "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
@@ -1334,7 +3645,7 @@
                         "readOnly": true
                     },
                     "status": {
-                        "$ref": "#/components/schemas/Status979Enum"
+                        "$ref": "#/components/schemas/PurchaseOrderStatusEnum"
                     },
                     "waiting_manager": {
                         "type": "boolean",
@@ -1599,7 +3910,7 @@
                         "readOnly": true
                     },
                     "status": {
-                        "$ref": "#/components/schemas/Status979Enum"
+                        "$ref": "#/components/schemas/PurchaseOrderStatusEnum"
                     },
                     "waiting_manager": {
                         "type": "boolean",
@@ -1698,6 +4009,21 @@
                     "waiting_manager"
                 ]
             },
+            "PurchaseOrderStatusEnum": {
+                "enum": [
+                    "suggested",
+                    "approved",
+                    "negotiating",
+                    "confirmed",
+                    "in_progress",
+                    "delivered",
+                    "declined_by_supplier",
+                    "cancelled_by_supplier",
+                    "cancelled"
+                ],
+                "type": "string",
+                "description": "* `suggested` - Sugerido\n* `approved` - Aprobado\n* `negotiating` - En negociación\n* `confirmed` - Confirmado\n* `in_progress` - En proceso\n* `delivered` - Entregado\n* `declined_by_supplier` - Rechazado por el proveedor\n* `cancelled_by_supplier` - Cancelado por el proveedor\n* `cancelled` - Cancelado"
+            },
             "Rate": {
                 "type": "object",
                 "properties": {
@@ -1740,7 +4066,7 @@
                         "readOnly": true
                     },
                     "kind": {
-                        "$ref": "#/components/schemas/KindC64Enum"
+                        "$ref": "#/components/schemas/SupplierKindEnum"
                     },
                     "material": {
                         "allOf": [
@@ -1811,61 +4137,257 @@
                     "status_display"
                 ]
             },
-            "RiskEnum": {
-                "enum": [
-                    "ok",
-                    "at_risk",
-                    "in_danger"
-                ],
-                "type": "string",
-                "description": "* `ok` - OK\n* `at_risk` - En riesgo\n* `in_danger` - En peligro"
+            "SimulatorMessageInRequest": {
+                "type": "object",
+                "properties": {
+                    "allowed_number_id": {
+                        "type": "integer"
+                    },
+                    "text": {
+                        "type": "string",
+                        "default": ""
+                    },
+                    "photo": {
+                        "type": "string",
+                        "format": "binary"
+                    }
+                },
+                "required": [
+                    "allowed_number_id"
+                ]
             },
-            "SourceEnum": {
-                "enum": [
-                    "registered",
-                    "self_registered",
-                    "external"
-                ],
-                "type": "string",
-                "description": "* `registered` - Registrado\n* `self_registered` - Autoregistro\n* `external` - Fuente externa"
+            "StyleDraftRequest": {
+                "type": "object",
+                "properties": {
+                    "style_md": {
+                        "type": "string"
+                    },
+                    "notes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StyleNotesRequest"
+                        }
+                    }
+                },
+                "required": [
+                    "style_md"
+                ]
             },
-            "Status979Enum": {
-                "enum": [
-                    "suggested",
-                    "approved",
-                    "negotiating",
-                    "confirmed",
-                    "in_progress",
-                    "delivered",
-                    "declined_by_supplier",
-                    "cancelled_by_supplier",
-                    "cancelled"
-                ],
-                "type": "string",
-                "description": "* `suggested` - Sugerido\n* `approved` - Aprobado\n* `negotiating` - En negociación\n* `confirmed` - Confirmado\n* `in_progress` - En proceso\n* `delivered` - Entregado\n* `declined_by_supplier` - Rechazado por el proveedor\n* `cancelled_by_supplier` - Cancelado por el proveedor\n* `cancelled` - Cancelado"
+            "StyleError": {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string"
+                    },
+                    "errors": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "detail"
+                ]
             },
-            "StatusB81Enum": {
-                "enum": [
-                    "active",
-                    "pending_review",
-                    "inactive"
-                ],
-                "type": "string",
-                "description": "* `active` - Activo\n* `pending_review` - Por revisar\n* `inactive` - Inactivo"
+            "StyleExtractRequest": {
+                "type": "object",
+                "properties": {
+                    "since": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "supplier_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "since"
+                ]
             },
-            "StatusFd6Enum": {
+            "StyleImportTxtRequest": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "binary"
+                    },
+                    "manager_author": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "since": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "supplier_id": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "file",
+                    "manager_author",
+                    "since"
+                ]
+            },
+            "StyleNotes": {
+                "type": "object",
+                "properties": {
+                    "supplier_id": {
+                        "type": "integer"
+                    },
+                    "supplier_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "notes": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "notes",
+                    "supplier_id",
+                    "supplier_name"
+                ]
+            },
+            "StyleNotesRequest": {
+                "type": "object",
+                "properties": {
+                    "supplier_id": {
+                        "type": "integer"
+                    },
+                    "notes": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "notes",
+                    "supplier_id"
+                ]
+            },
+            "StyleSupplierProgress": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StyleSupplierProgressStatusEnum"
+                    },
+                    "messages_read": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "error": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "error",
+                    "id",
+                    "messages_read",
+                    "name",
+                    "status"
+                ]
+            },
+            "StyleSupplierProgressStatusEnum": {
                 "enum": [
-                    "registered",
-                    "broken_down",
-                    "confirmed",
-                    "sourcing",
-                    "in_production",
-                    "ready",
-                    "delivered",
-                    "cancelled"
+                    "pending",
+                    "reading",
+                    "analyzing",
+                    "done",
+                    "no_phone",
+                    "no_chat",
+                    "not_allowed",
+                    "error"
                 ],
                 "type": "string",
-                "description": "* `registered` - Registrada\n* `broken_down` - Desglosada\n* `confirmed` - Confirmada\n* `sourcing` - En abastecimiento\n* `in_production` - En producción\n* `ready` - Lista\n* `delivered` - Entregada\n* `cancelled` - Cancelada"
+                "description": "* `pending` - pending\n* `reading` - reading\n* `analyzing` - analyzing\n* `done` - done\n* `no_phone` - no_phone\n* `no_chat` - no_chat\n* `not_allowed` - not_allowed\n* `error` - error"
+            },
+            "StyleVersion": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "source": {
+                        "$ref": "#/components/schemas/StyleVersionSourceEnum"
+                    },
+                    "source_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "changelog": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "id",
+                    "source",
+                    "source_display"
+                ]
+            },
+            "StyleVersionDetail": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "source": {
+                        "$ref": "#/components/schemas/StyleVersionSourceEnum"
+                    },
+                    "source_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "changelog": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "style_md": {
+                        "type": "string"
+                    },
+                    "notes_snapshot": {
+                        "description": "supplier_id -> notes"
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "id",
+                    "source",
+                    "source_display",
+                    "style_md"
+                ]
+            },
+            "StyleVersionSourceEnum": {
+                "enum": [
+                    "onboarding",
+                    "daily",
+                    "template",
+                    "manual",
+                    "rollback"
+                ],
+                "type": "string",
+                "description": "* `onboarding` - Onboarding\n* `daily` - Diario\n* `template` - Plantilla\n* `manual` - Manual\n* `rollback` - Vuelta atrás"
             },
             "SupplierDetail": {
                 "type": "object",
@@ -1880,7 +4402,7 @@
                         "maxLength": 160
                     },
                     "kind": {
-                        "$ref": "#/components/schemas/KindC64Enum"
+                        "$ref": "#/components/schemas/SupplierKindEnum"
                     },
                     "specialties": {
                         "type": "array",
@@ -1922,10 +4444,10 @@
                         "$ref": "#/components/schemas/CurrencyEnum"
                     },
                     "source": {
-                        "$ref": "#/components/schemas/SourceEnum"
+                        "$ref": "#/components/schemas/SupplierSourceEnum"
                     },
                     "status": {
-                        "$ref": "#/components/schemas/StatusB81Enum"
+                        "$ref": "#/components/schemas/SupplierStatusEnum"
                     },
                     "on_time_score": {
                         "type": "number",
@@ -2050,6 +4572,15 @@
                     "status_display"
                 ]
             },
+            "SupplierKindEnum": {
+                "enum": [
+                    "material",
+                    "workshop",
+                    "finished"
+                ],
+                "type": "string",
+                "description": "* `material` - Insumos\n* `workshop` - Taller\n* `finished` - Producto terminado"
+            },
             "SupplierList": {
                 "type": "object",
                 "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
@@ -2063,7 +4594,7 @@
                         "maxLength": 160
                     },
                     "kind": {
-                        "$ref": "#/components/schemas/KindC64Enum"
+                        "$ref": "#/components/schemas/SupplierKindEnum"
                     },
                     "specialties": {
                         "type": "array",
@@ -2105,10 +4636,10 @@
                         "$ref": "#/components/schemas/CurrencyEnum"
                     },
                     "source": {
-                        "$ref": "#/components/schemas/SourceEnum"
+                        "$ref": "#/components/schemas/SupplierSourceEnum"
                     },
                     "status": {
-                        "$ref": "#/components/schemas/StatusB81Enum"
+                        "$ref": "#/components/schemas/SupplierStatusEnum"
                     },
                     "on_time_score": {
                         "type": "number",
@@ -2185,7 +4716,7 @@
                         "maxLength": 160
                     },
                     "kind": {
-                        "$ref": "#/components/schemas/KindC64Enum"
+                        "$ref": "#/components/schemas/SupplierKindEnum"
                     }
                 },
                 "required": [
@@ -2194,14 +4725,23 @@
                     "name"
                 ]
             },
-            "UnitEnum": {
+            "SupplierSourceEnum": {
                 "enum": [
-                    "m",
-                    "kg",
-                    "unit"
+                    "registered",
+                    "self_registered",
+                    "external"
                 ],
                 "type": "string",
-                "description": "* `m` - m\n* `kg` - kg\n* `unit` - unidad"
+                "description": "* `registered` - Registrado\n* `self_registered` - Autoregistro\n* `external` - Fuente externa"
+            },
+            "SupplierStatusEnum": {
+                "enum": [
+                    "active",
+                    "pending_review",
+                    "inactive"
+                ],
+                "type": "string",
+                "description": "* `active` - Activo\n* `pending_review` - Por revisar\n* `inactive` - Inactivo"
             },
             "User": {
                 "type": "object",
@@ -2236,6 +4776,77 @@
                     "id",
                     "role",
                     "username"
+                ]
+            },
+            "WebhookSummary": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "Secret masked as ****."
+                    },
+                    "events": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "base64": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "base64",
+                    "events",
+                    "url"
+                ]
+            },
+            "WhatsAppOnboarding": {
+                "type": "object",
+                "properties": {
+                    "state": {
+                        "type": "string"
+                    },
+                    "webhook": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/WebhookSummary"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "settings": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "nullable": true
+                    },
+                    "offline": {
+                        "type": "boolean"
+                    },
+                    "done_at": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "done_at",
+                    "offline",
+                    "settings",
+                    "state",
+                    "webhook"
+                ]
+            },
+            "WhatsAppQr": {
+                "type": "object",
+                "properties": {
+                    "qr_base64": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "data:image/png;base64,…"
+                    }
+                },
+                "required": [
+                    "qr_base64"
                 ]
             }
         },

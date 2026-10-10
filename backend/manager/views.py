@@ -1,14 +1,17 @@
 from django.db.models import F
 from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core import clock
 from core.models import Config
+from core.permissions import IsManager
 from core.serializers import serializer_for
 from operations.models import Order, PurchaseOrder
 from suppliers.services import payments_by_supplier
 
+from . import services
 from .models import Alert, Decision
 
 
@@ -58,3 +61,124 @@ class MonitorView(APIView):
                 "payments_by_supplier": payments_by_supplier() if is_manager else None,
             }
         )
+
+
+class AlertListView(APIView):
+    """Open alerts. `?mine=1` keeps only the ones that concern the caller's role, with the same
+    rule the assistant uses to notify (ADR 0020). `?status=` filters; default `open`."""
+
+    @extend_schema(responses={200: dict})
+    def get(self, request):
+        role = request.user.role
+        status_param = request.query_params.get("status", "open")
+        qs = Alert.objects.all() if status_param == "all" else Alert.objects.filter(status=status_param)
+        qs = qs.select_related("order", "purchase_order__supplier")
+        alerts = services.alerts_for_role(role, qs) if request.query_params.get("mine") == "1" else list(qs)
+        return Response(serializer_for(Alert, role)(alerts, many=True, context={"request": request, "role": role}).data)
+
+
+class BadgesView(APIView):
+    """Counters for the menu and the assistant button, polled every 5 s (ADR 0020, 0022)."""
+
+    @extend_schema(responses={200: dict})
+    def get(self, request):
+        from messaging.services import unread_assistant_count
+        from messaging.models import Message
+
+        user = request.user
+        is_manager = user.role == "manager"
+        config = Config.load()
+        latest = (
+            Message.objects.filter(conversation__channel="dashboard", conversation__user=user, author="agent", read_at__isnull=True)
+            .order_by("-sent_at")
+            .first()
+        )
+        claude = _claude_status()
+        return Response(
+            {
+                "assistant_unread": unread_assistant_count(user),
+                "latest_unread": (
+                    {"id": latest.id, "preview": latest.text[:120], "alert_kind": _alert_kind(latest)} if latest else None
+                ),
+                "claude_ok": bool(claude.get("connected")) and not claude.get("expired") and not config.claude_last_error,
+                "pending_decisions": Decision.objects.filter(status="pending").count() if is_manager else None,
+                "orders_in_danger": Order.objects.filter(risk="in_danger").count() if is_manager else None,
+                "claude_expired": claude.get("expired") if is_manager else None,
+                "claude_last_error": (config.claude_last_error or None) if is_manager else None,
+                "claude_refresh_expires_at": claude.get("refresh_token_expires_at") if is_manager else None,
+            }
+        )
+
+
+def _alert_kind(message):
+    action = message.action or {}
+    if action.get("kind") != "alert":
+        return None
+    from .models import Alert as AlertModel
+
+    first = AlertModel.objects.filter(id__in=action.get("alert_ids", [])).order_by("-severity").first()
+    return first.kind if first else None
+
+
+def _claude_status() -> dict:
+    try:
+        from core.claude_account import status as claude_status
+
+        return claude_status() or {}
+    except Exception:  # The credential module is optional in tests.
+        return {}
+
+
+class ManagerPendingView(APIView):
+    permission_classes = [IsManager]
+
+    @extend_schema(responses={200: dict})
+    def get(self, request):
+        context = {"request": request, "role": "manager"}
+        return Response(
+            {
+                "decisions": serializer_for(Decision, "manager")(Decision.objects.filter(status="pending"), many=True, context=context).data,
+                "orders_in_danger": serializer_for(Order, "manager")(Order.objects.filter(risk="in_danger"), many=True, context=context).data,
+                "alerts": serializer_for(Alert, "manager")(Alert.objects.filter(status="open"), many=True, context=context).data,
+            }
+        )
+
+
+class DecisionActionSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=["approve", "reject", "change_supplier"])
+    supplier_id = serializers.IntegerField(required=False, allow_null=True)
+    purchase_order_id = serializers.IntegerField(required=False, allow_null=True)
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class DecisionResolveView(APIView):
+    """Idempotent: the same action again returns 200 with the current state; a different one, 409."""
+
+    permission_classes = [IsManager]
+
+    @extend_schema(request=DecisionActionSerializer, responses={200: dict})
+    def post(self, request, pk: int):
+        decision = Decision.objects.filter(pk=pk).first()
+        if decision is None:
+            return Response(status=404)
+        data = DecisionActionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            decision = services.resolve_decision(decision, actor=request.user, **data.validated_data)
+        except services.DecisionConflict as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer_for(Decision, "manager")(decision, context={"role": "manager"}).data)
+
+
+class AlertAcknowledgeView(APIView):
+    permission_classes = [IsManager]
+
+    @extend_schema(request=None, responses={200: dict})
+    def post(self, request, pk: int):
+        alert = Alert.objects.filter(pk=pk).first()
+        if alert is None:
+            return Response(status=404)
+        alert = services.acknowledge_alert(alert, actor=request.user)
+        return Response(serializer_for(Alert, "manager")(alert, context={"role": "manager"}).data)
