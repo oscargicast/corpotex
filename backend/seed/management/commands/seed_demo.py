@@ -32,6 +32,7 @@ class Command(BaseCommand):
                 loader.load_alerts()
                 loader.load_conversations()
                 loader.load_style(reset=options["reset_style"])
+                loader.load_status_history()
                 loader.finish()
         except SeedError as exc:
             raise CommandError(str(exc)) from exc

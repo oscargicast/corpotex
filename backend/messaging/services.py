@@ -207,9 +207,10 @@ def finish_turn(batch: TurnBatch, session_id: str | None, error: str | None = No
             for po in PurchaseOrder.objects.filter(id__in=batch.follow_up_purchase_order_ids).select_related("supplier"):
                 po.next_follow_up_at = clock.now() + timedelta(hours=po.supplier.follow_up_every_hours)
                 po.save(update_fields=["next_follow_up_at", "updated_at"])
-            PurchaseOrder.objects.filter(id__in=batch.new_purchase_order_ids, status=PurchaseOrder.Status.APPROVED).update(
-                status=PurchaseOrder.Status.NEGOTIATING
-            )
+            from operations.services import set_status
+
+            for po in PurchaseOrder.objects.filter(id__in=batch.new_purchase_order_ids, status=PurchaseOrder.Status.APPROVED):
+                set_status(po, PurchaseOrder.Status.NEGOTIATING, actor="agent", note="Primer contacto enviado")
             if batch.alert_ids:
                 from manager.models import AlertNotification
 

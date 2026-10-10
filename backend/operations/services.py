@@ -25,6 +25,7 @@ from .models import (
     PurchaseOrder,
     PurchaseOrderItem,
     Requirement,
+    StatusChange,
     Delivery,
 )
 
@@ -37,6 +38,28 @@ DEFAULT_SCORE = 0.7  # Unrated suppliers start neutral.
 
 
 # --- orders ---------------------------------------------------------------------------------
+
+
+def actor_label(actor) -> str:
+    """What the timeline shows: a username, "agent", "system" or "" (public page)."""
+    if actor is None:
+        return "system"
+    if isinstance(actor, str):
+        return actor
+    return getattr(actor, "username", "") or "system"
+
+
+def set_status(obj, status: str, *, actor=None, note: str = "", at=None, save: bool = True):
+    """The single point where an order or a purchase order changes status: writes the
+    `StatusChange` row the timeline reads. No row when the status does not change."""
+    if obj.status == status:
+        return obj
+    obj.status = status
+    if save:
+        obj.save(update_fields=["status", "updated_at"])
+    target = {"order": obj} if isinstance(obj, Order) else {"purchase_order": obj}
+    StatusChange.objects.create(status=status, at=at or clock.now(), actor=actor_label(actor)[:60], note=note[:300], **target)
+    return obj
 
 
 def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
@@ -59,6 +82,7 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
             issued_on=payload.get("issued_on") or clock.today(),
             promised_on=payload["promised_on"],
         )
+        StatusChange.objects.create(order=order, status=order.status, at=clock.now(), actor=actor_label(actor))
         for item in payload["items"]:
             product = Product.objects.get(code=item["product"])
             OrderItem.objects.create(
@@ -99,8 +123,7 @@ def break_down_order(order: Order) -> list[Requirement]:
                 Requirement.objects.create(order=order, kind="workshop", product=item.product, qty_needed=item.quantity)
             )
         if order.status == Order.Status.REGISTERED:
-            order.status = Order.Status.BROKEN_DOWN
-            order.save(update_fields=["status", "updated_at"])
+            set_status(order, Order.Status.BROKEN_DOWN, actor="system", note="Desglose contra inventario")
         compute_critical_path(order)
     return requirements
 
@@ -111,8 +134,7 @@ def confirm_order(order: Order, *, actor) -> Order:
     if order.status != Order.Status.BROKEN_DOWN:
         return order
     with transaction.atomic():
-        order.status = Order.Status.CONFIRMED
-        order.save(update_fields=["status", "updated_at"])
+        set_status(order, Order.Status.CONFIRMED, actor=actor, note="Desglose confirmado")
         match_requirements(list(order.requirements.all()))
     return order
 
@@ -322,6 +344,7 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
                 PurchaseOrderItem.objects.create(
                     purchase_order=po, requirement=requirement, quantity=take, unit_price=Decimal(candidate["unit_price"])
                 )
+                StatusChange.objects.create(purchase_order=po, status=po.status, at=clock.now(), actor="system", note=candidate["rationale"][:300])
                 created.append(po)
                 proposal.append(
                     {
@@ -370,7 +393,9 @@ def _snapshot(orders) -> dict:
         (i.quantity * i.unit_price for po in _order_purchase_orders(order).filter(status__in=PurchaseOrder.OPEN_STATUSES + ("suggested", "delivered")) for i in po.items.all()),
         Decimal("0"),
     )
-    return {"estimated_on": order.estimated_on.isoformat() if order.estimated_on else None, "total_amount": str(total), "route_id": None}
+    currencies = {po.supplier.currency for po in _order_purchase_orders(order).select_related("supplier")}
+    currency = currencies.pop() if len(currencies) == 1 else "PEN"  # Mixed currencies: the UI shows per-line amounts.
+    return {"estimated_on": order.estimated_on.isoformat() if order.estimated_on else None, "total_amount": str(total), "currency": currency, "route_id": None}
 
 
 def _covered(requirement: Requirement) -> Decimal:
@@ -405,16 +430,16 @@ def approve_purchase_orders(purchase_orders, *, actor) -> list[PurchaseOrder]:
             if po.status != PurchaseOrder.Status.SUGGESTED:
                 continue
             if po.supplier.is_in_house:
-                po.status = PurchaseOrder.Status.CONFIRMED
                 po.committed_on = po.internal_due_on
-                po.save(update_fields=["status", "committed_on", "updated_at"])
+                po.save(update_fields=["committed_on", "updated_at"])
+                set_status(po, PurchaseOrder.Status.CONFIRMED, actor=actor, note="Planta propia: sin negociación")
                 _create_payments(po)
                 approved.append(po)
                 continue
-            po.status = PurchaseOrder.Status.APPROVED
             conversation = conversation_for_supplier(po.supplier)
             po.conversation = conversation
-            po.save(update_fields=["status", "conversation", "updated_at"])
+            po.save(update_fields=["conversation", "updated_at"])
+            set_status(po, PurchaseOrder.Status.APPROVED, actor=actor)
             approved.append(po)
             if conversation is None:
                 open_alert("no_channel", purchase_order=po, text=f"{po.supplier.name} no tiene un número activo para el pedido {po.code}")
@@ -422,8 +447,7 @@ def approve_purchase_orders(purchase_orders, *, actor) -> list[PurchaseOrder]:
                 enqueue_turn(conversation, "purchase_order_approved")
         for order in {i.requirement.order for po in approved for i in po.items.select_related("requirement__order")}:
             if order.status == Order.Status.CONFIRMED:
-                order.status = Order.Status.SOURCING
-                order.save(update_fields=["status", "updated_at"])
+                set_status(order, Order.Status.SOURCING, actor=actor, note="Pedidos aprobados")
             compute_critical_path(order)
     return approved
 
@@ -448,11 +472,11 @@ def confirm_purchase_order(po: PurchaseOrder, *, unit_price, committed_on: date,
         raise ManagerApprovalRequired(f"La fecha {committed_on} pasa el límite interno {po.internal_due_on}")
     with transaction.atomic():
         po.items.update(unit_price=unit_price)
-        po.status = PurchaseOrder.Status.CONFIRMED
         po.committed_on = committed_on
         po.terms = terms or po.terms
         po.next_follow_up_at = clock.now() + timedelta(hours=po.supplier.follow_up_every_hours)
-        po.save(update_fields=["status", "committed_on", "terms", "next_follow_up_at", "updated_at"])
+        po.save(update_fields=["committed_on", "terms", "next_follow_up_at", "updated_at"])
+        set_status(po, PurchaseOrder.Status.CONFIRMED, actor="agent", note=f"Entrega {committed_on:%d/%m} a {unit_price}")
         _create_payments(po)
         for order in _orders_of(po):
             compute_critical_path(order)
@@ -485,10 +509,11 @@ def record_progress(po: PurchaseOrder, *, units_done: int, note: str = "", messa
             photo=photo,
             reported_at=clock.now(),
         )
-        if po.status == PurchaseOrder.Status.CONFIRMED:
-            po.status = PurchaseOrder.Status.IN_PROGRESS
         po.next_follow_up_at = clock.now() + timedelta(hours=po.supplier.follow_up_every_hours)
-        po.save(update_fields=["status", "next_follow_up_at", "updated_at"])
+        po.save(update_fields=["next_follow_up_at", "updated_at"])
+        if po.status == PurchaseOrder.Status.CONFIRMED:
+            who = actor if actor is not None else ("agent" if message_id else "system")
+            set_status(po, PurchaseOrder.Status.IN_PROGRESS, actor=who, note=f"Primer avance: {units_done}")
     return report
 
 
@@ -515,9 +540,9 @@ def record_delivery(po: PurchaseOrder, *, qty_received, qty_defective=0, quality
                 item.save(update_fields=["qty_delivered", "updated_at"])
                 remaining -= take
         if all(i.qty_delivered >= i.quantity for i in po.items.all()):
-            po.status = PurchaseOrder.Status.DELIVERED
             po.rating = _rate(po)
-            po.save(update_fields=["status", "rating", "updated_at"])
+            po.save(update_fields=["rating", "updated_at"])
+            set_status(po, PurchaseOrder.Status.DELIVERED, actor=actor, note=f"Calificación {po.rating['score']}")
             for order in _orders_of(po):
                 _advance_order(order)
     return delivery
@@ -553,8 +578,7 @@ def _advance_order(order: Order) -> None:
     pos = _order_purchase_orders(order)
     if pos.exists() and not pos.exclude(status__in=("delivered", "cancelled", "cancelled_by_supplier", "declined_by_supplier")).exists():
         if order.status in (Order.Status.SOURCING, Order.Status.CONFIRMED):
-            order.status = Order.Status.IN_PRODUCTION
-            order.save(update_fields=["status", "updated_at"])
+            set_status(order, Order.Status.IN_PRODUCTION, actor="system", note="Todos los pedidos entregados")
     compute_critical_path(order)
 
 
@@ -574,9 +598,9 @@ def cancel_by_supplier(po: PurchaseOrder, *, reason: str, units_done: int | None
                     item.qty_delivered += take
                     item.save(update_fields=["qty_delivered", "updated_at"])
                     remaining -= take
-        po.status = PurchaseOrder.Status.CANCELLED_BY_SUPPLIER
         po.terms = (po.terms + "\n" if po.terms else "") + f"Cancelado por el proveedor: {reason}"
-        po.save(update_fields=["status", "terms", "updated_at"])
+        po.save(update_fields=["terms", "updated_at"])
+        set_status(po, PurchaseOrder.Status.CANCELLED_BY_SUPPLIER, actor="agent", note=reason)
         created, decision = redistribute(po)
     return po, created, decision
 
@@ -605,8 +629,7 @@ def mark_payment_paid(payment: Payment, *, method: str, receipt=None, actor) -> 
     payment.save(update_fields=["paid_at", "method", "receipt", "updated_at"])
     po = payment.purchase_order
     if payment.kind == "advance" and po.status == PurchaseOrder.Status.CONFIRMED:
-        po.status = PurchaseOrder.Status.IN_PROGRESS
-        po.save(update_fields=["status", "updated_at"])
+        set_status(po, PurchaseOrder.Status.IN_PROGRESS, actor=actor, note="Adelanto pagado")
     return payment
 
 

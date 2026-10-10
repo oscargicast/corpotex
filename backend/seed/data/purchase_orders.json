@@ -1,6 +1,6 @@
 [
   {
-    "code": "PED-0031",
+    "code": "PI-0031",
     "supplier": "Textiles Lima Norte S.A.C.",
     "kind": "material",
     "status": "delivered",
@@ -38,7 +38,7 @@
     "terms": "Envío por Sullana Express, factura con la entrega.",
     "items": [
       {
-        "order": "OC-2026-0142",
+        "order": "CP-2026-0142",
         "kind": "material",
         "material": "TEL-ALG-20",
         "product": null,
@@ -87,7 +87,7 @@
     "rated_at": "T-15 12:00"
   },
   {
-    "code": "PED-0032",
+    "code": "PI-0032",
     "supplier": "Tejidos Rib Lima",
     "kind": "material",
     "status": "delivered",
@@ -120,7 +120,7 @@
     "terms": "Mismo tono de blanco que la tela; envío por Sullana Express.",
     "items": [
       {
-        "order": "OC-2026-0142",
+        "order": "CP-2026-0142",
         "kind": "material",
         "material": "RIB-CUE-01",
         "product": null,
@@ -129,7 +129,7 @@
         "qty_delivered": "600.00"
       },
       {
-        "order": "OC-2026-0142",
+        "order": "CP-2026-0142",
         "kind": "material",
         "material": "RIB-PUN-01",
         "product": null,
@@ -178,7 +178,7 @@
     "rated_at": "T-12 11:00"
   },
   {
-    "code": "PED-0033",
+    "code": "PI-0033",
     "supplier": "Avíos Gamarra",
     "kind": "material",
     "status": "delivered",
@@ -211,7 +211,7 @@
     "terms": "Envío consolidado por Sullana Express.",
     "items": [
       {
-        "order": "OC-2026-0142",
+        "order": "CP-2026-0142",
         "kind": "material",
         "material": "BOT-PLA-14",
         "product": null,
@@ -220,7 +220,7 @@
         "qty_delivered": "3000.00"
       },
       {
-        "order": "OC-2026-0142",
+        "order": "CP-2026-0142",
         "kind": "material",
         "material": "HIL-POL-40",
         "product": null,
@@ -269,12 +269,12 @@
     "rated_at": "T-16 10:00"
   },
   {
-    "code": "PED-0038",
+    "code": "PT-0038",
     "supplier": "Confecciones del Norte",
     "kind": "workshop",
     "status": "in_progress",
     "suggested_supplier": "Confecciones del Norte",
-    "rationale": "La planta está llena con OC-2026-0155 y OC-2026-0151; Confecciones del Norte tiene capacidad para las 1000 unidades en ~10 días.",
+    "rationale": "La planta está llena con CP-2026-0155 y CP-2026-0151; Confecciones del Norte tiene capacidad para las 1000 unidades en ~10 días.",
     "scores": {
       "price": 0.8,
       "on_time": 0.78,
@@ -317,7 +317,7 @@
     "terms": "Recibe todo cortado y bordado de planta. 1000 polos a S/ 3.50. 50 % adelanto por Yape, saldo a la entrega.",
     "items": [
       {
-        "order": "OC-2026-0142",
+        "order": "CP-2026-0142",
         "kind": "workshop",
         "material": null,
         "product": "UNI-POL-01",
@@ -364,7 +364,7 @@
     ]
   },
   {
-    "code": "PED-0045",
+    "code": "PT-0045",
     "supplier": "Planta Corpotex",
     "kind": "workshop",
     "status": "confirmed",
@@ -402,7 +402,7 @@
     "terms": "Programado después de los buzos de stock.",
     "items": [
       {
-        "order": "OC-2026-0155",
+        "order": "CP-2026-0155",
         "kind": "workshop",
         "material": null,
         "product": "UNI-BUZ-01",
@@ -411,7 +411,7 @@
         "qty_delivered": 0
       },
       {
-        "order": "OC-2026-0155",
+        "order": "CP-2026-0155",
         "kind": "workshop",
         "material": null,
         "product": "UNI-POD-01",
@@ -445,7 +445,7 @@
     ]
   },
   {
-    "code": "PED-0046",
+    "code": "PT-0046",
     "supplier": "Planta Corpotex",
     "kind": "workshop",
     "status": "approved",
@@ -483,7 +483,7 @@
     "terms": "A la espera del drill.",
     "items": [
       {
-        "order": "OC-2026-0151",
+        "order": "CP-2026-0151",
         "kind": "workshop",
         "material": null,
         "product": "NEX-CAM-01",
@@ -492,7 +492,7 @@
         "qty_delivered": 0
       },
       {
-        "order": "OC-2026-0151",
+        "order": "CP-2026-0151",
         "kind": "workshop",
         "material": null,
         "product": "NEX-PAN-01",
@@ -505,7 +505,7 @@
     "payments": []
   },
   {
-    "code": "PED-0042",
+    "code": "PI-0042",
     "supplier": "Hilados del Bajío",
     "kind": "material",
     "status": "negotiating",
@@ -543,7 +543,7 @@
     "terms": "Tarifa vigente USD 3.10/m; el proveedor pidió USD 3.45/m.",
     "items": [
       {
-        "order": "OC-2026-0151",
+        "order": "CP-2026-0151",
         "kind": "material",
         "material": "TEL-DRL-NX",
         "product": null,
@@ -556,7 +556,7 @@
     "payments": []
   },
   {
-    "code": "PED-0044",
+    "code": "PI-0044",
     "supplier": "Avíos Gamarra",
     "kind": "material",
     "status": "confirmed",
@@ -589,7 +589,7 @@
     "terms": "Un solo envío por Sullana Express para las 3 órdenes.",
     "items": [
       {
-        "order": "OC-2026-0151",
+        "order": "CP-2026-0151",
         "kind": "material",
         "material": "BOT-MET-NX",
         "product": null,
@@ -598,7 +598,7 @@
         "qty_delivered": "0.00"
       },
       {
-        "order": "OC-2026-0151",
+        "order": "CP-2026-0151",
         "kind": "material",
         "material": "CIE-MET-18",
         "product": null,
@@ -607,7 +607,7 @@
         "qty_delivered": "0.00"
       },
       {
-        "order": "OC-2026-0155",
+        "order": "CP-2026-0155",
         "kind": "material",
         "material": "CIE-NYL-20",
         "product": null,
@@ -616,7 +616,7 @@
         "qty_delivered": "0.00"
       },
       {
-        "order": "OC-2026-0158",
+        "order": "CP-2026-0158",
         "kind": "material",
         "material": "BOT-PLA-14",
         "product": null,
@@ -650,7 +650,7 @@
     ]
   },
   {
-    "code": "PED-0041",
+    "code": "PI-0041",
     "supplier": "Tejidos Rib Lima",
     "kind": "material",
     "status": "in_progress",
@@ -683,7 +683,7 @@
     "terms": "Envío por Sullana Express.",
     "items": [
       {
-        "order": "OC-2026-0155",
+        "order": "CP-2026-0155",
         "kind": "material",
         "material": "RIB-CUE-01",
         "product": null,
@@ -724,7 +724,7 @@
     ]
   },
   {
-    "code": "PED-0043",
+    "code": "PI-0043",
     "supplier": "Textiles Lima Norte S.A.C.",
     "kind": "material",
     "status": "suggested",
@@ -762,7 +762,7 @@
     "terms": "Por aprobar.",
     "items": [
       {
-        "order": "OC-2026-0158",
+        "order": "CP-2026-0158",
         "kind": "material",
         "material": "TEL-ANF-MD",
         "product": null,
@@ -775,7 +775,7 @@
     "payments": []
   },
   {
-    "code": "PED-0020",
+    "code": "PI-0020",
     "supplier": "Textiles Lima Norte S.A.C.",
     "kind": "material",
     "status": "delivered",
@@ -808,7 +808,7 @@
     "terms": "Envío por Sullana Express.",
     "items": [
       {
-        "order": "OC-2026-0097",
+        "order": "CP-2026-0097",
         "kind": "material",
         "material": "TEL-ALG-30",
         "product": null,
@@ -857,7 +857,7 @@
     "rated_at": "T-47 12:00"
   },
   {
-    "code": "PED-0021",
+    "code": "PT-0021",
     "supplier": "Confecciones del Norte",
     "kind": "workshop",
     "status": "delivered",
@@ -895,7 +895,7 @@
     "terms": "600 camisas a S/ 4.80; 50 % Yape adelanto, saldo a la entrega.",
     "items": [
       {
-        "order": "OC-2026-0097",
+        "order": "CP-2026-0097",
         "kind": "workshop",
         "material": null,
         "product": "UNI-CAM-01",
@@ -957,7 +957,7 @@
     "rated_at": "T-24 17:00"
   },
   {
-    "code": "PED-0025",
+    "code": "PT-0025",
     "supplier": "Taller Costura Castilla",
     "kind": "workshop",
     "status": "delivered",
@@ -990,7 +990,7 @@
     "terms": "250 chalecos a S/ 5.20; nueva fecha acordada T-5.",
     "items": [
       {
-        "order": "OC-2026-0118",
+        "order": "CP-2026-0118",
         "kind": "workshop",
         "material": null,
         "product": "NEX-CHA-01",
@@ -1046,7 +1046,7 @@
     "rated_at": "T-3 09:00"
   },
   {
-    "code": "PED-0027",
+    "code": "PT-0027",
     "supplier": "Confecciones Santa Julia",
     "kind": "workshop",
     "status": "cancelled",
@@ -1079,7 +1079,7 @@
     "terms": "Cancelado a mitad porque el cliente canceló la orden; se pagaron las 40 hechas.",
     "items": [
       {
-        "order": "OC-2026-0109",
+        "order": "CP-2026-0109",
         "kind": "workshop",
         "material": null,
         "product": "LMC-BAT-01",

@@ -30,6 +30,7 @@ from operations.models import (
     PurchaseOrder,
     PurchaseOrderItem,
     Requirement,
+    StatusChange,
 )
 from suppliers.models import Rate, Supplier
 
@@ -40,6 +41,9 @@ DATA_DIR = SEED_DIR / "data"
 IMAGES_DIR = SEED_DIR / "images"
 LIMA = timezone.get_default_timezone()
 REL = re.compile(r"^T([+-]\d+)?(?:\s+(\d{1,2}):(\d{2}))?$")
+ORDER_CODE = re.compile(r"^CP-\d{4}-\d{4}$")
+PO_CODE = re.compile(r"^P[TIF]-\d{4}$")
+PO_PREFIX = {"workshop": "PT", "material": "PI", "finished": "PF"}
 
 # Demo phone numbers are constants on purpose (decision of 10/10; the repo is public).
 REAL_SUPPLIER_KEY = "Confecciones del Norte"
@@ -56,7 +60,7 @@ class Loader:
         self.data_dir = data_dir
         self.images_dir = images_dir
         self.out = out or (lambda msg: logger.info(msg))
-        self.t = datetime.combine(timezone.localdate(), time(8, 0), tzinfo=LIMA)  # Demo day, 08:00 Lima.
+        self.t = timezone.localtime(timezone.now())  # Real time (decision of 10/10 21:40); "T+N HH:MM" sets the hour.
         self.brands: dict[str, Brand] = {}
         self.customers: dict[str, Customer] = {}
         self.materials: dict[str, Material] = {}
@@ -120,12 +124,18 @@ class Loader:
     # --- users and config ------------------------------------------------------------------
 
     def load_users(self):
+        password = settings_env("SEED_USERS_PASSWORD")
+        if not password:
+            logger.warning("SEED_USERS_PASSWORD is not set: role users keep password = username")
+            self.out("aviso: SEED_USERS_PASSWORD no está en .env; contraseña = usuario")
         for role, group_name in ROLE_GROUPS.items():
             username = {"manager": "gerente", "sales": "comercial", "production": "produccion"}[role]
             user, created = User.objects.get_or_create(username=username, defaults={"first_name": username.title()})
-            if created:
-                user.set_password(username)  # Demo accounts; the manager changes them in the admin.
-            user.is_staff = user.is_staff or role == "manager"
+            if password:
+                user.set_password(password)
+            elif created:
+                user.set_password(username)
+            user.is_staff = False  # The admin is the superuser's only.
             user.save()
             user.groups.add(Group.objects.get(name=group_name))
             self.users[username] = user
@@ -145,10 +155,9 @@ class Loader:
         if path.exists():
             raw = json.loads(path.read_text(encoding="utf-8"))
         plant = raw.get("plant") or self.plant_from_readme()
-        config.clock_sim_start = self.t
-        config.clock_real_start = timezone.now()
+        config.clock_sim_start = config.clock_real_start = timezone.now()  # Real time, no acceleration.
         config.clock_paused = False
-        config.clock_factor = self.dec(raw.get("clock_factor"), "1")
+        config.clock_factor = Decimal("1")
         config.buffer_days = int(raw.get("buffer_days", 5))
         config.stage_durations = raw.get("stage_durations") or {"cutting": 1, "sublimation": 1, "embroidery": 1, "sewing": 3, "finishing": 1}
         config.agent_user = self.users["gerente"]
@@ -250,6 +259,8 @@ class Loader:
         from operations.services import break_down_order
 
         for row in self.read("orders"):
+            if not ORDER_CODE.match(row["code"]):
+                raise SeedError(f"orders.json: código {row['code']!r} no cumple CP-AAAA-NNNN")
             order = Order.objects.create(
                 code=row["code"],
                 customer=self.ref(self.customers, row["customer"], "cliente"),
@@ -295,6 +306,9 @@ class Loader:
         rows = self.read("purchase_orders")
         for row in rows:
             supplier = self.ref(self.suppliers, row["supplier"], "proveedor")
+            kind = row.get("kind") or supplier.kind
+            if not PO_CODE.match(row["code"]) or not row["code"].startswith(PO_PREFIX.get(kind, "??")):
+                raise SeedError(f"purchase_orders.json: código {row['code']!r} debe ser {PO_PREFIX.get(kind, 'PT|PI|PF')}-NNNN")
             po = PurchaseOrder.objects.create(
                 code=row["code"],
                 supplier=supplier,
@@ -403,6 +417,7 @@ class Loader:
             po = (self.purchase_orders.get(code) if code else None) or default_po
             entry["purchase_order"] = {"id": po.id, "code": po.code} if po else None
             entry.setdefault("candidates", [])
+            entry.setdefault("currency", (po.supplier.currency if po else None) or (detail.get("after") or {}).get("currency") or "PEN")
             entry["committed_on"] = self.rel_date(entry.get("committed_on")).isoformat() if entry.get("committed_on") else None
             normalized.append(entry)
         if proposal is not None:
@@ -411,6 +426,7 @@ class Loader:
             block = detail.get(key)
             if isinstance(block, dict):
                 block.setdefault("route_id", None)
+                block.setdefault("currency", (default_po.supplier.currency if default_po else None) or "PEN")
                 if block.get("estimated_on"):
                     block["estimated_on"] = self.rel_date(block["estimated_on"]).isoformat()
         return detail
@@ -527,11 +543,48 @@ class Loader:
 
     def wipe(self):
         """Demo data only: never users, tokens, the WhatsApp onboarding state nor the style."""
-        for model in (Message, Conversation, Alert, Decision, Payment, Delivery, ProgressReport, PurchaseOrderItem, PurchaseOrder, Requirement, OrderItem, Order, Rate, AllowedNumber, Supplier, ProductMaterial, Product, Material, Customer, Brand):
+        for model in (Message, Conversation, Alert, Decision, StatusChange, Payment, Delivery, ProgressReport, PurchaseOrderItem, PurchaseOrder, Requirement, OrderItem, Order, Rate, AllowedNumber, Supplier, ProductMaterial, Product, Material, Customer, Brand):
             model.objects.all().delete()
         from messaging.models import Turn
 
         Turn.objects.all().delete()
+
+    ORDER_PATH = ["registered", "broken_down", "confirmed", "sourcing", "in_production", "ready", "delivered"]
+    PO_PATH = ["suggested", "approved", "negotiating", "confirmed", "in_progress", "delivered"]
+    ACTORS = {
+        "registered": "comercial", "broken_down": "system", "confirmed": "produccion", "sourcing": "gerente",
+        "in_production": "system", "ready": "produccion", "delivered": "produccion", "cancelled": "gerente",
+        "suggested": "system", "approved": "gerente", "negotiating": "agent", "in_progress": "agent",
+        "cancelled_by_supplier": "agent", "declined_by_supplier": "agent",
+    }
+
+    def load_status_history(self):
+        """The JSON only states the current status; the timeline gets one plausible row per
+        state already passed, spread between the issue date and T (or the delivery)."""
+        for order in Order.objects.all():
+            path = self.ORDER_PATH if order.status in self.ORDER_PATH else self.ORDER_PATH[:3] + [order.status]
+            steps = path[: path.index(order.status) + 1]
+            start = datetime.combine(order.issued_on, time(9, 0), tzinfo=LIMA)
+            end = min(self.t, datetime.combine(order.estimated_on or self.t.date(), time(17, 0), tzinfo=LIMA)) if order.status == "delivered" else self.t
+            self._history(order, steps, start, end, "order")
+        for po in PurchaseOrder.objects.select_related("supplier"):
+            path = self.PO_PATH if po.status in self.PO_PATH else self.PO_PATH[:5] + [po.status]
+            steps = path[: path.index(po.status) + 1]
+            if po.supplier.is_in_house:
+                steps = [s for i, s in enumerate(steps) if i == len(steps) - 1 or s not in ("approved", "negotiating")]
+            anchor = po.committed_on or po.internal_due_on or self.t.date()
+            start = datetime.combine(anchor - timedelta(days=po.supplier.lead_time_days + 2), time(10, 0), tzinfo=LIMA)
+            last_delivery = po.deliveries.order_by("-received_at").first()
+            end = last_delivery.received_at if po.status == "delivered" and last_delivery else self.t
+            self._history(po, steps, min(start, end - timedelta(hours=1)), end, "purchase_order")
+
+    def _history(self, obj, steps, start, end, target):
+        if not steps:
+            return
+        span = max((end - start) / max(len(steps) - 1, 1), timedelta(minutes=30)) if len(steps) > 1 else timedelta(0)
+        for index, status in enumerate(steps):
+            at = start + span * index if index < len(steps) - 1 else end
+            StatusChange.objects.create(status=status, at=min(at, end), actor=self.ACTORS.get(status, "system"), **{target: obj})
 
     def finish(self):
         """Wires what the JSON cannot: the conversation of each live purchase order and the

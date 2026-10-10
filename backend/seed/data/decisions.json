@@ -3,9 +3,9 @@
     "kind": "price",
     "status": "pending",
     "purchase_orders": [
-      "PED-0042"
+      "PI-0042"
     ],
-    "order": "OC-2026-0151",
+    "order": "CP-2026-0151",
     "summary": "Hilados del Bajío pide USD 3.45/m por el drill (tarifa vigente USD 3.10/m, +11 %). ¿Aceptamos o pasamos a Textiles Lima Norte S.A.C.?",
     "detail": {
       "before": {
@@ -35,9 +35,9 @@
     "kind": "approve_assignment",
     "status": "approved",
     "purchase_orders": [
-      "PED-0045"
+      "PT-0045"
     ],
-    "order": "OC-2026-0155",
+    "order": "CP-2026-0155",
     "summary": "Coser buzos y polos deportivos en planta (lleva sublimado).",
     "detail": {
       "before": null,
@@ -65,9 +65,9 @@
     "kind": "approve_assignment",
     "status": "supplier_changed",
     "purchase_orders": [
-      "PED-0021"
+      "PT-0021"
     ],
-    "order": "OC-2026-0097",
+    "order": "CP-2026-0097",
     "summary": "Asignar 600 camisas escolares a Confecciones Santa Julia.",
     "detail": {
       "before": null,
@@ -95,9 +95,9 @@
     "kind": "terms",
     "status": "approved",
     "purchase_orders": [
-      "PED-0025"
+      "PT-0025"
     ],
-    "order": "OC-2026-0118",
+    "order": "CP-2026-0118",
     "summary": "Taller Costura Castilla pide entregar en T-5 en vez de T-7.",
     "detail": {
       "before": {

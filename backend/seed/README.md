@@ -34,13 +34,13 @@ Siempre por clave natural: material por `sku`, producto/orden/pedido por `code`,
 ## Suposiciones
 - `stock` es el stock **actual** de almacén, ya descontado lo consumido por órdenes en producción. Algunos requerimientos quedan parcialmente cubiertos (p. ej. drill: 990 m − 350 = 640 m pedidos; antifluido: 440 − 220).
 - Cantidades de items de pedidos de insumos (`quantity`, `qty_delivered`) van como decimal string; en talleres/terminado como int.
-- `units_done` de pedidos de insumos es 0 salvo que reporten avance (PED-0041 reporta cuellos).
+- `units_done` de pedidos de insumos es 0 salvo que reporten avance (PI-0041 reporta cuellos).
 - Pedidos ya entregados o del pasado usan `internal_due_on`/`committed_on` negativos (`T-N`).
 - `estimated_on` siempre presente (en entregadas = fecha real de entrega).
 - La planta propia tiene `rates` (costo interno de costura) y pagos en `cash` para que el desglose sea uniforme.
 - `Decision.detail` de `approve_assignment` usa precio unitario promedio cuando el pedido tiene varios productos.
 - Valores monetarios como string con 2 decimales; `scores`/`rating_score` como número 0–1.
-- Escena de la demo: OC-2026-0142 + PED-0038 en `in_progress` con 400/1000; sin pedidos de redistribución, sin `approve_assignment` ni `order_in_danger` de esa orden (pasan en vivo).
+- Escena de la demo: CP-2026-0142 + PT-0038 en `in_progress` con 400/1000; sin pedidos de redistribución, sin `approve_assignment` ni `order_in_danger` de esa orden (pasan en vivo).
 - Imágenes: todas generadas (ver `images/credits.md`); 1024 px, < 300 KB.
 
 ## Planta (`plant`)

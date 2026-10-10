@@ -1,6 +1,6 @@
 [
   {
-    "code": "OC-2026-0142",
+    "code": "CP-2026-0142",
     "customer": "Caja Piura",
     "brand": "UNICRACK",
     "status": "in_production",
@@ -29,7 +29,7 @@
     ]
   },
   {
-    "code": "OC-2026-0151",
+    "code": "CP-2026-0151",
     "customer": "AIDER",
     "brand": "NEXO",
     "status": "sourcing",
@@ -71,7 +71,7 @@
     ]
   },
   {
-    "code": "OC-2026-0155",
+    "code": "CP-2026-0155",
     "customer": "Colegio Los Algarrobos",
     "brand": "UNICRACK",
     "status": "confirmed",
@@ -115,7 +115,7 @@
     ]
   },
   {
-    "code": "OC-2026-0158",
+    "code": "CP-2026-0158",
     "customer": "PIQA",
     "brand": "Línea Médica Corpotex",
     "status": "broken_down",
@@ -144,7 +144,7 @@
     ]
   },
   {
-    "code": "OC-2026-0160",
+    "code": "CP-2026-0160",
     "customer": "Colegio Los Algarrobos",
     "brand": "UNICRACK",
     "status": "registered",
@@ -174,7 +174,7 @@
     ]
   },
   {
-    "code": "OC-2026-0118",
+    "code": "CP-2026-0118",
     "customer": "PIQA",
     "brand": "NEXO",
     "status": "ready",
@@ -202,7 +202,7 @@
     ]
   },
   {
-    "code": "OC-2026-0097",
+    "code": "CP-2026-0097",
     "customer": "Colegio Los Algarrobos",
     "brand": "UNICRACK",
     "status": "delivered",
@@ -232,7 +232,7 @@
     ]
   },
   {
-    "code": "OC-2026-0109",
+    "code": "CP-2026-0109",
     "customer": "AIDER",
     "brand": "Línea Médica Corpotex",
     "status": "cancelled",
