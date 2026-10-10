@@ -88,7 +88,7 @@
       "polo",
       "camisa"
     ],
-    "contact_name": "Encargada",
+    "contact_name": "",
     "city": "Piura",
     "address": "Av. Sánchez Cerro 1450, Piura",
     "lead_time_days": 10,
@@ -496,7 +496,12 @@
       "buzo"
     ],
     "address": "Av. Grau 2150, Piura",
-    "notes": "Encontrado en el directorio de socios de la Cámara de Comercio y Producción de Piura (sección confecciones). Sin contacto previo ni precios; falta validar capacidad y calidad."
+    "notes": "",
+    "source_detail": {
+      "source": "Cámara de Comercio y Producción de Piura",
+      "url": null,
+      "excerpt": "Encontrado en el directorio de socios de la Cámara de Comercio y Producción de Piura (sección confecciones). Sin contacto previo ni precios; falta validar capacidad y calidad."
+    }
   },
   {
     "source": "external",
@@ -519,6 +524,11 @@
       "bordado"
     ],
     "address": "Urb. Miraflores, Castilla, Piura",
-    "notes": "Aparece en el directorio de proveedores de la Cámara de Comercio y Producción de Piura. Sin contacto previo ni precios; pedir muestra antes de asignar."
+    "notes": "",
+    "source_detail": {
+      "source": "Cámara de Comercio y Producción de Piura",
+      "url": null,
+      "excerpt": "Aparece en el directorio de proveedores de la Cámara de Comercio y Producción de Piura. Sin contacto previo ni precios; pedir muestra antes de asignar."
+    }
   }
 ]

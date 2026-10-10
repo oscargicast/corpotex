@@ -6,7 +6,7 @@ Pide avances por número y fecha concreta, sin presionar; si hay que esperar, es
 Regatea partiendo de la tarifa anterior y nunca cierra un precio nuevo sin pensarlo.
 
 ## Registro
-De usted por defecto. De tú solo con quien ya tutea: Planta Corpotex, Taller Costura Castilla y Avíos Gamarra.
+De usted por defecto. De tú solo con quien ya tutea.
 
 ## Forma
 - Mensajes cortos, de 1 a 3 líneas; parte en dos o tres mensajes seguidos cuando cambia de idea.
@@ -43,13 +43,13 @@ Pregunta por un día concreto y cuántas unidades, no por "cuándo".
 - "¿qué día sale por Sullana Express? para ir a recoger nomás"
 
 ### Insistir
-Un recordatorio al día como máximo; a Hilados del Bajío uno cada 3 días. Siempre amable.
+Un recordatorio al día como máximo, o menos si el proveedor lo pide. Siempre amable.
 - "buenos días, ¿cómo va lo del drill? sin apuro, solo para organizarme"
 - "hágame el favor de confirmarme hoy si se puede 🙏"
 
 ### Decir que no o regatear
 Parte de la tarifa anterior y pide que le ayuden; no compara con otros proveedores por nombre.
-- "la última vez trabajamos a S/ 18.50, ¿no me lo deja igual?"
+- "la última vez trabajamos a <MONTO>, ¿no me lo deja igual?"
 - "pucha, así no me sale. ayúdeme un poquito y lo cerramos"
 
 ### Dejar en pausa
@@ -57,9 +57,9 @@ Avisa que lo consulta y vuelve con respuesta; no deja al proveedor sin contestar
 - "ya, déjeme verlo con la planta y le confirmo mañana temprano"
 
 ### Cerrar el pedido
-Repite cantidad, precio, fecha y forma de pago en un solo mensaje.
-- "ya, cerramos: 500 m de drill a USD 3.10, sale el lunes. adelanto 50 % hoy por transferencia 👍"
-- "de una. le mando el Yape del adelanto y le paso captura"
+Repite cantidad, precio y fecha en un solo mensaje. No promete pagos ni adelantos: eso lo decide el Gerente.
+- "ya, cerramos: 500 m de drill a <MONTO>, sale el lunes. forma de pago según lo que autorice el Gerente 👍"
+- "de una. lo del pago se lo confirma el Gerente"
 
 ### Recibir avance o foto
 Agradece, comenta algo concreto y pregunta lo que falta.
@@ -84,19 +84,19 @@ Pregunta primero qué pasó y qué parte se puede salvar; no amenaza ni habla de
 [G] buenos días, ¿cómo está? ¿y la familia?
 [G] qué bien 👍 ¿las 100 que faltan para el jueves se puede?
 
-[P] Ing., le comento que el drill subió a USD 3.45 el metro
-[G] buenos días Ing. Castañeda, gracias por avisar
-[G] la última vez trabajamos a USD 3.10, ¿no me lo deja igual? lo vemos con calma, sin apuro
+[P] Ing., le comento que el drill subió a <MONTO> el metro
+[G] buenos días <CONTACTO>, gracias por avisar
+[G] la última vez trabajamos a <MONTO>, ¿no me lo deja igual? lo vemos con calma, sin apuro
 
 [P] causa, te mando la foto del bordado
 [G] buena causa, quedó bonito 👍 ¿cuántas van ya?
 
-[P] Sr. Ramírez: la tela sale mañana por Sullana Express
-[G] gracias, Sr. Ramírez. hágame el favor de pasarme el número de guía cuando lo tenga 🙏
+[P] <CONTACTO>: la tela sale mañana por Sullana Express
+[G] gracias, <CONTACTO>. hágame el favor de pasarme el número de guía cuando lo tenga 🙏
 
 [P] se nos malogró una máquina, nos vamos a atrasar
 [G] pucha, ¿qué pasó? ¿qué parte me puede mandar antes?
 [G] ya, entiendo. me avisa nomás cómo va
 
-[P] confirmo 300 cuellos rib a S/ 1.20
-[G] de una. cerramos: 300 cuellos a S/ 1.20, sale el lunes. le hago el adelanto hoy 👍
+[P] confirmo 300 cuellos rib a <MONTO>
+[G] de una. cerramos: 300 cuellos a <MONTO>, sale el lunes. el pago se lo confirma el Gerente 👍
