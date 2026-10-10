@@ -1,0 +1,32 @@
+{
+  "manager": {
+    "assistant_unread": 2,
+    "latest_unread": { "id": 41, "preview": "PT-0001 lleva 2 días sin avance.", "alert_kind": "stalled_purchase_order" },
+    "claude_ok": true,
+    "pending_decisions": 3,
+    "orders_in_danger": 1,
+    "claude_expired": false,
+    "claude_last_error": null,
+    "claude_refresh_expires_at": "2026-11-12T08:00:00-05:00"
+  },
+  "sales": {
+    "assistant_unread": 1,
+    "latest_unread": { "id": 42, "preview": "La orden CP-2026-0001 está en peligro.", "alert_kind": "order_in_danger" },
+    "claude_ok": true,
+    "pending_decisions": null,
+    "orders_in_danger": null,
+    "claude_expired": null,
+    "claude_last_error": null,
+    "claude_refresh_expires_at": null
+  },
+  "production": {
+    "assistant_unread": 0,
+    "latest_unread": null,
+    "claude_ok": true,
+    "pending_decisions": null,
+    "orders_in_danger": null,
+    "claude_expired": null,
+    "claude_last_error": null,
+    "claude_refresh_expires_at": null
+  }
+}

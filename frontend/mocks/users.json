@@ -1,0 +1,5 @@
+[
+  { "id": 1, "username": "gerente", "first_name": "Gerente", "role": "manager" },
+  { "id": 2, "username": "comercial", "first_name": "Comercial", "role": "sales" },
+  { "id": 3, "username": "produccion", "first_name": "Producción", "role": "production" }
+]
