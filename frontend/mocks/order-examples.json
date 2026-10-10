@@ -1,0 +1,35 @@
+[
+  {
+    "label": "Caja Piura · 500 polos UNICRACK",
+    "payload": {
+      "customer": { "name": "Caja Piura", "tax_id": "20100000001" },
+      "brand": "UNICRACK",
+      "promised_on_in_days": 14,
+      "items": [
+        { "product_code": "POLO-UNI-01", "quantity": 500, "sizes": { "S": 100, "M": 200, "L": 150, "XL": 50 }, "color": "Blanco", "customization": "Bordado del logo en el pecho", "unit_price": "28.50" }
+      ]
+    }
+  },
+  {
+    "label": "Colegio San José · 300 buzos NEXO",
+    "payload": {
+      "customer": { "name": "Colegio San José", "tax_id": "20500000002" },
+      "brand": "NEXO",
+      "promised_on_in_days": 21,
+      "items": [
+        { "product_code": "BUZO-ESC-01", "quantity": 300, "sizes": { "8": 60, "10": 80, "12": 90, "14": 70 }, "color": "Verde", "customization": "Sublimado de la insignia", "unit_price": "65.00" }
+      ]
+    }
+  },
+  {
+    "label": "AIDER · 120 casacas",
+    "payload": {
+      "customer": { "name": "AIDER", "tax_id": "20300000003" },
+      "brand": "Línea Médica Corpotex",
+      "promised_on_in_days": 18,
+      "items": [
+        { "product_code": "CASACA-01", "quantity": 120, "sizes": { "M": 50, "L": 50, "XL": 20 }, "color": "Negro", "customization": "Estampado en la espalda", "unit_price": "89.00" }
+      ]
+    }
+  }
+]

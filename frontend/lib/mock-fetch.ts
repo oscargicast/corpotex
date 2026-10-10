@@ -2,8 +2,75 @@
 // Enabled with NEXT_PUBLIC_USE_MOCKS=1. Shapes follow docs/backend/modelo-de-datos.md.
 import badgesByRole from "@/mocks/badges.json";
 import monitorSeed from "@/mocks/monitor.json";
+import ordersSeed from "@/mocks/orders.json";
+import purchaseOrdersSeed from "@/mocks/purchase-orders.json";
 import users from "@/mocks/users.json";
-import type { Badges, ClaudeStatus, Clock, Monitor, Role, User } from "./types";
+import type {
+  Badges,
+  ClaudeStatus,
+  Clock,
+  Monitor,
+  OrderDetail,
+  OrderListItem,
+  PurchaseOrderListItem,
+  Role,
+  User,
+} from "./types";
+
+const orders = structuredClone(ordersSeed.list) as OrderListItem[];
+const orderDetails = structuredClone(ordersSeed.detail) as Record<string, Partial<OrderDetail>>;
+const purchaseOrders = structuredClone(purchaseOrdersSeed) as PurchaseOrderListItem[];
+
+// Same rule as the API serializers: production sees no prices, sales no breakdown.
+function orderDetailFor(order: OrderListItem, role: Role): OrderDetail {
+  const extra = orderDetails[order.id] ?? {};
+  const detail: OrderDetail = {
+    issued_on: order.promised_on,
+    production_stage: null,
+    owner: null,
+    items: [],
+    requirements: [],
+    critical_path: [],
+    redistributions: [],
+    ...extra,
+    ...order,
+    purchase_orders: purchaseOrders.filter((po) => po.orders.some((o) => o.id === order.id)),
+    alerts: monitor.alerts.filter((a) => a.order?.id === order.id),
+  } as OrderDetail;
+  if (role === "manager") detail.redistributions = monitor.redistributions.filter((d) => d.orders.some((o) => o.id === order.id));
+  if (role === "production") {
+    detail.total_amount = null;
+    detail.items = detail.items.map((item) => ({ ...item, unit_price: null }));
+    detail.purchase_orders = detail.purchase_orders.map((po) => ({ ...po, total_amount: null }));
+  }
+  if (role === "sales") detail.requirements = [];
+  return detail;
+}
+
+function createOrder(body: Record<string, unknown>): Response {
+  const code = String(body.code);
+  const existing = orders.find((o) => o.code === code);
+  if (existing) return json(200, existing); // idempotent by code, like the API
+  const items = (body.items as { quantity: number }[]) ?? [];
+  const customer = body.customer as { name: string };
+  const order: OrderListItem = {
+    id: Math.max(...orders.map((o) => o.id)) + 1,
+    code,
+    customer: { id: 90 + orders.length, name: customer.name },
+    brand: { id: 9, name: String(body.brand) },
+    status: "broken_down",
+    status_display: "Desglosada",
+    risk: "ok",
+    risk_reason: "",
+    promised_on: String(body.promised_on),
+    estimated_on: null,
+    slack_days: null,
+    total_units: items.reduce((sum, item) => sum + item.quantity, 0),
+    purchase_orders_summary: { total: 0, confirmed: 0, waiting_manager: 0 },
+  };
+  orders.unshift(order);
+  return json(201, order);
+}
 
 const monitor = structuredClone(monitorSeed) as Monitor;
 
@@ -126,6 +193,35 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
   }
 
   if (route === "GET /api/monitor/") return json(200, monitorFor(user.role));
+
+  if (route === "GET /api/orders/") {
+    const params = new URL(path, "http://mock").searchParams;
+    const filtered = orders.filter(
+      (o) =>
+        (!params.get("status") || o.status === params.get("status")) &&
+        (!params.get("risk") || o.risk === params.get("risk")) &&
+        (!params.get("brand") || String(o.brand.id) === params.get("brand")) &&
+        (!params.get("code") || o.code === params.get("code")),
+    );
+    return json(200, filtered);
+  }
+  if (route === "POST /api/orders/") {
+    if (user.role === "production") return json(403, { detail: "Solo Comercial y Gerente." });
+    return createOrder(readBody(init.body));
+  }
+  const orderMatch = route.match(/^GET \/api\/orders\/(\d+)\/$/);
+  if (orderMatch) {
+    const order = orders.find((o) => o.id === Number(orderMatch[1]));
+    return order ? json(200, orderDetailFor(order, user.role)) : json(404, { detail: "No existe." });
+  }
+  const confirmMatch = route.match(/^POST \/api\/orders\/(\d+)\/confirm\/$/);
+  if (confirmMatch) {
+    if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
+    const order = orders.find((o) => o.id === Number(confirmMatch[1]));
+    if (!order) return json(404, { detail: "No existe." });
+    Object.assign(order, { status: "confirmed", status_display: "Confirmada" });
+    return json(200, orderDetailFor(order, user.role));
+  }
   const decisionMatch = route.match(/^POST \/api\/manager\/decisions\/(\d+)\/$/);
   if (decisionMatch) {
     if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });

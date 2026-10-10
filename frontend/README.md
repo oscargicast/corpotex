@@ -12,9 +12,13 @@ docker compose exec frontend pnpm typecheck
 docker compose exec frontend pnpm build
 ```
 
+## Rutas nuevas
+
+Turbopack dentro de Docker no ve las carpetas de rutas nuevas (por ejemplo `app/(dashboard)/orders/[id]/`) hasta reiniciar: `docker compose restart frontend`. Los cambios en archivos que ya existen sí recargan solos.
+
 ## Mocks
 
-Con `NEXT_PUBLIC_USE_MOCKS=1`, el navegador responde `auth`, `clock` y `me/badges` sin backend (`lib/mock-fetch.ts`). Usuarios: `gerente`, `comercial` y `produccion`, con la contraseña igual al usuario.
+Con `NEXT_PUBLIC_USE_MOCKS=1`, el navegador responde la API sin backend (`lib/mock-fetch.ts`, datos en `mocks/`): auth, clock, badges, monitor, decisiones, alertas, órdenes, pedidos y `settings/claude`. El estado vive en memoria de la pestaña y vuelve al inicio al recargar. Usuarios: `gerente`, `comercial` y `produccion`, con la contraseña igual al usuario.
 
 ## Sesión por pestaña
 

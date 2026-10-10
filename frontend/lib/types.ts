@@ -54,6 +54,84 @@ export interface OrderListItem {
   estimated_on: string | null;
   slack_days: number | null;
   total_units: number;
+  purchase_orders_summary?: { total: number; confirmed: number; waiting_manager: number };
+}
+
+export interface PurchaseOrderListItem {
+  id: number;
+  code: string;
+  kind: "material" | "workshop" | "finished";
+  kind_display: string;
+  status: string;
+  status_display: string;
+  waiting_manager: boolean;
+  supplier: { id: number; name: string; kind: string };
+  orders: (Ref & { customer_name: string })[];
+  total_units: number;
+  units_done: number;
+  progress_pct: number;
+  internal_due_on: string | null;
+  committed_on: string | null;
+  last_progress_at: string | null;
+  next_follow_up_at: string | null;
+  total_amount?: string | null; // hidden for production
+  currency: Currency;
+  redistributed_from: Ref | null;
+  alert_severity: Severity | null;
+}
+
+export interface Named {
+  id: number;
+  name: string;
+  image?: string | null;
+}
+
+export interface OrderItem {
+  id: number;
+  product: Named & { code: string };
+  quantity: number;
+  sizes: Record<string, number>;
+  color: string;
+  customization: string;
+  unit_price?: string | null;
+}
+
+export interface Requirement {
+  id: number;
+  kind: "material" | "workshop" | "finished";
+  kind_display: string;
+  material?: (Named & { unit: string }) | null;
+  product?: Named | null;
+  qty_needed: string;
+  qty_from_stock: string;
+  qty_to_order: string;
+  status: string;
+  status_display: string;
+  purchase_orders: (Ref & { supplier_name: string; quantity: string; status_display: string })[];
+}
+
+export interface CriticalStep {
+  id: string;
+  name: string;
+  kind: "material" | "workshop" | "production" | "delivery";
+  start: string;
+  end: string;
+  critical: boolean;
+  status: "pending" | "in_progress" | "done" | "late";
+  purchase_order_id: number | null;
+}
+
+export interface OrderDetail extends OrderListItem {
+  issued_on: string;
+  production_stage: string | null;
+  owner: { id: number; first_name: string } | null;
+  total_amount?: string | null;
+  items: OrderItem[];
+  requirements: Requirement[];
+  critical_path: CriticalStep[];
+  purchase_orders: PurchaseOrderListItem[];
+  alerts: Alert[];
+  redistributions: Decision[];
 }
 
 export interface Alert {
