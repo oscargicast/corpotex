@@ -42,5 +42,5 @@ Cada sesión desarrolla en su worktree (ADR 0008), pero el compose de `main` es 
 
 - Un solo comando para cualquier integrante: `cp .env.example .env && docker compose up`.
 - El tunnel apunta a `localhost:8000` y `localhost:3000`, que ahora son puertos publicados por compose. No cambia.
-- El worker de Celery necesita el CLI de Claude Code dentro de la imagen; el wheel del SDK lo trae, pero se verifica en el primer build (si no, se agrega Node a la imagen de backend).
+- El worker de Celery necesita el CLI de Claude Code dentro de la imagen. `agente` verificó que el wheel Linux del SDK 0.2.165 trae el CLI como binario nativo que solo pide glibc, así que `python:3.13-slim` alcanza y no hace falta Node. Queda confirmarlo en el primer build.
 - Python 3.13 y no 3.14: el SDK y Celery están probados en 3.13; 3.14 salió hace poco.

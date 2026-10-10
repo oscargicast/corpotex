@@ -37,7 +37,9 @@ Una sola cuenta de Claude por instalación, conectada por el Gerente desde `/set
 ### Cambios en el modelo y en el agente
 
 - `Config.claude_last_error` (texto, nullable) y `Config.claude_connected_at`.
-- `agent/sdk.py` deja de inyectar `CLAUDE_CODE_OAUTH_TOKEN`; depende solo de `CLAUDE_CONFIG_DIR`.
+- `agent/sdk.py` deja de inyectar `CLAUDE_CODE_OAUTH_TOKEN`; depende solo de `CLAUDE_CONFIG_DIR`. Verificado por `agente`: con `setting_sources=[]` el CLI sí lee `.credentials.json` de esa carpeta.
+- Modo API key: con `setting_sources=[]` el CLI no lee el `apiKeyHelper` de `settings.json`, así que `sdk.py` le pasa el helper por la opción `settings=` del SDK (verificado: `apiKeySource=apiKeyHelper`). El archivo y el endpoint `set-key` no cambian. Con una API key inválida el CLI reintenta más de 120 s en vez de fallar rápido; el turno termina por `soft_time_limit`.
+- Detección de fallas de auth: el CLI devuelve un `AssistantMessage` con `model="<synthetic>"` y `error="authentication_failed"` (en 0,4 a 3 s), seguido de `ResultError`. `run_turn` y `complete()` clasifican por ese `error`; los textos ("Not logged in · Please run /login", "OAuth session expired and could not be refreshed") son respaldo.
 - `run_turn` clasifica los errores de autenticación del CLI, los guarda en `Config.claude_last_error` y crea una `Alert` `claude_disconnected` para el Gerente (que llega por el asistente, ADR 0020, salvo que el propio asistente no pueda correr: entonces solo el banner y el Monitor).
 
 ## Consecuencias
