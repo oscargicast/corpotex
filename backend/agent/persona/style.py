@@ -38,6 +38,8 @@ PHONE_RE = re.compile(r"\b9\d{2}[\s-]?\d{3}[\s-]?\d{3}\b|\b51\d{9}\b")
 RUC_RE = re.compile(r"\b(?:10|20)\d{9}\b")
 # Amounts must be anonymized as <MONTO>, otherwise the agent may copy them as prices.
 AMOUNT_RE = re.compile(r"(?:S/|USD|US\$|\$)\s?\d")
+# The agent writes from the manager's own number: his phrases never name him.
+MANAGER_RE = re.compile(r"\bgerente\b", re.IGNORECASE)
 
 
 def load_template() -> str:
@@ -71,6 +73,13 @@ def validate_style(md: str, supplier_names: tuple[str, ...] = ()) -> list[str]:
     for name in supplier_names:
         if name and name.lower() in lowered:
             errors.append(f'Nombra a un proveedor ("{name}"); usa <PROVEEDOR>.')
+    for line in md.splitlines():
+        phrase = line.strip()
+        if phrase.startswith(('- "', "[G]")) and MANAGER_RE.search(phrase):
+            errors.append(
+                f"Una frase del Gerente lo nombra en tercera persona ({phrase[:80]}): "
+                "el asistente escribe desde su número."
+            )
     return errors
 
 

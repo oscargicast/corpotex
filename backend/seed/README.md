@@ -17,7 +17,8 @@ Fixtures para `python manage.py seed_demo` (ADR 0021). Datos inventados; ninguna
 | `data/alerts.json` | `Alert` | — |
 | `data/decisions.json` | `Decision` (M2M `purchase_orders`) | — |
 | `data/style_versions.json` | `StyleVersion` | orden del array = orden de creación |
-| `data/BOSS.md` | estilo base = `style_md` de la última versión | — |
+
+El estilo base no vive en el seed: la versión `template` sale siempre de `backend/agent/persona/templates/style.base.md`. Las versiones `daily` parten de esa plantilla y cada `style_md` tiene que pasar `validate_style` (sin nombres de proveedores, montos, teléfonos ni frases [G] que nombren al Gerente). Lo propio de cada proveedor va en su `notes` y, en el historial, en el `changelog` como sugerencia.
 
 Orden de carga sugerido: brands, customers, materials, products, product_materials, suppliers, orders, purchase_orders, alerts, decisions, style_versions.
 

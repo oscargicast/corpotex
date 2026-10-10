@@ -141,7 +141,6 @@ for x in d["decisions"]:
     enum(x["kind"], {"approve_assignment","price","terms","other"}, w); enum(x["status"], {"pending","approved","rejected","supplier_changed","cancelled"}, w)
     enum(x["channel"], {"dashboard","assistant","admin"}, w)
 for v in d["style_versions"]: enum(v["source"], {"onboarding","daily","template","manual","rollback"}, "style")
-if open(f"{H}/data/BOSS.md").read() != d["style_versions"][-1]["style_md"]: err("BOSS.md != última style_md")
 # escena demo
 po38 = [p for p in d["purchase_orders"] if any(i["order"] == "OC-2026-0142" for i in p["items"]) and p["kind"] == "workshop"]
 if len(po38) != 1 or po38[0]["supplier"] != "Confecciones del Norte" or po38[0]["status"] != "in_progress" or po38[0]["units_done"] != 400: err("escena demo: pedido de taller")
