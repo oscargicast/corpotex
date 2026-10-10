@@ -151,7 +151,7 @@ def install(monkeypatch, **overrides):
         },
         "manager.models": {"Decision": Decision, "Alert": Alert},
         "core.clock": {"set_clock": recorder("set_clock")},
-        "core.claude_auth": {"mark_claude_disconnected": mark_claude_disconnected},
+        "core.claude_account": {"mark_claude_disconnected": mark_claude_disconnected},
         "agent.persona": {
             "build_prompt": build_prompt,
             "build_assistant_prompt": build_assistant_prompt,
