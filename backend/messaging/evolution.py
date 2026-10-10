@@ -12,9 +12,12 @@ to be pointed at ``personal-whatsapp``.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import Any
 
 import requests
+
+SinceType = datetime | int | float
 
 # Settings applied by step 1 of the onboarding (ADR 0011): ignore groups; do not
 # reject calls, do not mark messages as read and do not sync the full history.
@@ -33,8 +36,21 @@ PROTECTED_INSTANCES = frozenset({"personal-whatsapp"})
 
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
 
+USER_AGENT = "corpotex-backend/0.1"
+DEFAULT_BASE_URL = "https://evolution.oscargicast.com"
+WHATSAPP_JID_SUFFIX = "@s.whatsapp.net"
 
-class EvolutionUnavailable(Exception):
+# `POST /chat/findMessages` pages newest first; `offset` is the page size.
+FIND_MESSAGES_PAGE_SIZE = 50
+FIND_MESSAGES_MAX_PAGES = 40
+
+
+class EvolutionError(Exception):
+    """Base of every failure talking to Evolution; callers that only need "it did not
+    work" (the style extraction, B4.6) catch this one."""
+
+
+class EvolutionUnavailable(EvolutionError):
     """Evolution could not be reached or did not answer 2xx.
 
     ``reason`` is a short tag: ``network``, ``access_denied`` (Cloudflare Access
@@ -79,11 +95,26 @@ class EvolutionClient:
     def from_env(cls, env: Mapping[str, str]) -> EvolutionClient:
         """Build a client from the variable names documented in ``.env.example``."""
         return cls(
-            base_url=env.get("EVOLUTION_API_URL") or "https://evolution.oscargicast.com",
+            base_url=env.get("EVOLUTION_API_URL") or DEFAULT_BASE_URL,
             instance=env.get("EVOLUTION_INSTANCE") or "corpotex",
             token=env.get("EVOLUTION_INSTANCE_TOKEN") or "",
             cf_client_id=env.get("CF_ACCESS_CLIENT_ID"),
             cf_client_secret=env.get("CF_ACCESS_CLIENT_SECRET"),
+        )
+
+    @classmethod
+    def from_settings(cls) -> EvolutionClient:
+        """Build a client from Django settings (same names as the env)."""
+        from django.conf import settings
+
+        return cls.from_env(
+            {
+                "EVOLUTION_API_URL": settings.EVOLUTION_API_URL,
+                "EVOLUTION_INSTANCE": settings.EVOLUTION_INSTANCE,
+                "EVOLUTION_INSTANCE_TOKEN": settings.EVOLUTION_INSTANCE_TOKEN,
+                "CF_ACCESS_CLIENT_ID": settings.CF_ACCESS_CLIENT_ID,
+                "CF_ACCESS_CLIENT_SECRET": settings.CF_ACCESS_CLIENT_SECRET,
+            }
         )
 
     @property
@@ -97,7 +128,9 @@ class EvolutionClient:
     # -- transport -------------------------------------------------------------
 
     def _headers(self) -> dict[str, str]:
-        headers = {"apikey": self._token}
+        # Cloudflare's browser integrity check answers 403 (error 1010) to generic
+        # Python user agents, so the client identifies itself.
+        headers = {"apikey": self._token, "User-Agent": USER_AGENT}
         if self.has_access_token:
             headers["CF-Access-Client-Id"] = self._cf_client_id  # type: ignore[assignment]
             headers["CF-Access-Client-Secret"] = self._cf_client_secret  # type: ignore[assignment]
@@ -187,3 +220,61 @@ class EvolutionClient:
     def send_text(self, phone: str, text: str) -> dict:
         body = {"number": phone, "text": text}
         return self._request("POST", f"/message/sendText/{self.instance}", json=body)
+
+    def find_messages(self, jid: str, since: SinceType, *, limit: int = 300) -> list[dict]:
+        """Raw message records of one chat since ``since``, oldest first.
+
+        Records are what Evolution stores (``key``, ``message``, ``messageTimestamp``
+        in epoch seconds, ``pushName``, also on ``fromMe``). When the chat holds more
+        than ``limit`` messages since ``since`` the MOST RECENT ``limit`` are kept:
+        the style of the Gerente is read from how they write today (planning B4.6).
+        """
+        since_ts = _epoch(since)
+        body = {"where": {"key": {"remoteJid": jid}}, "offset": FIND_MESSAGES_PAGE_SIZE}
+        collected: list[dict] = []
+        for page in range(1, FIND_MESSAGES_MAX_PAGES + 1):
+            data = self._request(
+                "POST", f"/chat/findMessages/{self.instance}", json={**body, "page": page}
+            )
+            block = data.get("messages") if isinstance(data, dict) else None
+            records = block.get("records") if isinstance(block, dict) else data
+            records = [record for record in (records or []) if isinstance(record, dict)]
+            if not records:
+                break
+            fresh = [record for record in records if _timestamp(record) >= since_ts]
+            collected.extend(fresh)
+            pages = block.get("pages") if isinstance(block, dict) else None
+            exhausted = isinstance(pages, int) and page >= pages
+            # Pages come newest first: anything older than `since` on this page means
+            # the following pages are older still; and `limit` fresh records are
+            # already the most recent ones.
+            if len(fresh) < len(records) or len(collected) >= limit or exhausted:
+                break
+        collected.sort(key=_timestamp)
+        return collected[-limit:] if limit > 0 else []
+
+
+def find_messages(jid: str, since: SinceType, *, limit: int = 300) -> list[dict]:
+    """Module-level entry point for the style extraction (B4.6): digits or full JID."""
+    if "@" not in jid:
+        jid = f"{jid}{WHATSAPP_JID_SUFFIX}"
+    return EvolutionClient.from_settings().find_messages(jid, since, limit=limit)
+
+
+def _epoch(value: SinceType) -> float:
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return value.timestamp()
+    return float(value)
+
+
+def _timestamp(record: Mapping) -> float:
+    """``messageTimestamp`` as epoch seconds; unparseable values sort first (oldest)."""
+    raw = record.get("messageTimestamp")
+    if isinstance(raw, Mapping):  # Long {low, high} from older Baileys payloads
+        raw = raw.get("low")
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return 0.0

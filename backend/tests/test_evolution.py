@@ -5,6 +5,7 @@ import json
 import pytest
 import requests
 
+from messaging import evolution
 from messaging.evolution import DEFAULT_SETTINGS, EvolutionClient, EvolutionUnavailable
 
 BASE_URL = "https://evo.test"
@@ -45,7 +46,7 @@ class Recorder:
 
 
 def client(**kwargs) -> EvolutionClient:
-    params = dict(base_url=BASE_URL, instance="corpotex", token=TOKEN)
+    params = {"base_url": BASE_URL, "instance": "corpotex", "token": TOKEN}
     params.update(kwargs)
     return EvolutionClient(**params)
 
@@ -73,6 +74,7 @@ def test_connection_state_path_and_headers_with_access_token(record):
     assert rec.last["url"] == f"{BASE_URL}/instance/connectionState/corpotex"
     assert rec.last["headers"] == {
         "apikey": TOKEN,
+        "User-Agent": evolution.USER_AGENT,
         "CF-Access-Client-Id": CF_ID,
         "CF-Access-Client-Secret": CF_SECRET,
     }
@@ -84,7 +86,7 @@ def test_headers_without_access_token_have_only_apikey(record):
     rec = record(FakeResponse(200, {"instance": {"state": "close"}}))
 
     assert client().connection_state() == "close"
-    assert rec.last["headers"] == {"apikey": TOKEN}
+    assert rec.last["headers"] == {"apikey": TOKEN, "User-Agent": evolution.USER_AGENT}
     assert "CF-Access-Client-Id" not in rec.last["headers"]
     assert "CF-Access-Client-Secret" not in rec.last["headers"]
 
