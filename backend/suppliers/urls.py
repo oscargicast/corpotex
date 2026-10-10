@@ -1,1 +1,8 @@
-urlpatterns: list = []  # Supplier endpoints arrive with B2.3 and B4.5.
+from rest_framework.routers import SimpleRouter
+
+from . import views
+
+router = SimpleRouter()
+router.register("suppliers", views.SupplierViewSet, basename="supplier")
+
+urlpatterns = router.urls

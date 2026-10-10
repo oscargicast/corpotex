@@ -13,6 +13,15 @@ def require_role(actor, *roles: str) -> None:
         raise PermissionDenied(f"Requires role: {', '.join(roles)}")
 
 
+class HasAnyRole(BasePermission):
+    """Default for the API: authenticated and in one of the role groups. A user without a role
+    (for example the admin superuser) gets 403 instead of the manager's view of the data."""
+
+    def has_permission(self, request, view) -> bool:
+        user = request.user
+        return bool(user and user.is_authenticated and user.role in ("manager", "sales", "production"))
+
+
 class HasRole(BasePermission):
     roles: tuple[str, ...] = ()
 

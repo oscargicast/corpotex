@@ -249,6 +249,22 @@ class Payment(TimeStamped):
     def status(self) -> str:
         return "paid" if self.paid_at else "pending"
 
+    @property
+    def due_on(self):
+        """Computed: the advance is due when the purchase order was confirmed (the payments are
+        created then); the balance, on the last delivery or the committed date."""
+        if self.kind == self.Kind.ADVANCE:
+            return self.created_at.date() if self.created_at else None
+        delivery = self.purchase_order.deliveries.order_by("-received_at").first()
+        return delivery.received_at.date() if delivery else self.purchase_order.committed_on
+
+    @property
+    def is_overdue(self) -> bool:
+        from core import clock
+
+        due = self.due_on
+        return bool(due and not self.paid_at and due < clock.today())
+
 
 class Route(TimeStamped):
     class Status(models.TextChoices):
