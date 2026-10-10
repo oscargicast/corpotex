@@ -8,7 +8,7 @@ Estado al sábado 10/10, 16:30. Demo: domingo 11/10. Diseño cerrado en `docs/ad
 |---|---|---|
 | `backend` | Django + DRF, modelos, servicios, API, webhook, Celery, seed, compose | `backend/`, `infra/`, `docs/api/`; worktree `../corpotex-backend`, rama `backend` |
 | `agente` | Worker de turnos, agente de WhatsApp, asistente del dashboard, tools por rol, SDK aislado | `backend/agent/`; worktree `../corpotex-agente`, rama `agente/worker` |
-| `personalidad` | Prompts, estilo del Gerente (`BOSS.md`), extracción y refresco, fixtures sintéticos, escenarios de prueba | `backend/agent/persona/`; worktree `../corpotex-personalidad`, rama `personalidad` |
+| `personalidad` | Prompts, estilo del Gerente (se guarda en `User.style_md` y `StyleVersion`; en el repo solo va la plantilla base), extracción y refresco, fixtures sintéticos, escenarios de prueba | `backend/agent/persona/`; worktree `../corpotex-personalidad`, rama `personalidad` |
 | `disenador` | Dashboard Next.js: vistas, asistente, simulador, onboarding, estilo | `frontend/`; worktree `../corpotex-frontend`, rama `feat/tablero` |
 | `orquestador` | Coordinación, ADRs, merges a `main`, enlace con Oscar y Kenji | este checkout |
 | Oscar | Decisiones, credenciales, chat de rol con la proveedora real, guion y pitch | |
@@ -26,7 +26,7 @@ flowchart LR
     B2 --> F2[F2 vistas con datos reales]
     B3 --> A2[A2 agente WhatsApp]
     A1 --> A2
-    P1[P1 prompts + BOSS base + fixtures] --> A2
+    P1[P1 prompts + plantilla de estilo + fixtures] --> A2
     B3 --> B4[B4 API asistente + manager + onboarding]
     B4 --> A3[A3 asistente por rol + avisos]
     A1 --> A3
@@ -64,7 +64,7 @@ Horas en hora real. Las estimaciones son de cada sesión; el orquestador las aju
 |---|---|---|---|---|
 | B1 | backend | Proyecto Django + DRF, 25 modelos con admin, usuarios y grupos, Celery, `infra/docker-compose.yml`, `backend/Dockerfile`, `pyproject.toml` con claude-agent-sdk. PR a `main` | 0.1 | 2 h |
 | A1 | agente | Spike fuera del repo (latencia, aislamiento, 4 en paralelo). Luego `agent/sdk.py` (`isolated_options`, `complete`), `tasks.run_turn`, `channels.py` | 0.2, B1 | 2 h |
-| P1 | personalidad | `persona/templates/BOSS.base.md`, `build_prompt` del agente de WhatsApp, `rules` en español, fixtures sintéticos de Lima y México, `scenarios.yaml` | 0.1 | 2 h |
+| P1 | personalidad | `persona/templates/style.base.md` (plantilla vacía del estilo), `build_prompt` del agente de WhatsApp, `rules` en español, fixtures sintéticos de Lima y México, `scenarios.yaml` | 0.1 | 2 h |
 | F1 | disenador | Next.js, login con token por pestaña, layout con menú por rol, reloj en el header, mocks con el shape de la API | 0.1 | 2 h |
 
 Hito 1 (20:00): `docker compose up` levanta Postgres, Redis, Django, worker y beat; el admin muestra los modelos; el front hace login contra Django.
