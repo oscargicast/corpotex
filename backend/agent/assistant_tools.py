@@ -29,6 +29,8 @@ def assistant_tools(conversation, batch) -> list:
     writes = {
         "manager": [_resolve_decision, _acknowledge_alert, _mark_payment_paid, _set_clock],
         "production": [_confirm_order, _record_delivery, _record_progress],
+        # TODO(A3, after B4): sales gets find_client and register_order once their
+        # endpoints exist; until then sales only reads.
     }.get(user.role, [])
     return _reads(user) + [build(conversation, batch.turn, user) for build in writes]
 
