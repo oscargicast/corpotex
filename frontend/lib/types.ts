@@ -365,6 +365,67 @@ export interface AssistantMessage {
   created_at: string;
 }
 
+// Inventory (F2.6): stock, reserved by open orders, and what is left.
+export interface Material {
+  id: number;
+  sku: string;
+  name: string;
+  kind: "fabric" | "button" | "zipper" | "collar_cuff" | "other";
+  kind_display?: string;
+  unit: "m" | "kg" | "unit";
+  stock: string | number;
+  committed: string | number;
+  available: string | number;
+  image: string | null;
+}
+
+export interface MaterialDetail extends Material {
+  requirements: {
+    order_code: string;
+    qty_needed: string | number;
+    qty_from_stock: string | number;
+    qty_to_order: string | number;
+    status: string;
+    status_display?: string;
+  }[];
+}
+
+// Onboarding (ADR 0011, 0019) and style history.
+export type StyleSupplierStatus = "pending" | "reading" | "analyzing" | "done" | "no_phone" | "no_chat" | "not_allowed" | "error";
+
+export interface StyleState {
+  status: "not_started" | "extracting" | "draft" | "approved" | "error";
+  status_display: string;
+  error: string;
+  since: string | null;
+  step: "suppliers" | "merging" | null;
+  suppliers: { id: number; name: string; status: StyleSupplierStatus; messages_read: number | null; error: string }[];
+  style_md: string;
+  notes: { supplier_id: number; supplier_name: string; notes: string }[];
+  approved_at: string | null;
+}
+
+export interface StyleVersion {
+  id: number;
+  source: "onboarding" | "daily" | "template" | "manual" | "rollback";
+  source_display: string;
+  changelog: string;
+  created_at: string;
+}
+
+export interface StyleVersionDetail extends StyleVersion {
+  style_md: string;
+  notes_snapshot: Record<string, string>;
+}
+
+export interface WhatsAppState {
+  state: string; // open | connecting | close
+  webhook: { url: string; events: string[]; base64: boolean } | null;
+  settings: Record<string, unknown> | null;
+  offline: boolean;
+  done_at: string | null;
+}
+
 // Routes (ADR 0024): straight lines between stops, no routing service.
 export interface RouteStop {
   position: number;

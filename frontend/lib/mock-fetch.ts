@@ -2,17 +2,20 @@
 // Enabled with NEXT_PUBLIC_USE_MOCKS=1. Shapes follow docs/backend/modelo-de-datos.md.
 import badgesByRole from "@/mocks/badges.json";
 import conversationsSeed from "@/mocks/conversations.json";
+import materialsSeed from "@/mocks/materials.json";
 import monitorSeed from "@/mocks/monitor.json";
 import ordersSeed from "@/mocks/orders.json";
 import poDetailsSeed from "@/mocks/purchase-order-details.json";
 import purchaseOrdersSeed from "@/mocks/purchase-orders.json";
 import routesSeed from "@/mocks/routes.json";
 import simulatorContactsSeed from "@/mocks/simulator-contacts.json";
+import styleSeed from "@/mocks/style.json";
 import suppliersSeed from "@/mocks/suppliers.json";
 import users from "@/mocks/users.json";
 import type {
   AssistantMessage,
   Badges,
+  MaterialDetail,
   ChatMessage,
   ClaudeStatus,
   Clock,
@@ -24,9 +27,12 @@ import type {
   Role,
   Route,
   SimulatorContact,
+  StyleState,
+  StyleVersionDetail,
   SupplierDetail,
   SupplierListItem,
   User,
+  WhatsAppState,
 } from "./types";
 
 const poDetails = structuredClone(poDetailsSeed) as Record<string, Partial<PurchaseOrderDetail> & { decision_id?: number }>;
@@ -55,8 +61,8 @@ function purchaseOrderDetailFor(po: PurchaseOrderListItem, role: Role): Purchase
     pending_decision: monitor.decisions.find((d) => d.purchase_orders.some((p) => p.id === po.id)) ?? null,
   } as PurchaseOrderDetail;
   if (role !== "manager") {
-    // Team members see the supplier's name, never prices, payments or the matching scores.
-    Object.assign(detail, { total_amount: null, payments: [], paid_amount: null, pending_amount: null, rationale: null, scores: null, candidates: null, pending_decision: null });
+    // Team members see the supplier's name, never prices, payments, the matching scores or the chat.
+    Object.assign(detail, { total_amount: null, payments: [], paid_amount: null, pending_amount: null, rationale: null, scores: null, candidates: null, pending_decision: null, conversation_id: null });
     detail.items = detail.items.map((item) => ({ ...item, unit_price: null }));
   }
   return detail;
@@ -82,6 +88,36 @@ function supplierDetailFor(supplier: SupplierListItem): SupplierDetail {
     active_numbers_count: numbers.length ? numbers.filter((n) => n.active).length : supplier.active_numbers_count,
     purchase_orders: purchaseOrders.filter((po) => po.supplier.id === supplier.id),
   } as SupplierDetail;
+}
+
+function createSupplier(body: Record<string, unknown>, source: "registered" | "self_registered"): Response {
+  const name = String(body.name ?? "").trim();
+  if (!name) return json(400, { name: ["Este campo es requerido."] });
+  const supplier: SupplierListItem = {
+    id: Math.max(...suppliers.map((s) => s.id)) + 1,
+    name,
+    kind: (body.kind as SupplierListItem["kind"]) ?? "workshop",
+    kind_display: body.kind === "materials" ? "Insumos" : body.kind === "finished" ? "Terminado" : "Taller",
+    specialties: Array.isArray(body.specialties) ? (body.specialties as string[]) : String(body.specialties ?? "").split(";").map((x) => x.trim()).filter(Boolean),
+    city: String(body.city ?? ""),
+    weekly_capacity: body.weekly_capacity ? Number(body.weekly_capacity) : null,
+    lead_time_days: body.lead_time_days ? Number(body.lead_time_days) : null,
+    currency: (body.currency as SupplierListItem["currency"]) ?? "PEN",
+    load_pct: null,
+    on_time_score: null,
+    quality_score: null,
+    open_purchase_orders: 0,
+    numbers_count: body.phone ? 1 : 0,
+    active_numbers_count: 0,
+    source,
+    source_display: source === "self_registered" ? "Autoregistro" : "Registrado",
+    status: source === "self_registered" ? "pending_review" : "active",
+    status_display: source === "self_registered" ? "Por revisar" : "Activo",
+    is_in_house: false,
+  };
+  suppliers.push(supplier);
+  if (body.phone) supplierDetails[supplier.id] = { numbers: [{ id: Date.now(), phone: String(body.phone), name: "", active: false }] };
+  return json(201, supplier);
 }
 
 function supplierRoutes(route: string, body: BodyInit | null | undefined): Response | null {
@@ -120,6 +156,86 @@ function supplierRoutes(route: string, body: BodyInit | null | undefined): Respo
     if (!number) return json(404, { detail: "No existe." });
     Object.assign(number, readBody(body));
     return json(200, number);
+  }
+  return null;
+}
+
+// Style onboarding: an extraction walks through reading, analyzing and merging in ~8 s.
+const style = structuredClone(styleSeed) as {
+  state: StyleState;
+  versions: StyleVersionDetail[];
+  whatsapp: WhatsAppState;
+};
+let extractionStartedAt: number | null = null;
+
+function styleState(): StyleState {
+  const s = style.state;
+  if (extractionStartedAt === null) return s;
+  const t = Date.now() - extractionStartedAt;
+  const withPhone = s.suppliers.filter((p) => !["no_phone", "not_allowed"].includes(p.status));
+  if (t < 3000) {
+    withPhone.forEach((p, i) => Object.assign(p, { status: t > 1000 * (i + 1) ? "analyzing" : "reading", messages_read: Math.round(t / 100) }));
+    return { ...s, status: "extracting", status_display: "Extrayendo", step: "suppliers" };
+  }
+  withPhone.forEach((p) => (p.status = "done"));
+  if (t < 8000) return { ...s, status: "extracting", status_display: "Extrayendo", step: "merging" };
+  extractionStartedAt = null;
+  Object.assign(s, { status: "draft", status_display: "Borrador", step: null });
+  return s;
+}
+
+function styleRoutes(route: string, body: BodyInit | null | undefined): Response | null {
+  const busy = () => json(409, { detail: "Hay una extracción en curso." });
+  switch (route) {
+    case "GET /api/onboarding/style/":
+      return json(200, styleState());
+    case "PUT /api/onboarding/style/": {
+      if (styleState().status === "extracting") return busy();
+      const { style_md, notes } = readBody(body) as { style_md: string; notes?: StyleState["notes"] };
+      style.state.style_md = style_md;
+      if (notes) style.state.notes = style.state.notes.map((n) => ({ ...n, notes: notes.find((x) => x.supplier_id === n.supplier_id)?.notes ?? n.notes }));
+      Object.assign(style.state, { status: "draft", status_display: "Borrador" });
+      return json(200, style.state);
+    }
+    case "POST /api/onboarding/style/extract/":
+    case "POST /api/onboarding/style/import-txt/": {
+      if (styleState().status === "extracting") return busy();
+      const since = body instanceof FormData ? body.get("since") : readBody(body).since;
+      if (!since) return json(400, { detail: "Falta la fecha desde la que se lee." });
+      style.state.since = String(since);
+      extractionStartedAt = Date.now();
+      return json(202, styleState());
+    }
+    case "POST /api/onboarding/style/template/":
+      Object.assign(style.state, { style_md: "## Resumen\n\nPerfil base escrito desde la entrevista a Corpotex.\n", status: "draft", status_display: "Borrador" });
+      return json(200, style.state);
+    case "POST /api/onboarding/style/approve/": {
+      const now = new Date().toISOString();
+      Object.assign(style.state, { status: "approved", status_display: "Aprobado", approved_at: now });
+      style.versions.unshift({ id: Math.max(...style.versions.map((v) => v.id)) + 1, source: "onboarding", source_display: "Onboarding", changelog: "Aprobado desde el onboarding.", created_at: now, style_md: style.state.style_md, notes_snapshot: {} });
+      return json(200, style.state);
+    }
+    case "GET /api/style/versions/":
+      return json(200, style.versions.map(({ style_md: _md, notes_snapshot: _n, ...v }) => v));
+    case "GET /api/onboarding/whatsapp/":
+      return json(200, style.whatsapp);
+    case "POST /api/onboarding/whatsapp/qr/":
+      return json(200, { qr_base64: style.whatsapp.state === "open" ? null : "" });
+    case "POST /api/onboarding/whatsapp/webhook/":
+      return json(200, style.whatsapp);
+  }
+  let match = route.match(/^GET \/api\/style\/versions\/(\d+)\/$/);
+  if (match) {
+    const version = style.versions.find((v) => v.id === Number(match![1]));
+    return version ? json(200, version) : json(404, { detail: "No existe." });
+  }
+  match = route.match(/^POST \/api\/style\/versions\/(\d+)\/restore\/$/);
+  if (match) {
+    const version = style.versions.find((v) => v.id === Number(match![1]));
+    if (!version) return json(404, { detail: "No existe." });
+    const restored = { ...version, id: Math.max(...style.versions.map((v) => v.id)) + 1, source: "rollback" as const, source_display: "Vuelta atrás", changelog: `Volví a la versión del ${new Date(version.created_at).toLocaleDateString("es-PE")}.`, created_at: new Date().toISOString() };
+    style.versions.unshift(restored);
+    return json(201, restored);
   }
   return null;
 }
@@ -294,6 +410,7 @@ function createOrder(body: Record<string, unknown>): Response {
 }
 
 const monitor = structuredClone(monitorSeed) as Monitor;
+const materials = structuredClone(materialsSeed) as MaterialDetail[];
 const routes = structuredClone(routesSeed) as Record<string, Route>;
 
 function monitorFor(role: Role): Monitor {
@@ -396,6 +513,21 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     return json(200, { token: `mock-${user.username}`, user });
   }
 
+  if (route === "POST /api/suppliers/self-register/") return createSupplier(readBody(init.body), "self_registered");
+
+  // Public progress report by token (ADR 0024 C); "demo" is the mock token.
+  const reportMatch = route.match(/^(GET|POST) \/api\/report\/([^/]+)\/$/);
+  if (reportMatch) {
+    const po = purchaseOrders.find((p) => p.code === "PT-0002");
+    if (reportMatch[2] !== "demo" || !po) return json(404, { detail: "Enlace no válido." });
+    if (reportMatch[1] === "POST") {
+      const units = Number(formValue(init.body, "units_done"));
+      Object.assign(po, { units_done: units, progress_pct: Math.round((units / Number(po.total_units)) * 100), last_progress_at: new Date().toISOString() });
+      return json(201, { units_done: units });
+    }
+    return json(200, { code: po.code, product: { name: "Buzo escolar", image: null }, quantity: po.total_units, committed_on: po.committed_on, units_done: po.units_done });
+  }
+
   const user = userFor(init.headers);
   if (!user) return json(401, { detail: "Authentication credentials were not provided." });
 
@@ -463,8 +595,21 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     }
     if (route === "POST /api/assistant/messages/read/") return json(200, { ok: true });
   }
+  if (path.startsWith("/api/materials/")) {
+    if (user.role === "sales") return json(403, { detail: "Solo Gerente y Producción." });
+    if (route === "GET /api/materials/") return json(200, materials.map(({ requirements: _r, ...m }) => m));
+    const m = route.match(/^GET \/api\/materials\/(\d+)\/$/);
+    const material = m && materials.find((x) => x.id === Number(m[1]));
+    return material ? json(200, material) : json(404, { detail: "No existe." });
+  }
+  if (path.startsWith("/api/onboarding/") || path.startsWith("/api/style/")) {
+    if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
+    const handled = styleRoutes(route, init.body);
+    if (handled) return handled;
+  }
   if (path.startsWith("/api/suppliers/")) {
     if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
+    if (route === "POST /api/suppliers/") return createSupplier(readBody(init.body), "registered");
     if (route === "GET /api/suppliers/") {
       const status = new URL(path, "http://mock").searchParams.get("status");
       const list = suppliers.filter((s) => (status ? s.status === status : s.status !== "pending_review"));

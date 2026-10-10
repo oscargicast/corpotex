@@ -4,6 +4,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import { AlertList } from "@/components/alert-list";
 import { DecisionCard } from "@/components/decision-card";
+import { OnboardingBanner } from "@/components/onboarding-banner";
 import { RedistributionCard } from "@/components/redistribution-card";
 import { useUser } from "@/components/require-auth";
 import { Card, Pill, RISK_LABEL, RISK_TONE, SectionTitle } from "@/components/ui";
@@ -30,6 +31,7 @@ export default function MonitorPage() {
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-bold tracking-tight">Monitor</h1>
+      <OnboardingBanner />
 
       <div className={`grid grid-cols-2 gap-3 ${kpis.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         {kpis.map((kpi) => (
