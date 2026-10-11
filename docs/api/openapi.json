@@ -3080,6 +3080,11 @@
                         "additionalProperties": {},
                         "readOnly": true
                     },
+                    "material": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
                     "kind_display": {
                         "type": "string",
                         "readOnly": true,
@@ -3101,6 +3106,7 @@
                     "id",
                     "kind",
                     "kind_display",
+                    "material",
                     "order",
                     "purchase_order",
                     "severity_display",

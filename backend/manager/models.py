@@ -89,6 +89,7 @@ class Alert(TimeStamped):
         Decision, null=True, blank=True, on_delete=models.CASCADE, related_name="alerts"
     )
     text = models.CharField(max_length=300, help_text="Template text without prices or phones.")
+    material = models.ForeignKey("core.Material", null=True, blank=True, on_delete=models.CASCADE, related_name="alerts")
     detail = models.JSONField(null=True, blank=True, help_text="Structured payload for the assistant, e.g. the purchase suggestion (ADR 0025).")
     detected_at = models.DateTimeField(help_text="Simulated time.")
     resolved_at = models.DateTimeField(null=True, blank=True)
@@ -99,7 +100,7 @@ class Alert(TimeStamped):
         ordering = ["-detected_at", "-id"]
         constraints = [
             models.UniqueConstraint(
-                fields=["kind", "order", "purchase_order", "decision"],
+                fields=["kind", "order", "purchase_order", "decision", "material"],
                 condition=models.Q(status="open"),
                 nulls_distinct=False,
                 name="uniq_open_alert_per_target",

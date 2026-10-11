@@ -11,11 +11,17 @@ from .models import Alert, Decision
 class AlertSerializer(DisplayMixin, serializers.ModelSerializer):
     order = serializers.SerializerMethodField()
     purchase_order = serializers.SerializerMethodField()
+    material = serializers.SerializerMethodField()
 
     class Meta:
         model = Alert
         display_fields = ["kind", "severity", "status"]
-        fields = ["id", "kind", "severity", "status", "text", "detail", "detected_at", "order", "purchase_order"]
+        role_visible = ("detail",)  # The purchase suggestion is for production too; prices inside are still stripped.
+        fields = ["id", "kind", "severity", "status", "text", "detail", "detected_at", "order", "purchase_order", "material"]
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_material(self, obj):
+        return {"id": obj.material_id, "sku": obj.material.sku, "name": obj.material.name} if obj.material_id else None
 
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_order(self, obj):

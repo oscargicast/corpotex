@@ -406,6 +406,20 @@ def assistant_turn_state(batch: TurnBatch, *, with_history: bool = False) -> dic
             else None
         )
         data["repeat"] = AlertNotification.objects.filter(alert=alert, user=user, sent_at__isnull=False).exists()
+        if alert.kind == "purchase_suggested":
+            detail = alert.detail or {}
+            with_prices = user.role == "manager"
+            data.update(
+                {
+                    "material": {k: (detail.get("material") or {}).get(k) for k in ("id", "sku", "name", "unit")},
+                    "total_to_order": detail.get("total_to_order"),
+                    "orders": [{k: o.get(k) for k in ("code", "qty", "due_on")} for o in detail.get("orders") or []],
+                    "suggested_supplier": detail.get("suggested_supplier"),
+                    "reference_price": detail.get("reference_price") if with_prices else None,
+                    "currency": detail.get("currency") if with_prices else None,
+                }
+            )
+            data.pop("detail", None)
         alerts.append(data)
     state = {
         "now": clock.now().isoformat(),
