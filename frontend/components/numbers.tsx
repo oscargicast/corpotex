@@ -11,6 +11,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
   const [confirming, setConfirming] = useState<number | null>(null);
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
+  const [simulated, setSimulated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -31,16 +32,19 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
   async function add(e: React.FormEvent) {
     e.preventDefault();
     const digits = phone.replace(/\D/g, "");
-    if (digits.length < 9) {
+    // A test number needs no phone: the backend gives it a sim-<slug> id and turns it on.
+    if (!simulated && digits.length < 9) {
       setError("Escribe el celular con código de país, por ejemplo 51987654321.");
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await apiFetch(`/api/suppliers/${supplierId}/numbers/`, { method: "POST", json: { phone: digits, name } });
+      // A test number goes to the simulator, never to WhatsApp (P7).
+      await apiFetch(`/api/suppliers/${supplierId}/numbers/`, { method: "POST", json: { phone: digits, name, ...(simulated ? { simulated: true } : {}) } });
       setPhone("");
       setName("");
+      setSimulated(false);
       onChange();
     } catch (err) {
       setError(err instanceof ApiError && err.status === 400 ? "Ese número no es válido o ya existe." : "No se pudo agregar el número.");
@@ -63,7 +67,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
                 </div>
                 <div className="flex items-center gap-2">
                   {number.simulated && <Pill tone="info">Simulador</Pill>}
-                  {number.active ? <Pill tone="success">Activo para WhatsApp</Pill> : <Pill>Inactivo</Pill>}
+                  {number.active ? <Pill tone="success">{number.simulated ? "Activo en el simulador" : "Activo para WhatsApp"}</Pill> : <Pill>Inactivo</Pill>}
                   {number.active ? (
                     <Button className="py-1" busy={busy} onClick={() => setActive(number, false)}>
                       Desactivar
@@ -97,7 +101,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
 
       <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-2 border-t border-line pt-4">
         <label className="text-sm">
-          <span className="block text-xs text-muted">Celular</span>
+          <span className="block text-xs text-muted">Celular{simulated && " (opcional)"}</span>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -110,7 +114,11 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
           <span className="block text-xs text-muted">Etiqueta</span>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="dueño, encargado" className="mt-1 w-36 rounded-md px-2 py-1.5 ring-1 ring-line" />
         </label>
-        <Button type="submit" busy={busy} disabled={!phone}>
+        <label className="flex min-h-11 items-center gap-2 text-sm sm:min-h-0 sm:pb-2" title="El agente le escribe por el simulador, no por WhatsApp">
+          <input type="checkbox" checked={simulated} onChange={(e) => setSimulated(e.target.checked)} className="size-4 accent-[var(--color-accent)]" />
+          Para pruebas (simulado)
+        </label>
+        <Button type="submit" busy={busy} disabled={!phone && !simulated}>
           Agregar número
         </Button>
       </form>

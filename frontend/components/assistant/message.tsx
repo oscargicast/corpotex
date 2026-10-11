@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, X, XCircle } from "lucide-react";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -21,8 +21,8 @@ function linkCodes(text: string): string {
     .join("");
 }
 
-export function MessageBubble({ message }: { message: AssistantMessage }) {
-  if (message.action) return <ActionCard action={message.action} text={message.text} />;
+export function MessageBubble({ message, onHide }: { message: AssistantMessage; onHide?: () => void }) {
+  if (message.action) return <ActionCard action={message.action} text={message.text} onHide={onHide} />;
   const mine = message.role === "user";
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
@@ -83,13 +83,27 @@ const LINK: Record<LinkKind, { label: string; href: (id: number) => string }> = 
   supplier: { label: "Ver proveedor", href: (id) => `/suppliers/${id}` },
 };
 
-function ActionCard({ action, text }: { action: AssistantAction; text: string }) {
+function ActionCard({ action, text, onHide }: { action: AssistantAction; text: string; onHide?: () => void }) {
   if (action.kind === "alert") {
     return (
       <article className="rounded-xl border-l-4 border-l-warning bg-surface p-3 text-sm ring-1 ring-line">
-        <p className="flex items-center gap-1.5 font-semibold">
-          <AlertTriangle size={16} className="text-warning" /> Aviso
-        </p>
+        <div className="flex items-start gap-1.5">
+          <p className="flex flex-1 items-center gap-1.5 font-semibold">
+            <AlertTriangle size={16} className="text-warning" /> Aviso
+          </p>
+          {onHide && (
+            // Hides it in this chat only; the alert stays open in the Monitor.
+            <button
+              type="button"
+              onClick={onHide}
+              aria-label="Ocultar este aviso del chat"
+              title="Ocultar del chat (la alerta sigue en el Monitor)"
+              className="-mr-1.5 -mt-1.5 flex size-11 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink sm:size-8"
+            >
+              <X size={16} aria-hidden />
+            </button>
+          )}
+        </div>
         {text && (
           <div className="mt-1">
             <Prose text={text} />

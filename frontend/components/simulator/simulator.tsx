@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { apiFetch, fetcher } from "@/lib/api";
+import { formatDayTime } from "@/lib/format";
 import type { ChatMessage, SimulatorContact } from "@/lib/types";
 import { ChatThread } from "../chat-thread";
 import { SimulateOrder } from "../simulate-order";
@@ -35,6 +36,19 @@ const COLORS = ["bg-accent", "bg-success", "bg-warning", "bg-ink", "bg-danger", 
 // The contact's name is the number's label; the supplier is what the operator looks for.
 function displayName(contact: SimulatorContact) {
   return contact.supplier?.name ?? contact.name;
+}
+
+// The number's own label ("dueño", "encargado"), when it says more than the supplier.
+function numberLabel(contact: SimulatorContact): string {
+  const label = contact.name?.trim() ?? "";
+  return label && label !== "Simulador" && label !== contact.supplier?.name ? label : "";
+}
+
+// Which number this is (P7): a supplier can have more than one, real or simulated.
+function numberText(contact: SimulatorContact, index: number): string {
+  if (contact.channel === "whatsapp") return "WhatsApp real del proveedor";
+  const label = numberLabel(contact);
+  return `Número simulado${label ? ` «${label}»` : ""} · contacto ${index + 1}`;
 }
 
 function initials(name: string) {
@@ -142,6 +156,7 @@ export function Simulator() {
                   <span className="truncate font-semibold">{name}</span>
                   {i < 9 && <kbd className="ml-auto rounded bg-canvas px-1 text-[11px] text-muted">{i + 1}</kbd>}
                 </span>
+                {numberLabel(contact) && <span className="block truncate text-xs text-muted">Número «{numberLabel(contact)}»</span>}
                 <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
                   {contact.channel === "whatsapp" && <Pill tone="success">WhatsApp real</Pill>}
                   <span className="truncate">{contact.last_message?.text ?? "Sin mensajes"}</span>
@@ -151,7 +166,11 @@ export function Simulator() {
           );
         })}
       </nav>
-      {selected ? <Conversation key={selected.allowed_number_id} contact={selected} large={present} /> : <div className="flex-1" />}
+      {selected ? (
+        <Conversation key={selected.allowed_number_id} contact={selected} index={contacts?.indexOf(selected) ?? 0} large={present} />
+      ) : (
+        <div className="flex-1" />
+      )}
     </div>
   );
 
@@ -200,7 +219,9 @@ interface DemoPhoto {
   label: string;
 }
 
-function Conversation({ contact, large }: { contact: SimulatorContact; large: boolean }) {
+const AUTHOR: Record<string, string> = { agent: "Agente", manager: "Gerente (a mano)" };
+
+function Conversation({ contact, index, large }: { contact: SimulatorContact; index: number; large: boolean }) {
   const { data, mutate } = useSWR<{ typing: boolean; messages: ChatMessage[] }>(
     contact.conversation_id ? `/api/conversations/${contact.conversation_id}/messages/` : null,
     fetcher,
@@ -218,6 +239,13 @@ function Conversation({ contact, large }: { contact: SimulatorContact; large: bo
   const name = displayName(contact);
   const [phrases, setPhrases] = useState<string[]>(() => load<Record<number, string[]>>(PHRASES_KEY, {})[contact.allowed_number_id] ?? []);
   const readOnly = contact.channel === "whatsapp";
+  const messages = data?.messages ?? [];
+  // What the agent sent, oldest first: the column the operator reads to answer.
+  const sent = messages.filter((m) => m.direction === "outbound");
+  const sentBox = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    if (sentBox.current) sentBox.current.scrollTop = sentBox.current.scrollHeight;
+  }, [sent.length]);
 
   function attach(file: File | null) {
     setPhoto(file);
@@ -257,19 +285,21 @@ function Conversation({ contact, large }: { contact: SimulatorContact; large: bo
   }
 
   return (
-    <section className="flex min-w-0 flex-1 flex-col">
-      <header className="flex items-center gap-2 border-b border-line px-4 py-3">
-        <p className="font-semibold">{name}</p>
-        {readOnly ? <Pill tone="success">WhatsApp real · solo lectura</Pill> : <Pill tone="info">Simulado</Pill>}
+    <section className="flex min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col">
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line px-4 py-2.5">
+        <div className="min-w-0">
+          <p className="text-xs text-muted">{readOnly ? "Chat real de" : "Escribes como"}</p>
+          <p className="truncate font-semibold">{name}</p>
+          <p className="truncate text-xs text-muted">{numberText(contact, index)}</p>
+        </div>
+        <span className="ml-auto">{readOnly ? <Pill tone="success">WhatsApp real · solo lectura</Pill> : <Pill tone="info">Simulador</Pill>}</span>
       </header>
+      <p className="border-b border-line bg-canvas px-4 py-1 text-xs text-muted">
+        Izquierda: el agente, que escribe como el Gerente · Derecha: {readOnly ? "el proveedor" : `tú, como ${name}`}
+      </p>
 
-      <ChatThread
-        messages={data?.messages ?? []}
-        typing={data?.typing}
-        large={large}
-        perspective="supplier"
-        className="min-h-0 flex-1 rounded-none"
-      />
+      <ChatThread messages={messages} typing={data?.typing} large={large} perspective="supplier" className="min-h-0 flex-1 rounded-none" />
 
       {readOnly ? (
         <p className="border-t border-line p-3 text-sm text-muted">Este proveedor escribe desde su celular; aquí se ve su chat real.</p>
@@ -350,6 +380,29 @@ function Conversation({ contact, large }: { contact: SimulatorContact; large: bo
           </div>
         </form>
       )}
+      </div>
+
+      <aside aria-label="Mensajes del agente" className={`hidden w-72 shrink-0 flex-col border-l border-line bg-canvas ${large ? "lg:flex" : "xl:flex"}`}>
+        <h3 className="flex items-center gap-2 border-b border-line px-3 py-2.5 text-sm font-semibold">
+          Lo que envió el agente
+          <span className="rounded-full bg-surface px-2 text-xs font-medium text-muted tabular-nums ring-1 ring-line">{sent.length}</span>
+        </h3>
+        {sent.length ? (
+          <ol ref={sentBox} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+            {sent.map((message, i) => (
+              <li key={message.id} className="rounded-lg bg-surface p-2.5 text-sm ring-1 ring-line">
+                <p className="mb-1 flex items-center gap-2 text-xs text-muted">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-white tabular-nums">{i + 1}</span>
+                  {AUTHOR[message.author] ?? "Agente"} · <span className="tabular-nums">{formatDayTime(message.sent_at)}</span>
+                </p>
+                <p className="line-clamp-6 whitespace-pre-wrap">{message.text || (message.media ? "Foto" : "")}</p>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="p-3 text-sm text-muted">El agente todavía no le escribió a este número.</p>
+        )}
+      </aside>
     </section>
   );
 }

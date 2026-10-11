@@ -1,6 +1,6 @@
 "use client";
 
-import { Send } from "lucide-react";
+import { Send, Volume2, VolumeX } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
@@ -10,8 +10,9 @@ import type { AssistantMessage, Role } from "@/lib/types";
 import { useUser } from "../require-auth";
 import { Skeleton } from "../skeleton";
 import { TypingDots } from "../typing-dots";
-import { Spinner } from "../ui";
+import { Button, Spinner } from "../ui";
 import { MessageBubble } from "./message";
+import { playChime, readHidden, readMuted, writeHidden, writeMuted } from "./notice-prefs";
 
 const SUGGESTIONS: Record<Role, string[]> = {
   manager: ["¿Qué tengo pendiente?", "¿Qué órdenes están en peligro?", "¿Cuánto debo a los talleres?"],
@@ -36,20 +37,53 @@ export function AssistantChat({ visible = true }: { visible?: boolean }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [hidden, setHidden] = useState<Set<number>>(() => new Set());
   const lastId = useRef(0);
   const readUpTo = useRef(0);
+  const firstPollDone = useRef(false);
+  const mutedRef = useRef(false);
+  const visibleRef = useRef(visible);
   const box = useRef<HTMLDivElement>(null);
   const available = badges?.claude_ok ?? true;
+  visibleRef.current = visible;
+
+  // Per-browser preferences, read after mount (storage does not exist on the server).
+  useEffect(() => {
+    mutedRef.current = readMuted();
+    setMuted(mutedRef.current);
+    setHidden(readHidden());
+  }, []);
 
   const poll = useCallback(async () => {
     const thread = await apiFetch<Thread>(`/api/assistant/messages/?after=${lastId.current}`);
     if (thread.messages.length) {
       lastId.current = thread.messages[thread.messages.length - 1].id;
       setMessages((current) => [...current, ...thread.messages.filter((m) => !current.some((c) => c.id === m.id))]);
+      // A chime for a notice that arrives while the chat is open; the first poll
+      // brings the history (already seen), never a sound.
+      const notice = thread.messages.some((m) => m.action?.kind === "alert");
+      if (firstPollDone.current && notice && visibleRef.current && !mutedRef.current) playChime();
     }
+    firstPollDone.current = true;
     setTyping(thread.typing);
     setLoaded(true);
   }, []);
+
+  function toggleMuted() {
+    mutedRef.current = !mutedRef.current;
+    setMuted(mutedRef.current);
+    writeMuted(mutedRef.current);
+  }
+
+  // The "x" of a notice only hides it here; the alert stays open in the Monitor.
+  function hideNotice(id: number) {
+    setHidden((current) => {
+      const next = new Set(current).add(id);
+      writeHidden(next);
+      return next;
+    });
+  }
 
   // Poll every 3 s while the chat is on screen (no websockets, ADR 0009).
   useEffect(() => {
@@ -96,6 +130,18 @@ export function AssistantChat({ visible = true }: { visible?: boolean }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center justify-end border-b border-line bg-surface px-3 py-1">
+        <Button
+          size="sm"
+          className="ring-0"
+          onClick={toggleMuted}
+          aria-pressed={muted}
+          title={muted ? "Los avisos nuevos no suenan" : "Los avisos nuevos suenan mientras el chat está abierto"}
+        >
+          {muted ? <VolumeX size={14} aria-hidden /> : <Volume2 size={14} aria-hidden />}
+          {muted ? "Avisos en silencio" : "Sonido de avisos"}
+        </Button>
+      </div>
       <div ref={box} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
         {!loaded && (
           <div role="status" aria-label="Cargando" className="space-y-3">
@@ -122,9 +168,11 @@ export function AssistantChat({ visible = true }: { visible?: boolean }) {
             </div>
           </div>
         )}
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
+        {messages
+          .filter((message) => !hidden.has(message.id))
+          .map((message) => (
+            <MessageBubble key={message.id} message={message} onHide={message.action?.kind === "alert" ? () => hideNotice(message.id) : undefined} />
+          ))}
         {typing && (
           <div className="flex w-fit items-center gap-2 rounded-2xl rounded-bl-sm bg-surface px-3 py-2 text-sm text-muted ring-1 ring-line">
             <TypingDots label="Pensando" />
