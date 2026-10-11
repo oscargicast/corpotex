@@ -1682,6 +1682,55 @@
                 }
             }
         },
+        "/api/orders/describe-image/": {
+            "post": {
+                "operationId": "orders_describe_image_create",
+                "description": "M4 (ADR 0028, photos), the three roles: a garment photo becomes the line's text, one\nsentence without quantity or sizes. 400 for a bad image, 502 when the model fails.",
+                "tags": [
+                    "orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DescribeImageInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DescribeImageInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DescribeImageInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DescribeImageResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/payments/": {
             "get": {
                 "operationId": "payments_list",
@@ -5076,6 +5125,34 @@
                     "qty_received"
                 ]
             },
+            "DescribeImageInRequest": {
+                "type": "object",
+                "properties": {
+                    "image": {
+                        "$ref": "#/components/schemas/ImageInRequest"
+                    },
+                    "brand": {
+                        "type": "string"
+                    },
+                    "customer": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "image"
+                ]
+            },
+            "DescribeImageResult": {
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "description"
+                ]
+            },
             "Detail": {
                 "type": "object",
                 "properties": {
@@ -5519,6 +5596,25 @@
                 "required": [
                     "material_id",
                     "reason"
+                ]
+            },
+            "ImageInRequest": {
+                "type": "object",
+                "properties": {
+                    "media_type": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "image/jpeg, image/png or image/webp (or jpeg, png, webp)."
+                    },
+                    "data": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Base64, up to 5 MB; a data URL is accepted too."
+                    }
+                },
+                "required": [
+                    "data",
+                    "media_type"
                 ]
             },
             "ImportInRequest": {

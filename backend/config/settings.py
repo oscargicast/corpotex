@@ -196,6 +196,9 @@ TURN_SOFT_TIME_LIMIT = 180
 CLAUDE_CONFIG_DIR = env("CLAUDE_CONFIG_DIR")
 AGENT_HOME = str(Path(CLAUDE_CONFIG_DIR).parent)
 AGENT_MODEL = env("AGENT_MODEL")
+# A garment photo travels as base64 JSON (describe-image, up to 5 MB of base64): the default 2.5 MB
+# would reject it before the view can answer in Spanish.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
 STYLE_ANALYSIS_MODEL = env("STYLE_ANALYSIS_MODEL")
 TYPESAFE_API_KEY = env("TYPESAFE_API_KEY")  # Jev (ADR 0025 C); empty means Claude classifies alone.
 TYPESAFE_MODEL = env("TYPESAFE_MODEL")
