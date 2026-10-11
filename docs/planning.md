@@ -429,6 +429,8 @@ Fuera de alcance a propósito: extracción de estilo en vivo (ADR 0011), QR en v
 
 ## Seguimiento
 
+Estado 11/10 04:40: main 4235f2a en el stack desde las 04:35, con reseed (`--reset-chats`, T = 04:35): las 5 alertas del guion (255 pago, 260 y 261 órdenes en peligro, 262 y 263 compras sugeridas), sin órdenes de prueba, planta al 93 % en el Monitor, agente sin pausa, cero FollowUpRequest. ADR 0030 completo: P1 (#172), P2 (#169), P3 (#171), P4 (#173), P5 (#170), más #174 (nombres finales y selects). Ningún PR abierto.
+
 Estado 11/10 04:15: main 8432b78, 88 PRs mergeados desde #80, ninguno abierto. ADR 0028 (M1-M5, N7-N8) y ADR 0029 (N1-N6, N9) completos y desplegados; formulario progresivo (#165), fotos de avance por el chat con el link como alternativa (#166, #167) y foto de WhatsApp visible en el pedido (#168) mergeados y en despliegue. En curso ADR 0030: P1 backend, P2-P4 disenador, P5 personalidad. Reseed pendiente de la decisión de Oscar (borra sus órdenes de prueba CP-2026-0184/0185 y las alertas 247/248); el último reseed va antes de las 08:45.
 
 Estado 11/10 01:20: ADR 0026 (R1-R4) y ADR 0027 (S1-S7) mergeados y desplegados en el stack (main 1cc258a). Verificado de punta a punta en el stack: flota en vivo con simulador, seguimiento proactivo (domingo sin envíos) y seguimiento a pedido (43 s). Pendiente solo el reseed de las 06:30 y el ensayo de las 06:45.
