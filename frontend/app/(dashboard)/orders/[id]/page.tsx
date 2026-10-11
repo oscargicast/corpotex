@@ -116,7 +116,7 @@ export default function OrderDetailPage() {
           )}
           {canConfirm && (
             <Button kind="primary" onClick={confirm} busy={confirming}>
-              {confirming ? "Aprobando…" : "Aprobar ficha técnica"}
+              {confirming ? "Aprobando…" : "Aprobar y abastecer"}
             </Button>
           )}
         </div>
@@ -208,7 +208,10 @@ export default function OrderDetailPage() {
         {order.requirements.length > 0 && (
           <Card>
             <div className="flex items-start justify-between gap-2">
-              <SectionTitle count={order.requirements.length}>Ficha técnica contra inventario</SectionTitle>
+              <div>
+                <SectionTitle count={order.requirements.length}>Ficha técnica</SectionTitle>
+                <p className="-mt-2 mb-3 text-xs text-muted">Insumos y tercerización con talleres</p>
+              </div>
               {canRevise && <ReviseButton order={order} placeholder="Ej.: agrega 2 botones por polo, el corte toma 3 días" onApply={reload} />}
             </div>
             {reloading ? (

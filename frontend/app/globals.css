@@ -160,8 +160,22 @@ body {
 /* Every clickable thing shows it: Tailwind 4 leaves buttons on the default
    cursor. (The focus ring is the :focus-visible rule above.) */
 button:not(:disabled):not([aria-disabled="true"]),
+select:not(:disabled),
 [role="button"],
 [role="tab"],
 summary {
   cursor: pointer;
+}
+
+/* Every select draws one chevron, 12 px from the right edge, with 40 px of
+   room so long text never runs under it (Oscar, 11/10). Unlayered on purpose:
+   it wins over the px-* utilities each select carries. */
+select:not([multiple]):not([size]) {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f5e6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+  text-overflow: ellipsis;
 }
