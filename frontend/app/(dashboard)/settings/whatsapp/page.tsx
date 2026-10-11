@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import useSWR from "swr";
+import { QrCode, Webhook } from "lucide-react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { formatDayTime } from "@/lib/format";
@@ -83,7 +84,7 @@ export default function OnboardingWhatsApp() {
           <div className="mt-4">
             {!showQr ? (
               <Button kind="primary" onClick={() => setShowQr(true)}>
-                Mostrar QR
+                <QrCode size={16} aria-hidden /> Mostrar QR
               </Button>
             ) : qr ? (
               <>
@@ -127,8 +128,8 @@ export default function OnboardingWhatsApp() {
             ))}
           </ul>
         )}
-        <Button kind="dark" className="mt-4" busy={busy} onClick={configureWebhook}>
-          {data.webhook ? "Volver a configurar" : "Configurar webhook"}
+        <Button className="mt-4" busy={busy} onClick={configureWebhook}>
+          <Webhook size={16} aria-hidden /> {data.webhook ? "Volver a configurar" : "Configurar webhook"}
         </Button>
         {error && (
           <p className="mt-2 text-sm text-danger" role="alert">

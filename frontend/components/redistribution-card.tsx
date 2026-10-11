@@ -83,7 +83,7 @@ export function RedistributionBody({ decision, withCancelLine = true }: { decisi
         </dl>
       )}
 
-      <Link href={routeHref} className={`mt-4 ${buttonClass("ghost", "sm")}`}>
+      <Link href={routeHref} className={`mt-4 ${buttonClass("secondary", "sm")}`}>
         <Map size={16} aria-hidden /> Ver la ruta nueva
       </Link>
     </div>

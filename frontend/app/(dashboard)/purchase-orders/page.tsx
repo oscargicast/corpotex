@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart } from "lucide-react";
+import { FilterX, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import useSWR from "swr";
@@ -54,7 +54,7 @@ function PurchaseOrders() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-tight">Pedidos a proveedores y talleres</h1>
         {user.role !== "sales" && (
-          <Link href="/inventory?to_order=1" className={buttonClass("ghost")}>
+          <Link href="/inventory?to_order=1" className={buttonClass()}>
             <ShoppingCart size={16} /> Insumos por pedir
           </Link>
         )}
@@ -90,7 +90,7 @@ function PurchaseOrders() {
             <>
               <p>Ningún pedido coincide con {q ? `“${q}”` : "esos filtros"}.</p>
               <Button className="mt-3" onClick={() => params.set({ kind: null, waiting: null, status: null, q: null })}>
-                Limpiar filtros
+                <FilterX size={16} aria-hidden /> Limpiar filtros
               </Button>
             </>
           ) : (

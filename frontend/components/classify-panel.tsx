@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Sparkles, Trash2 } from "lucide-react";
+import { CircleCheck, Plus, RotateCcw, Sparkles, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
@@ -291,7 +291,8 @@ export function ClassifyPanel({ order, onApplied }: { order: OrderDetail; onAppl
                 </ul>
                 <Button
                   type="button"
-                  className="mt-2 py-1"
+                  size="sm"
+                  className="mt-2"
                   onClick={() => updateItem(index, { materials: [...proposal.materials, { sku: null, new: { sku: "", name: "", kind: "other", unit: "unit" }, qty_per_unit: "1", unit: "unit" }] })}
                 >
                   <Plus size={14} /> Agregar insumo
@@ -305,14 +306,14 @@ export function ClassifyPanel({ order, onApplied }: { order: OrderDetail; onAppl
             ))}
           </datalist>
           <div className="flex flex-wrap gap-2">
-            <Button kind="primary" busy={phase === "applying"} onClick={apply}>
-              Confirmar desglose
+            <Button disabled={phase === "applying"} onClick={() => setPhase("idle")}>
+              <X size={16} aria-hidden /> Cancelar
             </Button>
             <Button disabled={phase === "applying"} onClick={classify}>
-              Volver a clasificar
+              <RotateCcw size={16} aria-hidden /> Volver a clasificar
             </Button>
-            <Button disabled={phase === "applying"} onClick={() => setPhase("idle")}>
-              Cancelar
+            <Button kind="primary" busy={phase === "applying"} onClick={apply}>
+              <CircleCheck size={16} aria-hidden /> Confirmar desglose
             </Button>
           </div>
         </div>

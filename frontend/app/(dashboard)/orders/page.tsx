@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Plus } from "lucide-react";
+import { CheckCircle2, FilterX, Plus, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import useSWR from "swr";
@@ -81,7 +81,7 @@ function Orders() {
             <>
               <p>Ninguna orden coincide con {q ? `“${q}”` : "esos filtros"}.</p>
               <Button className="mt-3" onClick={() => params.set({ risk: null, status: null, q: null })}>
-                Limpiar filtros
+                <FilterX size={16} aria-hidden /> Limpiar filtros
               </Button>
             </>
           ) : (
@@ -190,11 +190,11 @@ function BreakDownPanel({ orders, open, onClose, onDone }: { orders: OrderListIt
       <div className="flex flex-wrap items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning">
         Se desglosan contra el inventario {orders.length === 1 ? "la orden" : `las ${orders.length} órdenes`} {orders.map((o) => o.code).join(", ")}. Después
         Producción confirma cada desglose.
-        <Button kind="dark" className="py-1" busy={busy} onClick={run}>
-          Desglosar ahora
+        <Button size="sm" busy={busy} onClick={run}>
+          <Sparkles size={14} aria-hidden /> Desglosar ahora
         </Button>
-        <Button className="py-1" disabled={busy} onClick={onClose}>
-          Cancelar
+        <Button size="sm" disabled={busy} onClick={onClose}>
+          <X size={14} aria-hidden /> Cancelar
         </Button>
         {error && <span className="w-full text-danger">{error}</span>}
       </div>

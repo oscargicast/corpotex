@@ -4,6 +4,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { daysBetween, formatDay, formatMoney } from "@/lib/format";
 import type { Currency, Payment } from "@/lib/types";
+import { Check, Wallet, X } from "lucide-react";
 import { Button, Pill } from "./ui";
 
 const METHODS = [
@@ -95,8 +96,8 @@ function PaymentRow({
             <Pill>Pendiente</Pill>
           )}
           {canPay && payment.status === "pending" && !open && (
-            <Button kind="dark" className="py-1" onClick={() => setOpen(true)}>
-              Marcar pagado
+            <Button size="sm" onClick={() => setOpen(true)}>
+              <Wallet size={14} aria-hidden /> Marcar pagado
             </Button>
           )}
         </div>
@@ -117,10 +118,12 @@ function PaymentRow({
             <span className="block text-xs text-muted">Comprobante (opcional)</span>
             <input type="file" accept="image/*,application/pdf" onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} className="mt-1 w-full text-xs" />
           </label>
-          <Button kind="primary" busy={busy} onClick={pay}>
-            Confirmar pago
+          <Button onClick={() => setOpen(false)}>
+            <X size={16} aria-hidden /> Cancelar
           </Button>
-          <Button onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button busy={busy} onClick={pay}>
+            <Check size={16} aria-hidden /> Confirmar pago
+          </Button>
         </div>
       )}
     </li>

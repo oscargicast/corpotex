@@ -1,11 +1,12 @@
 "use client";
 
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, ShoppingCart, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
 import type { GeneratedPurchaseOrders } from "@/lib/types";
-import { Button } from "./ui";
+import { ConfirmDialog } from "./confirm-dialog";
+import type { ButtonKind } from "./ui";
 
 // Suggested purchase orders from Inventario (ADR 0025 A): "Pedir todo" sends no
 // material_ids, a row's "Generar pedido" sends its own. One purchase order per
@@ -37,40 +38,37 @@ export function useGenerate(onDone: () => void) {
 }
 
 export function GenerateConfirm({
+  title,
   text,
   note,
   busy,
   error,
   confirmLabel,
+  kind = "secondary",
   onConfirm,
   onCancel,
 }: {
+  title: string;
   text: string;
   note?: string | null;
   busy: boolean;
   error: string | null;
   confirmLabel: string;
+  kind?: ButtonKind;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   return (
-    <div className="rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning" onClick={(e) => e.stopPropagation()}>
-      <p>{text}</p>
-      {note && <p className="mt-1 text-xs">{note}</p>}
-      <div className="mt-2 flex flex-wrap gap-2">
-        <Button kind="dark" className="py-1" busy={busy} onClick={onConfirm}>
-          {confirmLabel}
-        </Button>
-        <Button className="py-1" disabled={busy} onClick={onCancel}>
-          Cancelar
-        </Button>
-      </div>
-      {error && (
-        <p className="mt-1 text-danger" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
+    <ConfirmDialog
+      title={title}
+      text={text}
+      note={note}
+      busy={busy}
+      error={error}
+      confirm={{ label: confirmLabel, icon: <ShoppingCart size={16} aria-hidden />, kind }}
+      onConfirm={onConfirm}
+      onClose={onCancel}
+    />
   );
 }
 

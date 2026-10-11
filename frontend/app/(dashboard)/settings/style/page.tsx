@@ -1,11 +1,12 @@
 "use client";
 
-import { CheckCircle2, FileUp, Sparkles } from "lucide-react";
+import { CheckCircle2, FileText, FileUp, RefreshCw, RotateCcw, Save, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import useSWR, { type KeyedMutator } from "swr";
 import { SkeletonCard } from "@/components/skeleton";
 import { StyleMarkdown } from "@/components/style-markdown";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button, Card, Pill, SectionTitle, Spinner, type Tone } from "@/components/ui";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { formatDay, formatDayTime } from "@/lib/format";
@@ -104,16 +105,11 @@ export default function OnboardingStyle() {
           <div className="ml-auto flex flex-wrap gap-2">
             {hasDraft && (
               <Button kind="primary" busy={busy === "approve"} disabled={busy !== null} onClick={() => post("/api/onboarding/style/approve/", undefined, "approve")}>
-                Aprobar
+                <CheckCircle2 size={16} aria-hidden /> Aprobar
               </Button>
             )}
-            <Button
-              kind={hasDraft ? "ghost" : "dark"}
-              busy={busy === "sync" || extracting}
-              disabled={busy !== null}
-              onClick={() => post("/api/onboarding/style/extract/", { since }, "sync")}
-            >
-              {extracting ? "Sincronizando…" : "Sincronizar estilo"}
+            <Button busy={busy === "sync" || extracting} disabled={busy !== null} onClick={() => post("/api/onboarding/style/extract/", { since }, "sync")}>
+              <RefreshCw size={16} aria-hidden /> {extracting ? "Sincronizando…" : "Sincronizar estilo"}
             </Button>
           </div>
         </div>
@@ -235,40 +231,35 @@ function Advanced({ state, mutate, onClose }: { state: StyleState; mutate: Keyed
             <input type="date" value={since} max={daysAgo(0)} onChange={(e) => setSince(e.target.value)} className="mt-1 rounded-md px-2 py-1.5 ring-1 ring-line" />
           </label>
           <Button kind="primary" disabled={busy || !since} busy={extracting} onClick={() => setConfirm("extract")}>
-            {extracting ? "Extrayendo…" : "Extraer estilo"}
+            <Sparkles size={16} aria-hidden /> {extracting ? "Extrayendo…" : "Extraer estilo"}
           </Button>
           <ImportTxt since={since} disabled={busy || extracting} onDone={() => mutate()} onError={setError} />
           <Button disabled={busy || extracting} onClick={() => setConfirm("template")}>
-            Usar perfil base
+            <FileText size={16} aria-hidden /> Usar perfil base
           </Button>
         </div>
 
         {confirm && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning">
-            Esto reemplaza el borrador actual.
-            <Button
-              kind="dark"
-              className="py-1"
-              busy={busy}
-              onClick={() =>
-                confirm === "extract"
-                  ? run("/api/onboarding/style/extract/", { method: "POST", json: { since } })
-                  : run("/api/onboarding/style/template/", { method: "POST" })
-              }
-            >
-              {confirm === "extract" ? "Extraer" : "Usar perfil base"}
-            </Button>
-            <Button className="py-1" onClick={() => setConfirm(null)}>
-              Cancelar
-            </Button>
-          </div>
+          <ConfirmDialog
+            title={confirm === "extract" ? "Extraer estilo" : "Usar perfil base"}
+            text={confirm === "extract" ? "Se leen los chats desde la fecha elegida y el resultado reemplaza el borrador actual." : "El perfil base reemplaza el borrador actual."}
+            busy={busy}
+            error={error}
+            confirm={
+              confirm === "extract"
+                ? { label: "Extraer estilo", icon: <Sparkles size={16} aria-hidden />, kind: "primary" }
+                : { label: "Usar perfil base", icon: <FileText size={16} aria-hidden /> }
+            }
+            onConfirm={() => (confirm === "extract" ? run("/api/onboarding/style/extract/", { method: "POST", json: { since } }) : run("/api/onboarding/style/template/", { method: "POST" }))}
+            onClose={() => setConfirm(null)}
+          />
         )}
 
         {state.status === "error" && (
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
             {state.error || "La extracción falló."}
-            <Button className="py-1" busy={busy} onClick={() => run("/api/onboarding/style/extract/", { method: "POST", json: { since } })}>
-              Reintentar
+            <Button size="sm" busy={busy} onClick={() => run("/api/onboarding/style/extract/", { method: "POST", json: { since } })}>
+              <RotateCcw size={14} aria-hidden /> Reintentar
             </Button>
           </div>
         )}
@@ -428,10 +419,12 @@ function ImportTxt({
           ))}
         </select>
       </label>
-      <Button kind="dark" busy={busy} disabled={disabled} onClick={upload}>
-        Agregar al borrador
+      <Button busy={busy} disabled={disabled} onClick={upload}>
+        <FileUp size={16} aria-hidden /> Agregar al borrador
       </Button>
-      <Button onClick={() => setFile(null)}>Cancelar</Button>
+      <Button onClick={() => setFile(null)}>
+        <X size={16} aria-hidden /> Cancelar
+      </Button>
     </div>
   );
 }
@@ -483,12 +476,12 @@ function Editor({ state, onSaved }: { state: StyleState; onSaved: () => void }) 
           <div className="ml-auto flex gap-2">
             {dirty && (
               <Button busy={busy && !approving} onClick={() => save(false)}>
-                Guardar borrador
+                <Save size={16} aria-hidden /> Guardar borrador
               </Button>
             )}
             {(dirty || state.status !== "approved") && (
               <Button kind="primary" disabled={busy} busy={busy && approving} onClick={() => save(true)}>
-                Aprobar
+                <CheckCircle2 size={16} aria-hidden /> Aprobar
               </Button>
             )}
           </div>

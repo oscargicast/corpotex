@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
@@ -293,11 +293,11 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button kind="primary" type="submit" busy={busy}>
-          {busy ? "Guardando…" : initial ? "Guardar cambios" : "Crear orden"}
-        </Button>
         <Button type="button" onClick={onCancel} disabled={busy}>
-          Cancelar
+          <X size={16} aria-hidden /> Cancelar
+        </Button>
+        <Button kind="primary" type="submit" busy={busy}>
+          <Save size={16} aria-hidden /> {busy ? "Guardando…" : initial ? "Guardar cambios" : "Crear orden"}
         </Button>
       </div>
       {initial && initial.status !== "registered" && (

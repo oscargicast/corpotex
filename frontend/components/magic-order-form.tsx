@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Camera, CheckCircle2, Plus, RotateCcw, Search, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
+import { CalendarClock, Camera, Check, CheckCircle2, Plus, RotateCcw, Search, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
@@ -719,7 +719,7 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 aria-describedby={missingText && headerComplete ? "create-missing" : undefined}
                 className="h-12 w-full text-base aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-brand"
               >
-                {busy ? "Creando…" : "Crear orden"}
+                <CheckCircle2 size={18} aria-hidden /> {busy ? "Creando…" : "Crear orden"}
               </Button>
               {/* Only the items: until the header is complete, the summary says so. */}
               {missingText && headerComplete && (
@@ -728,7 +728,7 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 </p>
               )}
               <Button type="button" onClick={onCancel} disabled={busy} className="min-h-11 w-full">
-                Cancelar
+                <X size={16} aria-hidden /> Cancelar
               </Button>
               {recognizing > 0 && <p className="text-xs text-muted">Puedes guardar ya: lo que no termine de reconocerse lo arma la IA en segundo plano.</p>}
             </div>
@@ -943,11 +943,11 @@ function ItemCard({
           <p className="font-medium text-accent">¿Reemplazar lo escrito?</p>
           <p className="mt-1 text-ink">«{photo.proposed}»</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <Button kind="dark" className="min-h-11 sm:min-h-0" onClick={() => onPhotoReplace(true)}>
-              Sí
+            <Button className="min-h-11 sm:min-h-0" onClick={() => onPhotoReplace(true)}>
+              <Check size={16} aria-hidden /> Sí
             </Button>
             <Button className="min-h-11 sm:min-h-0" onClick={() => onPhotoReplace(false)}>
-              No
+              <X size={16} aria-hidden /> No
             </Button>
           </div>
         </div>
