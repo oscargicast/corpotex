@@ -23,6 +23,8 @@ env = environ.Env(
     CF_ACCESS_CLIENT_SECRET=(str, ""),
     AGENT_MODEL=(str, "sonnet"),
     STYLE_ANALYSIS_MODEL=(str, "sonnet"),
+    TYPESAFE_API_KEY=(str, ""),
+    TYPESAFE_MODEL=(str, "jev-latest"),
     STYLE_BOSS_MODEL=(str, "opus"),
     STYLE_REFRESH_ENABLED=(bool, True),
 )
@@ -190,6 +192,8 @@ CLAUDE_CONFIG_DIR = env("CLAUDE_CONFIG_DIR")
 AGENT_HOME = str(Path(CLAUDE_CONFIG_DIR).parent)
 AGENT_MODEL = env("AGENT_MODEL")
 STYLE_ANALYSIS_MODEL = env("STYLE_ANALYSIS_MODEL")
+TYPESAFE_API_KEY = env("TYPESAFE_API_KEY")  # Jev (ADR 0025 C); empty means Claude classifies alone.
+TYPESAFE_MODEL = env("TYPESAFE_MODEL")
 STYLE_BOSS_MODEL = env("STYLE_BOSS_MODEL")
 STYLE_REFRESH_ENABLED = env("STYLE_REFRESH_ENABLED")  # False freezes the approved style (demo night).
 

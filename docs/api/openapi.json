@@ -1227,6 +1227,66 @@
                 }
             }
         },
+        "/api/orders/{id}/apply-classification/": {
+            "post": {
+                "operationId": "orders_apply_classification_create",
+                "description": "What production confirmed: creates products, materials and bills of materials, assigns\nthem to the items and breaks the order down again (`warnings` lists what was skipped).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este orden.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApplyClassificationInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApplyClassificationInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApplyClassificationInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/orders/{id}/cancel/": {
             "post": {
                 "operationId": "orders_cancel_create",
@@ -1278,6 +1338,47 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/OrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/orders/{id}/classify/": {
+            "post": {
+                "operationId": "orders_classify_create",
+                "description": "Proposal for every item without a catalogue product (Jev + Claude, ADR 0025 C):\n`{order_id, items: [{item_id, description, product: {existing_id, code, name} | {new: {code, name, brand}},\nconfidence, materials: [{sku, name, material_id} | {new: {sku, name, kind, unit}}, qty_per_unit, unit, confidence]}]}`.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este orden.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
                                 }
                             }
                         },
@@ -3180,6 +3281,20 @@
                     "phone"
                 ]
             },
+            "ApplyClassificationInRequest": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ClassificationItemInRequest"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
             "AssistantMessage": {
                 "type": "object",
                 "properties": {
@@ -3370,6 +3485,31 @@
                 ],
                 "type": "string",
                 "description": "* `whatsapp` - whatsapp\n* `simulator` - simulator"
+            },
+            "ClassificationItemInRequest": {
+                "type": "object",
+                "properties": {
+                    "item_id": {
+                        "type": "integer"
+                    },
+                    "product": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "description": "{existing_id} or {new: {code, name, brand}}"
+                    },
+                    "materials": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "description": "[{sku} | {new: {sku, name, kind, unit}}, qty_per_unit, unit]"
+                    }
+                },
+                "required": [
+                    "item_id",
+                    "product"
+                ]
             },
             "ClaudeApiKeyRequest": {
                 "type": "object",
