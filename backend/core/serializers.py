@@ -29,6 +29,7 @@ MANAGER_ONLY_FIELDS = frozenset(
         "pending_amount",
         "payments_summary",
         "notes",  # Supplier notes feed the WhatsApp prompt; a serializer may exempt its own key via Meta.role_visible.
+        "reference_price",
         "payments_by_supplier",
         "numbers",
         "source_detail",
@@ -71,9 +72,9 @@ class DisplayMixin:
         # Fail closed: only an explicit manager role keeps the manager-only keys. A serializer
         # can exempt its OWN top-level keys (`Meta.role_visible`, e.g. the order's notes).
         if self.context.get("role") != "manager":
-            visible = {k: data[k] for k in getattr(self.Meta, "role_visible", ()) if k in data}
+            visible = {k: strip_manager_only(data[k]) for k in getattr(self.Meta, "role_visible", ()) if k in data}
             data = strip_manager_only(data)
-            data.update(visible)
+            data.update(visible)  # The key itself is exempt; anything manager-only nested inside is still gone.
         return data
 
 

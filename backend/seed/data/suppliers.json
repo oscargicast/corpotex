@@ -331,7 +331,7 @@
     "contact_name": "Milagros Huamán",
     "city": "Lima",
     "address": "Av. Aviación 1022, La Victoria, Lima",
-    "lead_time_days": 5,
+    "lead_time_days": 8,
     "follow_up_every_hours": 24,
     "payment_method": "yape",
     "on_time_score": "0.93",

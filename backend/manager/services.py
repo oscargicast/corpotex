@@ -28,6 +28,7 @@ ALERT_ROLES = {
     "turn_failed": ("manager",),
     "style_refresh_failed": ("manager",),
     "claude_disconnected": ("manager",),
+    "purchase_suggested": ("manager", "production"),
 }
 SEVERITY = {
     "order_in_danger": "critical",
@@ -51,7 +52,7 @@ def alert_concerns_role(alert: Alert, role: str | None) -> bool:
     if role == "sales":
         return alert.kind in ("order_in_danger", "delay", "no_response")
     if role == "production":
-        if alert.kind == "order_in_danger":
+        if alert.kind in ("order_in_danger", "purchase_suggested"):
             return True
         return bool(po and po.supplier.kind == "workshop" and alert.kind in ("stalled_purchase_order", "delay", "no_response"))
     return False
@@ -64,12 +65,17 @@ def alerts_for_role(role: str | None, queryset=None):
     return [a for a in qs if alert_concerns_role(a, role)]
 
 
-def open_alert(kind: str, *, text: str, order=None, purchase_order=None, decision=None, severity=None) -> Alert:
-    """Idempotent while open: the same (kind, target) returns the existing alert."""
+def open_alert(kind: str, *, text: str, order=None, purchase_order=None, decision=None, material=None, severity=None, detail=None) -> Alert:
+    """Idempotent while open: the same (kind, target) returns the existing alert, refreshing
+    its `detail` (the purchase suggestion changes as orders come in)."""
     existing = Alert.objects.filter(
-        kind=kind, status="open", order=order, purchase_order=purchase_order, decision=decision
+        kind=kind, status="open", order=order, purchase_order=purchase_order, decision=decision, material=material
     ).first()
     if existing:
+        if detail is not None and existing.detail != detail:
+            existing.detail = detail
+            existing.text = text[:300]
+            existing.save(update_fields=["detail", "text", "updated_at"])
         return existing
     alert = Alert.objects.create(
         kind=kind,
@@ -77,6 +83,8 @@ def open_alert(kind: str, *, text: str, order=None, purchase_order=None, decisio
         order=order,
         purchase_order=purchase_order,
         decision=decision,
+        material=material,
+        detail=detail,
         text=text[:300],
         detected_at=clock.now(),
     )
@@ -226,6 +234,40 @@ def resolve_decision(decision: Decision, *, action: str, supplier_id=None, purch
     return decision
 
 
+# --- purchase suggestions (ADR 0025 A.5, B6.2) ------------------------------------------------
+
+
+def suggest_purchases(today=None, config=None) -> list[Alert]:
+    """One `purchase_suggested` alert per material whose open requirements cannot wait: the
+    earliest deadline is within lead time + buffer. Closed when nothing is left to order.
+    `detail` carries the row of "Por pedir" (prices included; the serializer and the assistant
+    strip them for production)."""
+    from operations.services import pending_purchases
+
+    today = today or clock.today()
+    config = config or Config.load()
+    from core.models import Material
+
+    alerts, suggested_ids = [], set()
+    for row in pending_purchases(with_prices=True):
+        lead = row.get("lead_time_days") or 7
+        if row["due_on"] > today + timedelta(days=lead + config.buffer_days):
+            continue
+        material = Material.objects.get(pk=row["material"]["id"])
+        suggested_ids.add(material.id)
+        detail = {k: v for k, v in row.items() if k != "candidates"}
+        detail["due_on"] = row["due_on"].isoformat()
+        detail["orders"] = [{**o, "due_on": o["due_on"].isoformat()} for o in row["orders"]]
+        codes = " y ".join(o["code"] for o in row["orders"][:3])
+        supplier = row["suggested_supplier"]["name"] if row["suggested_supplier"] else "sin proveedor con tarifa"
+        text = f"{row['total_to_order']} {material.unit} de {material.name} por pedir para {codes}; sugiero {supplier}. ¿Genero el pedido?"
+        alerts.append(open_alert("purchase_suggested", text=text, material=material, detail=detail, severity="warning"))
+    Alert.objects.filter(kind="purchase_suggested", status__in=("open", "acknowledged")).exclude(material_id__in=suggested_ids).update(
+        status="resolved", resolved_at=clock.now()
+    )
+    return alerts
+
+
 # --- monitor and tick -----------------------------------------------------------------------
 
 
@@ -265,6 +307,7 @@ def run_monitor() -> dict:
     Alert.objects.filter(kind__in=("delay", "stalled_purchase_order", "no_response"), status__in=("open", "acknowledged")).exclude(
         purchase_order__status__in=PurchaseOrder.OPEN_STATUSES
     ).update(status="resolved", resolved_at=now)
+    suggest_purchases(today, config)
 
     for decision in Decision.objects.filter(status="pending", created_at__lt=timezone.now() - timedelta(hours=config.decision_pending_hours)):
         open_alert("decision_pending", decision=decision, text=f"Decisión sin resolver: {decision.summary}")
