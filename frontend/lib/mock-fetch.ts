@@ -15,7 +15,7 @@ import simulatorContactsSeed from "@/mocks/simulator-contacts.json";
 import styleSeed from "@/mocks/style.json";
 import suppliersSeed from "@/mocks/suppliers.json";
 import users from "@/mocks/users.json";
-import { DEFAULT_FOLLOW_UP, type FollowUpSettings } from "./follow-up";
+import { DEFAULT_FOLLOW_UP, FOLLOW_UP_MODES, type FollowUpSettings } from "./follow-up";
 import type {
   AssistantMessage,
   Badges,
@@ -1006,19 +1006,21 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
 
   if (path.startsWith("/api/settings/follow-up/")) {
     if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
-    if (route === "GET /api/settings/follow-up/") return json(200, followUp);
+    // Like the API: short names plus mode_display.
+    const withDisplay = () => ({ ...followUp, mode_display: FOLLOW_UP_MODES[followUp.mode].label });
+    if (route === "GET /api/settings/follow-up/") return json(200, withDisplay());
     if (route === "PATCH /api/settings/follow-up/") {
       followUp = { ...followUp, ...(readBody(init.body) as Partial<FollowUpSettings>) };
-      return json(200, followUp);
+      return json(200, withDisplay());
     }
     if (route === "GET /api/settings/follow-up/preview/") {
       const day = (new Date().getDay() + 6) % 7;
-      if (!followUp.follow_up_weekdays.includes(day)) return json(200, []);
+      if (!followUp.weekdays.includes(day)) return json(200, []);
       const at = (hhmm: string) => {
         const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" });
         return `${today}T${hhmm}:00-05:00`;
       };
-      const start = followUp.follow_up_window_start;
+      const start = followUp.window_start;
       return json(200, [
         { supplier: { id: 2, name: "Confecciones del Norte" }, purchase_orders: ["PT-0004"], at: at(start), kind: "checkpoint", reason: "Punto de control del 60 % del plazo." },
         { supplier: { id: 3, name: "Taller Castilla" }, purchase_orders: ["PT-0005"], at: at(start.replace(/:(\d\d)$/, ":25")), kind: "checkpoint", reason: "Víspera de la entrega, sin confirmar." },

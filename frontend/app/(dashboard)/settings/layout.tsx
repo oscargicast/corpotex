@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, Clock, Link2, PenLine, Rocket, Truck } from "lucide-react";
+import { Check, ChevronDown, Clock, Link2, PenLine, Rocket } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -32,7 +32,6 @@ const SECTIONS = [
   { href: "/settings", label: "Seguimiento", icon: Clock, match: (p: string) => p === "/settings" },
   { href: "/settings/style", label: "Estilo", icon: PenLine, match: (p: string) => p.startsWith("/settings/style") },
   { href: "/settings/claude", label: "Conexiones", icon: Link2, match: (p: string) => p.startsWith("/settings/claude") || p.startsWith("/settings/whatsapp") },
-  { href: "/settings/suppliers", label: "Proveedores", icon: Truck, match: (p: string) => p.startsWith("/settings/suppliers") },
 ];
 
 function SettingsNav({ pathname }: { pathname: string }) {
@@ -134,11 +133,11 @@ function SetupSummary() {
         <div className="border-t border-line/70 px-4 pb-3 pt-3">
           <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {steps.map((step, i) => {
-              const active = pathname === `/settings/${step.slug}`;
+              const active = pathname === step.href;
               return (
                 <li key={step.slug}>
                   <Link
-                    href={`/settings/${step.slug}`}
+                    href={step.href}
                     aria-current={active ? "step" : undefined}
                     className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1 ${active ? "bg-ink text-white ring-ink" : "bg-surface ring-line hover:bg-canvas"}`}
                   >
@@ -158,7 +157,7 @@ function SetupSummary() {
           {next && (
             <p className="mt-2 text-sm">
               Siguiente paso:{" "}
-              <Link href={`/settings/${next.slug}`} className="font-semibold text-accent hover:underline">
+              <Link href={next.href} className="font-semibold text-accent hover:underline">
                 {next.label}
               </Link>
               . {ABOUT[next.slug]}

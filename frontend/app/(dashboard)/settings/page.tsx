@@ -2,7 +2,7 @@
 
 import { CalendarClock, CheckCircle2, Flag } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { SkeletonCard, SkeletonLines } from "@/components/skeleton";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
@@ -14,6 +14,7 @@ import {
   type FollowUpPreviewItem,
   type FollowUpSettings,
   minutesOf,
+  normalizeFollowUp,
   todayWeekday,
   WEEKDAY_NAMES,
   WEEKDAYS,
@@ -29,16 +30,17 @@ const isMissing = (err: unknown) => err instanceof ApiError && err.status === 40
 // Configuración › Seguimiento (ADR 0027 §4): how often the agent checks in with
 // suppliers, within which hours and days, and what it plans to do today.
 export default function FollowUpSettingsPage() {
-  const { data, error, mutate } = useSWR<FollowUpSettings>(SETTINGS_URL, fetcher, { shouldRetryOnError: false });
+  const { data, error, mutate } = useSWR<unknown>(SETTINGS_URL, fetcher, { shouldRetryOnError: false });
   const unavailable = isMissing(error);
-  const saved = data ?? (unavailable ? DEFAULT_FOLLOW_UP : undefined);
+  const loaded = useMemo(() => (data === undefined ? undefined : normalizeFollowUp(data)), [data]);
+  const saved = loaded ?? (unavailable ? DEFAULT_FOLLOW_UP : undefined);
 
   if (!saved) return error ? <p className="text-sm text-danger">No se pudo cargar la configuración de seguimiento.</p> : <SkeletonCard lines={6} />;
 
   return (
     <div className="space-y-4">
       <FollowUpForm saved={saved} unavailable={unavailable} onSaved={(next) => mutate(next, { revalidate: false })} />
-      <TodayPlan weekdays={saved.follow_up_weekdays} />
+      <TodayPlan weekdays={saved.weekdays} />
     </div>
   );
 }
@@ -50,8 +52,8 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
   const [error, setError] = useState<string | null>(null);
   const { mutate: revalidate } = useSWRConfig();
 
-  const start = minutesOf(form.follow_up_window_start);
-  const end = minutesOf(form.follow_up_window_end);
+  const start = minutesOf(form.window_start);
+  const end = minutesOf(form.window_end);
   const windowError =
     start === null || end === null
       ? "Completa las dos horas."
@@ -60,7 +62,7 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
         : end - start < 120
           ? "La ventana tiene que durar al menos 2 horas."
           : null;
-  const daysError = form.follow_up_weekdays.length ? null : "Elige al menos un día.";
+  const daysError = form.weekdays.length ? null : "Elige al menos un día.";
   const dirty = JSON.stringify(form) !== JSON.stringify(saved);
 
   useEffect(() => {
@@ -75,8 +77,8 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
   }
 
   function toggleDay(day: number) {
-    const days = form.follow_up_weekdays.includes(day) ? form.follow_up_weekdays.filter((d) => d !== day) : [...form.follow_up_weekdays, day];
-    update({ follow_up_weekdays: days.sort((a, b) => a - b) });
+    const days = form.weekdays.includes(day) ? form.weekdays.filter((d) => d !== day) : [...form.weekdays, day];
+    update({ weekdays: days.sort((a, b) => a - b) });
   }
 
   async function save() {
@@ -84,7 +86,8 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
     setBusy(true);
     setError(null);
     try {
-      const next = (await apiFetch<FollowUpSettings>(SETTINGS_URL, { method: "PATCH", json: form })) ?? form;
+      const response = await apiFetch<unknown>(SETTINGS_URL, { method: "PATCH", json: form });
+      const next = response ? normalizeFollowUp(response) : form;
       setForm(next);
       onSaved(next);
       // Today's plan depends on the window and the days.
@@ -98,7 +101,7 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
     }
   }
 
-  const mode = FOLLOW_UP_MODES[form.follow_up_mode];
+  const mode = FOLLOW_UP_MODES[form.mode];
 
   return (
     <Card>
@@ -117,14 +120,14 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
         <legend className="text-sm font-medium">Modo</legend>
         <div className="mt-2 grid grid-cols-3 rounded-lg bg-canvas p-1 ring-1 ring-line" role="radiogroup" aria-label="Modo de seguimiento">
           {MODES.map((key) => {
-            const active = form.follow_up_mode === key;
+            const active = form.mode === key;
             return (
               <button
                 key={key}
                 type="button"
                 role="radio"
                 aria-checked={active}
-                onClick={() => update({ follow_up_mode: key })}
+                onClick={() => update({ mode: key })}
                 className={`min-h-11 rounded-md px-2 text-sm font-semibold transition-colors ${active ? "bg-surface text-ink shadow-sm ring-1 ring-line" : "text-muted hover:text-ink"}`}
               >
                 {FOLLOW_UP_MODES[key].label}
@@ -148,8 +151,8 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
             <span className="block text-xs text-muted">Desde</span>
             <input
               type="time"
-              value={form.follow_up_window_start}
-              onChange={(e) => update({ follow_up_window_start: e.target.value })}
+              value={form.window_start}
+              onChange={(e) => update({ window_start: e.target.value })}
               aria-invalid={!!windowError}
               aria-describedby={windowError ? "window-error" : undefined}
               className={`mt-1 min-h-11 rounded-md bg-surface px-3 tabular-nums ring-1 ${windowError ? "ring-danger" : "ring-line"}`}
@@ -159,8 +162,8 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
             <span className="block text-xs text-muted">Hasta</span>
             <input
               type="time"
-              value={form.follow_up_window_end}
-              onChange={(e) => update({ follow_up_window_end: e.target.value })}
+              value={form.window_end}
+              onChange={(e) => update({ window_end: e.target.value })}
               aria-invalid={!!windowError}
               aria-describedby={windowError ? "window-error" : undefined}
               className={`mt-1 min-h-11 rounded-md bg-surface px-3 tabular-nums ring-1 ${windowError ? "ring-danger" : "ring-line"}`}
@@ -180,7 +183,7 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
         <legend className="text-sm font-medium">Días</legend>
         <div className="mt-2 flex flex-wrap gap-1.5 sm:gap-2">
           {WEEKDAYS.map((label, day) => {
-            const on = form.follow_up_weekdays.includes(day);
+            const on = form.weekdays.includes(day);
             return (
               <button
                 key={label}

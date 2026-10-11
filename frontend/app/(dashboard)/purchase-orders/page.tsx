@@ -54,8 +54,8 @@ function PurchaseOrders() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-tight">Pedidos a proveedores y talleres</h1>
         {user.role !== "sales" && (
-          <Link href="/purchase-orders/pending" className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline">
-            <ShoppingCart size={16} /> Por pedir
+          <Link href="/inventory?to_order=1" className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline">
+            <ShoppingCart size={16} /> Insumos por pedir
           </Link>
         )}
       </div>

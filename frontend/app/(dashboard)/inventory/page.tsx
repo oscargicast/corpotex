@@ -2,12 +2,14 @@
 
 import { ChevronDown, CircleCheck, Clock, PackageX, Search, ShoppingCart, TriangleAlert, Truck, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import useSWR from "swr";
+import { GenerateConfirm, GeneratedToast, useGenerate } from "@/components/generate-purchase-orders";
 import { RoleGate } from "@/components/require-auth";
 import { SkeletonLines, SkeletonTable } from "@/components/skeleton";
 import { Thumb } from "@/components/thumb";
-import { Pill, type Tone } from "@/components/ui";
+import { Button, Pill, type Tone } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import { num } from "@/lib/format";
 import type { Material, MaterialDetail, PendingRequirement } from "@/lib/types";
@@ -63,27 +65,65 @@ function StatusPill({ status }: { status: Status }) {
   );
 }
 
-const pendingHref = (m: Material) => `/purchase-orders/pending?material=${m.id}`;
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 export default function InventoryPage() {
   return (
     <RoleGate roles={["manager", "production"]}>
-      <Inventory />
+      <Suspense>
+        <Inventory />
+      </Suspense>
     </RoleGate>
   );
 }
 
 function Inventory() {
-  const { data, error } = useSWR<Material[]>("/api/materials/", fetcher, { refreshInterval: 5000 });
-  // Until /api/materials/ sends to_order, the "Por pedir" list gives the same number.
-  const needsFallback = !!data && data.some((m) => m.to_order === undefined);
-  const { data: pending } = useSWR<PendingRequirement[]>(needsFallback ? "/api/requirements/pending/" : null, fetcher, { refreshInterval: 5000 });
+  const params = useSearchParams();
+  const router = useRouter();
+  const { data, error, mutate } = useSWR<Material[]>("/api/materials/", fetcher, { refreshInterval: 5000 });
+  // Open requirements per material: the suggested supplier for the confirmations,
+  // and to_order while /api/materials/ does not send it.
+  const { data: pending, mutate: mutatePending } = useSWR<PendingRequirement[]>("/api/requirements/pending/", fetcher, { refreshInterval: 5000 });
   const [kind, setKind] = useState("");
-  const [onlyToOrder, setOnlyToOrder] = useState(false);
+  // ?to_order=1 (the old "Por pedir" tab redirects here) turns the filter on.
+  const [onlyToOrder, setOnlyToOrder] = useState(params.get("to_order") === "1");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<number | null>(null);
+  const [confirming, setConfirming] = useState<number | "all" | null>(null);
+  const gen = useGenerate(() => {
+    mutate();
+    mutatePending();
+  });
 
-  const pendingByMaterial = new Map((pending ?? []).map((row) => [row.material.id, num(row.total_to_order) ?? 0]));
+  // ?material=<id>: highlight that row and bring it into view once.
+  const focusId = Number(params.get("material")) || null;
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    if (!focusId || !data || scrolled) return;
+    const target = [...document.querySelectorAll<HTMLElement>(`[data-material="${focusId}"]`)].find((el) => el.offsetParent !== null);
+    target?.scrollIntoView({ block: "center", behavior: "smooth" });
+    setScrolled(true);
+  }, [focusId, data, scrolled]);
+
+  function showOnlyToOrder(next: boolean) {
+    setOnlyToOrder(next);
+    setConfirming(null);
+    router.replace(next ? "/inventory?to_order=1" : "/inventory", { scroll: false });
+  }
+
+  function ask(target: number | "all") {
+    gen.clearError();
+    setConfirming(target);
+  }
+
+  async function confirmGenerate() {
+    if (confirming === null) return;
+    if (await gen.generate(confirming === "all" ? null : [confirming])) setConfirming(null);
+  }
+
+  const pendingRows = pending ?? [];
+  const pendingOf = new Map(pendingRows.map((row) => [row.material.id, row]));
+  const pendingByMaterial = new Map(pendingRows.map((row) => [row.material.id, num(row.total_to_order) ?? 0]));
   const toOrderOf = (m: Material) => (m.to_order !== undefined ? (num(m.to_order) ?? 0) : (pendingByMaterial.get(m.id) ?? 0));
   const all = (data ?? []).map((m) => ({ m, status: statusOf(m, toOrderOf(m)) }));
 
@@ -94,6 +134,33 @@ function Inventory() {
     .sort((a, b) => a.status.rank - b.status.rank || (num(a.m.available) ?? 0) - (num(b.m.available) ?? 0));
   const toOrderCount = all.filter(({ status }) => status.key === "to_order").length;
   const inTransitCount = all.filter(({ m }) => (m.incoming ?? []).some((po) => po.status !== "suggested")).length;
+  const nameOf = (id: number) => all.find(({ m }) => m.id === id)?.m.name ?? pendingOf.get(id)?.material.name ?? `Insumo ${id}`;
+
+  // "Pedir todo": one suggested purchase order per material with a supplier.
+  const materialsToOrder = pending ? pendingRows.length : toOrderCount;
+  const withSupplier = pending ? pendingRows.filter((row) => row.suggested_supplier).length : toOrderCount;
+  const withoutSupplier = pendingRows.filter((row) => !row.suggested_supplier).map((row) => row.material.name);
+  const allText = `Se ${plural(withSupplier, "generará", "generarán")} ${withSupplier} ${plural(withSupplier, "pedido sugerido", "pedidos sugeridos")} para ${materialsToOrder} ${plural(materialsToOrder, "insumo", "insumos")}. ¿Confirmas?`;
+  const allNote = withoutSupplier.length
+    ? `Sin proveedor con tarifa vigente, ${plural(withoutSupplier.length, "queda", "quedan")} por pedir: ${withoutSupplier.join(", ")}.`
+    : "Uno por insumo, con el proveedor sugerido. El Gerente los aprueba en el Monitor.";
+
+  function rowConfirm(m: Material) {
+    const row = pendingOf.get(m.id);
+    const amount = row ? ` (${qty(row.total_to_order)} ${UNIT_LABEL[m.unit]})` : "";
+    const supplier = row?.suggested_supplier ? ` con ${row.suggested_supplier.name}` : "";
+    return (
+      <GenerateConfirm
+        text={`Se generará 1 pedido sugerido para ${m.name}${amount}${supplier}. ¿Confirmas?`}
+        note={row && !row.suggested_supplier ? "No tiene proveedor con tarifa vigente: el pedido no se va a generar." : "El Gerente lo aprueba en el Monitor."}
+        busy={gen.busy}
+        error={gen.error}
+        confirmLabel="Generar pedido"
+        onConfirm={confirmGenerate}
+        onCancel={() => setConfirming(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -101,12 +168,12 @@ function Inventory() {
         <h1 className="text-2xl font-bold tracking-tight">Inventario</h1>
         <div className="flex flex-wrap items-center gap-2">
           {toOrderCount > 0 && (
-            <Link href="/purchase-orders/pending" className="rounded-full hover:opacity-80">
+            <button type="button" onClick={() => showOnlyToOrder(true)} className="rounded-full hover:opacity-80">
               <Pill tone="danger">
                 <ShoppingCart size={13} className="mr-1" aria-hidden />
                 {toOrderCount} por pedir
               </Pill>
-            </Link>
+            </button>
           )}
           {inTransitCount > 0 && (
             <Pill tone="info">
@@ -139,12 +206,29 @@ function Inventory() {
         <button
           type="button"
           aria-pressed={onlyToOrder}
-          onClick={() => setOnlyToOrder((v) => !v)}
+          onClick={() => showOnlyToOrder(!onlyToOrder)}
           className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm ring-1 ${onlyToOrder ? "bg-ink text-white ring-ink" : "bg-surface ring-line hover:bg-canvas"}`}
         >
           <ShoppingCart size={14} aria-hidden /> Solo por pedir
         </button>
+        {onlyToOrder && toOrderCount > 0 && confirming !== "all" && (
+          <Button kind="primary" className="ml-auto" disabled={gen.busy} onClick={() => ask("all")}>
+            <ShoppingCart size={16} aria-hidden /> Pedir todo
+          </Button>
+        )}
       </div>
+
+      {confirming === "all" && (
+        <GenerateConfirm
+          text={allText}
+          note={allNote}
+          busy={gen.busy}
+          error={gen.error}
+          confirmLabel="Pedir todo"
+          onConfirm={confirmGenerate}
+          onCancel={() => setConfirming(null)}
+        />
+      )}
 
       {error && !data && <p className="text-danger">No se pudo cargar el inventario.</p>}
       {!data && !error && <SkeletonTable rows={8} cols={6} />}
@@ -157,7 +241,11 @@ function Inventory() {
               const short = (num(m.available) ?? 0) <= 0;
               const toOrder = status.key === "to_order";
               return (
-                <li key={m.id} className={`rounded-lg bg-surface ring-1 ring-line ${toOrder ? "shadow-[inset_3px_0_0_var(--color-danger)]" : ""}`}>
+                <li
+                  key={m.id}
+                  data-material={m.id}
+                  className={`rounded-lg ring-1 ring-line ${m.id === focusId ? "bg-warning-soft" : "bg-surface"} ${toOrder ? "shadow-[inset_3px_0_0_var(--color-danger)]" : ""}`}
+                >
                   <button type="button" onClick={() => setOpen(open === m.id ? null : m.id)} aria-expanded={open === m.id} className="flex w-full items-start gap-3 p-3 text-left">
                     <Thumb src={m.image} alt={m.name} />
                     <span className="min-w-0 flex-1">
@@ -175,15 +263,21 @@ function Inventory() {
                     </span>
                     <ChevronDown size={16} className={`mt-1 shrink-0 text-muted transition-transform ${open === m.id ? "rotate-180" : ""}`} aria-hidden />
                   </button>
-                  {/* Outside the row's button: a link cannot live inside it. */}
+                  {/* Outside the row's button: a button cannot live inside another. */}
                   {toOrder && (
                     <div className="px-3 pb-3">
-                      <Link
-                        href={pendingHref(m)}
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-brand text-sm font-semibold text-ink hover:bg-brand-hover"
-                      >
-                        <ShoppingCart size={16} aria-hidden /> Generar pedido
-                      </Link>
+                      {confirming === m.id ? (
+                        rowConfirm(m)
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => ask(m.id)}
+                          disabled={gen.busy}
+                          className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-brand text-sm font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
+                        >
+                          <ShoppingCart size={16} aria-hidden /> Generar pedido
+                        </button>
+                      )}
                     </div>
                   )}
                   {open === m.id && <Details material={m} />}
@@ -212,7 +306,12 @@ function Inventory() {
                   const toOrder = status.key === "to_order";
                   return (
                     <RowGroup key={m.id}>
-                      <tr onClick={() => setOpen(isOpen ? null : m.id)} className="cursor-pointer hover:bg-canvas" aria-expanded={isOpen}>
+                      <tr
+                        data-material={m.id}
+                        onClick={() => setOpen(isOpen ? null : m.id)}
+                        className={`cursor-pointer ${m.id === focusId ? "bg-warning-soft" : "hover:bg-canvas"}`}
+                        aria-expanded={isOpen}
+                      >
                         <td className={`px-4 py-2.5 ${toOrder ? "shadow-[inset_3px_0_0_var(--color-danger)]" : ""}`}>
                           <span className="flex items-center gap-3">
                             <Thumb src={m.image} alt={m.name} />
@@ -231,14 +330,18 @@ function Inventory() {
                         <td className="px-4 py-2.5">
                           <span className="flex flex-wrap items-center gap-2">
                             <StatusPill status={status} />
-                            {toOrder && (
-                              <Link
-                                href={pendingHref(m)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-xs font-semibold text-ink hover:bg-brand-hover"
+                            {toOrder && confirming !== m.id && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  ask(m.id);
+                                }}
+                                disabled={gen.busy}
+                                className="inline-flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-xs font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
                               >
                                 Generar pedido
-                              </Link>
+                              </button>
                             )}
                           </span>
                         </td>
@@ -246,6 +349,13 @@ function Inventory() {
                           <ChevronDown size={16} className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />
                         </td>
                       </tr>
+                      {confirming === m.id && (
+                        <tr>
+                          <td colSpan={7} className="px-4 pb-3">
+                            {rowConfirm(m)}
+                          </td>
+                        </tr>
+                      )}
                       {isOpen && (
                         <tr>
                           <td colSpan={7} className="bg-canvas px-4 py-3">
@@ -261,6 +371,8 @@ function Inventory() {
           </div>
         </>
       )}
+
+      {gen.result && <GeneratedToast result={gen.result} nameOf={nameOf} onClose={gen.clearResult} />}
     </div>
   );
 }

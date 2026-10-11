@@ -6,6 +6,7 @@ import type { ClaudeStatus, StyleState, SupplierListItem, WhatsAppState } from "
 
 export interface OnboardingStep {
   slug: "claude" | "whatsapp" | "suppliers" | "style";
+  href: string; // suppliers live in the main menu, the rest under Configuración
   label: string;
   done: boolean | undefined; // undefined while loading
 }
@@ -19,13 +20,14 @@ export function useOnboarding(enabled = true): OnboardingStep[] {
   const { data: style } = useSWR<StyleState>(enabled ? "/api/onboarding/style/" : null, fetcher, opts);
 
   return [
-    { slug: "claude", label: "Claude", done: claude && claude.connected && !claude.expired },
+    { slug: "claude", href: "/settings/claude", label: "Claude", done: claude && claude.connected && !claude.expired },
     {
       slug: "whatsapp",
+      href: "/settings/whatsapp",
       label: "WhatsApp",
       done: whatsapp && (!!whatsapp.done_at || whatsapp.offline || (whatsapp.state === "open" && !!whatsapp.webhook)),
     },
-    { slug: "suppliers", label: "Proveedores", done: suppliers && suppliers.some((s) => !s.is_in_house) },
-    { slug: "style", label: "Estilo", done: style && !!style.approved_at },
+    { slug: "suppliers", href: "/suppliers", label: "Proveedores", done: suppliers && suppliers.some((s) => !s.is_in_house) },
+    { slug: "style", href: "/settings/style", label: "Estilo", done: style && !!style.approved_at },
   ];
 }
