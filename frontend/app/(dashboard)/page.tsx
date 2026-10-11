@@ -1,5 +1,6 @@
 "use client";
 
+import { Pause } from "lucide-react";
 import Link from "next/link";
 import useSWR from "swr";
 import { AlertList } from "@/components/alert-list";
@@ -9,8 +10,8 @@ import { RedistributionCard } from "@/components/redistribution-card";
 import { useUser } from "@/components/require-auth";
 import { Card, Pill, RISK_LABEL, RISK_TONE, ROW_HOVER, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
-import { formatDay, formatMoney } from "@/lib/format";
-import type { Monitor, PaymentSummary } from "@/lib/types";
+import { formatDay, formatMoney, num } from "@/lib/format";
+import type { Monitor, PaymentSummary, PlantLoad } from "@/lib/types";
 import { SkeletonMonitor } from "@/components/skeleton";
 
 export default function MonitorPage() {
@@ -28,19 +29,29 @@ export default function MonitorPage() {
     { label: "Pedidos sin avance", value: data.kpis.stalled_purchase_orders, alert: data.kpis.stalled_purchase_orders > 0 },
     { label: "Alertas abiertas", value: data.kpis.open_alerts, alert: false },
   ];
+  const plant = data.plant ?? null;
+  const cols = kpis.length + (plant ? 2 : 0);
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold tracking-tight">Monitor</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">Monitor</h1>
+        {data.agent?.paused && (
+          <Pill tone="warning">
+            <Pause size={12} className="mr-1" aria-hidden /> Agente en pausa
+          </Pill>
+        )}
+      </div>
       <OnboardingBanner />
 
-      <div className={`grid grid-cols-2 gap-3 ${kpis.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+      <div className={`grid grid-cols-2 gap-3 ${LG_COLS[cols] ?? "lg:grid-cols-4"}`}>
         {kpis.map((kpi) => (
           <div key={kpi.label} className="rounded-xl bg-surface p-4 ring-1 ring-line">
             <p className="text-xs text-muted">{kpi.label}</p>
             <p className={`mt-1 text-3xl font-bold tabular-nums ${kpi.alert ? "text-danger" : ""}`}>{kpi.value}</p>
           </div>
         ))}
+        {plant && <PlantKpi plant={plant} />}
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
@@ -146,5 +157,37 @@ function Payments({ rows }: { rows: PaymentSummary[] }) {
         </table>
       </div>
     </Card>
+  );
+}
+
+// Literal classes so Tailwind sees them: the plant KPI takes two columns.
+const LG_COLS: Record<number, string> = { 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5", 6: "lg:grid-cols-6" };
+
+// Own plant load (ADR 0030): it left the suppliers list and lives here.
+function PlantKpi({ plant }: { plant: PlantLoad }) {
+  const pct = Math.round(num(plant.load_pct) ?? 0);
+  const full = pct >= 85;
+  return (
+    <div className="col-span-2 rounded-xl bg-surface p-4 ring-1 ring-line">
+      <p className="flex items-baseline justify-between gap-2 text-xs text-muted">
+        <span>Capacidad de planta</span>
+        {full && <span className="font-medium text-danger">Saturada</span>}
+      </p>
+      <p className={`mt-1 text-3xl font-bold tabular-nums ${full ? "text-danger" : ""}`}>{pct} %</p>
+      <div
+        className="mt-2 h-2 overflow-hidden rounded-full bg-canvas"
+        role="meter"
+        aria-label={`Carga de ${plant.name}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+      >
+        <div className={`h-full rounded-full ${full ? "bg-danger" : "bg-success"}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+      </div>
+      <p className="mt-2 text-xs tabular-nums text-muted">
+        {plant.units_in_progress} u. en curso de {plant.weekly_capacity} u./semana · {plant.open_purchase_orders}{" "}
+        {plant.open_purchase_orders === 1 ? "pedido de taller" : "pedidos de taller"}
+      </p>
+    </div>
   );
 }
