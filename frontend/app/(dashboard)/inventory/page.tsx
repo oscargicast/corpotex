@@ -9,7 +9,7 @@ import { GenerateConfirm, GeneratedToast, useGenerate } from "@/components/gener
 import { RoleGate } from "@/components/require-auth";
 import { SkeletonLines, SkeletonTable } from "@/components/skeleton";
 import { Thumb } from "@/components/thumb";
-import { Button, Pill, type Tone } from "@/components/ui";
+import { Button, buttonClass, Pill, ROW_HOVER, type Tone } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import { num } from "@/lib/format";
 import type { Material, MaterialDetail, PendingRequirement } from "@/lib/types";
@@ -273,7 +273,7 @@ function Inventory() {
                           type="button"
                           onClick={() => ask(m.id)}
                           disabled={gen.busy}
-                          className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-brand text-sm font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
+                          className={`${buttonClass("ghost")} w-full`}
                         >
                           <ShoppingCart size={16} aria-hidden /> Generar pedido
                         </button>
@@ -309,7 +309,7 @@ function Inventory() {
                       <tr
                         data-material={m.id}
                         onClick={() => setOpen(isOpen ? null : m.id)}
-                        className={`cursor-pointer ${m.id === focusId ? "bg-warning-soft" : "hover:bg-canvas"}`}
+                        className={m.id === focusId ? "bg-warning-soft" : ROW_HOVER}
                         aria-expanded={isOpen}
                       >
                         <td className={`px-4 py-2.5 ${toOrder ? "shadow-[inset_3px_0_0_var(--color-danger)]" : ""}`}>
@@ -338,7 +338,7 @@ function Inventory() {
                                   ask(m.id);
                                 }}
                                 disabled={gen.busy}
-                                className="inline-flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-xs font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
+                                className={buttonClass("ghost", "sm")}
                               >
                                 Generar pedido
                               </button>

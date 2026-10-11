@@ -8,7 +8,7 @@ import { PURCHASE_ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useList
 import { PurchaseOrderList } from "@/components/purchase-order-list";
 import { useUser } from "@/components/require-auth";
 import { SkeletonTable } from "@/components/skeleton";
-import { Button, Card } from "@/components/ui";
+import { Button, buttonClass, Card } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import type { PurchaseOrderListItem } from "@/lib/types";
 
@@ -54,7 +54,7 @@ function PurchaseOrders() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-tight">Pedidos a proveedores y talleres</h1>
         {user.role !== "sales" && (
-          <Link href="/inventory?to_order=1" className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline">
+          <Link href="/inventory?to_order=1" className={buttonClass("ghost")}>
             <ShoppingCart size={16} /> Insumos por pedir
           </Link>
         )}
@@ -68,7 +68,7 @@ function PurchaseOrders() {
               role="tab"
               aria-selected={kind === k.value}
               onClick={() => params.set({ kind: k.value })}
-              className={`rounded-md px-3 py-1.5 text-sm ${kind === k.value ? "bg-ink text-white" : ""}`}
+              className={`rounded-md px-3 py-1.5 text-sm transition-colors duration-150 ${kind === k.value ? "bg-ink text-white" : "hover:bg-canvas"}`}
             >
               {k.label}
             </button>

@@ -36,13 +36,30 @@ export const RISK_TONE: Record<Risk, Tone> = { in_danger: "danger", at_risk: "wa
 export const RISK_LABEL: Record<Risk, string> = { in_danger: "En peligro", at_risk: "En riesgo", ok: "A tiempo" };
 
 type ButtonKind = "primary" | "dark" | "ghost" | "danger";
+type ButtonSize = "md" | "sm";
 const BUTTONS: Record<ButtonKind, string> = {
-  // Orange is reserved for the main action, with dark text on top.
+  // One primary per view (the brand color, dark text on top); everything else
+  // is the outline secondary. Every kind darkens on hover.
   primary: "bg-brand text-ink hover:bg-brand-hover",
-  dark: "bg-ink text-white hover:bg-ink/90",
-  ghost: "text-ink ring-1 ring-line hover:bg-canvas",
-  danger: "bg-danger text-white hover:bg-danger/90",
+  dark: "bg-ink text-white hover:bg-ink/85",
+  ghost: "bg-surface text-ink ring-1 ring-line hover:bg-canvas hover:ring-ink/30",
+  danger: "bg-danger text-white hover:bg-danger/85",
 };
+// Same height and radius everywhere: md for page actions, sm inside tables
+// and cards (44 px on the phone either way).
+const SIZES: Record<ButtonSize, string> = {
+  md: "min-h-11 px-4 text-sm sm:min-h-10",
+  sm: "min-h-11 px-3 text-xs sm:min-h-8",
+};
+
+// The button look, for <Link>s and custom buttons that must match <Button>.
+export function buttonClass(kind: ButtonKind = "ghost", size: ButtonSize = "md"): string {
+  return `inline-flex items-center justify-center gap-1.5 rounded-md font-semibold transition-colors duration-150 disabled:cursor-default disabled:opacity-50 ${SIZES[size]} ${BUTTONS[kind]}`;
+}
+
+// Rows and cards that open something: the same hover everywhere.
+export const ROW_HOVER = "transition-colors duration-150 hover:bg-canvas";
+export const CARD_HOVER = "transition-shadow duration-150 hover:shadow-md hover:ring-ink/25";
 
 // Small ring that spins in the current text color (buttons, send icons).
 export function Spinner({ className = "" }: { className?: string }) {
@@ -55,17 +72,18 @@ export function Button({
   kind = "ghost",
   className = "",
   busy = false,
+  size = "md",
   disabled,
   children,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: ButtonKind; busy?: boolean }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: ButtonKind; size?: ButtonSize; busy?: boolean }) {
   return (
     <button
       type="button"
       {...props}
       disabled={disabled || busy}
       aria-busy={busy || undefined}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50 ${BUTTONS[kind]} ${className}`}
+      className={`${buttonClass(kind, size)} ${className}`}
     >
       {busy && <Spinner />}
       {children}

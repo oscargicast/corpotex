@@ -7,7 +7,7 @@ import useSWR from "swr";
 import { ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
 import { useUser } from "@/components/require-auth";
 import { SkeletonTable } from "@/components/skeleton";
-import { Button, Pill, RISK_LABEL, RISK_TONE } from "@/components/ui";
+import { Button, buttonClass, CARD_HOVER, Pill, RISK_LABEL, RISK_TONE, ROW_HOVER } from "@/components/ui";
 import { orderStatusLabel } from "@/lib/order-status";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { formatDay } from "@/lib/format";
@@ -45,7 +45,7 @@ function Orders() {
         <h1 className="text-2xl font-bold tracking-tight">Órdenes</h1>
         <div className="flex flex-wrap gap-2">
           {canCreateOrder(user) && (
-            <Link href="/orders/new" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90">
+            <Link href="/orders/new" className={buttonClass("primary")}>
               <Plus size={16} /> Nueva orden
             </Link>
           )}
@@ -95,7 +95,7 @@ function Orders() {
           <ul className="space-y-2 md:hidden">
             {filtered.map((order) => (
               <li key={order.id}>
-                <Link href={`/orders/${order.id}`} className="block rounded-lg bg-surface p-3 ring-1 ring-line">
+                <Link href={`/orders/${order.id}`} className={`block rounded-lg bg-surface p-3 ring-1 ring-line ${CARD_HOVER}`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-accent">{order.code}</span>
                     <Pill tone={RISK_TONE[order.risk]}>{RISK_LABEL[order.risk]}</Pill>
@@ -127,7 +127,7 @@ function Orders() {
               </thead>
               <tbody className="divide-y divide-line">
                 {filtered.map((order) => (
-                  <tr key={order.id} className="hover:bg-canvas">
+                  <tr key={order.id} className={ROW_HOVER}>
                     <td className="px-4 py-3">
                       <Link href={`/orders/${order.id}`} className="font-semibold text-accent hover:underline">
                         {order.code}

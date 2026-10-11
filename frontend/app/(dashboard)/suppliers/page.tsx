@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import useSWR from "swr";
 import { ChannelPill } from "@/components/channel-pill";
 import { RoleGate } from "@/components/require-auth";
-import { Button, Pill } from "@/components/ui";
+import { Button, CARD_HOVER, Pill } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
 import type { SupplierDetail, SupplierListItem } from "@/lib/types";
 import { formatNum, formatScore, num } from "@/lib/format";
@@ -98,7 +98,7 @@ function Suppliers() {
 
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" role="tab" aria-selected={active} onClick={onClick} className={`rounded-md px-3 py-1.5 text-sm ${active ? "bg-ink text-white" : ""}`}>
+    <button type="button" role="tab" aria-selected={active} onClick={onClick} className={`rounded-md px-3 py-1.5 text-sm transition-colors duration-150 ${active ? "bg-ink text-white" : "hover:bg-canvas"}`}>
       {children}
     </button>
   );
@@ -106,7 +106,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 
 function SupplierCard({ supplier }: { supplier: SupplierListItem }) {
   return (
-    <Link href={`/suppliers/${supplier.id}`} className="block rounded-xl bg-surface p-4 ring-1 ring-line hover:ring-ink/30">
+    <Link href={`/suppliers/${supplier.id}`} className={`block rounded-xl bg-surface p-4 ring-1 ring-line ${CARD_HOVER}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-semibold">{supplier.name}</p>
@@ -213,7 +213,7 @@ function ReviewCard({ supplier, onChange }: { supplier: SupplierListItem; onChan
         </blockquote>
       )}
       <div className="mt-3 flex gap-2">
-        <Button kind="dark" busy={busy} onClick={() => decide("active")}>
+        <Button busy={busy} onClick={() => decide("active")}>
           Aprobar
         </Button>
         <Button disabled={busy} onClick={() => decide("inactive")}>
