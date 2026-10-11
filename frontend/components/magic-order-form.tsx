@@ -6,7 +6,7 @@ import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { num } from "@/lib/format";
 import { type GarmentPhoto, imageFrom, PHOTO_TYPES, PhotoError, shrinkPhoto } from "@/lib/garment-photo";
-import { type ClassificationMaterial, type Customer, type DraftClassification, type DraftProposal, MATERIAL_UNIT, type OrderDetail, type OrderListItem, type Product } from "@/lib/types";
+import { type ClassificationMaterial, type Customer, type DraftClassification, type DraftClassificationItem, type DraftProposal, MATERIAL_UNIT, type OrderDetail, type OrderListItem, type Product } from "@/lib/types";
 import { Button, Card, Pill, SectionTitle } from "./ui";
 
 // Orden mágica (ADR 0028): each item is one line as the customer says it. When
@@ -21,7 +21,11 @@ const PRODUCTION_DAYS = 7; // own production (Corpotex interview)
 const BRANDS = ["UNICRACK", "NEXO", "Línea Médica Corpotex"];
 const input = "mt-1 w-full rounded-md bg-surface px-3 py-2.5 text-base ring-1 ring-line sm:text-sm";
 
-type LineState = "idle" | "recognizing" | "done" | "pending" | "error";
+// recognizing: looking in the catalog (phase "product", under 1 s); recipe: a
+// new product, its recipe on the way (phase "recipe", 6-8 s); confirming: a
+// short beat before painting it (N8, Oscar 11/10 06:10).
+type LineState = "idle" | "recognizing" | "recipe" | "confirming" | "done" | "pending" | "error";
+const BUSY: LineState[] = ["recognizing", "recipe", "confirming"];
 
 interface Line {
   key: string;
@@ -33,6 +37,7 @@ interface Line {
   ai: DraftProposal | null; // the model's proposal, to undo "Cambiar producto"
   signature: string; // brand and description last sent
   photo: Photo | null; // ADR 0028 §3b: helps write the line, never saved
+  newPending: boolean; // phase 1 said "new product": its amber chip stays through the recipe (and its errors)
 }
 
 // The garment photo of a line: shrinking, being described, done (maybe with a
@@ -53,6 +58,7 @@ const newLine = (): Line => ({
   ai: null,
   signature: "",
   photo: null,
+  newPending: false,
 });
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -165,32 +171,48 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
       if (line.state === "done" && signature !== line.signature) patch(key, { state: "idle", proposal: null });
       return;
     }
-    if (!force && signature === line.signature && (line.state === "done" || line.state === "recognizing")) return;
+    if (!force && signature === line.signature && (line.state === "done" || BUSY.includes(line.state))) return;
     controllers.current.get(key)?.abort();
     const controller = new AbortController();
     controllers.current.set(key, controller);
-    patch(key, { state: "recognizing", signature });
-    try {
+    const customer = customerRef.current.trim();
+    const draft = async (phase: "product" | "recipe") => {
       const res = await apiFetch<DraftClassification>(DRAFT_URL, {
         method: "POST",
-        json: { brand, ...(customerRef.current.trim() && { customer: customerRef.current.trim() }), items: [{ key, description, quantity }] },
+        json: { brand, ...(customer && { customer }), phase, items: [{ key, description, quantity }] },
         signal: controller.signal,
       });
+      return res?.items?.find((i) => i.key === key) ?? res?.items?.[0];
+    };
+    const classified = (item: DraftClassificationItem | undefined) => !!item?.product && (item.status === "classified" || (item.status as string) === "done");
+    // Reintentar after a failed recipe goes straight back to phase 2.
+    const resume = force && line.newPending && line.signature === signature;
+    patch(key, resume ? { state: "recipe" } : { state: "recognizing", signature, newPending: false, proposal: null });
+    try {
+      let item = resume ? undefined : await draft("product");
       if (controller.signal.aborted) return;
-      const item = res?.items?.find((i) => i.key === key) ?? res?.items?.[0];
-      const status = item?.status as string | undefined;
-      if (!item || !item.product || (status !== "classified" && status !== "done")) {
-        patch(key, { state: status === "error" ? "error" : "pending", proposal: null });
+      if (resume || item?.status === "new_pending") {
+        patch(key, { state: "recipe", newPending: true, proposal: null });
+        item = await draft("recipe");
+        if (controller.signal.aborted) return;
+        if (classified(item)) {
+          patch(key, { state: "confirming" });
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          if (controller.signal.aborted) return;
+        }
+      }
+      if (!item || !classified(item)) {
+        patch(key, { state: item?.status === "error" ? "error" : "pending", proposal: null });
         return;
       }
       // Catalog recipes come with four decimals ("0.2500"): show them as typed.
       const proposal: DraftProposal = {
-        product: item.product,
+        product: item.product!,
         confidence: item.confidence ?? null,
         lead_time_days: item.lead_time_days,
         materials: (item.materials ?? []).map((m) => ({ ...m, qty_per_unit: String(num(m.qty_per_unit) ?? m.qty_per_unit) })),
       };
-      patch(key, { state: "done", proposal, ai: proposal });
+      patch(key, { state: "done", proposal, ai: proposal, newPending: false });
     } catch (err) {
       if (controller.signal.aborted || (err as Error)?.name === "AbortError") return;
       patch(key, { state: "error" });
@@ -301,7 +323,7 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
   // card showed a result, e.g. after a brand change.) An edit hides the old
   // result as soon as the new request starts.
   const recognized = counted.filter((d) => d.line.state === "done" && !!d.line.proposal);
-  const recognizing = lines.filter((l) => l.state === "recognizing").length;
+  const recognizing = lines.filter((l) => BUSY.includes(l.state)).length;
   const needs = new Map<string, { name: string; unit: string; total: number; isNew: boolean }>();
   for (const { line, quantity } of recognized) {
     for (const m of line.proposal!.materials) {
@@ -861,10 +883,19 @@ function ItemCard({
 
       <div className="magic-reveal" data-open={open}>
         <div className="pl-8 sm:pl-9">
-          {line.state === "recognizing" && (
+          {/* Phase 1 found a new product: its amber chip shows while the recipe comes (and if it fails). */}
+          {line.newPending && (line.state === "recipe" || line.state === "confirming" || line.state === "error") && (
+            <div className="mt-3 border-t border-line pt-3">
+              <span className="magic-in inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1 text-sm font-medium text-warning">
+                <Sparkles size={14} aria-hidden /> Producto nuevo
+              </span>
+            </div>
+          )}
+          {BUSY.includes(line.state) && (
             <div className="mt-3 rounded-lg p-3 magic-shimmer" role="status">
               <p className="flex items-center gap-2 text-sm font-medium text-accent">
-                <Sparkles size={15} aria-hidden /> Reconociendo…
+                <Sparkles size={15} aria-hidden />
+                {line.state === "recognizing" ? "Buscando en el catálogo…" : line.state === "recipe" ? "Armando la receta…" : "Confirmando con el inventario…"}
               </p>
               <div className="mt-2 space-y-1.5" aria-hidden>
                 <div className="h-2.5 w-2/3 rounded-full bg-surface/70" />
@@ -876,7 +907,8 @@ function ItemCard({
           {line.state === "pending" && <p className="mt-3 text-sm text-muted">Agrega la prenda y la cantidad para reconocerla.</p>}
           {line.state === "error" && (
             <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-warning" role="alert">
-              <TriangleAlert size={15} aria-hidden /> No se pudo reconocer. Se guarda igual y la IA arma su ficha técnica en segundo plano.
+              <TriangleAlert size={15} aria-hidden />
+              {line.newPending ? "No se pudo armar la receta." : "No se pudo reconocer."} Se guarda igual y la IA arma su ficha técnica en segundo plano.
               <button type="button" onClick={onRetry} className="inline-flex min-h-11 items-center gap-1 font-medium text-accent underline sm:min-h-0">
                 <RotateCcw size={14} aria-hidden /> Reintentar
               </button>
