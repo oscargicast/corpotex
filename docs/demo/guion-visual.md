@@ -45,3 +45,11 @@ Nada de nombres reales, RUC ni cuentas.
 - **Si el agente tarda:** el modo presentación muestra "Escribiendo…"; si no responde en 30 segundos, se sigue con el paso 8 (la decisión ya está en el seed).
 - **Si todo falla:** el video de respaldo de la corrida completa (D6, `CLAUDE.md`), guardado en la laptop y en el celular. Oscar lo graba a mano; como guía de los clics y tiempos está `docs/demo/respaldo/record.mjs` (Playwright headless sobre el stack real, `node record.mjs` y luego `./compose.sh ~/Desktop/corpotex-demo-respaldo.mp4`; gasta turnos del agente y muta la data, así que `seed_demo` después).
 - No tocar `/settings/claude` ni "Desconectar" en vivo; no reseedear durante el pitch.
+
+## Notas del ensayo (10/10, 20:40)
+
+- Escena de WhatsApp real probada de punta a punta con Valeria: avance (10 s) y cancelación (11 s), ambas con el estilo extraído de Oscar.
+- En la demo, Valeria reporta **400** polos ("ya van 400 del PT-0038") y no 720: así la cancelación deja 600 por repartir y la redistribución entra en dos o tres talleres (con 720 solo quedaron 280 y un taller).
+- La respuesta del bot a la cancelación llega en dos burbujas (~10 s); esperar la segunda ("déjeme revisarlo y le confirmo") antes de pasar al Monitor.
+- El Monitor tarda hasta 10 s más (tick) en mostrar la orden en peligro y los avisos por rol.
+
