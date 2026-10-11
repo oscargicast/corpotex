@@ -105,7 +105,7 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
 
   return (
     <Card>
-      <SectionTitle>Seguimiento a proveedores</SectionTitle>
+      <SectionTitle>Seguimiento automático</SectionTitle>
       <p className="-mt-1 text-sm text-muted">
         Cuándo el agente le escribe a cada proveedor para preguntar por sus pedidos. Como máximo un mensaje al día por proveedor, más un recordatorio si no responde.
       </p>

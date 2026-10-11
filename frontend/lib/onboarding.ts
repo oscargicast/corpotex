@@ -2,11 +2,11 @@
 
 import useSWR from "swr";
 import { fetcher } from "./api";
-import type { ClaudeStatus, StyleState, SupplierListItem, WhatsAppState } from "./types";
+import type { ClaudeStatus, StyleState, WhatsAppState } from "./types";
 
 export interface OnboardingStep {
-  slug: "claude" | "whatsapp" | "suppliers" | "style";
-  href: string; // suppliers live in the main menu, the rest under Configuración
+  slug: "claude" | "whatsapp" | "style";
+  href: string;
   label: string;
   done: boolean | undefined; // undefined while loading
 }
@@ -16,7 +16,6 @@ export function useOnboarding(enabled = true): OnboardingStep[] {
   const opts = { refreshInterval: 5000 };
   const { data: claude } = useSWR<ClaudeStatus>(enabled ? "/api/settings/claude/status/" : null, fetcher, opts);
   const { data: whatsapp } = useSWR<WhatsAppState>(enabled ? "/api/onboarding/whatsapp/" : null, fetcher, opts);
-  const { data: suppliers } = useSWR<SupplierListItem[]>(enabled ? "/api/suppliers/" : null, fetcher, opts);
   const { data: style } = useSWR<StyleState>(enabled ? "/api/onboarding/style/" : null, fetcher, opts);
 
   return [
@@ -27,7 +26,6 @@ export function useOnboarding(enabled = true): OnboardingStep[] {
       label: "WhatsApp",
       done: whatsapp && (!!whatsapp.done_at || whatsapp.offline || (whatsapp.state === "open" && !!whatsapp.webhook)),
     },
-    { slug: "suppliers", href: "/suppliers", label: "Proveedores", done: suppliers && suppliers.some((s) => !s.is_in_house) },
     { slug: "style", href: "/settings/style", label: "Estilo", done: style && !!style.approved_at },
   ];
 }
