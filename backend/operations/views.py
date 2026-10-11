@@ -612,7 +612,7 @@ class PurchaseOrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
     model = PurchaseOrder
     queryset = PurchaseOrder.objects.select_related("supplier", "suggested_supplier", "redistributed_from").prefetch_related(
         "follow_up_requests__requested_by",
-        "items__requirement__order__customer", "progress_reports", "payments", "alerts", "decisions"
+        "items__requirement__order__customer", "progress_reports__message", "payments", "alerts", "decisions"
     )
 
     def get_queryset(self):
@@ -742,7 +742,7 @@ class PublicReportView(APIView):
     def _po(self, token):
         return (
             PurchaseOrder.objects.select_related("supplier")
-            .prefetch_related("items__requirement__product", "progress_reports")
+            .prefetch_related("items__requirement__product", "progress_reports__message")
             .filter(report_token=token)
             .first()
         )

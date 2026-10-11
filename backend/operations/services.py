@@ -1113,10 +1113,26 @@ def _orders_of(po: PurchaseOrder):
     return {i.requirement.order for i in po.items.select_related("requirement__order")}
 
 
+IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic")
+
+
+def image_name(field) -> str:
+    """The storage name of a file field when it holds an image, else empty."""
+    name = getattr(field, "name", "") or ""
+    return name if name.lower().endswith(IMAGE_SUFFIXES) else ""
+
+
 def record_progress(po: PurchaseOrder, *, units_done: int, note: str = "", message_id=None, photo=None, actor) -> ProgressReport:
-    """A progress report from WhatsApp (`message_id`), the dashboard (`actor`) or the public page."""
+    """A progress report from WhatsApp (`message_id`), the dashboard (`actor`) or the public page.
+    A WhatsApp or simulator report without its own photo shows the image of its message: the
+    agent's tool only passes the message (agente, 11/10 04:30), and the file is shared, not copied."""
     if actor is not None:
         require_role(actor, "production", "manager")
+    if not photo and message_id:
+        from messaging.models import Message
+
+        message = Message.objects.filter(pk=message_id).first()
+        photo = image_name(message.media) if message else ""
     with transaction.atomic():
         report = ProgressReport.objects.create(
             purchase_order=po,

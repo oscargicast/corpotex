@@ -320,7 +320,14 @@ class ProgressReportSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_photo(self, obj):
-        return obj.photo.url if obj.photo else None
+        """Its own photo, else the image of its WhatsApp or simulator message (reports saved
+        before the agent's photos were linked)."""
+        from .services import image_name
+
+        if obj.photo:
+            return obj.photo.url
+        media = obj.message.media if obj.message_id and obj.message else None
+        return media.url if media and image_name(media) else None
 
 
 @register(Payment)
