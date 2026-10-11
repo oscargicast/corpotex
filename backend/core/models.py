@@ -143,6 +143,7 @@ class Customer(TimeStamped):
 class Product(TimeStamped):
     code = models.CharField(max_length=40, unique=True)
     name = models.CharField(max_length=160)
+    brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.SET_NULL, related_name="products")
     image = models.ImageField(upload_to="products/", blank=True)
 
     class Meta:

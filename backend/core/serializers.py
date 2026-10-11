@@ -30,7 +30,6 @@ MANAGER_ONLY_FIELDS = frozenset(
         "payments_summary",
         "payments_by_supplier",
         "numbers",
-        "notes",
         "source_detail",
         "rates",
         "ratings",

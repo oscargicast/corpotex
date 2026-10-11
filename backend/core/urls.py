@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_claude, views_materials, views_style
+from . import views, views_catalogue, views_claude, views_materials, views_style
 
 urlpatterns = [
     path("auth/login/", views.LoginView.as_view(), name="auth-login"),
@@ -8,6 +8,8 @@ urlpatterns = [
     path("auth/me/", views.MeView.as_view(), name="auth-me"),
     path("clock/", views.ClockView.as_view(), name="clock"),
     # Inventory (P0 of 10/10): manager and production.
+    path("customers/", views_catalogue.CustomerListView.as_view(), name="customers"),
+    path("products/", views_catalogue.ProductListView.as_view(), name="products"),
     path("materials/", views_materials.MaterialListView.as_view(), name="materials"),
     path("materials/<int:pk>/", views_materials.MaterialDetailView.as_view(), name="material-detail"),
     # Claude account (ADR 0022, B4.3): views owned by `orquestador` in core/views_claude.py.

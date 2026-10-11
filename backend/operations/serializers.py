@@ -149,6 +149,7 @@ class OrderListSerializer(DisplayMixin, serializers.ModelSerializer):
             "total_units",
             "total_amount",
             "purchase_orders_summary",
+            "owner_id",
         ]
 
     @extend_schema_field(OpenApiTypes.OBJECT)
@@ -200,6 +201,7 @@ class OrderDetailSerializer(StatusHistoryMixin, OrderListSerializer):
     class Meta(OrderListSerializer.Meta):
         fields = OrderListSerializer.Meta.fields + [
             "owner",
+            "notes",
             "critical_path",
             "items",
             "requirements",

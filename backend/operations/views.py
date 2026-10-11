@@ -82,7 +82,23 @@ class OrderInSerializer(serializers.Serializer):
     brand = serializers.CharField(help_text="Brand name.")
     issued_on = serializers.DateField(required=False)
     promised_on = serializers.DateField()
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
     items = OrderItemInSerializer(many=True)
+
+
+class OrderPatchSerializer(serializers.Serializer):
+    """The order form (ADR 0025 B): header fields and, when present, the full list of items."""
+
+    customer = serializers.CharField(required=False)
+    brand = serializers.CharField(required=False)
+    issued_on = serializers.DateField(required=False)
+    promised_on = serializers.DateField(required=False)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    items = OrderItemInSerializer(many=True, required=False)
+
+
+class CancelInSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class BreakDownInSerializer(serializers.Serializer):
@@ -90,6 +106,7 @@ class BreakDownInSerializer(serializers.Serializer):
 
 
 class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
+    http_method_names = ["get", "post", "patch", "head", "options"]
     model = Order
     queryset = Order.objects.select_related("customer", "brand", "owner").prefetch_related(
         "items__product", "requirements__material", "requirements__product"
@@ -116,6 +133,37 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
         except UnknownReference as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return self.detail_response(order, status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @extend_schema(request=OrderPatchSerializer, responses={200: OrderDetailSerializer})
+    def partial_update(self, request, pk=None):
+        """Edit an order (sales: own, up to broken_down; manager: any). `items` replaces the
+        list and re-breaks down; requirements already ordered stay and come back in `warnings`."""
+        order = self.get_object()
+        data = OrderPatchSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            order, warnings = services.update_order(order, data.validated_data, actor=request.user)
+        except PermissionDenied as exc:
+            _forbidden(exc)
+        except UnknownReference as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        response = self.detail_response(order)
+        response.data["warnings"] = warnings
+        return response
+
+    @extend_schema(request=CancelInSerializer, responses={200: OrderDetailSerializer})
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        """Sales cancels own orders up to broken_down; the manager any order before production."""
+        data = CancelInSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            order = services.cancel_order(self.get_object(), reason=data.validated_data.get("reason", ""), actor=request.user)
+        except PermissionDenied as exc:
+            _forbidden(exc)
+        except UnknownReference as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return self.detail_response(order)
 
     @extend_schema(request=BreakDownInSerializer, responses={200: dict})
     @action(detail=False, methods=["post"], url_path="break-down", permission_classes=[IsManagerOrProduction])
