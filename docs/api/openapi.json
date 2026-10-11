@@ -4323,14 +4323,6 @@
                     }
                 }
             },
-            "ChannelEnum": {
-                "enum": [
-                    "whatsapp",
-                    "simulator"
-                ],
-                "type": "string",
-                "description": "* `whatsapp` - whatsapp\n* `simulator` - simulator"
-            },
             "ClassificationItem": {
                 "type": "object",
                 "properties": {
@@ -5207,17 +5199,38 @@
                     "skip_reason": {
                         "type": "string",
                         "description": "\"sin canal\" for the own plant or a supplier without a number."
+                    },
+                    "channel": {
+                        "nullable": true,
+                        "description": "Where the question goes; null when skipped.\n\n* `whatsapp` - WhatsApp\n* `simulator` - Simulador",
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/FollowUpRequestRowChannelEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
                     }
                 },
                 "required": [
                     "already_asked",
                     "asked_at",
+                    "channel",
                     "id",
                     "purchase_order",
                     "skip_reason",
                     "status",
                     "supplier_name"
                 ]
+            },
+            "FollowUpRequestRowChannelEnum": {
+                "enum": [
+                    "whatsapp",
+                    "simulator"
+                ],
+                "type": "string",
+                "description": "* `whatsapp` - WhatsApp\n* `simulator` - Simulador"
             },
             "FollowUpRequestRowStatusEnum": {
                 "enum": [
@@ -8461,7 +8474,7 @@
                         "nullable": true
                     },
                     "channel": {
-                        "$ref": "#/components/schemas/ChannelEnum"
+                        "$ref": "#/components/schemas/SimulatorContactChannelEnum"
                     },
                     "conversation_id": {
                         "type": "integer",
@@ -8488,6 +8501,14 @@
                     "simulated",
                     "supplier"
                 ]
+            },
+            "SimulatorContactChannelEnum": {
+                "enum": [
+                    "whatsapp",
+                    "simulator"
+                ],
+                "type": "string",
+                "description": "* `whatsapp` - whatsapp\n* `simulator` - simulator"
             },
             "SimulatorContactSupplier": {
                 "type": "object",

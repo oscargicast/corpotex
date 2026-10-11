@@ -180,6 +180,7 @@ class FollowUpRequestRowSerializer(serializers.Serializer):
     asked_at = serializers.DateTimeField(allow_null=True, help_text="The original question when it hangs on an existing wait.")
     already_asked = serializers.BooleanField()
     skip_reason = serializers.CharField(allow_blank=True, help_text='"sin canal" for the own plant or a supplier without a number.')
+    channel = serializers.ChoiceField(choices=[("whatsapp", "WhatsApp"), ("simulator", "Simulador")], allow_null=True, help_text="Where the question goes; null when skipped.")
 
 
 class FollowUpResultSerializer(serializers.Serializer):

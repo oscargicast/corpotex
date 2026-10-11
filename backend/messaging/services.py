@@ -250,7 +250,7 @@ def finish_turn(batch: TurnBatch, session_id: str | None, error: str | None = No
 
                 Decision.objects.filter(id__in=batch.decision_ids).update(communicated_at=clock.now())
             if batch.follow_up:
-                _close_follow_up(batch, sent=Message.objects.filter(turn=turn, author=Message.Author.AGENT).exists())
+                _close_follow_up(batch, sent_message=Message.objects.filter(turn=turn, author=Message.Author.AGENT).order_by("-sent_at", "-id").first())
             from operations.services import set_status
 
             for po in PurchaseOrder.objects.filter(id__in=batch.new_purchase_order_ids, status=PurchaseOrder.Status.APPROVED):
@@ -287,13 +287,19 @@ def finish_turn(batch: TurnBatch, session_id: str | None, error: str | None = No
     return turn
 
 
-def _close_follow_up(batch: TurnBatch, *, sent: bool) -> None:
+def _close_follow_up(batch: TurnBatch, *, sent_message: "Message | None") -> None:
     """ADR 0027 §3, agreed with `agente`: the day's follow-up is spent whether the agent wrote or
     skipped (`skip_follow_up` leaves `follow_up_note`). A message sent without a supplier message
     in the batch starts the wait (checkpoint) or marks the reminder. A skipped reminder is marked
     too but keeps the wait: not insisting with the supplier must not hide the silence from the
-    manager, so the stalled alert still comes (agreed with `agente`, 11/10 01:40)."""
+    manager, so the stalled alert still comes (agreed with `agente`, 11/10 01:40).
+
+    Times are the agent's message time, not the closing time, and a supplier message sent after it
+    (the turn takes a few seconds to close) means nobody is waiting (agente, 11/10 06:05)."""
     now = clock.now()
+    sent = sent_message is not None
+    at = sent_message.sent_at if sent else now
+    replied = sent and batch.turn.conversation.messages.filter(author=Message.Author.SUPPLIER, sent_at__gt=at).exists()
     per_order = (batch.follow_up or {}).get("purchase_orders") or {}
     answered = bool(batch.message_ids)
     requested = []
@@ -303,17 +309,20 @@ def _close_follow_up(batch: TurnBatch, *, sent: bool) -> None:
         fields = ["last_follow_up_on", "updated_at"]
         if sent:
             po.follow_up_note = ""
-            po.last_follow_up_kind, po.last_follow_up_at = kind, now
+            po.last_follow_up_kind, po.last_follow_up_at = kind, at
             fields += ["follow_up_note", "last_follow_up_kind", "last_follow_up_at"]
             if kind == "requested":  # a person asked: the wait starts even if the supplier was writing
-                po.awaiting_reply_since, po.reminded_at = now, None
+                po.awaiting_reply_since, po.reminded_at = (None if replied else at), None
                 fields += ["awaiting_reply_since", "reminded_at"]
             elif not answered:
                 if kind == "reminder":
-                    po.reminded_at = now
+                    po.reminded_at = at
                     fields.append("reminded_at")
+                    if replied:
+                        po.awaiting_reply_since = None
+                        fields.append("awaiting_reply_since")
                 else:
-                    po.awaiting_reply_since, po.reminded_at = now, None
+                    po.awaiting_reply_since, po.reminded_at = (None if replied else at), None
                     fields += ["awaiting_reply_since", "reminded_at"]
         elif kind == "reminder":
             po.reminded_at = now
@@ -324,7 +333,7 @@ def _close_follow_up(batch: TurnBatch, *, sent: bool) -> None:
     if requested:
         from operations.follow_up_requests import mark_asked
 
-        mark_asked(requested, sent=sent)
+        mark_asked(requested, sent_at=at if sent else None)
 
 
 def _requeue(turn: Turn, *, count_attempt: bool = True) -> Turn:
