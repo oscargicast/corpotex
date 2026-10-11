@@ -92,7 +92,8 @@ def test_queue_is_paused_while_claude_is_disconnected(scenario):
 
 
 @pytest.mark.django_db
-def test_proactive_only_whatsapp_batch_waits_for_the_quiet_hours(scenario):
+def test_proactive_only_whatsapp_batch_waits_for_the_quiet_hours(scenario, monkeypatch):
+    monkeypatch.setattr(services, "QUIET_HOURS", (21, 7))  # Whatever the .env of the machine says.
     conversation = scenario["conversation"]
     scenario["purchase_order"].progress_reports.update(acknowledged_at=timezone.now())
     PurchaseOrder.objects.filter(pk=scenario["purchase_order"].pk).update(next_follow_up_at=timezone.now() - timedelta(days=2))
