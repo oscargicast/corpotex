@@ -2836,6 +2836,81 @@
                 }
             }
         },
+        "/api/settings/agent/": {
+            "get": {
+                "operationId": "settings_agent_retrieve",
+                "description": "`GET/PATCH /api/settings/agent/` (manager only). Resuming queues the first contact of the\npurchase orders approved during the pause; the tick resumes the follow-ups.",
+                "tags": [
+                    "settings"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AgentSettings"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "settings_agent_partial_update",
+                "description": "`GET/PATCH /api/settings/agent/` (manager only). Resuming queues the first contact of the\npurchase orders approved during the pause; the tick resumes the follow-ups.",
+                "tags": [
+                    "settings"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedAgentSettingsInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedAgentSettingsInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedAgentSettingsInRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AgentSettings"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/settings/claude/": {
             "get": {
                 "operationId": "settings_claude_retrieve",
@@ -4103,6 +4178,24 @@
                 ],
                 "type": "string",
                 "description": "* `approve` - approve\n* `reject` - reject\n* `change_supplier` - change_supplier"
+            },
+            "AgentSettings": {
+                "type": "object",
+                "properties": {
+                    "paused": {
+                        "type": "boolean",
+                        "description": "The agent writes to no supplier; incoming messages are still kept."
+                    },
+                    "paused_suppliers": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "description": "Suppliers paused one by one."
+                    }
+                },
+                "required": [
+                    "paused",
+                    "paused_suppliers"
+                ]
             },
             "Alert": {
                 "type": "object",
@@ -6285,16 +6378,50 @@
                             "additionalProperties": {}
                         },
                         "nullable": true
+                    },
+                    "plant": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MonitorPlant"
+                            }
+                        ],
+                        "nullable": true,
+                        "description": "ADR 0030: the own plant's capacity KPI; null when there is no in-house supplier."
+                    },
+                    "agent": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MonitorAgent"
+                            }
+                        ],
+                        "description": "ADR 0030: the agent's pause, for a notice on the Monitor."
                     }
                 },
                 "required": [
+                    "agent",
                     "alerts",
                     "clock",
                     "decisions",
                     "kpis",
                     "orders_in_danger",
                     "payments_by_supplier",
+                    "plant",
                     "redistributions"
+                ]
+            },
+            "MonitorAgent": {
+                "type": "object",
+                "properties": {
+                    "paused": {
+                        "type": "boolean"
+                    },
+                    "paused_suppliers": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "paused",
+                    "paused_suppliers"
                 ]
             },
             "MonitorClock": {
@@ -6345,6 +6472,38 @@
                     "orders_in_danger",
                     "pending_decisions",
                     "stalled_purchase_orders"
+                ]
+            },
+            "MonitorPlant": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "weekly_capacity": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "units_in_progress": {
+                        "type": "integer",
+                        "description": "Units in the plant's open workshop purchase orders."
+                    },
+                    "load_pct": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true,
+                        "description": "units_in_progress over weekly_capacity, in %; null without a capacity."
+                    },
+                    "open_purchase_orders": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "load_pct",
+                    "name",
+                    "open_purchase_orders",
+                    "units_in_progress",
+                    "weekly_capacity"
                 ]
             },
             "NextStop": {
@@ -7005,6 +7164,14 @@
                 "type": "string",
                 "description": "* `registered` - Registrada\n* `broken_down` - Con ficha técnica\n* `confirmed` - Confirmada\n* `sourcing` - En abastecimiento\n* `in_production` - En producción\n* `ready` - Lista\n* `delivered` - Entregada\n* `cancelled` - Cancelada"
             },
+            "PatchedAgentSettingsInRequest": {
+                "type": "object",
+                "properties": {
+                    "paused": {
+                        "type": "boolean"
+                    }
+                }
+            },
             "PatchedDispatchPatchRequest": {
                 "type": "object",
                 "properties": {
@@ -7179,6 +7346,10 @@
                     },
                     "notes": {
                         "type": "string"
+                    },
+                    "agent_paused": {
+                        "type": "boolean",
+                        "description": "ADR 0030: the agent writes nothing to this supplier."
                     }
                 }
             },
@@ -9578,6 +9749,26 @@
                         "type": "boolean",
                         "readOnly": true
                     },
+                    "agent_paused": {
+                        "type": "boolean",
+                        "description": "ADR 0030: the agent writes nothing to this supplier; its messages are still kept."
+                    },
+                    "whatsapp_ready": {
+                        "type": "boolean",
+                        "description": "ADR 0030: the agent can write to it: not the own plant, at least one active number.",
+                        "readOnly": true
+                    },
+                    "purchase_orders_count": {
+                        "type": "integer",
+                        "description": "Every purchase order it ever got, open or closed (ADR 0030); a suggestion the manager\nhas not approved yet never reached it.",
+                        "readOnly": true
+                    },
+                    "last_delivered_on": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "The day of its last delivery (a purchase order reaching `delivered`), or null.",
+                        "readOnly": true
+                    },
                     "address": {
                         "type": "string",
                         "maxLength": 200
@@ -9667,6 +9858,7 @@
                     "id",
                     "kind",
                     "kind_display",
+                    "last_delivered_on",
                     "load_pct",
                     "name",
                     "numbers",
@@ -9675,11 +9867,13 @@
                     "open_purchase_orders",
                     "payments_summary",
                     "purchase_orders",
+                    "purchase_orders_count",
                     "quality_score",
                     "rates",
                     "ratings",
                     "source_display",
-                    "status_display"
+                    "status_display",
+                    "whatsapp_ready"
                 ]
             },
             "SupplierImportResult": {
@@ -9899,6 +10093,26 @@
                         "type": "boolean",
                         "readOnly": true
                     },
+                    "agent_paused": {
+                        "type": "boolean",
+                        "description": "ADR 0030: the agent writes nothing to this supplier; its messages are still kept."
+                    },
+                    "whatsapp_ready": {
+                        "type": "boolean",
+                        "description": "ADR 0030: the agent can write to it: not the own plant, at least one active number.",
+                        "readOnly": true
+                    },
+                    "purchase_orders_count": {
+                        "type": "integer",
+                        "description": "Every purchase order it ever got, open or closed (ADR 0030); a suggestion the manager\nhas not approved yet never reached it.",
+                        "readOnly": true
+                    },
+                    "last_delivered_on": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "The day of its last delivery (a purchase order reaching `delivered`), or null.",
+                        "readOnly": true
+                    },
                     "kind_display": {
                         "type": "string",
                         "readOnly": true,
@@ -9921,14 +10135,17 @@
                     "id",
                     "kind",
                     "kind_display",
+                    "last_delivered_on",
                     "load_pct",
                     "name",
                     "numbers_count",
                     "on_time_score",
                     "open_purchase_orders",
+                    "purchase_orders_count",
                     "quality_score",
                     "source_display",
-                    "status_display"
+                    "status_display",
+                    "whatsapp_ready"
                 ]
             },
             "SupplierNameRef": {

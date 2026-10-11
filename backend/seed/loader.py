@@ -175,6 +175,7 @@ class Loader:
         config.follow_up_mode = FollowUpMode.BALANCED
         config.follow_up_window_start, config.follow_up_window_end = time(9, 0), time(18, 0)
         config.follow_up_weekdays = default_follow_up_weekdays()
+        config.agent_paused = False  # ADR 0030: the demo starts with the agent on for everyone
         if plant:
             config.plant_name = plant.get("name", "")
             config.plant_lat = plant.get("lat")

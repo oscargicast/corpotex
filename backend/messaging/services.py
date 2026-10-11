@@ -90,13 +90,42 @@ def conversation_for_supplier(supplier: Supplier) -> Conversation | None:
 # --- queue ----------------------------------------------------------------------------------
 
 
+PAUSED_NOTE = "Agente en pausa"
+
+
+def agent_paused_for(conversation: Conversation) -> bool:
+    """ADR 0030: a supplier's conversation (WhatsApp or simulator) while the whole agent or that
+    supplier is paused. The dashboard assistants and numbers without a supplier never pause."""
+    if conversation.channel == Conversation.Channel.DASHBOARD:
+        return False
+    number = conversation.allowed_number
+    if number is None or number.supplier_id is None:
+        return False
+    # Read from the database: a conversation kept in memory may carry a stale supplier.
+    return Config.load().agent_paused or Supplier.objects.filter(pk=number.supplier_id, agent_paused=True).exists()
+
+
+def _skip_paused(turn: Turn) -> Turn:
+    """The turn closes as `skipped` and the messages that came in are kept as read: the manager
+    handles them meanwhile, and nothing replays when the agent comes back."""
+    turn.status = Turn.Status.SKIPPED
+    turn.error = PAUSED_NOTE
+    turn.save(update_fields=["status", "error", "updated_at"])
+    turn.conversation.messages.filter(status=Message.Status.RECEIVED).update(status=Message.Status.PROCESSED)
+    return turn
+
+
 def enqueue_turn(conversation: Conversation, reason: str) -> Turn:
     """The only entry to the queue. Reuses the pending turn; pushes `available_at` 5 s ahead
     (cap 20 s from creation) so consecutive messages are batched; the dashboard waits nothing.
-    Dispatches `run_turn` when the transaction commits."""
+    Dispatches `run_turn` when the transaction commits. While the agent is paused for the
+    supplier (ADR 0030) the turn is born `skipped` and nothing is dispatched."""
     now = timezone.now()
     if reason == Turn.Reason.MESSAGE and conversation.channel != Conversation.Channel.DASHBOARD:
         clear_awaiting_reply(conversation)
+    if agent_paused_for(conversation):
+        with transaction.atomic():
+            return _skip_paused(Turn.objects.create(conversation=conversation, reason=reason, available_at=now))
     with transaction.atomic():
         turn = Turn.objects.select_for_update().filter(conversation=conversation, status=Turn.Status.PENDING).first()
         if turn is None:
@@ -108,6 +137,26 @@ def enqueue_turn(conversation: Conversation, reason: str) -> Turn:
         countdown = max(0.0, (turn.available_at - now).total_seconds())
         transaction.on_commit(lambda: dispatch_turn(conversation.id, countdown))
     return turn
+
+
+def resume_agent(supplier_ids=None) -> int:
+    """ADR 0030, when the agent comes back (one supplier or all): purchase orders approved during
+    the pause still wait for their first contact, so their conversations get the
+    `purchase_order_approved` turn they missed. Nothing else replays: the tick resumes the
+    follow-ups. Returns the turns queued."""
+    if Config.load().agent_paused:
+        return 0
+    pos = PurchaseOrder.objects.filter(
+        status=PurchaseOrder.Status.APPROVED, supplier__agent_paused=False, conversation__isnull=False
+    ).select_related("conversation__allowed_number__supplier")
+    if supplier_ids is not None:
+        pos = pos.filter(supplier_id__in=supplier_ids)
+    queued = 0
+    for conversation in {po.conversation_id: po.conversation for po in pos}.values():
+        if not conversation.turns.filter(status__in=(Turn.Status.PENDING, Turn.Status.RUNNING)).exists():
+            enqueue_turn(conversation, Turn.Reason.PURCHASE_ORDER_APPROVED)
+            queued += 1
+    return queued
 
 
 def clear_awaiting_reply(conversation: Conversation) -> int:
@@ -169,6 +218,9 @@ def claim_next_turn(conversation_id: int | None = None) -> TurnBatch | None:
             qs = qs.filter(conversation_id=conversation_id)
         turn = qs.order_by("available_at", "id").first()
         if turn is None:
+            return None
+        if agent_paused_for(turn.conversation):  # queued before the pause (ADR 0030)
+            _skip_paused(turn)
             return None
         batch = _build_batch(turn)
         if batch.is_empty():
@@ -626,6 +678,8 @@ def send_text(conversation: Conversation, text: str, turn: Turn | None) -> Messa
         raise NumberNotAllowed(getattr(number, "phone", "?"))
     if conversation.channel == Conversation.Channel.WHATSAPP and number.simulated:
         raise NumberNotAllowed(number.phone)
+    if agent_paused_for(conversation):  # a turn already running when the manager paused (ADR 0030)
+        raise SendFailed(PAUSED_NOTE)
     message = Message.objects.create(
         conversation=conversation, author=Message.Author.AGENT, text=text, status=Message.Status.SENT, sent_at=timezone.now(), turn=turn
     )

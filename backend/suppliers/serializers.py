@@ -51,6 +51,9 @@ class SupplierListSerializer(DisplayMixin, serializers.ModelSerializer):
     numbers_count = serializers.SerializerMethodField()
     active_numbers_count = serializers.SerializerMethodField()
     has_style_notes = serializers.SerializerMethodField()
+    whatsapp_ready = serializers.SerializerMethodField()
+    purchase_orders_count = serializers.SerializerMethodField()
+    last_delivered_on = serializers.SerializerMethodField()
 
     class Meta:
         model = Supplier
@@ -76,6 +79,10 @@ class SupplierListSerializer(DisplayMixin, serializers.ModelSerializer):
             "numbers_count",
             "active_numbers_count",
             "has_style_notes",
+            "agent_paused",
+            "whatsapp_ready",
+            "purchase_orders_count",
+            "last_delivered_on",
         ]
 
     def _scores(self, obj):
@@ -110,6 +117,28 @@ class SupplierListSerializer(DisplayMixin, serializers.ModelSerializer):
     @extend_schema_field(OpenApiTypes.BOOL)
     def get_has_style_notes(self, obj):
         return bool(obj.notes)
+
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_whatsapp_ready(self, obj):
+        """ADR 0030: the agent can write to it: not the own plant, at least one active number."""
+        return not obj.is_in_house and any(n.active for n in obj.numbers.all())
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_purchase_orders_count(self, obj):
+        """Every purchase order it ever got, open or closed (ADR 0030); a suggestion the manager
+        has not approved yet never reached it."""
+        return obj.purchase_orders.exclude(status="suggested").count()
+
+    @extend_schema_field(OpenApiTypes.DATE)
+    def get_last_delivered_on(self, obj):
+        """The day of its last delivery (a purchase order reaching `delivered`), or null."""
+        from django.db.models import Max
+        from django.utils import timezone
+
+        from operations.models import StatusChange
+
+        last = StatusChange.objects.filter(purchase_order__supplier=obj, status="delivered").aggregate(at=Max("at"))["at"]
+        return timezone.localtime(last).date() if last else None
 
 
 @register(Supplier, detail=True)

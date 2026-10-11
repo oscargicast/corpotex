@@ -41,6 +41,7 @@ class Supplier(TimeStamped):
     lead_time_days = models.PositiveSmallIntegerField(default=7)
     follow_up_every_hours = models.PositiveSmallIntegerField(default=48, help_text="Unused since ADR 0027.")
     follow_up_mode = models.CharField(max_length=10, choices=FollowUpMode.choices, blank=True, default="", help_text="Empty: the general mode.")
+    agent_paused = models.BooleanField(default=False, help_text="ADR 0030: the agent writes nothing to this supplier; its messages are still kept.")
     currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.PEN)
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.REGISTERED)
     source_detail = models.JSONField(
