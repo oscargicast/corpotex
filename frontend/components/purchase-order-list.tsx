@@ -4,7 +4,7 @@ import { isOpenRequest, requestedBy } from "@/lib/follow-up";
 import { formatDay, formatMoney, num } from "@/lib/format";
 import type { PurchaseOrderListItem } from "@/lib/types";
 import { KindIcon } from "./thumb";
-import { Pill, SEVERITY_TONE } from "./ui";
+import { CARD_HOVER, Pill, ROW_HOVER, SEVERITY_TONE } from "./ui";
 
 // Table on desktop, cards on mobile. Used by /purchase-orders and the order detail.
 export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] }) {
@@ -16,7 +16,7 @@ export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] })
       <ul className="space-y-2 md:hidden">
         {items.map((po) => (
           <li key={po.id}>
-            <Link href={`/purchase-orders/${po.id}`} className="block rounded-lg bg-surface p-3 ring-1 ring-line">
+            <Link href={`/purchase-orders/${po.id}`} className={`block rounded-lg bg-surface p-3 ring-1 ring-line ${CARD_HOVER}`}>
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 font-semibold text-accent">
                   <KindIcon kind={po.kind} className="shrink-0 text-muted" />
@@ -48,7 +48,7 @@ export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] })
           </thead>
           <tbody className="divide-y divide-line">
             {items.map((po) => (
-              <tr key={po.id}>
+              <tr key={po.id} className={ROW_HOVER}>
                 <td className="py-2.5 pr-3">
                   <Link href={`/purchase-orders/${po.id}`} className="inline-flex items-center gap-1.5 font-semibold text-accent hover:underline">
                     <KindIcon kind={po.kind} className="shrink-0 text-muted" />

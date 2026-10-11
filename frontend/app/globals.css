@@ -156,3 +156,12 @@ body {
     animation: none;
   }
 }
+
+/* Every clickable thing shows it: Tailwind 4 leaves buttons on the default
+   cursor. (The focus ring is the :focus-visible rule above.) */
+button:not(:disabled):not([aria-disabled="true"]),
+[role="button"],
+[role="tab"],
+summary {
+  cursor: pointer;
+}
