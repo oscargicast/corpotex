@@ -9,6 +9,7 @@ from rest_framework.test import APIClient
 from core.models import Material
 from operations.models import Order, Requirement
 from tests.scenario import build
+from tests.test_consolidated import catalogue  # noqa: F401
 
 
 @pytest.fixture
@@ -68,3 +69,54 @@ def test_available_never_goes_negative_after_breakdowns(manager_client, sales, s
     services.register_order(payload, actor=sales)  # needs 500 kg of a 120 kg stock with 100 already reserved
     row = next(m for m in manager_client.get("/api/materials/").json() if m["sku"] == "TEL-ALG-20-1")
     assert row["committed"] == "120.00" and row["available"] == "0.00"
+
+
+@pytest.mark.django_db
+def test_to_order_and_incoming_say_when_a_material_goes_out_to_buy(catalogue, sales, production, manager):
+    """Oscar, 10/10 00:00: the inventory shows what is still to buy (the "Por pedir" number) and
+    the live purchase orders that will bring each material."""
+    from datetime import date
+    from decimal import Decimal
+
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    from operations import services
+    from operations.models import PurchaseOrder, PurchaseOrderItem
+    from tests.test_consolidated import order
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Token {Token.objects.get_or_create(user=production)[0].key}")
+    fabric = catalogue["fabric"]  # jersey in kg, nothing in stock, 0.25 kg per polo
+    a = order("CP-2026-0401", "Caja Piura", 1600, date(2026, 11, 20), sales)  # 400 kg open
+    b = order("CP-2026-0402", "AIDER", 2400, date(2026, 11, 25), sales)  # 600 kg, covered below
+    services.confirm_order(a, actor=production)
+    services.confirm_order(b, actor=production)
+    approved = PurchaseOrder.objects.create(code="PI-0950", supplier=catalogue["textil"], status="approved", internal_due_on=date(2026, 11, 1))
+    PurchaseOrderItem.objects.create(
+        purchase_order=approved, requirement=b.requirements.get(kind="material", material=fabric), quantity=Decimal("600"), unit_price=Decimal("8.00"), qty_delivered=Decimal("200")
+    )
+
+    with CaptureQueriesContext(connection) as first:
+        rows = {m["sku"]: m for m in client.get("/api/materials/").json()}
+    assert rows["TEL-20"]["to_order"] == "400.00"
+    assert rows["TEL-20"]["incoming"] == [{"id": approved.id, "code": "PI-0950", "status": "approved", "status_display": "Aprobado", "qty_pending": "400.00"}]
+    assert rows["BOT-NX"]["incoming"] == []
+    # The same number as "Por pedir", material by material.
+    pending = {g["material"]["sku"]: g["total_to_order"] for g in services.pending_purchases(with_prices=False)}
+    assert {sku: row["to_order"] for sku, row in rows.items()} == {sku: pending.get(sku, "0.00") for sku in rows}
+
+    detail = client.get(f"/api/materials/{fabric.id}/").json()
+    assert detail["to_order"] == "400.00" and detail["incoming"][0]["qty_pending"] == "400.00" and detail["requirements"]
+
+    # No query per material, requirement or purchase order: more of them, same number of queries.
+    for n, customer in ((3, "Caja Piura"), (4, "AIDER")):
+        extra = order(f"CP-2026-040{n}", customer, 100 * n, date(2026, 12, n), sales)
+        services.confirm_order(extra, actor=production)
+    services.generate_purchase_orders(actor=production)
+    with CaptureQueriesContext(connection) as second:
+        client.get("/api/materials/")
+    assert len(second) == len(first), [q["sql"][:80] for q in second.captured_queries]
+    sales_client = APIClient()
+    sales_client.credentials(HTTP_AUTHORIZATION=f"Token {Token.objects.get_or_create(user=sales)[0].key}")
+    assert sales_client.get("/api/materials/").status_code == 403  # manager and production only, as before
