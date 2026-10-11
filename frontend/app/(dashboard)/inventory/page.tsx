@@ -198,7 +198,7 @@ function Reservations({ id }: { id: number }) {
               </Link>
             </td>
             <td className="px-3 py-1.5 text-right tabular-nums">{qty(r.qty_needed)}</td>
-            <td className="px-3 py-1.5 text-right tabular-nums">{qty(r.qty_from_stock)}</td>
+            <td className="px-3 py-1.5 text-right tabular-nums">{qty(r.qty_from_stock ?? 0)}</td>
             <td className={`px-3 py-1.5 text-right tabular-nums ${Number(r.qty_to_order) > 0 ? "font-semibold" : ""}`}>{qty(r.qty_to_order)}</td>
             <td className="px-3 py-1.5">
               <Pill tone={r.status === "pending" ? "warning" : "neutral"}>{r.status_display ?? REQ_STATUS[r.status] ?? r.status}</Pill>

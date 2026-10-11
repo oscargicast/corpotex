@@ -10,7 +10,7 @@ const AUTHOR: Record<ChatMessage["author"], string> = {
   supplier: "Proveedor",
   agent: "Agente",
   manager: "Gerente",
-  system: "Sistema",
+  user: "Usuario",
 };
 
 // WhatsApp-like thread: our side (agent, manager) on the right. Reused by the simulator.

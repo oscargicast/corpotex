@@ -15,7 +15,7 @@ export interface paths {
          * @description Open alerts. `?mine=1` keeps only the ones that concern the caller's role, with the same
          *     rule the assistant uses to notify (ADR 0020). `?status=` filters; default `open`.
          */
-        get: operations["alerts_retrieve"];
+        get: operations["alerts_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -153,7 +153,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["clock_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/api/conversations/{id}/messages/": {
@@ -217,7 +217,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description `GET /api/materials/`: every material ordered by kind and name. `committed` is the sum of
+         * @description `GET /api/materials/`: every material ordered by kind and name; `?kind=`, `?q=` (sku or name). `committed` is the sum of
          *     `Requirement.qty_from_stock` of open orders; `available = stock - committed`.
          */
         get: operations["materials_list"];
@@ -597,6 +597,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/routes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description `GET /api/routes/`: all routes (`?date=`, `?status=`), or with `?current=1` the pair
+         *     `{current, replaced}` the map shows (ADR 0024).
+         */
+        get: operations["routes_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Any route in any status: the scene opens `before` and `after` side by side. */
+        get: operations["routes_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/plan/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description `POST /api/routes/plan/ {date}` (manager and production): plans or re-plans that day. */
+        post: operations["routes_plan_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/schema/": {
         parameters: {
             query?: never;
@@ -723,7 +777,7 @@ export interface paths {
             cookie?: never;
         };
         /** @description Active numbers with their simulator and WhatsApp conversations, never the phone. */
-        get: operations["simulator_contacts_retrieve"];
+        get: operations["simulator_contacts_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -820,10 +874,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Suppliers and workshops. Manager only: the list carries phone numbers and prices. */
+        /**
+         * @description Suppliers and workshops. Manager only (the list carries phone numbers and prices), except
+         *     `self-register/`, which is public (ADR 0024).
+         */
         get: operations["suppliers_list"];
         put?: never;
-        post?: never;
+        /**
+         * @description Suppliers and workshops. Manager only (the list carries phone numbers and prices), except
+         *     `self-register/`, which is public (ADR 0024).
+         */
+        post: operations["suppliers_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -837,10 +898,82 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Suppliers and workshops. Manager only: the list carries phone numbers and prices. */
+        /**
+         * @description Suppliers and workshops. Manager only (the list carries phone numbers and prices), except
+         *     `self-register/`, which is public (ADR 0024).
+         */
         get: operations["suppliers_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Approve (`active`) or discard (`inactive`) a pending supplier, or edit its card. */
+        patch: operations["suppliers_partial_update"];
+        trace?: never;
+    };
+    "/api/suppliers/{id}/numbers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Adds a phone number, inactive until the manager switches it on. */
+        post: operations["suppliers_numbers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/suppliers/{id}/numbers/{number_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description `PATCH /api/suppliers/<id>/numbers/<number_id>/ {active?, name?, phone?}`. */
+        patch: operations["suppliers_numbers_partial_update"];
+        trace?: never;
+    };
+    "/api/suppliers/import/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Multipart CSV with columns name,kind,specialties,city,weekly_capacity,lead_time_days,currency,phone,lat,lng. */
+        post: operations["suppliers_import_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/suppliers/self-register/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Public form: the supplier lands in `pending_review` with `source = self_registered`. */
+        post: operations["suppliers_self_register_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -858,6 +991,66 @@ export interface components {
          * @enum {string}
          */
         ActionEnum: "approve" | "reject" | "change_supplier";
+        /**
+         * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
+         *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
+         *     every nested payload when the context role is not the manager (nested serializers do not
+         *     go through `serializer_for`).
+         */
+        Alert: {
+            readonly id: number;
+            kind: components["schemas"]["AlertKindEnum"];
+            severity?: components["schemas"]["AlertSeverityEnum"];
+            status?: components["schemas"]["AlertStatusEnum"];
+            /** @description Template text without prices or phones. */
+            text: string;
+            /**
+             * Format: date-time
+             * @description Simulated time.
+             */
+            detected_at: string;
+            readonly order: {
+                [key: string]: unknown;
+            };
+            readonly purchase_order: {
+                [key: string]: unknown;
+            };
+            /** @default  */
+            readonly kind_display: string;
+            /** @default  */
+            readonly severity_display: string;
+            /** @default  */
+            readonly status_display: string;
+        };
+        /**
+         * @description * `stalled_purchase_order` - Pedido estancado
+         *     * `delay` - Retraso
+         *     * `order_in_danger` - Orden en peligro
+         *     * `no_response` - Sin respuesta
+         *     * `payment_due` - Pago vencido
+         *     * `instance_down` - WhatsApp desconectado
+         *     * `no_channel` - Proveedor sin canal
+         *     * `turn_failed` - Turno fallido
+         *     * `style_refresh_failed` - Refresco de estilo fallido
+         *     * `decision_pending` - Decisión pendiente
+         *     * `claude_disconnected` - Claude desconectado
+         * @enum {string}
+         */
+        AlertKindEnum: "stalled_purchase_order" | "delay" | "order_in_danger" | "no_response" | "payment_due" | "instance_down" | "no_channel" | "turn_failed" | "style_refresh_failed" | "decision_pending" | "claude_disconnected";
+        /**
+         * @description * `info` - Info
+         *     * `warning` - Advertencia
+         *     * `critical` - Crítica
+         * @enum {string}
+         */
+        AlertSeverityEnum: "info" | "warning" | "critical";
+        /**
+         * @description * `open` - Abierta
+         *     * `acknowledged` - Reconocida
+         *     * `resolved` - Resuelta
+         * @enum {string}
+         */
+        AlertStatusEnum: "open" | "acknowledged" | "resolved";
         AllowedNumber: {
             readonly id: number;
             /** @description JID digits without +, or sim-<slug> if simulated. */
@@ -889,8 +1082,38 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        AssistantMessages: {
+            conversation_id: number;
+            typing: boolean;
+            messages: components["schemas"]["AssistantMessage"][];
+        };
+        AssistantRead: {
+            marked: number;
+        };
+        Badges: {
+            assistant_unread: number;
+            latest_unread: components["schemas"]["BadgesLatestUnread"] | null;
+            claude_ok: boolean;
+            pending_decisions: number | null;
+            orders_in_danger: number | null;
+            claude_expired: boolean | null;
+            claude_last_error: string | null;
+            /** Format: date-time */
+            claude_refresh_expires_at: string | null;
+        };
+        BadgesLatestUnread: {
+            id: number;
+            preview: string;
+            alert_kind: string | null;
+        };
         /** @enum {unknown} */
         BlankEnum: "";
+        /**
+         * @description * `whatsapp` - whatsapp
+         *     * `simulator` - simulator
+         * @enum {string}
+         */
+        ChannelEnum: "whatsapp" | "simulator";
         ClaudeApiKeyRequest: {
             api_key: string;
         };
@@ -935,12 +1158,45 @@ export interface components {
             readonly factor: string;
             readonly paused: boolean;
         };
+        ConversationMessages: {
+            typing: boolean;
+            messages: components["schemas"]["Message"][];
+        };
         /**
          * @description * `PEN` - PEN
          *     * `USD` - USD
          * @enum {string}
          */
         CurrencyEnum: "PEN" | "USD";
+        /**
+         * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
+         *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
+         *     every nested payload when the context role is not the manager (nested serializers do not
+         *     go through `serializer_for`).
+         */
+        Decision: {
+            readonly id: number;
+            kind: components["schemas"]["DecisionKindEnum"];
+            status?: components["schemas"]["DecisionStatusEnum"];
+            /** @description What the manager reads. */
+            summary: string;
+            /** @description before, after and proposal. */
+            detail?: unknown;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            resolved_at?: string | null;
+            readonly purchase_orders: {
+                [key: string]: unknown;
+            }[];
+            readonly orders: {
+                [key: string]: unknown;
+            }[];
+            /** @default  */
+            readonly kind_display: string;
+            /** @default  */
+            readonly status_display: string;
+        };
         DecisionActionRequest: {
             action: components["schemas"]["ActionEnum"];
             supplier_id?: number | null;
@@ -948,6 +1204,23 @@ export interface components {
             /** @default  */
             note: string;
         };
+        /**
+         * @description * `approve_assignment` - Aprobar asignación
+         *     * `price` - Precio
+         *     * `terms` - Términos
+         *     * `other` - Otro
+         * @enum {string}
+         */
+        DecisionKindEnum: "approve_assignment" | "price" | "terms" | "other";
+        /**
+         * @description * `pending` - Pendiente
+         *     * `approved` - Aprobada
+         *     * `rejected` - Rechazada
+         *     * `supplier_changed` - Proveedor cambiado
+         *     * `cancelled` - Cancelada
+         * @enum {string}
+         */
+        DecisionStatusEnum: "pending" | "approved" | "rejected" | "supplier_changed" | "cancelled";
         DeliveryInRequest: {
             /** Format: decimal */
             qty_received: string;
@@ -961,6 +1234,13 @@ export interface components {
             /** @default  */
             note: string;
         };
+        Detail: {
+            detail: string;
+        };
+        ImportInRequest: {
+            /** Format: binary */
+            file: string;
+        };
         LoginRequest: {
             username: string;
             password: string;
@@ -968,6 +1248,11 @@ export interface components {
         LoginResponse: {
             token: string;
             user: components["schemas"]["User"];
+        };
+        ManagerPending: {
+            decisions: components["schemas"]["Decision"][];
+            orders_in_danger: components["schemas"]["OrderList"][];
+            alerts: components["schemas"]["Alert"][];
         };
         Material: {
             readonly id: number;
@@ -985,6 +1270,24 @@ export interface components {
             /** Format: uri */
             readonly image: string | null;
         };
+        /** @description Schema only: the view adds `requirements` to the list row. */
+        MaterialDetailSchema: {
+            readonly id: number;
+            /** @description Corpotex's internal code. */
+            sku: string;
+            name: string;
+            kind: components["schemas"]["MaterialKindEnum"];
+            readonly kind_display: string;
+            unit: components["schemas"]["MaterialUnitEnum"];
+            readonly unit_display: string;
+            /** Format: decimal */
+            stock?: string;
+            readonly committed: string;
+            readonly available: string;
+            /** Format: uri */
+            readonly image: string | null;
+            readonly requirements: components["schemas"]["MaterialRequirement"][];
+        };
         /**
          * @description * `fabric` - Tela
          *     * `button` - Botón
@@ -1001,6 +1304,19 @@ export interface components {
             name: string;
             unit: components["schemas"]["MaterialUnitEnum"];
             readonly image: string;
+        };
+        MaterialRequirement: {
+            readonly id: number;
+            readonly order_id: number;
+            readonly order_code: string;
+            /** Format: decimal */
+            qty_needed: string;
+            /** Format: decimal */
+            qty_from_stock?: string;
+            /** Format: decimal */
+            readonly qty_to_order: string;
+            readonly status: string;
+            readonly status_display: string;
         };
         /**
          * @description * `m` - m
@@ -1040,8 +1356,38 @@ export interface components {
          * @enum {string}
          */
         MessageStatusEnum: "received" | "processed" | "error" | "sent" | "failed";
+        Monitor: {
+            clock: components["schemas"]["MonitorClock"];
+            kpis: components["schemas"]["MonitorKpis"];
+            alerts: components["schemas"]["Alert"][];
+            decisions: components["schemas"]["Decision"][];
+            redistributions: components["schemas"]["Decision"][];
+            orders_in_danger: components["schemas"]["OrderList"][];
+            payments_by_supplier: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        MonitorClock: {
+            /** Format: date-time */
+            now: string;
+            /** Format: decimal */
+            factor: string;
+            paused: boolean;
+        };
+        MonitorKpis: {
+            orders_in_danger: number;
+            orders_at_risk: number;
+            stalled_purchase_orders: number;
+            pending_decisions: number | null;
+            open_alerts: number;
+        };
         /** @enum {unknown} */
         NullEnum: null;
+        NumberInRequest: {
+            phone: string;
+            /** @default  */
+            name: string;
+        };
         OnboardingError: {
             error_code: string;
             detail: string;
@@ -1074,12 +1420,7 @@ export interface components {
          * @enum {string}
          */
         OnboardingStyleStepEnum: "suppliers" | "merging";
-        /**
-         * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
-         *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
-         *     every nested payload when the context role is not the manager (nested serializers do not
-         *     go through `serializer_for`).
-         */
+        /** @description `status_history: [{status, status_display, at, actor, note}]` ordered by `at` (10/10 21:40). */
         OrderDetail: {
             readonly id: number;
             /** @description Code from the sales system. */
@@ -1125,6 +1466,9 @@ export interface components {
                 [key: string]: unknown;
             }[];
             readonly redistributions: {
+                [key: string]: unknown;
+            }[];
+            readonly status_history: {
                 [key: string]: unknown;
             }[];
             /** @default  */
@@ -1258,12 +1602,27 @@ export interface components {
          * @enum {string}
          */
         OrderStatusEnum: "registered" | "broken_down" | "confirmed" | "sourcing" | "in_production" | "ready" | "delivered" | "cancelled";
-        PatchedClockPatchRequest: {
-            /** Format: decimal */
-            factor?: string;
-            paused?: boolean;
+        PatchedNumberPatchRequest: {
+            active?: boolean;
+            name?: string;
+            phone?: string;
+        };
+        PatchedSupplierPatchRequest: {
+            status?: components["schemas"]["SupplierStatusEnum"];
+            name?: string;
+            kind?: components["schemas"]["SupplierKindEnum"];
+            specialties?: string[];
+            city?: string;
+            address?: string;
             /** Format: double */
-            advance_hours?: number;
+            lat?: number | null;
+            /** Format: double */
+            lng?: number | null;
+            weekly_capacity?: number | null;
+            lead_time_days?: number;
+            follow_up_every_hours?: number;
+            currency?: components["schemas"]["CurrencyEnum"];
+            notes?: string;
         };
         PayInRequest: {
             method: components["schemas"]["PaymentMethodEnum"];
@@ -1332,6 +1691,20 @@ export interface components {
             /** Format: date-time */
             reported_at: string;
         };
+        PublicReport: {
+            code: string;
+            product: components["schemas"]["PublicReportProduct"] | null;
+            quantity: string;
+            /** Format: date */
+            committed_on: string | null;
+            units_done: number;
+        };
+        PublicReportCreated: {
+            id: number;
+            units_done: number;
+            /** Format: date-time */
+            reported_at: string;
+        };
         PublicReportInRequest: {
             units_done: number;
             /** @default  */
@@ -1339,12 +1712,11 @@ export interface components {
             /** Format: binary */
             photo?: string;
         };
-        /**
-         * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
-         *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
-         *     every nested payload when the context role is not the manager (nested serializers do not
-         *     go through `serializer_for`).
-         */
+        PublicReportProduct: {
+            name: string;
+            image: string | null;
+        };
+        /** @description `status_history: [{status, status_display, at, actor, note}]` ordered by `at` (10/10 21:40). */
         PurchaseOrderDetail: {
             readonly id: number;
             code: string;
@@ -1405,6 +1777,12 @@ export interface components {
             };
             /** @description Chat where this purchase order is negotiated. */
             readonly conversation_id: number | null;
+            /** Format: uuid */
+            readonly report_token: string;
+            readonly report_url: string;
+            readonly status_history: {
+                [key: string]: unknown;
+            }[];
             /** @default  */
             readonly status_display: string;
         };
@@ -1515,6 +1893,100 @@ export interface components {
             }[];
             /** @default  */
             readonly kind_display: string;
+        };
+        /** @description Routes carry no prices: every role reads them. */
+        Route: {
+            readonly id: number;
+            /** Format: date */
+            date: string;
+            status?: components["schemas"]["RouteStatusEnum"];
+            readonly status_display: string;
+            /** Format: decimal */
+            distance_km?: string;
+            duration_min?: number;
+            /** @description GeoJSON LineString (straight lines). */
+            path?: unknown;
+            recalculated_from?: number | null;
+            readonly stops_count: number;
+            readonly stops: components["schemas"]["RouteStop"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        RoutePair: {
+            current: components["schemas"]["Route"] | null;
+            replaced: components["schemas"]["Route"] | null;
+        };
+        RoutePlanInRequest: {
+            /** Format: date */
+            date: string;
+        };
+        /**
+         * @description * `proposed` - Propuesta
+         *     * `planned` - Planificada
+         *     * `in_progress` - En curso
+         *     * `completed` - Completada
+         *     * `replaced` - Reemplazada
+         *     * `discarded` - Descartada
+         * @enum {string}
+         */
+        RouteStatusEnum: "proposed" | "planned" | "in_progress" | "completed" | "replaced" | "discarded";
+        RouteStop: {
+            /** @description 0 and the last one are the plant. */
+            position: number;
+            kind: components["schemas"]["RouteStopKindEnum"];
+            readonly kind_display: string;
+            name: string;
+            address?: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            /** Format: date-time */
+            eta?: string | null;
+            readonly supplier: {
+                [key: string]: unknown;
+            };
+            readonly customer: {
+                [key: string]: unknown;
+            };
+            readonly purchase_order: {
+                [key: string]: unknown;
+            };
+            readonly order: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * @description * `pickup` - Recojo
+         *     * `delivery` - Entrega
+         * @enum {string}
+         */
+        RouteStopKindEnum: "pickup" | "delivery";
+        SelfRegistered: {
+            id: number;
+            name: string;
+            status: string;
+            source: string;
+        };
+        SimulatorContact: {
+            allowed_number_id: number;
+            name: string;
+            supplier: components["schemas"]["SimulatorContactSupplier"] | null;
+            channel: components["schemas"]["ChannelEnum"];
+            conversation_id: number | null;
+            simulated: boolean;
+            last_message: components["schemas"]["SimulatorLastMessage"] | null;
+        };
+        SimulatorContactSupplier: {
+            id: number;
+            name: string;
+        };
+        SimulatorLastMessage: {
+            id: number;
+            text: string;
+            direction: string;
+            /** Format: date-time */
+            sent_at: string;
         };
         SimulatorMessageInRequest: {
             allowed_number_id: number;
@@ -1657,6 +2129,45 @@ export interface components {
             /** @default  */
             readonly status_display: string;
         };
+        SupplierImportResult: {
+            created: {
+                [key: string]: unknown;
+            }[];
+            updated: {
+                [key: string]: unknown;
+            }[];
+            errors: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * @description Registration payload (manager) and self-registration (public). `phone` creates an inactive
+         *     AllowedNumber; `contact_name` is that number's name.
+         */
+        SupplierInRequest: {
+            name: string;
+            kind: components["schemas"]["SupplierKindEnum"];
+            specialties?: string[];
+            /** @default  */
+            city: string;
+            /** @default  */
+            address: string;
+            /** Format: double */
+            lat?: number | null;
+            /** Format: double */
+            lng?: number | null;
+            weekly_capacity?: number | null;
+            /** @default 7 */
+            lead_time_days: number;
+            /** @default 48 */
+            follow_up_every_hours: number;
+            /** @default PEN */
+            currency: components["schemas"]["CurrencyEnum"];
+            /** @default  */
+            phone: string;
+            /** @default  */
+            contact_name: string;
+        };
         /**
          * @description * `material` - Insumos
          *     * `workshop` - Taller
@@ -1767,7 +2278,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    alerts_retrieve: {
+    alerts_list: {
         parameters: {
             query?: never;
             header?: never;
@@ -1781,9 +2292,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["Alert"][];
                 };
             };
         };
@@ -1804,9 +2313,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["Alert"];
                 };
             };
         };
@@ -1825,9 +2332,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AssistantMessages"];
                 };
             };
         };
@@ -1871,9 +2376,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AssistantRead"];
                 };
             };
         };
@@ -1892,9 +2395,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["Detail"];
                 };
             };
         };
@@ -1980,31 +2481,6 @@ export interface operations {
             };
         };
     };
-    clock_partial_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["PatchedClockPatchRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedClockPatchRequest"];
-                "multipart/form-data": components["schemas"]["PatchedClockPatchRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Clock"];
-                };
-            };
-        };
-    };
     conversations_messages_retrieve: {
         parameters: {
             query?: never;
@@ -2021,9 +2497,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ConversationMessages"];
                 };
             };
         };
@@ -2050,9 +2524,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["Decision"];
                 };
             };
         };
@@ -2071,9 +2543,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ManagerPending"];
                 };
             };
         };
@@ -2113,7 +2583,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Material"];
+                    "application/json": components["schemas"]["MaterialDetailSchema"];
                 };
             };
         };
@@ -2132,9 +2602,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["Badges"];
                 };
             };
         };
@@ -2153,9 +2621,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["Monitor"];
                 };
             };
         };
@@ -2490,9 +2956,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["OrderDetail"];
                 };
             };
             201: {
@@ -2500,9 +2964,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["OrderDetail"];
                 };
             };
         };
@@ -2546,9 +3008,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["OrderDetail"];
                 };
             };
         };
@@ -2617,9 +3077,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["Payment"];
                 };
             };
         };
@@ -2688,9 +3146,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PurchaseOrderDetail"];
                 };
             };
         };
@@ -2718,9 +3174,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PurchaseOrderDetail"];
                 };
             };
         };
@@ -2741,9 +3195,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PublicReport"];
                 };
             };
         };
@@ -2770,9 +3222,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PublicReportCreated"];
+                };
+            };
+        };
+    };
+    routes_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutePair"];
+                };
+            };
+        };
+    };
+    routes_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Route"];
+                };
+            };
+        };
+    };
+    routes_plan_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoutePlanInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RoutePlanInRequest"];
+                "multipart/form-data": components["schemas"]["RoutePlanInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Route"];
                 };
             };
         };
@@ -2960,7 +3475,7 @@ export interface operations {
             };
         };
     };
-    simulator_contacts_retrieve: {
+    simulator_contacts_list: {
         parameters: {
             query?: never;
             header?: never;
@@ -2974,9 +3489,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SimulatorContact"][];
                 };
             };
         };
@@ -3105,6 +3618,31 @@ export interface operations {
             };
         };
     };
+    suppliers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupplierInRequest"];
+                "multipart/form-data": components["schemas"]["SupplierInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierDetail"];
+                };
+            };
+        };
+    };
     suppliers_retrieve: {
         parameters: {
             query?: never;
@@ -3123,6 +3661,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SupplierDetail"];
+                };
+            };
+        };
+    };
+    suppliers_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este proveedor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSupplierPatchRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSupplierPatchRequest"];
+                "multipart/form-data": components["schemas"]["PatchedSupplierPatchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierDetail"];
+                };
+            };
+        };
+    };
+    suppliers_numbers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este proveedor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NumberInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["NumberInRequest"];
+                "multipart/form-data": components["schemas"]["NumberInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowedNumber"];
+                };
+            };
+        };
+    };
+    suppliers_numbers_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                number_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedNumberPatchRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedNumberPatchRequest"];
+                "multipart/form-data": components["schemas"]["PatchedNumberPatchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowedNumber"];
+                };
+            };
+        };
+    };
+    suppliers_import_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ImportInRequest"];
+                "multipart/form-data": components["schemas"]["ImportInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierImportResult"];
+                };
+            };
+        };
+    };
+    suppliers_self_register_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupplierInRequest"];
+                "multipart/form-data": components["schemas"]["SupplierInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelfRegistered"];
                 };
             };
         };

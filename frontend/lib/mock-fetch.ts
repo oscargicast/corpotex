@@ -35,8 +35,8 @@ import type {
   WhatsAppState,
 } from "./types";
 
-const poDetails = structuredClone(poDetailsSeed) as Record<string, Partial<PurchaseOrderDetail> & { decision_id?: number }>;
-const conversations = structuredClone(conversationsSeed) as Record<string, ChatMessage[]>;
+const poDetails = structuredClone(poDetailsSeed) as unknown as Record<string, Partial<PurchaseOrderDetail> & { decision_id?: number }>;
+const conversations = structuredClone(conversationsSeed) as unknown as Record<string, ChatMessage[]>;
 
 function purchaseOrderDetailFor(po: PurchaseOrderListItem, role: Role): PurchaseOrderDetail {
   const extra = poDetails[po.id] ?? {};
@@ -262,7 +262,7 @@ function agentSays(conversationId: number, text: string, delayMs: number) {
   agentQueue.push({
     conversationId,
     at: Date.now() + delayMs,
-    message: { id: nextMessageId(), direction: "outbound", author: "agent", text, media: null, media_kind: null, sent_at: new Date(Date.now() + delayMs).toISOString() },
+    message: { id: nextMessageId(), direction: "outbound", author: "agent", text, media: null, media_kind: null, status: "sent", turn_id: null, sent_at: new Date(Date.now() + delayMs).toISOString() },
   });
 }
 
@@ -281,6 +281,8 @@ function simulatorPost(body: BodyInit | null | undefined): Response {
     text,
     media: photo instanceof File && photo.size ? URL.createObjectURL(photo) : typeof photo === "string" && photo ? photo : null,
     media_kind: photo ? "image" : null,
+    status: "received",
+    turn_id: null,
     sent_at: new Date().toISOString(),
   };
   (conversations[contact.conversation_id] ??= []).push(message);
@@ -411,9 +413,9 @@ function createOrder(body: Record<string, unknown>): Response {
   return json(201, order);
 }
 
-const monitor = structuredClone(monitorSeed) as Monitor;
+const monitor = structuredClone(monitorSeed) as unknown as Monitor;
 const materials = structuredClone(materialsSeed) as MaterialDetail[];
-const routes = structuredClone(routesSeed) as Record<string, Route>;
+const routes = structuredClone(routesSeed) as unknown as Record<string, Route>;
 
 function monitorFor(role: Role): Monitor {
   const kpis = { ...monitor.kpis, pending_decisions: monitor.decisions.length, open_alerts: monitor.alerts.length };
@@ -450,20 +452,24 @@ const DISCONNECTED: ClaudeStatus = {
   expires_at: null,
   refresh_token_expires_at: null,
   expired: false,
+  connected_at: null,
   last_error: null,
+  last_error_at: null,
 };
 let claude: ClaudeStatus = { ...DISCONNECTED };
 
 function connectedStatus(method: ClaudeStatus["method"]): ClaudeStatus {
-  const in30Days = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+  // Epoch milliseconds, like the API.
   return {
     connected: true,
     method,
     subscription_type: method === "oauth" ? "max" : null,
-    expires_at: method === "oauth" ? new Date(Date.now() + 8 * 3600 * 1000).toISOString() : null,
-    refresh_token_expires_at: method === "oauth" ? in30Days : null,
+    expires_at: method === "oauth" ? Date.now() + 8 * 3600 * 1000 : null,
+    refresh_token_expires_at: method === "oauth" ? Date.now() + 30 * 24 * 3600 * 1000 : null,
     expired: false,
+    connected_at: new Date().toISOString(),
     last_error: null,
+    last_error_at: null,
   };
 }
 
@@ -527,7 +533,7 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     case "POST /api/auth/logout/":
       return json(204);
     case "GET /api/clock/":
-      return json(200, { now: new Date(clockNow()).toISOString(), factor: 1, paused: false } satisfies Clock);
+      return json(200, { now: new Date(clockNow()).toISOString(), factor: "1", paused: false } satisfies Clock);
     case "GET /api/me/badges/":
       return json(200, (badgesByRole as Record<Role, Badges>)[user.role]);
   }

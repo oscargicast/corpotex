@@ -29,6 +29,12 @@ function errorText(err: unknown): string {
 
 const dateFormat = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", dateStyle: "medium" });
 
+// The API sends these as epoch numbers (seconds or milliseconds).
+function toDate(value: number | string): Date {
+  if (typeof value === "string") return new Date(value);
+  return new Date(value < 1e12 ? value * 1000 : value);
+}
+
 // Connect the single Claude account every agent uses (ADR 0022), copied from mano's flow.
 export function ClaudeConnect({ reconnect = false }: { reconnect?: boolean }) {
   const { data: status, mutate } = useSWR<ClaudeStatus>(STATUS_URL, fetcher);
@@ -81,7 +87,7 @@ function StatusCard({ status }: { status: ClaudeStatus }) {
       const plan = status.subscription_type ? ` · suscripción ${capitalize(status.subscription_type)}` : "";
       title = `Conectado${plan}`;
       detail = status.refresh_token_expires_at
-        ? `La conexión vence el ${dateFormat.format(new Date(status.refresh_token_expires_at))}.`
+        ? `La conexión vence el ${dateFormat.format(toDate(status.refresh_token_expires_at))}.`
         : "La conexión está activa.";
     }
   } else if (broken) {
