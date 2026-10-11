@@ -324,6 +324,7 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
                 setattr(order, field, payload[field])
         order.save()
         if payload.get("items") is not None:
+            before = order_needs(order)
             order.items.all().delete()
             keyed = []
             for item, photo in zip(payload["items"], photos):
@@ -344,45 +345,98 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
 
                 apply_by_key(order, keyed, payload["classification"], warnings)
             if order.status != Order.Status.REGISTERED:
-                warnings = warnings + rebreak_down_order(order)
+                warnings = warnings + rebreak_down_order(order, before=before)
             schedule_auto_classify(order)
         compute_critical_path(order)
     return order, warnings
 
 
-def rebreak_down_order(order: Order) -> list[str]:
-    """Recomputes the requirements of an edited order. A requirement a purchase order already
-    covers (ordered or covered with items) stays as it is; the rest is rebuilt."""
-    kept = [r for r in order.requirements.all() if r.purchase_order_items.exists()]
-    kept_keys = {(r.kind, r.material_id, r.product_id) for r in kept}
-    order.requirements.exclude(pk__in=[r.pk for r in kept]).delete()
-    needed: dict[int, Decimal] = {}
-    order.needs_classification = order.items.filter(product__isnull=True).exists()
-    order.save(update_fields=["needs_classification", "updated_at"])
+def order_needs(order: Order) -> dict[tuple, Decimal]:
+    """What the order's items need with their effective recipes: `("material", id)` in the
+    material's unit and `("workshop", product_id)` in garments. Taken before a change so
+    `rebreak_down_order` warns only about what the change moved."""
+    needs: dict[tuple, Decimal] = {}
     for item in order.items.filter(product__isnull=False).select_related("product").prefetch_related("product__materials__material"):
+        needs[("workshop", item.product_id)] = needs.get(("workshop", item.product_id), Decimal("0")) + item.quantity
         for material, qty_per_unit in effective_recipe(item):
-            needed[material.id] = needed.get(material.id, Decimal("0")) + item.quantity * qty_per_unit
+            needs[("material", material.id)] = needs.get(("material", material.id), Decimal("0")) + item.quantity * qty_per_unit
+    return needs
+
+
+def rebreak_down_order(order: Order, *, before: dict[tuple, Decimal] | None = None) -> list[str]:
+    """Recomputes the requirements of an edited order (a PATCH of its items, a technical sheet
+    revision). A requirement a purchase order already covers stays as it is; the rest is rebuilt.
+    When the new need of a material goes beyond what is already ordered, a complementary
+    requirement for the difference lands in "Por pedir" (ADR 0029, agente 11/10 04:00). One
+    warning per material or garment that this change moved away from what is ordered; none
+    for the rest, even if an earlier change left them apart."""
     from core.models import Material
 
-    for material_id, qty in needed.items():
-        if ("material", material_id, None) in kept_keys:
-            continue
-        material = Material.objects.select_for_update().get(pk=material_id)
-        available = max(material.stock - committed_stock(material), Decimal("0"))
-        from_stock = min(available, qty)
-        Requirement.objects.create(
-            order=order, kind="material", material=material, qty_needed=qty, qty_from_stock=from_stock,
-            status=Requirement.Status.COVERED if qty - from_stock <= 0 else Requirement.Status.OPEN,
-        )
-    for item in order.items.filter(product__isnull=False):
-        if ("workshop", None, item.product_id) not in kept_keys:
-            Requirement.objects.create(order=order, kind="workshop", product=item.product, qty_needed=item.quantity)
-    warnings = []
+    if before is None:  # no snapshot: what the current requirements add up to
+        before = {}
+        for requirement in order.requirements.all():
+            key = (requirement.kind, requirement.material_id or requirement.product_id)
+            before[key] = before.get(key, Decimal("0")) + requirement.qty_needed
+    kept = [r for r in order.requirements.all() if r.purchase_order_items.exists()]
+    order.requirements.exclude(pk__in=[r.pk for r in kept]).delete()
+    order.needs_classification = order.items.filter(product__isnull=True).exists()
+    order.save(update_fields=["needs_classification", "updated_at"])
+    needed: dict[int, Decimal] = {}
+    garments: dict[int, int] = {}
+    items = list(order.items.filter(product__isnull=False).select_related("product").prefetch_related("product__materials__material"))
+    for item in items:
+        garments[item.product_id] = garments.get(item.product_id, 0) + item.quantity
+        for material, qty_per_unit in effective_recipe(item):
+            needed[material.id] = needed.get(material.id, Decimal("0")) + item.quantity * qty_per_unit
+    ordered: dict[tuple, list[Requirement]] = {}
     for requirement in kept:
-        what = (requirement.material or requirement.product).name
-        codes = ", ".join(sorted({i.purchase_order.code for i in requirement.purchase_order_items.select_related("purchase_order")}))
-        warnings.append(f"{what}: ya pedido en {codes}; el requerimiento no se tocó")
+        ordered.setdefault((requirement.kind, requirement.material_id or requirement.product_id), []).append(requirement)
+
+    warnings = []
+    for material_id in sorted(set(needed) | {key for kind, key in ordered if kind == "material"}):
+        qty = needed.get(material_id, Decimal("0"))
+        already_kept = ordered.get(("material", material_id), [])
+        already = sum((r.qty_needed for r in already_kept), Decimal("0"))
+        missing = qty - already
+        material = Material.objects.select_for_update().get(pk=material_id)
+        if missing > 0:  # everything when nothing was ordered, else the complement
+            available = max(material.stock - committed_stock(material), Decimal("0"))
+            from_stock = min(available, missing)
+            Requirement.objects.create(
+                order=order, kind="material", material=material, qty_needed=missing, qty_from_stock=from_stock,
+                status=Requirement.Status.COVERED if missing - from_stock <= 0 else Requirement.Status.OPEN,
+            )
+        if not already_kept or missing == 0 or qty == before.get(("material", material_id), Decimal("0")):
+            continue
+        head = f"{material.name}: {_amount(already, material.unit)} ya pedidos en {_codes(already_kept)}"
+        if missing > 0:
+            warnings.append(f"{head}; faltan {_amount(missing, material.unit)} por pedir")
+        else:
+            warnings.append(f"{head}; con la ficha nueva bastan {_amount(qty, material.unit)}, quedan {_amount(-missing, material.unit)} de más")
+    for item in items:
+        if ("workshop", item.product_id) not in ordered:
+            Requirement.objects.create(order=order, kind="workshop", product=item.product, qty_needed=item.quantity)
+    for (kind, product_id), requirements in ordered.items():
+        if kind != "workshop":
+            continue
+        already = sum(r.qty_needed for r in requirements)
+        now = garments.get(product_id, 0)
+        if already != now and now != before.get(("workshop", product_id), 0):  # sewing is assigned per order by the manager: a warning, no complement
+            warnings.append(
+                f"{requirements[0].product.name}: {_amount(already)} prendas ya pedidas al taller en {_codes(requirements)}; "
+                f"la orden ahora pide {_amount(now)}"
+            )
     return warnings
+
+
+def _amount(qty, unit: str = "unit") -> str:
+    text = format(Decimal(str(qty)).normalize(), "f")
+    return text if unit == "unit" else f"{text} {unit}"
+
+
+def _codes(requirements) -> str:
+    codes = sorted({i.purchase_order.code for r in requirements for i in r.purchase_order_items.select_related("purchase_order")})
+    return codes[0] if len(codes) == 1 else ", ".join(codes[:-1]) + " y " + codes[-1]
 
 
 def cancel_order(order: Order, *, reason: str = "", actor) -> Order:
