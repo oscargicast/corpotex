@@ -73,6 +73,7 @@ Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), cone
 - CRUD de órdenes por rol: Comercial y Gerente crean y editan; Producción solo confirma desgloses, mueve estados de pedidos y genera pedidos consolidados (ADR 0025).
 - Seguimiento de pedidos y pagos (adelantos, saldos): P0 (ADR 0024).
 - Rutas multiparada en mapa de Piura: entregas de órdenes a clientes, salen de la planta principal; no hay recojos en proveedores (ADR 0024: `Route`, `plan_route`, Leaflet; corrección de Oscar 10/10 23:35).
+- Flota y rutas en vivo (ADR 0026, pedido de Oscar 10/10 23:15): varios vehículos con capacidad; Producción planifica el día por vehículo (`plan_day`) y reprograma órdenes listas a otras fechas; posición de cada vehículo por API (muestra guardada cada 5 min), SSE al dashboard con checkboxes por vehículo, simulador y mapa a pantalla completa. Lo implementa la sesión `rutas`.
 - Sugerir nuevos proveedores: autoregistro P0 y tool `suggest_suppliers` con búsqueda web P1 (ADR 0024).
 
 ## Dominio (entrevista a Corpotex, 10/10)

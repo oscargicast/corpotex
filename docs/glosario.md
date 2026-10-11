@@ -11,6 +11,7 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | core → `core` | `User`, `Config` (Configuracion), `Brand` (Marca), `Customer` (Cliente), `Product` (Producto), `Material` (Insumo), `ProductMaterial` (ProductoInsumo), `OnboardingStyle` (estilo del onboarding) |
 | proveedores → `suppliers` | `Supplier` (Proveedor), `Rate` (Tarifa). La calificación son los campos `rating_*` de `PurchaseOrder` |
 | operaciones → `operations` | `Order` (Orden), `OrderItem`, `Requirement` (Requerimiento), `PurchaseOrder` (Pedido), `PurchaseOrderItem`, `ProgressReport` (Avance), `Delivery` (Entrega), `Payment` (Pago), `Route` (Ruta), `RouteStop` (ParadaRuta) (ADR 0024) |
+| flota → `fleet` | `Vehicle` (Vehículo), `VehiclePosition` (posición muestreada del vehículo) (ADR 0026) |
 | mensajeria → `messaging` | `AllowedNumber` (NumeroPermitido), `Conversation`, `Message`, `Turn` (Turno) |
 | gerencia → `manager` | `Decision`, `Alert` (Alerta) |
 | agente → `agent` | sin modelos |
@@ -106,6 +107,7 @@ Los campos y valores de `choices` de cada modelo están en la sección "Equivale
 | `/api/onboarding/estilo/` | `/api/onboarding/style/` |
 | asistente | `/api/assistant/messages/` (GET con `?after=`, POST), `/api/assistant/reset/` |
 | rutas | `/api/routes/?current=1`, `/api/routes/<id>/` (cualquier estado), `POST /api/routes/plan/` |
+| despachos (entrega de órdenes a clientes), flota y seguimiento | `/api/dispatches/`, `POST /api/routes/plan-day/`, `/api/vehicles/`, `POST /api/vehicles/<id>/positions/`, `/api/vehicles/stream/` (SSE), `POST /api/vehicles/<id>/simulate/` (ADR 0026) |
 | pagos | `/api/payments/`, `POST /api/payments/<id>/pay/` (multipart `{method, receipt?}`) |
 | reporte público de avance | `POST /api/report/<token>/` |
 | cuenta de Claude (solo Gerente, ADR 0022) | `/api/settings/claude/start/`, `exchange/`, `status/`, `disconnect/`, `set-key/` |
