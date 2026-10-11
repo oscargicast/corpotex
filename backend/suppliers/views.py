@@ -84,8 +84,11 @@ class SupplierPatchSerializer(serializers.Serializer):
 
 
 class NumberInSerializer(serializers.Serializer):
-    phone = serializers.CharField(max_length=40)
+    phone = serializers.CharField(max_length=40, required=False, allow_blank=True, default="", help_text="Required for a real number; optional for a simulated one.")
     name = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
+    simulated = serializers.BooleanField(
+        required=False, default=False, help_text="P6b: a simulator number (`sim-<slug>`, like the seed's), active at once. Real numbers start inactive."
+    )
 
 
 class NumberPatchSerializer(serializers.Serializer):
@@ -178,7 +181,8 @@ class SupplierViewSet(viewsets.ReadOnlyModelViewSet):
     @extend_schema(request=NumberInSerializer, responses={201: AllowedNumberSerializer})
     @action(detail=True, methods=["post"])
     def numbers(self, request, pk=None):
-        """Adds a phone number, inactive until the manager switches it on."""
+        """Adds a phone number, inactive until the manager switches it on; a `simulated` one is
+        active at once and takes the seed's `sim-<slug>` format (P6b)."""
         data = _validated(NumberInSerializer, request.data)
         try:
             number = services.add_number(self.get_object(), actor=request.user, **data)

@@ -211,15 +211,35 @@ def replace_rates(supplier: Supplier, rates: list[dict]) -> list:
     return Rate.objects.bulk_create(built)
 
 
-def add_number(supplier: Supplier, *, phone: str, name: str = "", actor):
+def simulated_phone(text: str) -> str:
+    """The seed's format for a simulator number: `sim-<slug>` (ASCII, lowercase, dashes)."""
+    import re
+    import unicodedata
+
+    ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    slug = re.sub(r"[^a-z0-9]+", "-", ascii_text.lower()).strip("-")
+    return f"sim-{slug}"[:40]
+
+
+def add_number(supplier: Supplier, *, phone: str = "", name: str = "", simulated: bool = False, actor):
+    """A real number is created inactive, for the manager to switch on after checking (ADR 0016).
+    A simulated one (P6b, the "Para pruebas" checkbox) takes the seed's `sim-<slug>` format, from
+    the phone typed or the supplier's name, and is active at once so the simulator takes it."""
     from core.permissions import require_role
     from messaging.models import AllowedNumber
 
     require_role(actor, "manager")
     phone = phone.strip()
+    if simulated:
+        phone = phone if phone.startswith("sim-") else simulated_phone(phone or supplier.name)
+        base, n = phone, 2
+        while AllowedNumber.objects.filter(phone=phone).exists():  # a second simulated number for the same supplier
+            phone, n = f"{base[:40 - len(str(n)) - 1]}-{n}", n + 1
+    elif not phone:
+        raise NumberConflict("Falta el número")
     if AllowedNumber.objects.filter(phone=phone).exists():
         raise NumberConflict(f"El número {phone} ya está registrado")
-    return AllowedNumber.objects.create(phone=phone, name=name.strip(), supplier=supplier, active=False)
+    return AllowedNumber.objects.create(phone=phone, name=name.strip(), supplier=supplier, active=simulated, simulated=simulated)
 
 
 def update_number(number, *, active=None, name=None, phone=None, actor):
