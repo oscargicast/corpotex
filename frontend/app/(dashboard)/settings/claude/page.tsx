@@ -3,23 +3,16 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { ClaudeConnect } from "@/components/claude-connect";
-import { RoleGate } from "@/components/require-auth";
 
+// Step 0 of Configuración (ADR 0022). ?reconnect=1 (the Claude banner) opens the flow.
 export default function ClaudeSettingsPage() {
   return (
-    <RoleGate roles={["manager"]}>
-      <section className="max-w-2xl">
-        <h1 className="text-2xl font-bold tracking-tight">Conexión con Claude</h1>
-        <p className="mt-1 text-sm text-muted">
-          Una sola cuenta para todos los agentes: WhatsApp, el asistente de cada rol y el estilo del Gerente.
-        </p>
-        <div className="mt-6">
-          <Suspense>
-            <WithReconnectParam />
-          </Suspense>
-        </div>
-      </section>
-    </RoleGate>
+    <section className="max-w-2xl">
+      <p className="mb-4 text-sm text-muted">Una sola cuenta de Claude para todos los agentes: WhatsApp, el asistente de cada rol y el estilo del Gerente.</p>
+      <Suspense>
+        <WithReconnectParam />
+      </Suspense>
+    </section>
   );
 }
 

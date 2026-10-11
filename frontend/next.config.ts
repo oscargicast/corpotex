@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
   // Django URLs end with a slash (ADR 0009). Without this, Next.js answers
   // /api/clock/ with a 308 to /api/clock and Django never sees the slash.
   skipTrailingSlashRedirect: true,
+  // Onboarding and the style history now live under Configuración (Oscar, 10/10 23:45).
+  async redirects() {
+    return [
+      { source: "/onboarding", destination: "/settings", permanent: true },
+      { source: "/onboarding/:step", destination: "/settings/:step", permanent: true },
+      { source: "/style", destination: "/settings/style", permanent: true },
+    ];
+  },
   async rewrites() {
     return djangoPrefixes.flatMap((prefix) => [
       { source: `/${prefix}/:path*/`, destination: `${apiUrl}/${prefix}/:path*/` },

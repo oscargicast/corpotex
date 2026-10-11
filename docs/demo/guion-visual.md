@@ -9,7 +9,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 - Tercera ventana (o pestaña para cambiar con ⌘+Tab): `/simulator?present=1` como Gerente. Sirve también para mostrar a Producción si Oscar quiere enseñar el rol (login como `produccion`).
 - Celular de Oscar: logueado como Gerente en `/orders`, con `https://corpotex.oscargicast.com/report/11111111-1111-4111-8111-000000000038` (el reporte de PT-0038, el pedido de la escena; el token es fijo en el seed) guardado como favorito.
 - Abrir `/routes` una vez con wifi para que los tiles de Piura queden en caché; después no mover el zoom.
-- Claude conectado (sin banner rojo en `/settings/claude`), instancia de WhatsApp `open` en `/onboarding/whatsapp`, tunnel arriba, laptop cargada, tethering probado.
+- Claude conectado (sin banner rojo en `/settings/claude`), instancia de WhatsApp `open` en `/settings/whatsapp`, tunnel arriba, laptop cargada, tethering probado.
 - Valeria con su celular a mano, como "Confecciones del Norte".
 - Si va el paso 3b: CP-2026-0161 (Colegio Los Algarrobos) sin clasificar, con "Desglosar componentes" visible para Producción. Si alguien aplicó la clasificación, solo un `seed_demo` la devuelve.
 
@@ -18,7 +18,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 | # | Pantalla | Qué se ve | Quién |
 |---|---|---|---|
 | 1 | Gerente: `/` | Monitor: KPIs, la decisión pendiente, alertas y pagos por proveedor. Una frase: "esto es lo que hoy nadie ve hasta el día 9". | Oscar |
-| 2 | Gerente: `/onboarding` → `/onboarding/style` | Los 4 pasos en verde y el estilo del Gerente con los ejemplos como burbujas. 20 segundos, no más. | Oscar |
+| 2 | Gerente: `/settings` → `/settings/style` | Los 4 pasos en verde y el estilo del Gerente con los ejemplos como burbujas. 20 segundos, no más. | Oscar |
 | 3 | Comercial: `/orders` → "Simular orden de Comercial" → Caja Piura | La orden llega por la API y aparece desglosada contra inventario, con la ruta crítica. | Oscar |
 | 3b | **Opcional, lo decide Oscar en el ensayo.** Producción: `/orders/CP-2026-0161` → "Desglosar componentes" | Creación mágica: la IA reconoce el polo del catálogo con su receta y propone la casaca como producto nuevo con los insumos que faltan. No se aplica. Detalle abajo. | Oscar |
 | 4 | Gerente: `/orders/<nueva>` → "Confirmar desglose" (o Producción en la tercera ventana, si se quiere mostrar el rol) | Lo hace Producción; el Gerente también puede. La orden pasa a confirmada y el Monitor muestra la decisión de asignación. | Oscar |

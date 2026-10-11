@@ -200,7 +200,5 @@ Cada ruta usa el nombre de su modelo.
 | Mapa de rutas | `/routes` |
 | Reporte de avance público por pedido | `/report/[token]` |
 | Asistente (pantalla completa en móvil) | `/assistant` |
-| Historial del estilo (solo Gerente) | `/style` |
-| Onboarding (4 pasos) | `/onboarding/claude`, `/onboarding/whatsapp`, `/onboarding/suppliers`, `/onboarding/style` |
-| Configuración: cuenta de Claude (solo Gerente) | `/settings/claude` |
+| Configuración = onboarding (4 pasos, solo Gerente) | `/settings` → `/settings/claude`, `/settings/whatsapp`, `/settings/suppliers`, `/settings/style` (`/onboarding/*` y `/style` redirigen aquí) |
 | Autoregistro público | `/supplier-signup` |
