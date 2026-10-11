@@ -583,10 +583,11 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     const params = new URL(path, "http://mock").searchParams;
     const filtered = orders.filter(
       (o) =>
-        (!params.get("status") || o.status === params.get("status")) &&
+        (!params.get("status") || params.get("status")!.split(",").includes(o.status)) &&
         (!params.get("risk") || o.risk === params.get("risk")) &&
         (!params.get("brand") || String(o.brand.id) === params.get("brand")) &&
-        (!params.get("code") || o.code === params.get("code")),
+        (!params.get("code") || o.code === params.get("code")) &&
+        (!params.get("q") || o.code.toLowerCase().includes(params.get("q")!.toLowerCase())),
     );
     return json(200, filtered);
   }
@@ -762,6 +763,8 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
           (po) =>
             (!params.get("kind") || po.kind === params.get("kind")) &&
             (!params.get("waiting_manager") || po.waiting_manager) &&
+            (!params.get("status") || params.get("status")!.split(",").includes(po.status)) &&
+            (!params.get("q") || [po.code, ...po.orders.map((o) => o.code)].some((c) => c.toLowerCase().includes(params.get("q")!.toLowerCase()))) &&
             (!params.get("code") || po.code === params.get("code")),
         )
         .map((po) => (user.role === "manager" ? po : { ...po, total_amount: null })),
