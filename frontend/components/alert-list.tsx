@@ -108,9 +108,10 @@ export function AlertList({
                 className="flex min-h-11 min-w-0 basis-full items-center gap-2 rounded-md text-left text-sm sm:min-h-9 sm:flex-1 sm:basis-0"
               >
                 <Icon size={16} className={`shrink-0 ${TONE[alert.severity]}`} aria-hidden />
-                <span className="min-w-0 truncate font-semibold">{alert.kind_display}</span>
+                {/* The title always fits whole (Oscar, 11/10); the figure is what gives way. */}
+                <span className="shrink-0 whitespace-nowrap font-semibold">{alert.kind_display}</span>
                 {code && <span className="shrink-0 font-medium tabular-nums text-accent">{code}</span>}
-                {figure && <span className={`shrink-0 font-semibold tabular-nums ${TONE[alert.severity]}`}>{figure}</span>}
+                {figure && <span className={`min-w-0 truncate font-semibold tabular-nums ${TONE[alert.severity]}`}>{figure}</span>}
                 <ChevronDown size={14} className={`ml-auto shrink-0 text-muted transition-transform duration-150 motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`} aria-hidden />
                 <span className="sr-only">{expanded ? "Ocultar detalle" : "Ver detalle"}</span>
               </button>
@@ -119,9 +120,11 @@ export function AlertList({
                   <ArrowRight size={14} aria-hidden /> {target.label}
                 </Link>
               )}
+              {/* Icon only, the one exception to icon-and-text (Oscar, 11/10): a
+                  square the height of "Ver orden", named for the tooltip and the reader. */}
               {canAcknowledge && (
-                <Button size="sm" onClick={() => acknowledge(alert.id)} busy={busy === alert.id}>
-                  <Check size={14} aria-hidden /> Reconocer
+                <Button size="sm" className={`w-11 px-0 sm:w-8 ${target ? "" : "ml-auto sm:ml-0"}`} aria-label="Reconocer" title="Reconocer" onClick={() => acknowledge(alert.id)} busy={busy === alert.id}>
+                  {busy !== alert.id && <Check size={16} aria-hidden />}
                 </Button>
               )}
             </div>
