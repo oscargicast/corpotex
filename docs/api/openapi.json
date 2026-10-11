@@ -1377,8 +1377,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/ClassificationResult"
                                 }
                             }
                         },
@@ -1466,8 +1465,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/BreakDownResult"
                                 }
                             }
                         },
@@ -1863,8 +1861,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/GenerateResult"
                                 }
                             }
                         },
@@ -1963,7 +1960,7 @@
         },
         "/api/requirements/pending/": {
             "get": {
-                "operationId": "requirements_pending_retrieve",
+                "operationId": "requirements_pending_list",
                 "description": "`GET /api/requirements/pending/`: open material requirements grouped by material, the\n\"Por pedir\" screen (ADR 0025 A). Manager and production; prices only for the manager.",
                 "tags": [
                     "requirements"
@@ -1981,9 +1978,10 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {},
-                                    "description": "Unspecified response body"
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PendingPurchase"
+                                    }
                                 }
                             }
                         },
@@ -3469,6 +3467,43 @@
                     }
                 }
             },
+            "BreakDownResult": {
+                "type": "object",
+                "properties": {
+                    "broken_down": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Order codes."
+                    },
+                    "skipped": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BreakDownSkipped"
+                        }
+                    }
+                },
+                "required": [
+                    "broken_down",
+                    "skipped"
+                ]
+            },
+            "BreakDownSkipped": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "reason": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "reason"
+                ]
+            },
             "CancelInRequest": {
                 "type": "object",
                 "properties": {
@@ -3486,6 +3521,37 @@
                 "type": "string",
                 "description": "* `whatsapp` - whatsapp\n* `simulator` - simulator"
             },
+            "ClassificationItem": {
+                "type": "object",
+                "properties": {
+                    "item_id": {
+                        "type": "integer"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/ClassificationProduct"
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "materials": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ClassificationMaterial"
+                        }
+                    }
+                },
+                "required": [
+                    "confidence",
+                    "description",
+                    "item_id",
+                    "materials",
+                    "product"
+                ]
+            },
             "ClassificationItemInRequest": {
                 "type": "object",
                 "properties": {
@@ -3493,15 +3559,17 @@
                         "type": "integer"
                     },
                     "product": {
-                        "type": "object",
-                        "additionalProperties": {},
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ClassificationProductRequest"
+                            }
+                        ],
                         "description": "{existing_id} or {new: {code, name, brand}}"
                     },
                     "materials": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/ClassificationMaterialRequest"
                         },
                         "description": "[{sku} | {new: {sku, name, kind, unit}}, qty_per_unit, unit]"
                     }
@@ -3509,6 +3577,246 @@
                 "required": [
                     "item_id",
                     "product"
+                ]
+            },
+            "ClassificationMaterial": {
+                "type": "object",
+                "properties": {
+                    "sku": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "A known material; otherwise `new`."
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "material_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "new": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ClassificationNewMaterial"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "qty_per_unit": {
+                        "type": "string",
+                        "description": "Per garment, in `unit`, as a decimal string."
+                    },
+                    "unit": {
+                        "type": "string"
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                },
+                "required": [
+                    "qty_per_unit",
+                    "unit"
+                ]
+            },
+            "ClassificationMaterialRequest": {
+                "type": "object",
+                "properties": {
+                    "sku": {
+                        "type": "string",
+                        "nullable": true,
+                        "minLength": 1,
+                        "description": "A known material; otherwise `new`."
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true,
+                        "minLength": 1
+                    },
+                    "material_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "new": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ClassificationNewMaterialRequest"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "qty_per_unit": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Per garment, in `unit`, as a decimal string."
+                    },
+                    "unit": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                },
+                "required": [
+                    "qty_per_unit",
+                    "unit"
+                ]
+            },
+            "ClassificationNewMaterial": {
+                "type": "object",
+                "properties": {
+                    "sku": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "description": "A Material.Kind value."
+                    },
+                    "unit": {
+                        "type": "string",
+                        "description": "A Material.Unit value."
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "ClassificationNewMaterialRequest": {
+                "type": "object",
+                "properties": {
+                    "sku": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "kind": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "A Material.Kind value."
+                    },
+                    "unit": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "A Material.Unit value."
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "ClassificationNewProduct": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "brand": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "ClassificationNewProductRequest": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "brand": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "ClassificationProduct": {
+                "type": "object",
+                "properties": {
+                    "existing_id": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "A catalogue product that fits; otherwise `new`."
+                    },
+                    "code": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "new": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ClassificationNewProduct"
+                            }
+                        ],
+                        "nullable": true
+                    }
+                }
+            },
+            "ClassificationProductRequest": {
+                "type": "object",
+                "properties": {
+                    "existing_id": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "A catalogue product that fits; otherwise `new`."
+                    },
+                    "code": {
+                        "type": "string",
+                        "nullable": true,
+                        "minLength": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true,
+                        "minLength": 1
+                    },
+                    "new": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ClassificationNewProductRequest"
+                            }
+                        ],
+                        "nullable": true
+                    }
+                }
+            },
+            "ClassificationResult": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "integer"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ClassificationItem"
+                        }
+                    }
+                },
+                "required": [
+                    "items",
+                    "order_id"
                 ]
             },
             "ClaudeApiKeyRequest": {
@@ -3904,6 +4212,47 @@
                         }
                     }
                 }
+            },
+            "GenerateResult": {
+                "type": "object",
+                "properties": {
+                    "created": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PurchaseOrderDetail"
+                        }
+                    },
+                    "decision_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "skipped": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GenerateSkipped"
+                        }
+                    }
+                },
+                "required": [
+                    "created",
+                    "decision_id",
+                    "skipped"
+                ]
+            },
+            "GenerateSkipped": {
+                "type": "object",
+                "properties": {
+                    "material_id": {
+                        "type": "integer"
+                    },
+                    "reason": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "material_id",
+                    "reason"
+                ]
             },
             "ImportInRequest": {
                 "type": "object",
@@ -4612,16 +4961,14 @@
                     "purchase_orders": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/PurchaseOrderList"
                         },
                         "readOnly": true
                     },
                     "alerts": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/Alert"
                         },
                         "readOnly": true
                     },
@@ -4636,8 +4983,7 @@
                     "status_history": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/StatusChange"
                         },
                         "readOnly": true
                     },
@@ -4928,6 +5274,25 @@
                     "total_units"
                 ]
             },
+            "OrderRef": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "customer_name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "customer_name",
+                    "id"
+                ]
+            },
             "OrderRiskEnum": {
                 "enum": [
                     "ok",
@@ -5190,6 +5555,156 @@
                 "type": "string",
                 "description": "* `yape` - Yape\n* `transfer` - Transferencia\n* `cash` - Efectivo"
             },
+            "PendingPurchase": {
+                "type": "object",
+                "properties": {
+                    "material": {
+                        "$ref": "#/components/schemas/PendingPurchaseMaterial"
+                    },
+                    "total_to_order": {
+                        "type": "string",
+                        "description": "Still to buy across the orders, as a decimal string."
+                    },
+                    "orders": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PendingPurchaseOrder"
+                        }
+                    },
+                    "due_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "suggested_supplier": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SupplierNameRef"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "candidates": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PendingPurchaseCandidate"
+                        }
+                    },
+                    "lead_time_days": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "reference_price": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Manager only; null for production."
+                    },
+                    "currency": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "alert_id": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "alert_id",
+                    "candidates",
+                    "currency",
+                    "due_on",
+                    "lead_time_days",
+                    "material",
+                    "orders",
+                    "reference_price",
+                    "suggested_supplier",
+                    "total_to_order"
+                ]
+            },
+            "PendingPurchaseCandidate": {
+                "type": "object",
+                "properties": {
+                    "supplier": {
+                        "$ref": "#/components/schemas/SupplierNameRef"
+                    },
+                    "unit_price": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "score": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                },
+                "required": [
+                    "currency",
+                    "score",
+                    "supplier",
+                    "unit_price"
+                ]
+            },
+            "PendingPurchaseMaterial": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "sku": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "type": "string"
+                    },
+                    "unit": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "image",
+                    "kind",
+                    "name",
+                    "sku",
+                    "unit"
+                ]
+            },
+            "PendingPurchaseOrder": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "customer_name": {
+                        "type": "string"
+                    },
+                    "qty": {
+                        "type": "string"
+                    },
+                    "due_on": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "code",
+                    "customer_name",
+                    "due_on",
+                    "id",
+                    "qty"
+                ]
+            },
             "Product": {
                 "type": "object",
                 "properties": {
@@ -5206,8 +5721,12 @@
                         "maxLength": 160
                     },
                     "brand": {
-                        "type": "object",
-                        "additionalProperties": {},
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductBrand"
+                            }
+                        ],
+                        "nullable": true,
                         "readOnly": true
                     },
                     "image": {
@@ -5222,6 +5741,21 @@
                     "code",
                     "id",
                     "image",
+                    "name"
+                ]
+            },
+            "ProductBrand": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
                     "name"
                 ]
             },
@@ -5436,8 +5970,7 @@
                     "orders": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/OrderRef"
                         },
                         "readOnly": true
                     },
@@ -5566,8 +6099,7 @@
                     "redistributed_into": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/RedistributedInto"
                         },
                         "readOnly": true
                     },
@@ -5594,8 +6126,7 @@
                     "status_history": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/StatusChange"
                         },
                         "readOnly": true
                     },
@@ -5728,8 +6259,7 @@
                     "orders": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/OrderRef"
                         },
                         "readOnly": true
                     },
@@ -5902,6 +6432,33 @@
                     "unit_price"
                 ]
             },
+            "RedistributedInto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "supplier_name": {
+                        "type": "string"
+                    },
+                    "quantity": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "id",
+                    "quantity",
+                    "status",
+                    "supplier_name"
+                ]
+            },
             "Requirement": {
                 "type": "object",
                 "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
@@ -5956,8 +6513,7 @@
                     "purchase_orders": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/RequirementPurchaseOrder"
                         },
                         "readOnly": true
                     },
@@ -5982,6 +6538,33 @@
                     "qty_needed",
                     "qty_to_order",
                     "status_display"
+                ]
+            },
+            "RequirementPurchaseOrder": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "supplier_name": {
+                        "type": "string"
+                    },
+                    "quantity": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "id",
+                    "quantity",
+                    "status",
+                    "supplier_name"
                 ]
             },
             "RequirementStatusEnum": {
@@ -6315,6 +6898,34 @@
                 },
                 "required": [
                     "allowed_number_id"
+                ]
+            },
+            "StatusChange": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string"
+                    },
+                    "status_display": {
+                        "type": "string"
+                    },
+                    "at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "actor": {
+                        "type": "string"
+                    },
+                    "note": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "actor",
+                    "at",
+                    "note",
+                    "status",
+                    "status_display"
                 ]
             },
             "StyleDraftRequest": {
@@ -6980,6 +7591,21 @@
                     "quality_score",
                     "source_display",
                     "status_display"
+                ]
+            },
+            "SupplierNameRef": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
                 ]
             },
             "SupplierRef": {

@@ -30,3 +30,20 @@ def test_schema_requires_auth_and_renders_with_token(anonymous_client, manager_c
     response = manager_client.get("/api/schema/")
     assert response.status_code == 200
     assert b"/api/clock/" in response.content
+
+
+@pytest.mark.django_db
+def test_schema_types_the_computed_responses(manager_client):
+    """The frontend generates its types from the schema (`docs/api/README.md`): the routes of
+    ADR 0025 and the computed lists must not come out as plain objects."""
+    import json
+
+    schema = json.loads(manager_client.get("/api/schema/", HTTP_ACCEPT="application/json").content)
+    components = schema["components"]["schemas"]
+    for name in ("ClassificationResult", "ClassificationProductRequest", "BreakDownResult", "GenerateResult", "PendingPurchase", "ProductBrand", "StatusChange", "OrderRef", "RedistributedInto", "RequirementPurchaseOrder"):
+        assert name in components, name
+    assert schema["paths"]["/api/orders/{id}/classify/"]["post"]["responses"]["200"]["content"]["application/json"]["schema"] == {"$ref": "#/components/schemas/ClassificationResult"}
+    assert schema["paths"]["/api/requirements/pending/"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"] == {"$ref": "#/components/schemas/PendingPurchase"}
+    assert components["OrderDetail"]["properties"]["status_history"]["items"] == {"$ref": "#/components/schemas/StatusChange"}
+    assert components["OrderDetail"]["properties"]["alerts"]["items"] == {"$ref": "#/components/schemas/Alert"}
+    assert components["PurchaseOrderDetail"]["properties"]["orders"]["items"] == {"$ref": "#/components/schemas/OrderRef"}

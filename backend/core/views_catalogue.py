@@ -1,7 +1,6 @@
 """Customers and products for the order form (ADR 0025 B): every role reads them."""
 
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, extend_schema_field
+from drf_spectacular.utils import extend_schema, extend_schema_field, inline_serializer
 from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -27,7 +26,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ["id", "code", "name", "brand", "image"]
 
-    @extend_schema_field(OpenApiTypes.OBJECT)
+    @extend_schema_field(inline_serializer("ProductBrand", fields={"id": serializers.IntegerField(), "name": serializers.CharField()}, allow_null=True))
     def get_brand(self, obj):
         return {"id": obj.brand_id, "name": obj.brand.name} if obj.brand_id else None
 

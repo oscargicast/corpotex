@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.utils import extend_schema_field, inline_serializer
 from rest_framework import serializers
 
 from core.models import Customer, Brand, Material, Product
@@ -21,6 +21,34 @@ from .models import (
 )
 
 OPEN = PurchaseOrder.OPEN_STATUSES
+
+# Schemas of the computed lists (drf-spectacular only; the data is built by hand below).
+
+class StatusChangeSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    status_display = serializers.CharField()
+    at = serializers.DateTimeField()
+    actor = serializers.CharField()
+    note = serializers.CharField(allow_blank=True)
+
+class RequirementPurchaseOrderSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    code = serializers.CharField()
+    supplier_name = serializers.CharField()
+    quantity = serializers.CharField()
+    status = serializers.CharField()
+
+class OrderRefSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    code = serializers.CharField()
+    customer_name = serializers.CharField()
+
+class RedistributedIntoSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    code = serializers.CharField()
+    supplier_name = serializers.CharField()
+    quantity = serializers.CharField()
+    status = serializers.CharField()
 
 
 def money(value) -> str:
@@ -92,7 +120,7 @@ class RequirementSerializer(DisplayMixin, serializers.ModelSerializer):
     def _items(self, obj):
         return obj.purchase_order_items.select_related("purchase_order__supplier")
 
-    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    @extend_schema_field(RequirementPurchaseOrderSerializer(many=True))
     def get_purchase_orders(self, obj):
         return [
             {
@@ -112,7 +140,7 @@ class StatusHistoryMixin(serializers.Serializer):
 
     status_history = serializers.SerializerMethodField()
 
-    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    @extend_schema_field(StatusChangeSerializer(many=True))
     def get_status_history(self, obj):
         return [
             {"status": c.status, "status_display": c.status_display, "at": c.at, "actor": c.actor or "system", "note": c.note}
@@ -216,7 +244,7 @@ class OrderDetailSerializer(StatusHistoryMixin, OrderListSerializer):
     def get_owner(self, obj):
         return _ref(obj.owner, "username", "first_name")
 
-    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    @extend_schema_field({"type": "array", "items": {"$ref": "#/components/schemas/PurchaseOrderList"}})
     def get_purchase_orders(self, obj):
         role = self.context.get("role")
         from core.serializers import serializer_for
@@ -224,7 +252,7 @@ class OrderDetailSerializer(StatusHistoryMixin, OrderListSerializer):
         cls = serializer_for(PurchaseOrder, role)
         return cls(self._purchase_orders(obj), many=True, context=self.context).data
 
-    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    @extend_schema_field({"type": "array", "items": {"$ref": "#/components/schemas/Alert"}})
     def get_alerts(self, obj):
         from manager.serializers import AlertSerializer
 
@@ -384,7 +412,7 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
         material = item.requirement.material if item else None
         return {"id": material.id, "sku": material.sku, "name": material.name} if material else None
 
-    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    @extend_schema_field(OrderRefSerializer(many=True))
     def get_orders(self, obj):
         seen = {}
         for item in obj.items.select_related("requirement__order__customer"):
@@ -502,7 +530,7 @@ class PurchaseOrderDetailSerializer(StatusHistoryMixin, PurchaseOrderListSeriali
     def get_pending_amount(self, obj):
         return money(sum((p.amount for p in obj.payments.all() if not p.paid_at), Decimal("0")))
 
-    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    @extend_schema_field(RedistributedIntoSerializer(many=True))
     def get_redistributed_into(self, obj):
         return [
             {
