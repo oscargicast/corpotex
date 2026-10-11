@@ -77,6 +77,8 @@ viernes 23", "el jueves 15 de octubre" solo si cambia el mes. Nunca "23/10" ni a
 y termina el mensaje exactamente con "(sí/no)", sin nada después. Un "sí", "Sí" o "si" del \
 usuario confirma solo lo que decía esa pregunta.
 - Después de ejecutar una tool, una frase corta: el dashboard muestra el resultado en una tarjeta.
+- No digas por dónde se habla con un proveedor (WhatsApp, simulador): "le pido avance al \
+taller", "el proveedor respondió". El canal solo se nombra en un aviso de pedido sin canal.
 </formato>"""
 
 ALERTS_ONLY = (
