@@ -1,21 +1,19 @@
 {
   "4": {
-    "id": 4, "date": "2026-10-17", "status": "planned", "distance_km": "78.4", "duration_min": 228, "path": null, "recalculated_from": null,
+    "id": 4, "date": "2026-10-17", "status": "planned", "distance_km": "9.6", "duration_min": 53, "path": null, "recalculated_from": null,
     "stops": [
-      { "position": 0, "kind": "pickup", "name": "Planta Corpotex", "address": "Zona Industrial, Piura", "lat": -5.1782, "lng": -80.6527, "eta": "2026-10-17T08:00:00-05:00" },
-      { "position": 1, "kind": "pickup", "name": "Taller Sullana", "address": "Av. José de Lama, Sullana", "lat": -4.9039, "lng": -80.6853, "eta": "2026-10-17T09:10:00-05:00", "supplier": { "id": 1, "name": "Taller Sullana" }, "purchase_order": { "id": 1, "code": "PT-0001" } },
-      { "position": 2, "kind": "delivery", "name": "Caja Piura (sede central)", "address": "Jr. Ayacucho 353, Piura", "lat": -5.1966, "lng": -80.6276, "eta": "2026-10-17T11:00:00-05:00", "customer": { "id": 1, "name": "Caja Piura" }, "order": { "id": 1, "code": "CP-2026-0001" } },
-      { "position": 3, "kind": "pickup", "name": "Planta Corpotex", "address": "Zona Industrial, Piura", "lat": -5.1782, "lng": -80.6527, "eta": "2026-10-17T11:48:00-05:00" }
+      { "position": 0, "kind": "delivery", "name": "Planta y Almacén Corpotex", "address": "Zona Industrial, Piura", "lat": -5.1782, "lng": -80.6527, "eta": "2026-10-17T08:00:00-05:00" },
+      { "position": 1, "kind": "delivery", "name": "Caja Piura (sede central)", "address": "Jr. Ayacucho 353, Piura", "lat": -5.1966, "lng": -80.6276, "eta": "2026-10-17T08:17:00-05:00", "customer": { "id": 1, "name": "Caja Piura" }, "order": { "id": 1, "code": "CP-2026-0001" } },
+      { "position": 2, "kind": "delivery", "name": "Colegio San Ignacio de Loyola", "address": "Av. Guardia Civil, Castilla", "lat": -5.2001, "lng": -80.6158, "eta": "2026-10-17T08:40:00-05:00", "customer": { "id": 3, "name": "Colegio San Ignacio de Loyola" }, "order": { "id": 3, "code": "CP-2026-0003" } },
+      { "position": 3, "kind": "delivery", "name": "Planta y Almacén Corpotex", "address": "Zona Industrial, Piura", "lat": -5.1782, "lng": -80.6527, "eta": "2026-10-17T09:05:00-05:00" }
     ]
   },
   "5": {
-    "id": 5, "date": "2026-10-20", "status": "proposed", "distance_km": "17.9", "duration_min": 93, "path": null, "recalculated_from": 4,
+    "id": 5, "date": "2026-10-20", "status": "proposed", "distance_km": "6.4", "duration_min": 35, "path": null, "recalculated_from": 4,
     "stops": [
-      { "position": 0, "kind": "pickup", "name": "Planta Corpotex", "address": "Zona Industrial, Piura", "lat": -5.1782, "lng": -80.6527, "eta": "2026-10-20T08:00:00-05:00" },
-      { "position": 1, "kind": "pickup", "name": "Confecciones del Norte", "address": "Urb. Santa Isabel, Piura", "lat": -5.1872, "lng": -80.6420, "eta": "2026-10-20T08:20:00-05:00", "supplier": { "id": 2, "name": "Confecciones del Norte" }, "purchase_order": { "id": 7, "code": "PT-0004" } },
-      { "position": 2, "kind": "pickup", "name": "Taller Castilla", "address": "Av. Guardia Civil, Castilla", "lat": -5.2001, "lng": -80.6158, "eta": "2026-10-20T08:52:00-05:00", "supplier": { "id": 3, "name": "Taller Castilla" }, "purchase_order": { "id": 8, "code": "PT-0005" } },
-      { "position": 3, "kind": "delivery", "name": "Caja Piura (sede central)", "address": "Jr. Ayacucho 353, Piura", "lat": -5.1966, "lng": -80.6276, "eta": "2026-10-20T09:20:00-05:00", "customer": { "id": 1, "name": "Caja Piura" }, "order": { "id": 1, "code": "CP-2026-0001" } },
-      { "position": 4, "kind": "pickup", "name": "Planta Corpotex", "address": "Zona Industrial, Piura", "lat": -5.1782, "lng": -80.6527, "eta": "2026-10-20T09:33:00-05:00" }
+      { "position": 0, "kind": "delivery", "name": "Planta y Almacén Corpotex", "address": "Zona Industrial, Piura", "lat": -5.1782, "lng": -80.6527, "eta": "2026-10-20T08:00:00-05:00" },
+      { "position": 1, "kind": "delivery", "name": "Caja Piura (sede central)", "address": "Jr. Ayacucho 353, Piura", "lat": -5.1966, "lng": -80.6276, "eta": "2026-10-20T08:17:00-05:00", "customer": { "id": 1, "name": "Caja Piura" }, "order": { "id": 1, "code": "CP-2026-0001" } },
+      { "position": 2, "kind": "delivery", "name": "Planta y Almacén Corpotex", "address": "Zona Industrial, Piura", "lat": -5.1782, "lng": -80.6527, "eta": "2026-10-20T08:35:00-05:00" }
     ]
   }
 }

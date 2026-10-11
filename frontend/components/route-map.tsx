@@ -21,23 +21,31 @@ function points(route: Route): [number, number][] {
   return [...route.stops].sort((a, b) => a.position - b.position).map((s) => [s.lat, s.lng]);
 }
 
-export function stopKind(stop: RouteStop): "warehouse" | "workshop" | "customer" {
-  if (stop.customer) return "customer";
-  if (stop.supplier) return "workshop";
-  return "warehouse";
+// Routes are deliveries to customers from the plant (ADR 0024): the first and
+// last stops are the plant, the rest customers. Supplier stops no longer exist.
+export function isPlant(stop: RouteStop, route: Route): boolean {
+  return !stop.customer && !stop.supplier && (stop.position === 0 || stop.position === route.stops.length - 1);
 }
 
-const STOP_COLOR = { warehouse: "#15141c", workshop: "#0062fa", customer: "#12773d" };
+// What a stop is, for the list and the tooltip.
+export function stopLabel(stop: RouteStop, route: Route): string {
+  if (isPlant(stop, route)) return stop.position === 0 ? "Salida de la planta" : "Regreso a la planta";
+  if (stop.customer) return `Entrega a ${stop.customer.name}${stop.order ? `, orden ${stop.order.code}` : ""}`;
+  return stop.kind === "delivery" ? "Entrega" : stop.name;
+}
 
-// Numbered markers without image assets (Leaflet's default icons break with bundlers).
-function icon(stop: RouteStop, faded: boolean) {
-  const kind = stopKind(stop);
-  const label = kind === "warehouse" ? "P" : String(stop.position);
+const PLANT_ICON =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16h.01"/><path d="M16 16h.01"/><path d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H3z"/><path d="M8 16h.01"/></svg>';
+
+// Markers without image assets (Leaflet's default icons break with bundlers):
+// a factory for the plant, the stop number for each customer.
+function icon(stop: RouteStop, route: Route, faded: boolean) {
+  const plant = isPlant(stop, route);
   return L.divIcon({
     className: "",
     iconSize: [28, 28],
     iconAnchor: [14, 14],
-    html: `<span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:${STOP_COLOR[kind]};color:#fff;font:700 13px system-ui;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);opacity:${faded ? 0.55 : 1}">${label}</span>`,
+    html: `<span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:${plant ? "#15141c" : "#12773d"};color:#fff;font:700 13px system-ui;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);opacity:${faded ? 0.55 : 1}">${plant ? PLANT_ICON : stop.position}</span>`,
   });
 }
 
@@ -67,16 +75,19 @@ export default function RouteMap({ routes, focus }: { routes: Route[]; focus?: R
         <Polyline key={route.id} positions={points(route)} pathOptions={lineStyle(route.status)} />
       ))}
       {ordered.map((route) =>
-        route.stops.map((stop) => (
-          <Marker key={`${route.id}-${stop.position}`} position={[stop.lat, stop.lng]} icon={icon(stop, route.status === "replaced")}>
-            <Tooltip direction="top" offset={[0, -12]}>
-              <strong>{stop.name}</strong>
-              <br />
-              {stop.kind === "pickup" ? "Recojo" : "Entrega"}
-              {stop.eta ? ` · ${new Date(stop.eta).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", timeZone: "America/Lima" })}` : ""}
-            </Tooltip>
-          </Marker>
-        )),
+        route.stops
+          // The plant closes the loop: one marker is enough.
+          .filter((stop) => !(isPlant(stop, route) && stop.position > 0))
+          .map((stop) => (
+            <Marker key={`${route.id}-${stop.position}`} position={[stop.lat, stop.lng]} icon={icon(stop, route, route.status === "replaced")}>
+              <Tooltip direction="top" offset={[0, -12]}>
+                <strong>{isPlant(stop, route) ? "Planta Corpotex" : stop.name}</strong>
+                <br />
+                {isPlant(stop, route) ? "Salida y regreso" : stopLabel(stop, route)}
+                {stop.eta ? ` · ${new Date(stop.eta).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", timeZone: "America/Lima" })}` : ""}
+              </Tooltip>
+            </Marker>
+          )),
       )}
       <FitBounds route={focus ?? routes[0]} />
     </MapContainer>
