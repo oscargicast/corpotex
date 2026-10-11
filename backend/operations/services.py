@@ -416,7 +416,13 @@ def generate_purchase_orders(material_ids=None, *, actor, supplier_overrides=Non
     overrides = {int(k): int(v) for k, v in (supplier_overrides or {}).items()}
     with transaction.atomic():
         created, decision = match_requirements(requirements, consolidate=True, supplier_overrides=overrides)
-    ordered = {po.items.first().requirement.material_id for po in created if po.items.exists()}
+        ordered = {po.items.first().requirement.material_id for po in created if po.items.exists()}
+        if ordered:  # The suggestion is answered: close it before the next tick can repeat it.
+            from manager.models import Alert
+
+            Alert.objects.filter(kind="purchase_suggested", status__in=("open", "acknowledged"), material_id__in=ordered).update(
+                status="resolved", resolved_at=clock.now()
+            )
     with_requirements = {r.material_id for r in requirements}
     skipped = [
         {"material_id": material_id, "reason": "sin proveedor con tarifa vigente" if material_id in with_requirements else "sin requerimientos abiertos"}

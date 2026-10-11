@@ -262,7 +262,15 @@ def suggest_purchases(today=None, config=None) -> list[Alert]:
         supplier = row["suggested_supplier"]["name"] if row["suggested_supplier"] else "sin proveedor con tarifa"
         text = f"{row['total_to_order']} {material.unit} de {material.name} por pedir para {codes}; sugiero {supplier}. ¿Genero el pedido?"
         alerts.append(open_alert("purchase_suggested", text=text, material=material, detail=detail, severity="warning"))
-    Alert.objects.filter(kind="purchase_suggested", status__in=("open", "acknowledged")).exclude(material_id__in=suggested_ids).update(
+    # Anything not suggested this round is closed, and so is any suggestion whose material has
+    # nothing left to order (ordered or cancelled meanwhile), whatever the rows above said.
+    from operations.models import Requirement
+    from operations.services import PURCHASING_ORDER_STATUSES
+
+    still_open = set(
+        Requirement.objects.filter(kind="material", status=Requirement.Status.OPEN, order__status__in=PURCHASING_ORDER_STATUSES).values_list("material_id", flat=True)
+    )
+    Alert.objects.filter(kind="purchase_suggested", status__in=("open", "acknowledged")).exclude(material_id__in=suggested_ids & still_open).update(
         status="resolved", resolved_at=clock.now()
     )
     return alerts
@@ -307,7 +315,10 @@ def run_monitor() -> dict:
     Alert.objects.filter(kind__in=("delay", "stalled_purchase_order", "no_response"), status__in=("open", "acknowledged")).exclude(
         purchase_order__status__in=PurchaseOrder.OPEN_STATUSES
     ).update(status="resolved", resolved_at=now)
-    suggest_purchases(today, config)
+    try:
+        suggest_purchases(today, config)
+    except Exception:  # The tick must keep running whatever the suggestion step hits.
+        logger.exception("run_monitor: suggest_purchases failed")
 
     for decision in Decision.objects.filter(status="pending", created_at__lt=timezone.now() - timedelta(hours=config.decision_pending_hours)):
         open_alert("decision_pending", decision=decision, text=f"Decisión sin resolver: {decision.summary}")
