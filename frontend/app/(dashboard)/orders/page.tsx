@@ -1,79 +1,114 @@
 "use client";
 
+import { CheckCircle2, Layers, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import useSWR from "swr";
+import { matchesCode, ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
 import { useUser } from "@/components/require-auth";
 import { SimulateOrder } from "@/components/simulate-order";
-import { Pill, RISK_LABEL, RISK_TONE } from "@/components/ui";
-import { fetcher } from "@/lib/api";
-import { formatDay } from "@/lib/format";
-import type { OrderListItem, Risk } from "@/lib/types";
 import { SkeletonTable } from "@/components/skeleton";
+import { Button, Pill, RISK_LABEL, RISK_TONE } from "@/components/ui";
+import { ApiError, apiFetch, fetcher } from "@/lib/api";
+import { formatDay } from "@/lib/format";
 import { canCreateOrder } from "@/lib/orders";
-import { Plus } from "lucide-react";
+import type { OrderListItem, Risk } from "@/lib/types";
 
 const RISKS: (Risk | "")[] = ["", "in_danger", "at_risk", "ok"];
 
+interface BreakDownResult {
+  broken_down: string[];
+  skipped: { code: string; reason: string }[];
+}
+
 export default function OrdersPage() {
+  return (
+    <Suspense>
+      <Orders />
+    </Suspense>
+  );
+}
+
+function Orders() {
   const user = useUser();
-  const [risk, setRisk] = useState<Risk | "">("");
-  const [status, setStatus] = useState("");
-  const query = new URLSearchParams({ ...(risk && { risk }), ...(status && { status }) }).toString();
-  const { data, error } = useSWR<OrderListItem[]>(`/api/orders/${query ? `?${query}` : ""}`, fetcher, {
-    refreshInterval: 3000,
-  });
-  const { data: all } = useSWR<OrderListItem[]>("/api/orders/", fetcher);
-  const statuses = [...new Map((all ?? []).map((o) => [o.status, o.status_display])).entries()];
+  const params = useListParams();
+  const risk = params.get("risk") as Risk | "";
+  const statuses = params.list("status");
+  const q = params.get("q");
+  // One list, filtered here until the API takes ?status=a,b&q= (B6.5).
+  const { data, error, mutate } = useSWR<OrderListItem[]>("/api/orders/", fetcher, { refreshInterval: 3000 });
+  const options = statusOptions(data ?? [], ORDER_STATUSES);
+  const filtered = (data ?? []).filter(
+    (order) => (!risk || order.risk === risk) && (!statuses.length || statuses.includes(order.status)) && matchesCode(q, order.code),
+  );
+  const registered = (data ?? []).filter((order) => order.status === "registered");
+  const filtering = !!(risk || statuses.length || q);
+  const [breakDownOpen, setBreakDownOpen] = useState(false);
+  const canBreakDown = user.role !== "sales" && registered.length > 0;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Órdenes</h1>
-        {canCreateOrder(user) && (
-          <div className="flex flex-wrap gap-2">
-            <Link href="/orders/new" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90">
-              <Plus size={16} /> Nueva orden
-            </Link>
-            <SimulateOrder />
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {canBreakDown && (
+            <Button kind="primary" onClick={() => setBreakDownOpen(true)} disabled={breakDownOpen}>
+              <Layers size={16} /> Desglosar {registered.length} {registered.length === 1 ? "registrada" : "registradas"}
+            </Button>
+          )}
+          {canCreateOrder(user) && (
+            <>
+              <Link href="/orders/new" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90">
+                <Plus size={16} /> Nueva orden
+              </Link>
+              <SimulateOrder />
+            </>
+          )}
+        </div>
       </div>
 
+      {/* Always mounted: it keeps the summary after the registered orders leave the list. */}
+      <BreakDownPanel orders={registered} open={breakDownOpen} onClose={() => setBreakDownOpen(false)} onDone={() => mutate()} />
+
       <div className="flex flex-wrap items-center gap-2">
-        {RISKS.map((value) => (
-          <button
-            key={value || "all"}
-            type="button"
-            onClick={() => setRisk(value)}
-            className={`rounded-full px-3 py-1 text-sm ring-1 ${risk === value ? "bg-ink text-white ring-ink" : "bg-surface ring-line"}`}
-          >
-            {value ? RISK_LABEL[value] : "Todas"}
-          </button>
-        ))}
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="rounded-md bg-surface px-2 py-1.5 text-sm ring-1 ring-line"
-          aria-label="Estado"
-        >
-          <option value="">Todos los estados</option>
-          {statuses.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Riesgo">
+          {RISKS.map((value) => (
+            <button
+              key={value || "all"}
+              type="button"
+              aria-pressed={risk === value}
+              onClick={() => params.set({ risk: value })}
+              className={`rounded-full px-3 py-1 text-sm ring-1 ${risk === value ? "bg-ink text-white ring-ink" : "bg-surface ring-line hover:bg-canvas"}`}
+            >
+              {value ? RISK_LABEL[value] : "Todas"}
+            </button>
           ))}
-        </select>
+        </div>
+        <SearchBox value={q} onChange={(value) => params.set({ q: value })} placeholder="Buscar por código (CP-2026-01…)" />
       </div>
+      {options.length > 0 && <StatusChips options={options} selected={statuses} onChange={(next) => params.set({ status: next })} allLabel="Todos los estados" />}
 
       {error && !data && <p className="text-danger">No se pudieron cargar las órdenes.</p>}
       {!data && !error && <SkeletonTable rows={7} cols={7} />}
-      {data && !data.length && <p className="text-sm text-muted">No hay órdenes con ese filtro.</p>}
+      {data && !filtered.length && (
+        <div className="rounded-xl bg-surface p-6 text-center text-sm text-muted ring-1 ring-line">
+          {filtering ? (
+            <>
+              <p>Ninguna orden coincide con {q ? `“${q}”` : "esos filtros"}.</p>
+              <Button className="mt-3" onClick={() => params.set({ risk: null, status: null, q: null })}>
+                Limpiar filtros
+              </Button>
+            </>
+          ) : (
+            <p>Todavía no hay órdenes.</p>
+          )}
+        </div>
+      )}
 
-      {data && data.length > 0 && (
+      {filtered.length > 0 && (
         <>
           <ul className="space-y-2 md:hidden">
-            {data.map((order) => (
+            {filtered.map((order) => (
               <li key={order.id}>
                 <Link href={`/orders/${order.id}`} className="block rounded-lg bg-surface p-3 ring-1 ring-line">
                   <div className="flex items-center justify-between gap-2">
@@ -106,7 +141,7 @@ export default function OrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {data.map((order) => (
+                {filtered.map((order) => (
                   <tr key={order.id} className="hover:bg-canvas">
                     <td className="px-4 py-3">
                       <Link href={`/orders/${order.id}`} className="font-semibold text-accent hover:underline">
@@ -138,6 +173,68 @@ export default function OrdersPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Break down every registered order at once (ADR 0025 A.6), Gerente and
+// Producción: confirmation, then POST /api/orders/break-down/ and a summary
+// ({broken_down: [codes], skipped: [{code, reason}]}).
+function BreakDownPanel({ orders, open, onClose, onDone }: { orders: OrderListItem[]; open: boolean; onClose: () => void; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<BreakDownResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await apiFetch<BreakDownResult>("/api/orders/break-down/", { method: "POST", json: { order_ids: orders.map((o) => o.id) } });
+      setResult(data);
+      onClose();
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? ((err.body as { detail?: string } | null)?.detail ?? "No se pudo desglosar.") : "No se pudo desglosar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (open) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning">
+        Se desglosan contra el inventario {orders.length === 1 ? "la orden" : `las ${orders.length} órdenes`} {orders.map((o) => o.code).join(", ")}. Después
+        Producción confirma cada desglose.
+        <Button kind="dark" className="py-1" busy={busy} onClick={run}>
+          Desglosar ahora
+        </Button>
+        <Button className="py-1" disabled={busy} onClick={onClose}>
+          Cancelar
+        </Button>
+        {error && <span className="w-full text-danger">{error}</span>}
+      </div>
+    );
+  }
+  if (!result) return null;
+  return (
+    <div className="rounded-lg bg-success-soft px-3 py-2 text-sm text-success" role="status">
+      <p className="flex items-center gap-1.5 font-semibold">
+        <CheckCircle2 size={16} />
+        {result.broken_down.length === 1 ? "1 orden desglosada" : `${result.broken_down.length} órdenes desglosadas`}
+        {result.broken_down.length > 0 && `: ${result.broken_down.join(", ")}`}
+      </p>
+      {result.skipped.length > 0 && (
+        <ul className="mt-1 text-warning">
+          {result.skipped.map((s) => (
+            <li key={s.code}>
+              {s.code}: {s.reason}
+            </li>
+          ))}
+        </ul>
+      )}
+      <button type="button" onClick={() => setResult(null)} className="mt-1 text-xs underline">
+        Cerrar
+      </button>
     </div>
   );
 }

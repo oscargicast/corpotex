@@ -10,7 +10,7 @@ import { Thumb } from "@/components/thumb";
 import { Button, Card, Pill } from "@/components/ui";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { daysBetween, formatDay, formatMoney, num } from "@/lib/format";
-import type { GeneratedPurchaseOrders, PendingRequirement } from "@/lib/types";
+import type { GeneratedPurchaseOrder, GeneratedPurchaseOrders, PendingRequirement } from "@/lib/types";
 
 const PENDING_URL = "/api/requirements/pending/";
 const UNIT_LABEL: Record<string, string> = { unit: "u.", units: "u.", kg: "kg", m: "m", roll: "rollo", cone: "cono" };
@@ -36,7 +36,8 @@ function Pending() {
   const [busy, setBusy] = useState<number | "all" | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const [generated, setGenerated] = useState<GeneratedPurchaseOrders["created"]>([]);
+  const [generated, setGenerated] = useState<GeneratedPurchaseOrder[]>([]);
+  const [decisionId, setDecisionId] = useState<number | null>(null);
   const [skipped, setSkipped] = useState<GeneratedPurchaseOrders["skipped"]>([]);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -50,7 +51,8 @@ function Pending() {
         method: "POST",
         json: { ...(materialIds && { material_ids: materialIds }), ...(Object.keys(supplier_overrides).length && { supplier_overrides }) },
       });
-      setGenerated((current) => [...result.created, ...current]);
+      setGenerated((current) => [...(result.created ?? result.purchase_orders ?? []), ...current]);
+      setDecisionId(result.decision_id ?? null);
       setSkipped(result.skipped ?? []);
       setConfirmAll(false);
       mutate();
@@ -104,13 +106,22 @@ function Pending() {
           <p className="flex items-center gap-1.5 font-semibold">
             <CheckCircle2 size={16} /> {generated.length === 1 ? "Pedido generado" : `${generated.length} pedidos generados`}
           </p>
+          {decisionId && (
+            <p className="mt-1">
+              El Gerente aprueba la asignación en el{" "}
+              <Link href="/" className="font-medium underline">
+                Monitor
+              </Link>
+              .
+            </p>
+          )}
           <ul className="mt-1 space-y-0.5">
             {generated.map((po) => (
               <li key={po.id}>
                 <Link href={`/purchase-orders/${po.id}`} className="font-medium underline">
                   {po.code}
                 </Link>{" "}
-                · {po.material.name} · {po.supplier.name}
+                {po.material?.name || po.items?.[0]?.name ? ` · ${po.material?.name ?? po.items?.[0]?.name}` : ""} · {po.supplier.name}
                 {po.orders.length > 0 && ` · para ${po.orders.map((o) => o.code).join(", ")}`}
               </li>
             ))}
@@ -120,11 +131,16 @@ function Pending() {
 
       {skipped.length > 0 && (
         <ul className="rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning" role="alert">
-          {skipped.map((s) => (
-            <li key={s.material_id}>
-              {rows.find((r) => r.material.id === s.material_id)?.material.name ?? `Material ${s.material_id}`}: {s.reason}
-            </li>
-          ))}
+          {skipped.map((s, i) => {
+            const id = typeof s === "number" ? s : s.material_id;
+            const name = rows.find((r) => r.material.id === id)?.material.name ?? (typeof s === "number" ? null : s.material) ?? `Material ${id ?? i + 1}`;
+            const reason = typeof s === "number" ? "sin requerimientos abiertos" : (s.reason ?? "sin requerimientos abiertos");
+            return (
+              <li key={`${id ?? i}`}>
+                {name}: {reason}
+              </li>
+            );
+          })}
         </ul>
       )}
 

@@ -2,14 +2,15 @@
 
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense } from "react";
 import useSWR from "swr";
+import { matchesCode, PURCHASE_ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
 import { PurchaseOrderList } from "@/components/purchase-order-list";
 import { useUser } from "@/components/require-auth";
-import { Card } from "@/components/ui";
+import { SkeletonTable } from "@/components/skeleton";
+import { Button, Card } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import type { PurchaseOrderListItem } from "@/lib/types";
-import { SkeletonTable } from "@/components/skeleton";
 
 const KINDS = [
   { value: "", label: "Todos" },
@@ -19,13 +20,30 @@ const KINDS = [
 ];
 
 export default function PurchaseOrdersPage() {
+  return (
+    <Suspense>
+      <PurchaseOrders />
+    </Suspense>
+  );
+}
+
+function PurchaseOrders() {
   const user = useUser();
-  const [kind, setKind] = useState("");
-  const [waiting, setWaiting] = useState(false);
+  const params = useListParams();
+  const kind = params.get("kind");
+  const waiting = params.get("waiting") === "1";
+  const statuses = params.list("status");
+  const q = params.get("q");
+  // Kind and "waiting" are server filters; status and code search run here until B6.5.
   const query = new URLSearchParams({ ...(kind && { kind }), ...(waiting && { waiting_manager: "1" }) }).toString();
   const { data, error } = useSWR<PurchaseOrderListItem[]>(`/api/purchase-orders/${query ? `?${query}` : ""}`, fetcher, {
     refreshInterval: 3000,
   });
+  const options = statusOptions(data ?? [], PURCHASE_ORDER_STATUSES);
+  const filtered = (data ?? []).filter(
+    (po) => (!statuses.length || statuses.includes(po.status)) && matchesCode(q, po.code, ...po.orders.map((o) => o.code)),
+  );
+  const filtering = !!(kind || waiting || statuses.length || q);
 
   return (
     <div className="space-y-4">
@@ -45,7 +63,7 @@ export default function PurchaseOrdersPage() {
               type="button"
               role="tab"
               aria-selected={kind === k.value}
-              onClick={() => setKind(k.value)}
+              onClick={() => params.set({ kind: k.value })}
               className={`rounded-md px-3 py-1.5 text-sm ${kind === k.value ? "bg-ink text-white" : ""}`}
             >
               {k.label}
@@ -53,15 +71,32 @@ export default function PurchaseOrdersPage() {
           ))}
         </div>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={waiting} onChange={(e) => setWaiting(e.target.checked)} />
+          <input type="checkbox" checked={waiting} onChange={(e) => params.set({ waiting: e.target.checked ? "1" : null })} />
           Solo esperando al Gerente
         </label>
+        <SearchBox value={q} onChange={(value) => params.set({ q: value })} placeholder="Buscar por código de pedido u orden" />
       </div>
+      {options.length > 0 && <StatusChips options={options} selected={statuses} onChange={(next) => params.set({ status: next })} allLabel="Todos los estados" />}
+
       {error && !data && <p className="text-danger">No se pudieron cargar los pedidos.</p>}
       {!data && !error && <SkeletonTable rows={7} cols={6} />}
-      {data && (
+      {data && !filtered.length && (
+        <div className="rounded-xl bg-surface p-6 text-center text-sm text-muted ring-1 ring-line">
+          {filtering ? (
+            <>
+              <p>Ningún pedido coincide con {q ? `“${q}”` : "esos filtros"}.</p>
+              <Button className="mt-3" onClick={() => params.set({ kind: null, waiting: null, status: null, q: null })}>
+                Limpiar filtros
+              </Button>
+            </>
+          ) : (
+            <p>Todavía no hay pedidos.</p>
+          )}
+        </div>
+      )}
+      {filtered.length > 0 && (
         <Card>
-          <PurchaseOrderList items={data} />
+          <PurchaseOrderList items={filtered} />
         </Card>
       )}
     </div>

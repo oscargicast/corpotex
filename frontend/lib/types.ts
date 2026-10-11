@@ -415,9 +415,10 @@ export function candidateSupplier(candidate: Candidate): { id: number; name: str
 // "Por pedir" (ADR 0025 A): open material requirements grouped by material.
 // GET /api/requirements/pending/; prices only reach the Gerente.
 export interface PendingRequirement {
-  material: { id: number; sku: string; name: string; unit: string; image?: string | null };
+  material: { id: number; sku: string; name: string; unit: string; kind?: string; image?: string | null };
   total_to_order: Decimal;
   due_on: string | null; // the earliest of its orders
+  lead_time_days?: number | null; // of the suggested supplier
   orders: { id: number; code: string; customer_name: string; qty: Decimal; due_on: string | null }[];
   suggested_supplier: { id: number; name: string } | null;
   candidates?: { supplier: { id: number; name: string }; unit_price?: Decimal | null; currency?: Currency; score?: Decimal | null }[]; // [] for Producción
@@ -426,10 +427,19 @@ export interface PendingRequirement {
   alert_id?: number | null;
 }
 
-// POST /api/purchase-orders/generate/ {material_ids?, supplier_overrides?} → 201
+// POST /api/purchase-orders/generate/ {material_ids?, supplier_overrides?} → 201 (B6.1 #60)
+export type GeneratedPurchaseOrder = Pick<PurchaseOrderListItem, "id" | "code" | "supplier" | "orders"> & {
+  material?: { id: number; sku: string; name: string } | null;
+  items?: { name: string }[]; // the detail serializer: the first item names the material
+};
+
 export interface GeneratedPurchaseOrders {
-  created: { id: number; code: string; supplier: { id: number; name: string }; material: { id: number; sku: string; name: string }; orders: Ref[] }[];
-  skipped: { material_id: number; reason: string }[];
+  // The contract settled on `created`; `purchase_orders` was the earlier key. Read either.
+  created?: GeneratedPurchaseOrder[];
+  purchase_orders?: GeneratedPurchaseOrder[];
+  decision_id?: number | null;
+  // Materials with nothing open: ids today, maybe {material_id, reason} later.
+  skipped: (number | { material_id?: number; material?: string; reason?: string })[];
 }
 
 // Order form (ADR 0025 B): GET /api/customers/ and GET /api/products/.
