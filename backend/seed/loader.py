@@ -18,7 +18,7 @@ from django.contrib.auth.models import Group
 from django.core.files import File
 from django.utils import timezone
 
-from core.models import ROLE_GROUPS, Brand, Config, Customer, Material, Product, ProductMaterial, StyleVersion, User
+from core.models import ROLE_GROUPS, Brand, Config, Customer, Material, OnboardingStyle, Product, ProductMaterial, StyleVersion, User
 from manager.models import Alert, Decision
 from messaging.models import AllowedNumber, Conversation, Message
 from operations.models import (
@@ -512,6 +512,24 @@ class Loader:
                 StyleVersion.objects.filter(pk=sv.pk).update(created_at=created_at)
         manager.style_md = versions[-1]["style_md"]
         manager.save(update_fields=["style_md"])
+        self.mark_style_approved(versions[-1], notes_snapshot)
+
+    @staticmethod
+    def mark_style_approved(version: dict, notes_snapshot: dict) -> None:
+        """The onboarding's Estilo step shows as done: the seeded style counts as approved.
+
+        Only on a fresh or reset seed; a draft or a running extraction is never touched.
+        """
+        row = OnboardingStyle.load()
+        if row.status not in (OnboardingStyle.Status.NOT_STARTED, OnboardingStyle.Status.APPROVED):
+            return
+        row.status = OnboardingStyle.Status.APPROVED
+        row.draft_style_md = version["style_md"]
+        row.draft_notes = version.get("notes_snapshot") or notes_snapshot
+        row.draft_source = StyleVersion.Source.MANUAL  # a re-approval of the seeded style is manual
+        row.step, row.progress, row.error, row.temp_transcript = "", {}, "", None
+        row.approved_at = timezone.now()
+        row.save()
 
     @staticmethod
     def retitle(style_md: str) -> str:
