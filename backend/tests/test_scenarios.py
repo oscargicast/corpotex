@@ -1,6 +1,6 @@
 import re
 
-from agent.persona.check_scenarios import check, load_scenarios, parse_output
+from agent.persona.check_scenarios import build, check, load_scenarios, parse_output
 
 KNOWN_KEYS = {
     "name",
@@ -15,6 +15,8 @@ KNOWN_KEYS = {
     "max_messages",
     "ends_with",
     "max_chars",
+    "max_words",
+    "tool_results",
 }
 
 
@@ -68,3 +70,10 @@ def test_max_chars_limit():
     assert check({"max_chars": 10}, ["esto es bastante largo"], []) == [
         "un mensaje pasa de 10 caracteres"
     ]
+
+
+def test_max_words_and_tool_results():
+    assert check({"max_words": 3}, ["uno dos tres cuatro"], []) == ["4 palabras (máximo 3)"]
+    scenario = next(s for s in load_scenarios() if s["name"] == "estado_orden_comercial")
+    _system, prompt = build(scenario)
+    assert '<resultado tool="get_order">{"id"' in prompt and "CP-2026-0142" in prompt
