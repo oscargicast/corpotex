@@ -410,6 +410,9 @@ Fuera de alcance a propósito: extracción de estilo en vivo (ADR 0011), QR en v
 
 ## Seguimiento
 
+Estado 11/10 01:20: ADR 0026 (R1-R4) y ADR 0027 (S1-S7) mergeados y desplegados en el stack (main 1cc258a). Verificado de punta a punta en el stack: flota en vivo con simulador, seguimiento proactivo (domingo sin envíos) y seguimiento a pedido (43 s). Pendiente solo el reseed de las 06:30 y el ensayo de las 06:45.
+
+
 - **17:29 sáb:** salida. Las 4 sesiones abren su worktree desde `main` (6f95bda). Fase 0 cerrada: tunnel, instancia `corpotex` con webhook y groupsIgnore, service token probado, seed de Kenji en el PR #1. Pendiente de Oscar: si el orquestador toma B4.3 y B4.4, y si el chat de rol va por API.
 
 El orquestador actualiza este archivo al cerrar cada hito con lo hecho, lo que se cayó y lo que se movió de fase.
