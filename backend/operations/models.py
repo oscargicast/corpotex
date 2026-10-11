@@ -75,6 +75,7 @@ class OrderItem(TimeStamped):
     customization = models.CharField(max_length=200, blank=True, help_text="Free text: embroidery, sublimation, print, several at once.")
     description = models.TextField(blank=True, help_text="What the customer asked for when no catalogue product fits (ADR 0025 C).")
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Sale price; empty when the form does not know it yet.")
+    photo = models.ImageField(upload_to="items/", blank=True, help_text="The garment's reference photo from the order form (ADR 0029 N1).")
 
     class Meta:
         verbose_name = "ítem de orden"

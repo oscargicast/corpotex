@@ -201,8 +201,9 @@ AGENT_MODEL = env("AGENT_MODEL")
 # than the agent's; WhatsApp turns and the assistant keep AGENT_MODEL (orquestador, 11/10 04:30).
 CLASSIFY_MODEL = env("CLASSIFY_MODEL")
 # A garment photo travels as base64 JSON (describe-image, up to 5 MB of base64): the default 2.5 MB
-# would reject it before the view can answer in Spanish.
-DATA_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
+# would reject it before the view can answer in Spanish. An order carries one photo per item
+# (ADR 0029 N1), so the body gets room for several.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 32 * 1024 * 1024
 STYLE_ANALYSIS_MODEL = env("STYLE_ANALYSIS_MODEL")
 TYPESAFE_API_KEY = env("TYPESAFE_API_KEY")  # Jev (ADR 0025 C); empty means Claude classifies alone.
 TYPESAFE_MODEL = env("TYPESAFE_MODEL")

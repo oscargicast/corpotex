@@ -6692,10 +6692,18 @@
                         "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
                         "nullable": true,
                         "description": "Sale price; empty when the form does not know it yet."
+                    },
+                    "photo_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true,
+                        "readOnly": true,
+                        "description": "`/media/items/...`; null without a photo (ADR 0029 N1)."
                     }
                 },
                 "required": [
                     "id",
+                    "photo_url",
                     "product",
                     "quantity"
                 ]
@@ -6737,6 +6745,20 @@
                         "format": "decimal",
                         "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
                         "nullable": true
+                    },
+                    "photo": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ImageInRequest"
+                            }
+                        ],
+                        "nullable": true,
+                        "description": "ADR 0029 N1: the garment's photo, same checks as describe-image."
+                    },
+                    "photo_url": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "On a PATCH, the item's `photo_url` from the detail keeps that photo; `photo` wins when both come."
                     }
                 },
                 "required": [

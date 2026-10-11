@@ -4,10 +4,14 @@ One structured Claude call with the image, its own system prompt, no tools."""
 import asyncio
 import base64
 import binascii
+import io
 import logging
 import time
+import uuid
 
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 
 SYSTEM_PROMPT = (
     "Eres el jefe de producción de Corpotex. Describe la prenda de la foto para una orden de confección: "
@@ -42,6 +46,36 @@ def decode(media_type: str, data: str) -> tuple[bytes, str]:
     except (binascii.Error, ValueError):
         raise BadImage("La foto no llegó bien (base64 inválido).")
     return raw, normalized
+
+
+ITEM_PHOTOS = "items/"  # OrderItem.photo's upload_to
+
+
+def photo_file(photo: dict) -> ContentFile:
+    """N1 (ADR 0029): an order item's `{media_type, data}` as a file to store, after the same
+    checks as describe-image plus Pillow: what is saved has to open as an image."""
+    from PIL import Image
+
+    raw, media_type = decode(photo.get("media_type"), photo.get("data"))
+    try:
+        Image.open(io.BytesIO(raw)).verify()
+    except Exception:
+        raise BadImage("La foto no se pudo abrir como imagen.")
+    extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}[media_type]
+    return ContentFile(raw, name=f"{uuid.uuid4().hex}.{extension}")
+
+
+def kept_photo(photo_url: str) -> str:
+    """The storage name behind a `photo_url` the detail gave out, so a PATCH that re-sends the
+    items keeps their photos. Only item photos that exist."""
+    prefix = settings.MEDIA_URL + ITEM_PHOTOS
+    name = (photo_url or "").strip()
+    if not name.startswith(prefix) or ".." in name:
+        raise BadImage("La foto del ítem no es una de esta orden.")
+    name = name.removeprefix(settings.MEDIA_URL)
+    if not default_storage.exists(name):
+        raise BadImage("La foto del ítem ya no existe. Súbela de nuevo.")
+    return name
 
 
 def describe_model() -> str:
