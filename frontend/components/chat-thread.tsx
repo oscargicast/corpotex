@@ -3,6 +3,7 @@
 import { ImageIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { formatDayTime } from "@/lib/format";
+import { ZoomableImage } from "./zoomable-image";
 import type { ChatMessage } from "@/lib/types";
 
 const AUTHOR: Record<ChatMessage["author"], string> = {
@@ -52,7 +53,7 @@ export function ChatThread({
               {(message.media_kind === "image" || (message.media && !message.media_kind)) &&
                 (message.media ? (
                   // Photos come from /media/ (Django).
-                  <img src={message.media} alt="Foto del avance" className="mb-1 max-h-60 rounded-lg" loading="lazy" />
+                  <ZoomableImage src={message.media} alt="Foto enviada por el proveedor" className="mb-1 max-h-60 rounded-lg" />
                 ) : (
                   <p className="mb-1 flex items-center gap-1 text-xs text-muted">
                     <ImageIcon size={14} /> foto
