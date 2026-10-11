@@ -49,6 +49,15 @@ class MaterialRequirementSerializer(serializers.ModelSerializer):
         fields = ["id", "order_id", "order_code", "qty_needed", "qty_from_stock", "qty_to_order", "status", "status_display"]
 
 
+class MaterialDetailSchema(MaterialSerializer):
+    """Schema only: the view adds `requirements` to the list row."""
+
+    requirements = MaterialRequirementSerializer(many=True, read_only=True)
+
+    class Meta(MaterialSerializer.Meta):
+        fields = MaterialSerializer.Meta.fields + ["requirements"]
+
+
 class MaterialListView(APIView):
     """`GET /api/materials/`: every material ordered by kind and name; `?kind=`, `?q=` (sku or name). `committed` is the sum of
     `Requirement.qty_from_stock` of open orders; `available = stock - committed`."""
@@ -72,7 +81,7 @@ class MaterialDetailView(APIView):
 
     permission_classes = [IsManagerOrProduction]
 
-    @extend_schema(responses={200: MaterialSerializer})
+    @extend_schema(responses={200: MaterialDetailSchema})
     def get(self, request, pk: int):
         material = Material.objects.filter(pk=pk).first()
         if material is None:

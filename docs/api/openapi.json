@@ -8,7 +8,7 @@
     "paths": {
         "/api/alerts/": {
             "get": {
-                "operationId": "alerts_retrieve",
+                "operationId": "alerts_list",
                 "description": "Open alerts. `?mine=1` keeps only the ones that concern the caller's role, with the same\nrule the assistant uses to notify (ADR 0020). `?status=` filters; default `open`.",
                 "tags": [
                     "alerts"
@@ -26,8 +26,10 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Alert"
+                                    }
                                 }
                             }
                         },
@@ -65,8 +67,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/Alert"
                                 }
                             }
                         },
@@ -94,8 +95,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/AssistantMessages"
                                 }
                             }
                         },
@@ -169,8 +169,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/AssistantRead"
                                 }
                             }
                         },
@@ -198,8 +197,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/Detail"
                                 }
                             }
                         },
@@ -359,8 +357,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/ConversationMessages"
                                 }
                             }
                         },
@@ -419,8 +416,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/Decision"
                                 }
                             }
                         },
@@ -448,8 +444,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/ManagerPending"
                                 }
                             }
                         },
@@ -520,7 +515,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Material"
+                                    "$ref": "#/components/schemas/MaterialDetailSchema"
                                 }
                             }
                         },
@@ -549,8 +544,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/Badges"
                                 }
                             }
                         },
@@ -579,8 +573,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/Monitor"
                                 }
                             }
                         },
@@ -1088,8 +1081,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/OrderDetail"
                                 }
                             }
                         },
@@ -1099,8 +1091,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/OrderDetail"
                                 }
                             }
                         },
@@ -1179,8 +1170,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/OrderDetail"
                                 }
                             }
                         },
@@ -1309,8 +1299,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/Payment"
                                 }
                             }
                         },
@@ -1439,8 +1428,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/PurchaseOrderDetail"
                                 }
                             }
                         },
@@ -1499,8 +1487,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/PurchaseOrderDetail"
                                 }
                             }
                         },
@@ -1535,8 +1522,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/PublicReport"
                                 }
                             }
                         },
@@ -1589,8 +1575,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/PublicReportCreated"
                                 }
                             }
                         },
@@ -1619,8 +1604,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/RoutePair"
                                 }
                             }
                         },
@@ -1659,8 +1643,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/Route"
                                 }
                             }
                         },
@@ -1709,8 +1692,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/Route"
                                 }
                             }
                         },
@@ -2129,7 +2111,7 @@
         },
         "/api/simulator/contacts/": {
             "get": {
-                "operationId": "simulator_contacts_retrieve",
+                "operationId": "simulator_contacts_list",
                 "description": "Active numbers with their simulator and WhatsApp conversations, never the phone.",
                 "tags": [
                     "simulator"
@@ -2147,8 +2129,10 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SimulatorContact"
+                                    }
                                 }
                             }
                         },
@@ -2411,8 +2395,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/SupplierDetail"
                                 }
                             }
                         },
@@ -2509,8 +2492,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/SupplierDetail"
                                 }
                             }
                         },
@@ -2685,8 +2667,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/SupplierImportResult"
                                 }
                             }
                         },
@@ -2730,8 +2711,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {}
+                                    "$ref": "#/components/schemas/SelfRegistered"
                                 }
                             }
                         },
@@ -2751,6 +2731,106 @@
                 ],
                 "type": "string",
                 "description": "* `approve` - approve\n* `reject` - reject\n* `change_supplier` - change_supplier"
+            },
+            "Alert": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/AlertKindEnum"
+                    },
+                    "severity": {
+                        "$ref": "#/components/schemas/AlertSeverityEnum"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/AlertStatusEnum"
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "Template text without prices or phones.",
+                        "maxLength": 300
+                    },
+                    "detected_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Simulated time."
+                    },
+                    "order": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "purchase_order": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "severity_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    }
+                },
+                "required": [
+                    "detected_at",
+                    "id",
+                    "kind",
+                    "kind_display",
+                    "order",
+                    "purchase_order",
+                    "severity_display",
+                    "status_display",
+                    "text"
+                ]
+            },
+            "AlertKindEnum": {
+                "enum": [
+                    "stalled_purchase_order",
+                    "delay",
+                    "order_in_danger",
+                    "no_response",
+                    "payment_due",
+                    "instance_down",
+                    "no_channel",
+                    "turn_failed",
+                    "style_refresh_failed",
+                    "decision_pending",
+                    "claude_disconnected"
+                ],
+                "type": "string",
+                "description": "* `stalled_purchase_order` - Pedido estancado\n* `delay` - Retraso\n* `order_in_danger` - Orden en peligro\n* `no_response` - Sin respuesta\n* `payment_due` - Pago vencido\n* `instance_down` - WhatsApp desconectado\n* `no_channel` - Proveedor sin canal\n* `turn_failed` - Turno fallido\n* `style_refresh_failed` - Refresco de estilo fallido\n* `decision_pending` - Decisión pendiente\n* `claude_disconnected` - Claude desconectado"
+            },
+            "AlertSeverityEnum": {
+                "enum": [
+                    "info",
+                    "warning",
+                    "critical"
+                ],
+                "type": "string",
+                "description": "* `info` - Info\n* `warning` - Advertencia\n* `critical` - Crítica"
+            },
+            "AlertStatusEnum": {
+                "enum": [
+                    "open",
+                    "acknowledged",
+                    "resolved"
+                ],
+                "type": "string",
+                "description": "* `open` - Abierta\n* `acknowledged` - Reconocida\n* `resolved` - Resuelta"
             },
             "AllowedNumber": {
                 "type": "object",
@@ -2837,10 +2917,121 @@
                     "text"
                 ]
             },
+            "AssistantMessages": {
+                "type": "object",
+                "properties": {
+                    "conversation_id": {
+                        "type": "integer"
+                    },
+                    "typing": {
+                        "type": "boolean"
+                    },
+                    "messages": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AssistantMessage"
+                        }
+                    }
+                },
+                "required": [
+                    "conversation_id",
+                    "messages",
+                    "typing"
+                ]
+            },
+            "AssistantRead": {
+                "type": "object",
+                "properties": {
+                    "marked": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "marked"
+                ]
+            },
+            "Badges": {
+                "type": "object",
+                "properties": {
+                    "assistant_unread": {
+                        "type": "integer"
+                    },
+                    "latest_unread": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/BadgesLatestUnread"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "claude_ok": {
+                        "type": "boolean"
+                    },
+                    "pending_decisions": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "orders_in_danger": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "claude_expired": {
+                        "type": "boolean",
+                        "nullable": true
+                    },
+                    "claude_last_error": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "claude_refresh_expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "assistant_unread",
+                    "claude_expired",
+                    "claude_last_error",
+                    "claude_ok",
+                    "claude_refresh_expires_at",
+                    "latest_unread",
+                    "orders_in_danger",
+                    "pending_decisions"
+                ]
+            },
+            "BadgesLatestUnread": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "preview": {
+                        "type": "string"
+                    },
+                    "alert_kind": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "alert_kind",
+                    "id",
+                    "preview"
+                ]
+            },
             "BlankEnum": {
                 "enum": [
                     ""
                 ]
+            },
+            "ChannelEnum": {
+                "enum": [
+                    "whatsapp",
+                    "simulator"
+                ],
+                "type": "string",
+                "description": "* `whatsapp` - whatsapp\n* `simulator` - simulator"
             },
             "ClaudeApiKeyRequest": {
                 "type": "object",
@@ -2984,6 +3175,24 @@
                     "paused"
                 ]
             },
+            "ConversationMessages": {
+                "type": "object",
+                "properties": {
+                    "typing": {
+                        "type": "boolean"
+                    },
+                    "messages": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Message"
+                        }
+                    }
+                },
+                "required": [
+                    "messages",
+                    "typing"
+                ]
+            },
             "CurrencyEnum": {
                 "enum": [
                     "PEN",
@@ -2991,6 +3200,76 @@
                 ],
                 "type": "string",
                 "description": "* `PEN` - PEN\n* `USD` - USD"
+            },
+            "Decision": {
+                "type": "object",
+                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/DecisionKindEnum"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/DecisionStatusEnum"
+                    },
+                    "summary": {
+                        "type": "string",
+                        "description": "What the manager reads.",
+                        "maxLength": 300
+                    },
+                    "detail": {
+                        "description": "before, after and proposal."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "resolved_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "purchase_orders": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "orders": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "id",
+                    "kind",
+                    "kind_display",
+                    "orders",
+                    "purchase_orders",
+                    "status_display",
+                    "summary"
+                ]
             },
             "DecisionActionRequest": {
                 "type": "object",
@@ -3014,6 +3293,27 @@
                 "required": [
                     "action"
                 ]
+            },
+            "DecisionKindEnum": {
+                "enum": [
+                    "approve_assignment",
+                    "price",
+                    "terms",
+                    "other"
+                ],
+                "type": "string",
+                "description": "* `approve_assignment` - Aprobar asignación\n* `price` - Precio\n* `terms` - Términos\n* `other` - Otro"
+            },
+            "DecisionStatusEnum": {
+                "enum": [
+                    "pending",
+                    "approved",
+                    "rejected",
+                    "supplier_changed",
+                    "cancelled"
+                ],
+                "type": "string",
+                "description": "* `pending` - Pendiente\n* `approved` - Aprobada\n* `rejected` - Rechazada\n* `supplier_changed` - Proveedor cambiado\n* `cancelled` - Cancelada"
             },
             "DeliveryInRequest": {
                 "type": "object",
@@ -3042,6 +3342,17 @@
                 },
                 "required": [
                     "qty_received"
+                ]
+            },
+            "Detail": {
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "detail"
                 ]
             },
             "ImportInRequest": {
@@ -3086,6 +3397,34 @@
                 "required": [
                     "token",
                     "user"
+                ]
+            },
+            "ManagerPending": {
+                "type": "object",
+                "properties": {
+                    "decisions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Decision"
+                        }
+                    },
+                    "orders_in_danger": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderList"
+                        }
+                    },
+                    "alerts": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Alert"
+                        }
+                    }
+                },
+                "required": [
+                    "alerts",
+                    "decisions",
+                    "orders_in_danger"
                 ]
             },
             "Material": {
@@ -3151,6 +3490,78 @@
                     "unit_display"
                 ]
             },
+            "MaterialDetailSchema": {
+                "type": "object",
+                "description": "Schema only: the view adds `requirements` to the list row.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "sku": {
+                        "type": "string",
+                        "description": "Corpotex's internal code.",
+                        "maxLength": 40
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/MaterialKindEnum"
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "unit": {
+                        "$ref": "#/components/schemas/MaterialUnitEnum"
+                    },
+                    "unit_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "stock": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "committed": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "available": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "image": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "requirements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MaterialRequirement"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "available",
+                    "committed",
+                    "id",
+                    "image",
+                    "kind",
+                    "kind_display",
+                    "name",
+                    "requirements",
+                    "sku",
+                    "unit",
+                    "unit_display"
+                ]
+            },
             "MaterialKindEnum": {
                 "enum": [
                     "fabric",
@@ -3192,6 +3603,56 @@
                     "name",
                     "sku",
                     "unit"
+                ]
+            },
+            "MaterialRequirement": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "order_id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "order_code": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "qty_needed": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "qty_from_stock": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "qty_to_order": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "order_code",
+                    "order_id",
+                    "qty_needed",
+                    "qty_to_order",
+                    "status",
+                    "status_display"
                 ]
             },
             "MaterialUnitEnum": {
@@ -3269,6 +3730,108 @@
                 ],
                 "type": "string",
                 "description": "* `received` - Recibido\n* `processed` - Procesado\n* `error` - Error\n* `sent` - Enviado\n* `failed` - Fallido"
+            },
+            "Monitor": {
+                "type": "object",
+                "properties": {
+                    "clock": {
+                        "$ref": "#/components/schemas/MonitorClock"
+                    },
+                    "kpis": {
+                        "$ref": "#/components/schemas/MonitorKpis"
+                    },
+                    "alerts": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Alert"
+                        }
+                    },
+                    "decisions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Decision"
+                        }
+                    },
+                    "redistributions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Decision"
+                        }
+                    },
+                    "orders_in_danger": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderList"
+                        }
+                    },
+                    "payments_by_supplier": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "alerts",
+                    "clock",
+                    "decisions",
+                    "kpis",
+                    "orders_in_danger",
+                    "payments_by_supplier",
+                    "redistributions"
+                ]
+            },
+            "MonitorClock": {
+                "type": "object",
+                "properties": {
+                    "now": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "factor": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$"
+                    },
+                    "paused": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "factor",
+                    "now",
+                    "paused"
+                ]
+            },
+            "MonitorKpis": {
+                "type": "object",
+                "properties": {
+                    "orders_in_danger": {
+                        "type": "integer"
+                    },
+                    "orders_at_risk": {
+                        "type": "integer"
+                    },
+                    "stalled_purchase_orders": {
+                        "type": "integer"
+                    },
+                    "pending_decisions": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "open_alerts": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "open_alerts",
+                    "orders_at_risk",
+                    "orders_in_danger",
+                    "pending_decisions",
+                    "stalled_purchase_orders"
+                ]
             },
             "NullEnum": {
                 "enum": [
@@ -4106,6 +4669,60 @@
                     "units_done"
                 ]
             },
+            "PublicReport": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "product": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PublicReportProduct"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "quantity": {
+                        "type": "string"
+                    },
+                    "committed_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "units_done": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "code",
+                    "committed_on",
+                    "product",
+                    "quantity",
+                    "units_done"
+                ]
+            },
+            "PublicReportCreated": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "units_done": {
+                        "type": "integer"
+                    },
+                    "reported_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "reported_at",
+                    "units_done"
+                ]
+            },
             "PublicReportInRequest": {
                 "type": "object",
                 "properties": {
@@ -4124,6 +4741,22 @@
                 },
                 "required": [
                     "units_done"
+                ]
+            },
+            "PublicReportProduct": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "image",
+                    "name"
                 ]
             },
             "PurchaseOrderDetail": {
@@ -4659,6 +5292,93 @@
                     "status_display"
                 ]
             },
+            "Route": {
+                "type": "object",
+                "description": "Routes carry no prices: every role reads them.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/RouteStatusEnum"
+                    },
+                    "status_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "distance_km": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$"
+                    },
+                    "duration_min": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": 0
+                    },
+                    "path": {
+                        "description": "GeoJSON LineString (straight lines)."
+                    },
+                    "recalculated_from": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "stops_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "stops": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteStop"
+                        },
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "date",
+                    "id",
+                    "status_display",
+                    "stops",
+                    "stops_count"
+                ]
+            },
+            "RoutePair": {
+                "type": "object",
+                "properties": {
+                    "current": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Route"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "replaced": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Route"
+                            }
+                        ],
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "current",
+                    "replaced"
+                ]
+            },
             "RoutePlanInRequest": {
                 "type": "object",
                 "properties": {
@@ -4669,6 +5389,205 @@
                 },
                 "required": [
                     "date"
+                ]
+            },
+            "RouteStatusEnum": {
+                "enum": [
+                    "proposed",
+                    "planned",
+                    "in_progress",
+                    "completed",
+                    "replaced",
+                    "discarded"
+                ],
+                "type": "string",
+                "description": "* `proposed` - Propuesta\n* `planned` - Planificada\n* `in_progress` - En curso\n* `completed` - Completada\n* `replaced` - Reemplazada\n* `discarded` - Descartada"
+            },
+            "RouteStop": {
+                "type": "object",
+                "properties": {
+                    "position": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0,
+                        "description": "0 and the last one are the plant."
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/RouteStopKindEnum"
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "address": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "lat": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "eta": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "supplier": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "customer": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "purchase_order": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "order": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "customer",
+                    "kind",
+                    "kind_display",
+                    "lat",
+                    "lng",
+                    "name",
+                    "order",
+                    "position",
+                    "purchase_order",
+                    "supplier"
+                ]
+            },
+            "RouteStopKindEnum": {
+                "enum": [
+                    "pickup",
+                    "delivery"
+                ],
+                "type": "string",
+                "description": "* `pickup` - Recojo\n* `delivery` - Entrega"
+            },
+            "SelfRegistered": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "source",
+                    "status"
+                ]
+            },
+            "SimulatorContact": {
+                "type": "object",
+                "properties": {
+                    "allowed_number_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "supplier": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SimulatorContactSupplier"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "channel": {
+                        "$ref": "#/components/schemas/ChannelEnum"
+                    },
+                    "conversation_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "simulated": {
+                        "type": "boolean"
+                    },
+                    "last_message": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SimulatorLastMessage"
+                            }
+                        ],
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "allowed_number_id",
+                    "channel",
+                    "conversation_id",
+                    "last_message",
+                    "name",
+                    "simulated",
+                    "supplier"
+                ]
+            },
+            "SimulatorContactSupplier": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ]
+            },
+            "SimulatorLastMessage": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "direction": {
+                        "type": "string"
+                    },
+                    "sent_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "direction",
+                    "id",
+                    "sent_at",
+                    "text"
                 ]
             },
             "SimulatorMessageInRequest": {
@@ -5104,6 +6023,37 @@
                     "ratings",
                     "source_display",
                     "status_display"
+                ]
+            },
+            "SupplierImportResult": {
+                "type": "object",
+                "properties": {
+                    "created": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        }
+                    },
+                    "updated": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        }
+                    },
+                    "errors": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        }
+                    }
+                },
+                "required": [
+                    "created",
+                    "errors",
+                    "updated"
                 ]
             },
             "SupplierInRequest": {

@@ -1,5 +1,5 @@
 from django.core.exceptions import PermissionDenied
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied as DRFPermissionDenied
@@ -12,6 +12,22 @@ from core.serializers import serializer_for
 
 from . import services
 from .models import Order, Payment, PurchaseOrder
+from .serializers import OrderDetailSerializer, PaymentSerializer, PurchaseOrderDetailSerializer, RouteSerializer
+
+PublicReportSchema = inline_serializer(
+    "PublicReport",
+    fields={
+        "code": serializers.CharField(),
+        "product": inline_serializer("PublicReportProduct", fields={"name": serializers.CharField(), "image": serializers.CharField(allow_null=True)}, allow_null=True),
+        "quantity": serializers.CharField(),
+        "committed_on": serializers.DateField(allow_null=True),
+        "units_done": serializers.IntegerField(),
+    },
+)
+PublicReportCreatedSchema = inline_serializer(
+    "PublicReportCreated", fields={"id": serializers.IntegerField(), "units_done": serializers.IntegerField(), "reported_at": serializers.DateTimeField()}
+)
+RoutePairSchema = inline_serializer("RoutePair", fields={"current": RouteSerializer(allow_null=True), "replaced": RouteSerializer(allow_null=True)})
 
 
 class RoleSerializerMixin:
@@ -77,7 +93,7 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(brand__name=self.request.query_params["brand"])
         return qs
 
-    @extend_schema(request=OrderInSerializer, responses={201: dict, 200: dict})
+    @extend_schema(request=OrderInSerializer, responses={201: OrderDetailSerializer, 200: OrderDetailSerializer})
     def create(self, request):
         """Register an order (sales or manager). Idempotent by `code`: 201 when new, 200 when it existed."""
         data = OrderInSerializer(data=request.data)
@@ -88,7 +104,7 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             _forbidden(exc)
         return self.detail_response(order, status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
-    @extend_schema(request=None, responses={200: dict})
+    @extend_schema(request=None, responses={200: OrderDetailSerializer})
     @action(detail=True, methods=["post"])
     def confirm(self, request, pk=None):
         """Production confirms the breakdown; the matching proposes suppliers."""
@@ -132,7 +148,7 @@ class PurchaseOrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(decisions__status="pending").distinct()
         return qs
 
-    @extend_schema(request=ProgressInSerializer, responses={201: dict})
+    @extend_schema(request=ProgressInSerializer, responses={201: PurchaseOrderDetailSerializer})
     @action(detail=True, methods=["post"])
     def progress(self, request, pk=None):
         po = self.get_object()
@@ -145,7 +161,7 @@ class PurchaseOrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
         po.refresh_from_db()
         return self.detail_response(po, status.HTTP_201_CREATED)
 
-    @extend_schema(request=DeliveryInSerializer, responses={201: dict})
+    @extend_schema(request=DeliveryInSerializer, responses={201: PurchaseOrderDetailSerializer})
     @action(detail=True, methods=["post"])
     def deliveries(self, request, pk=None):
         po = self.get_object()
@@ -184,7 +200,7 @@ class PaymentViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(paid_at__isnull=False)
         return qs
 
-    @extend_schema(request=PayInSerializer, responses={200: dict})
+    @extend_schema(request=PayInSerializer, responses={200: PaymentSerializer})
     @action(detail=True, methods=["post"])
     def pay(self, request, pk=None):
         payment = self.get_object()
@@ -215,7 +231,7 @@ class PublicReportView(APIView):
             .first()
         )
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: PublicReportSchema})
     def get(self, request, token):
         po = self._po(token)
         if po is None:
@@ -233,7 +249,7 @@ class PublicReportView(APIView):
             }
         )
 
-    @extend_schema(request=PublicReportInSerializer, responses={201: dict})
+    @extend_schema(request=PublicReportInSerializer, responses={201: PublicReportCreatedSchema})
     def post(self, request, token):
         if self._po(token) is None:
             return Response(status=404)
@@ -251,7 +267,7 @@ class RouteListView(APIView):
     """`GET /api/routes/`: all routes (`?date=`, `?status=`), or with `?current=1` the pair
     `{current, replaced}` the map shows (ADR 0024)."""
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: RoutePairSchema})
     def get(self, request):
         from . import routes
         from .models import Route
@@ -277,7 +293,7 @@ class RouteListView(APIView):
 class RouteDetailView(APIView):
     """Any route in any status: the scene opens `before` and `after` side by side."""
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: RouteSerializer})
     def get(self, request, pk: int):
         from .models import Route
         from .serializers import RouteSerializer
@@ -293,7 +309,7 @@ class RoutePlanView(APIView):
 
     permission_classes = [IsManagerOrProduction]
 
-    @extend_schema(request=RoutePlanInSerializer, responses={201: dict})
+    @extend_schema(request=RoutePlanInSerializer, responses={201: RouteSerializer})
     def post(self, request):
         from . import routes
         from .serializers import RouteSerializer

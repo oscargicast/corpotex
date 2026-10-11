@@ -1,3 +1,5 @@
+import pytest
+
 from agent.persona.style import load_template
 from core.models import StyleVersion
 from suppliers.models import Supplier
@@ -41,3 +43,15 @@ def test_version_detail_has_the_style(manager_client, manager):
 
 def test_sales_cannot_see_versions(sales_client):
     assert sales_client.get("/api/style/versions/").status_code == 403
+
+
+@pytest.mark.django_db
+def test_refresh_style_is_a_no_op_when_disabled(settings, manager):
+    from unittest import mock
+
+    from core.tasks_style import refresh_style
+
+    settings.STYLE_REFRESH_ENABLED = False
+    with mock.patch("core.style.refresh_style") as refresh:
+        refresh_style.apply(args=[manager.id]).get()
+    refresh.assert_not_called()

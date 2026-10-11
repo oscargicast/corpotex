@@ -1,5 +1,5 @@
 from django.db.models import F
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,17 +9,70 @@ from core.models import Config
 from core.permissions import IsManager
 from core.serializers import serializer_for
 from operations.models import Order, PurchaseOrder
+from operations.serializers import OrderListSerializer
 from suppliers.services import payments_by_supplier
 
 from . import services
 from .models import Alert, Decision
+from .serializers import AlertSerializer, DecisionSerializer
+
+# Response shapes for the schema (the views build these dicts by hand).
+MonitorSchema = inline_serializer(
+    "Monitor",
+    fields={
+        "clock": inline_serializer(
+            "MonitorClock",
+            fields={
+                "now": serializers.DateTimeField(),
+                "factor": serializers.DecimalField(max_digits=8, decimal_places=2),
+                "paused": serializers.BooleanField(),
+            },
+        ),
+        "kpis": inline_serializer(
+            "MonitorKpis",
+            fields={
+                "orders_in_danger": serializers.IntegerField(),
+                "orders_at_risk": serializers.IntegerField(),
+                "stalled_purchase_orders": serializers.IntegerField(),
+                "pending_decisions": serializers.IntegerField(allow_null=True),
+                "open_alerts": serializers.IntegerField(),
+            },
+        ),
+        "alerts": AlertSerializer(many=True),
+        "decisions": DecisionSerializer(many=True),
+        "redistributions": DecisionSerializer(many=True),
+        "orders_in_danger": OrderListSerializer(many=True),
+        "payments_by_supplier": serializers.ListField(child=serializers.DictField(), allow_null=True),
+    },
+)
+BadgesSchema = inline_serializer(
+    "Badges",
+    fields={
+        "assistant_unread": serializers.IntegerField(),
+        "latest_unread": inline_serializer(
+            "BadgesLatestUnread",
+            fields={"id": serializers.IntegerField(), "preview": serializers.CharField(), "alert_kind": serializers.CharField(allow_null=True)},
+            allow_null=True,
+        ),
+        "claude_ok": serializers.BooleanField(),
+        "pending_decisions": serializers.IntegerField(allow_null=True),
+        "orders_in_danger": serializers.IntegerField(allow_null=True),
+        "claude_expired": serializers.BooleanField(allow_null=True),
+        "claude_last_error": serializers.CharField(allow_null=True),
+        "claude_refresh_expires_at": serializers.DateTimeField(allow_null=True),
+    },
+)
+ManagerPendingSchema = inline_serializer(
+    "ManagerPending",
+    fields={"decisions": DecisionSerializer(many=True), "orders_in_danger": OrderListSerializer(many=True), "alerts": AlertSerializer(many=True)},
+)
 
 
 class MonitorView(APIView):
     """Everything the Monitor page shows, in one call. Shape agreed with `disenador`
     (frontend/mocks/monitor.json); manager-only parts are `null` for the other roles."""
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: MonitorSchema})
     def get(self, request):
         role = request.user.role
         is_manager = role == "manager"
@@ -67,7 +120,7 @@ class AlertListView(APIView):
     """Open alerts. `?mine=1` keeps only the ones that concern the caller's role, with the same
     rule the assistant uses to notify (ADR 0020). `?status=` filters; default `open`."""
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: AlertSerializer(many=True)})
     def get(self, request):
         role = request.user.role
         status_param = request.query_params.get("status", "open")
@@ -80,7 +133,7 @@ class AlertListView(APIView):
 class BadgesView(APIView):
     """Counters for the menu and the assistant button, polled every 5 s (ADR 0020, 0022)."""
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: BadgesSchema})
     def get(self, request):
         from messaging.services import unread_assistant_count
         from messaging.models import Message
@@ -132,7 +185,7 @@ def _claude_status() -> dict:
 class ManagerPendingView(APIView):
     permission_classes = [IsManager]
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: ManagerPendingSchema})
     def get(self, request):
         context = {"request": request, "role": "manager"}
         return Response(
@@ -156,7 +209,7 @@ class DecisionResolveView(APIView):
 
     permission_classes = [IsManager]
 
-    @extend_schema(request=DecisionActionSerializer, responses={200: dict})
+    @extend_schema(request=DecisionActionSerializer, responses={200: DecisionSerializer})
     def post(self, request, pk: int):
         decision = Decision.objects.filter(pk=pk).first()
         if decision is None:
@@ -175,7 +228,7 @@ class DecisionResolveView(APIView):
 class AlertAcknowledgeView(APIView):
     permission_classes = [IsManager]
 
-    @extend_schema(request=None, responses={200: dict})
+    @extend_schema(request=None, responses={200: AlertSerializer})
     def post(self, request, pk: int):
         alert = Alert.objects.filter(pk=pk).first()
         if alert is None:
