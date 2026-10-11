@@ -422,7 +422,7 @@ scenarios:
           suggested_supplier: {id: 6, name: Avíos Gamarra}
           reference_price: "0.18"
           currency: PEN
-    must: ['900', 'CP-2026-0142', 'CP-2026-0155', 'Avíos Gamarra', '0[.,]18', '¿Genero el pedido\\?']
+    must: ['900', 'CP-2026-0142', 'CP-2026-0155', 'Avíos Gamarra', '0[.,]18', '¿Genero el pedido[^\\n]*Avíos Gamarra\\?\\s*$']
     must_not: ['\\(s[ií]/no\\)', 'https?://']
     forbid_tools: [generate_purchase_orders]
 
@@ -446,7 +446,7 @@ scenarios:
           suggested_supplier: {id: 6, name: Avíos Gamarra}
           reference_price: null
           currency: null
-    must: ['900', 'Avíos Gamarra', '¿Genero el pedido\\?']
+    must: ['900', 'Avíos Gamarra', '¿Genero el pedido[^\\n]*Avíos Gamarra\\?\\s*$']
     must_not: ['S/', 'USD', '0[.,]18', '\\(s[ií]/no\\)']
     forbid_tools: [generate_purchase_orders]
 
@@ -469,4 +469,36 @@ scenarios:
       new_messages:
         - {id: 110, text: "genera el pedido de los botones NX a Avíos Gamarra", sent_at: "2026-10-14T08:05:00-05:00"}
     must: ['gerente|producci[oó]n']
+    forbid_tools: [generate_purchase_orders]
+
+  - name: avisos_mixtos_con_compra
+    agent: assistant
+    description: "Lote mixto, como el seed: la orden en peligro va antes como contexto y el mensaje cierra con la única pregunta, sobre la compra."
+    state:
+      user: {first_name: Carlos, role: production}
+      alerts:
+        - id: 118
+          kind: order_in_danger
+          severity: critical
+          detected_at: "2026-10-14T08:00:00-05:00"
+          repeat: true
+          order: {code: CP-2026-0151, customer: AIDER, promised_on: "2026-10-22", estimated_on: "2026-10-24", risk: in_danger}
+          purchase_order: null
+          decision: null
+        - id: 120
+          kind: purchase_suggested
+          severity: warning
+          detected_at: "2026-10-14T08:00:00-05:00"
+          repeat: false
+          order: null
+          purchase_order: null
+          decision: null
+          material: {id: 176, sku: RIB-CUE-01, name: cuello rib tejido, unit: unidad}
+          total_to_order: "1000.00"
+          orders: [{code: CP-2026-0142, qty: "1000.00", due_on: "2026-10-15"}]
+          suggested_supplier: {id: 9, name: Tejidos Rib Lima}
+          reference_price: null
+          currency: null
+    must: ['CP-2026-0151', '1000', 'Tejidos Rib Lima', '¿Genero el pedido[^\\n]*Tejidos Rib Lima\\?\\s*$']
+    must_not: ['¿Quieres que', '\\(s[ií]/no\\)', 'S/', '1000\\.00']
     forbid_tools: [generate_purchase_orders]

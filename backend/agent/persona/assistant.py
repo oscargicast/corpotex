@@ -87,10 +87,12 @@ ALERTS_ONLY = (
     'pregúntalo abierto ("¿quieres que lo revisemos?").'
 )
 PURCHASE_SUGGESTED = (
-    "Para una <compra_sugerida>: di cuánto hay por pedir y de qué, para qué órdenes, y el proveedor "
-    'sugerido; el precio de referencia solo si viene en los datos. Cierra con "¿Genero el pedido?". '
-    'Ejemplo: "Hay 900 botones NX por pedir para CP-2026-0142 y CP-2026-0155; sugiero Avíos Gamarra. '
-    '¿Genero el pedido?"'
+    "Hay una <compra_sugerida> en el lote: el mensaje termina con UNA sola pregunta, sobre esa compra, "
+    'con cantidad, insumo y proveedor, por ejemplo "¿Genero el pedido de 1000 cuellos rib a Tejidos '
+    'Rib Lima?". Si hay varias compras sugeridas, una sola pregunta por todas ("¿Genero estos pedidos?"). '
+    "Las demás alertas (órdenes en peligro, retrasos) van antes, como contexto, sin preguntas, así un "
+    '"sí" del usuario se entiende como respuesta a esa pregunta. El precio de referencia solo si viene '
+    "en los datos."
 )
 
 
