@@ -38,7 +38,7 @@ Flujo:
 
 Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden por ruta crítica, permisos por rol (el equipo ve el nombre del proveedor, no su número; las conversaciones con proveedores y el simulador solo los ve el Gerente: Comercial y Producción ven avances, fotos, estado y fechas, nunca el texto de WhatsApp. Pedido de Oscar, 10/10 20:50).
 
-### Dashboard (5 vistas)
+### Dashboard (5 vistas más Configuración del Gerente)
 
 1. Órdenes de clientes.
 2. Pedidos a proveedores y talleres.
@@ -48,7 +48,7 @@ Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden 
 
 ### Onboarding (ADR 0011)
 
-Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), conectar WhatsApp (QR y webhook de la instancia `corpotex`), cargar proveedores (celular opcional) y extraer el estilo del Gerente de sus chats con proveedores (el "BOSS.md": un texto que se guarda en `User.style_md`, con historial en `StyleVersion`, ADR 0019). Solo se leen los chats de celulares de proveedores registrados.
+Vive en la pestaña "Configuración" del Gerente (`/settings`; desde el 10/10 23:45 no hay pestañas aparte de Onboarding ni de Estilo, pedido de Oscar). Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), conectar WhatsApp (QR y webhook de la instancia `corpotex`), cargar proveedores (celular opcional) y extraer el estilo del Gerente de sus chats con proveedores (el "BOSS.md": un texto que se guarda en `User.style_md`, con historial en `StyleVersion`, ADR 0019). Solo se leen los chats de celulares de proveedores registrados.
 
 ## Demo
 
