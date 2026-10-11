@@ -1179,6 +1179,55 @@
                 }
             }
         },
+        "/api/orders/break-down/": {
+            "post": {
+                "operationId": "orders_break_down_create",
+                "description": "Breaks down every `registered` order (or `order_ids`) against the inventory.",
+                "tags": [
+                    "orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BreakDownInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BreakDownInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BreakDownInRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/payments/": {
             "get": {
                 "operationId": "payments_list",
@@ -3109,6 +3158,17 @@
                 "enum": [
                     ""
                 ]
+            },
+            "BreakDownInRequest": {
+                "type": "object",
+                "properties": {
+                    "order_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                }
             },
             "ChannelEnum": {
                 "enum": [

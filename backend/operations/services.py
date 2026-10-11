@@ -171,6 +171,27 @@ def confirm_order(order: Order, *, actor) -> Order:
     return order
 
 
+def break_down_orders(order_ids=None, *, actor) -> dict:
+    """`POST /api/orders/break-down/`: every `registered` order (or the ids given) goes through
+    `break_down_order`. Returns {broken_down: [codes], skipped: [{code, reason}]}."""
+    require_role(actor, "manager", "production")
+    qs = Order.objects.order_by("id")
+    if order_ids:
+        qs = qs.filter(id__in=order_ids)
+    else:
+        qs = qs.filter(status=Order.Status.REGISTERED)
+    done, skipped = [], []
+    for order in qs:
+        if order.status != Order.Status.REGISTERED:
+            skipped.append({"code": order.code, "reason": f"ya está en {order.get_status_display().lower()}"})
+            continue
+        break_down_order(order)
+        done.append(order.code)
+    for missing in sorted(set(order_ids or []) - set(qs.values_list("id", flat=True))):
+        skipped.append({"code": str(missing), "reason": "no existe"})
+    return {"broken_down": done, "skipped": skipped}
+
+
 # --- consolidated material purchase orders (ADR 0025 A) ---------------------------------------
 
 PURCHASING_ORDER_STATUSES = (Order.Status.CONFIRMED, Order.Status.SOURCING, Order.Status.IN_PRODUCTION)
@@ -486,28 +507,43 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
                         raise UnknownReference(f"El proveedor {forced} no tiene tarifa vigente para {material.name if material else 'el insumo'}")
                 supplier = Supplier.objects.get(pk=candidate["supplier_id"])
                 due = min(r.order.promised_on for r, _ in pending) - timedelta(days=config.buffer_days)
-                po = PurchaseOrder.objects.create(
-                    code=_next_code(pending[0][0].kind), supplier=supplier, suggested_supplier=supplier,
-                    rationale=candidate["rationale"], scores=candidate["scores"], internal_due_on=due,
+                # A suggested (not yet approved) purchase order of the same material and supplier
+                # absorbs the new requirements instead of a second one (ADR 0025 A.7).
+                po = (
+                    PurchaseOrder.objects.filter(status=PurchaseOrder.Status.SUGGESTED, supplier=supplier, items__requirement__material_id=pending[0][0].material_id)
+                    .order_by("id")
+                    .first()
+                    if pending[0][0].material_id
+                    else None
                 )
-                total = Decimal("0")
+                merged = po is not None
+                if merged:
+                    po.internal_due_on = min(po.internal_due_on, due) if po.internal_due_on else due
+                    po.save(update_fields=["internal_due_on", "updated_at"])
+                else:
+                    po = PurchaseOrder.objects.create(
+                        code=_next_code(pending[0][0].kind), supplier=supplier, suggested_supplier=supplier,
+                        rationale=candidate["rationale"], scores=candidate["scores"], internal_due_on=due,
+                    )
                 for requirement, remaining in pending:
                     PurchaseOrderItem.objects.create(purchase_order=po, requirement=requirement, quantity=remaining, unit_price=Decimal(candidate["unit_price"]))
-                    total += remaining
                     sync_requirement_status(requirement)
-                StatusChange.objects.create(purchase_order=po, status=po.status, at=clock.now(), actor="system", note=candidate["rationale"][:300])
+                if not merged:
+                    StatusChange.objects.create(purchase_order=po, status=po.status, at=clock.now(), actor="system", note=candidate["rationale"][:300])
                 created.append(po)
+                items = list(po.items.select_related("requirement__order"))
                 proposal.append(
                     {
                         "purchase_order": {"id": po.id, "code": po.code},
                         "purchase_order_code": po.code,
                         "supplier": {"id": supplier.id, "name": supplier.name},
-                        "quantity": str(total),
+                        "quantity": str(sum((i.quantity for i in items), Decimal("0"))),
                         "unit_price": candidate["unit_price"],
                         "currency": supplier.currency,
                         "committed_on": None,
                         "rationale": candidate["rationale"],
-                        "orders": [{"id": r.order_id, "code": r.order.code, "qty": str(remaining)} for r, remaining in pending],
+                        "merged": merged,
+                        "orders": [{"id": i.requirement.order_id, "code": i.requirement.order.code, "qty": str(i.quantity)} for i in items],
                         "candidates": [
                             {**{k: v for k, v in c.items() if k != "free_capacity"}, "supplier": {"id": c["supplier_id"], "name": c["supplier_name"]}}
                             for c in candidates
@@ -587,7 +623,24 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
             summary=f"Asignar {len(created)} pedido(s) a {names}",
             detail=detail,
         )
+        if decision.purchase_orders.count() != len(created) or any(entry.get("merged") for entry in proposal):
+            _refresh_decision(decision, created, proposal, detail)
     return created, decision
+
+
+def _refresh_decision(decision, created, proposal, detail) -> None:
+    """A batch that joined an existing pending decision (merged purchase orders): the decision
+    covers every purchase order of the batch and its proposal entries are replaced by code."""
+    from manager.models import Decision
+
+    decision.purchase_orders.add(*created)
+    by_code = {entry.get("purchase_order_code"): entry for entry in decision.detail.get("proposal", [])}
+    for entry in proposal:
+        by_code[entry["purchase_order_code"]] = entry
+    pos = list(decision.purchase_orders.select_related("supplier"))
+    decision.detail = {**decision.detail, "after": detail.get("after"), "proposal": list(by_code.values())}
+    decision.summary = f"Asignar {len(pos)} pedido(s) a {', '.join(sorted({po.supplier.name for po in pos}))}"[:300]
+    decision.save(update_fields=["detail", "summary", "updated_at"])
 
 
 def _snapshot(orders) -> dict:
