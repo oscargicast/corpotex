@@ -1,0 +1,13 @@
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path("dispatches/", views.DispatchListView.as_view(), name="dispatches"),
+    path("dispatches/<int:order_id>/", views.DispatchDetailView.as_view(), name="dispatch-detail"),
+    path("vehicles/", views.VehicleListView.as_view(), name="vehicles"),
+    path("routes/plan-day/", views.PlanDayView.as_view(), name="route-plan-day"),
+    path("routes/<int:pk>/start/", views.RouteStartView.as_view(), name="route-start"),
+    path("routes/<int:pk>/complete/", views.RouteCompleteView.as_view(), name="route-complete"),
+    path("routes/<int:pk>/stops/<int:stop_id>/deliver/", views.StopDeliverView.as_view(), name="route-stop-deliver"),
+]

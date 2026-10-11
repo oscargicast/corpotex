@@ -49,8 +49,11 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `ProgressReport` | `pedido` → `purchase_order`, `unidades_completadas` → `units_done`, `nota` → `note`, `foto` → `photo`, `mensaje` → `message`, `reportado_en` → `reported_at`, `acusado_en` → `acknowledged_at` (nuevo, ADR 0024: el agente ya acusó recibo del reporte web) |
 | `Delivery` | `pedido` → `purchase_order`, `cantidad_recibida` → `qty_received`, `cantidad_defectuosa` → `qty_defective`, `calidad` → `quality`, `recibido_por` → `received_by`, `recibido_en` → `received_at`, `nota` → `note` |
 | `Payment` | `pedido` → `purchase_order`, `tipo` → `kind`, `monto` → `amount`, `metodo` → `method`, `pagado_en` → `paid_at`, `comprobante` → `receipt` |
-| `Route` (vuelve) | `fecha` → `date`, `estado` → `status`, `distancia_km` → `distance_km`, `duracion_min` → `duration_min`, `trazado` → `path`, `recalculada_de` → `recalculated_from` |
-| `RouteStop` (vuelve) | `ruta` → `route`, `posicion` → `position`, `tipo` → `kind`, `proveedor` → `supplier`, `cliente` → `customer`, `pedido` → `purchase_order`, `orden` → `order`, `nombre` → `name`, `direccion` → `address`, `lat`, `lng`, `hora_estimada` → `eta` |
+| `Route` (vuelve) | `fecha` → `date`, `estado` → `status`, `distancia_km` → `distance_km`, `duracion_min` → `duration_min`, `trazado` → `path`, `recalculada_de` → `recalculated_from`, `vehiculo` → `vehicle` (null: ruta proyectada de la redistribución), `iniciada` → `started_at`, `completada` → `completed_at` (ADR 0026) |
+| `RouteStop` (vuelve) | `ruta` → `route`, `posicion` → `position`, `tipo` → `kind`, `proveedor` → `supplier`, `cliente` → `customer`, `pedido` → `purchase_order`, `orden` → `order`, `nombre` → `name`, `direccion` → `address`, `lat`, `lng`, `hora_estimada` → `eta` (llegada), `entregada` → `delivered_at` |
+| `Order` (despacho, ADR 0026) | `fecha_programada` → `scheduled_delivery_on`, `direccion_entrega` → `delivery_address`, `delivery_lat`, `delivery_lng` (null: la del cliente) |
+| `Vehicle` | `nombre` → `name`, `placa` → `plate`, `tipo` → `kind`, `capacidad` → `capacity_units` (prendas), `color`, `chofer` → `driver_name`, `activo` → `is_active`, `last_lat`, `last_lng`, `last_heading`, `last_speed_kmh`, `last_seen_at` |
+| `VehiclePosition` | `vehiculo` → `vehicle`, `ruta` → `route`, `lat`, `lng`, `rumbo` → `heading`, `velocidad` → `speed_kmh`, `registrada` → `recorded_at`, `origen` → `source` |
 | `AllowedNumber` | `telefono` → `phone`, `lid` → `lid`, `nombre` → `name`, `proveedor` → `supplier`, `activo` → `active`, `simulado` → `simulated` |
 | `Conversation` | `canal` → `channel`, `numero` → `allowed_number`, `usuario` → `user` (solo `dashboard`), `sesion_agente` → `agent_session`, `accion_pendiente` → `pending_action` |
 | `Message` | `conversacion` → `conversation`, `autor` → `author`, `texto` → `text`, `media` → `media`, `id_externo` → `external_id`, `estado` → `status`, `error` → `error`, `enviado_en` → `sent_at`, `leido_en` → `read_at` (nuevo, ADR 0020), `turno` → `turn`, `accion` → `action`, `contexto` → `context` |
@@ -83,6 +86,8 @@ Sufijos: `*_on` para fechas (`date`) y `*_at` para fecha con hora (`datetime`). 
 | `Payment.kind` | adelanto → `advance`, saldo → `balance` |
 | `Route.status` | propuesta → `proposed`, planificada → `planned`, en_curso → `in_progress`, completada → `completed`, reemplazada → `replaced`, descartada → `discarded` |
 | `RouteStop.kind` | recojo → `pickup`, entrega → `delivery` |
+| `Vehicle.kind` | furgón → `van`, camioneta → `pickup`, moto → `motorcycle`, camión → `truck` |
+| `VehiclePosition.source` | simulador → `simulator`, dispositivo → `device`, manual → `manual` |
 | `Conversation.channel` | whatsapp → `whatsapp`, simulador → `simulator`, dashboard → `dashboard` (asistente) |
 | `Message.author` | proveedor → `supplier`, agente → `agent`, gerente → `manager`, usuario → `user` (persona del dashboard). En la API del asistente sale como `role`: `user` → `user`, `agent` → `assistant` |
 | `Message.status` | recibido → `received`, procesado → `processed`, error → `error`, enviado → `sent`, fallido → `failed` |
@@ -166,6 +171,7 @@ Son sync; el agente los envuelve con `sync_to_async`. Los que tienen reglas de p
 | `cancelar_por_proveedor` | `cancel_by_supplier(purchase_order, *, reason, units_done=None)` | `operations/services.py` |
 | `redistribuir` | `redistribute(purchase_order)` | `operations/services.py` |
 | Planificar ruta (ADR 0024) | `plan_route(date, *, actor=None) -> Route` | `operations/routes.py` |
+| Planificar el día por vehículo (ADR 0026) | `plan_day(date, *, vehicle_ids=None, order_ids=None, actor) -> DayPlan`, `move_dispatch`, `start_route`, `complete_route`, `deliver_stop` | `operations/routes.py` |
 | Reporte público (P1) | `record_public_report(token, *, units_done, photo=None, note="")`, `report_url(purchase_order) -> str`, `mark_report_link_sent(purchase_order)` | `operations/services.py` |
 | Proveedores sugeridos (P1) | `create_suggested_suppliers(candidates, *, actor) -> {created, skipped}` | `suppliers/services.py` |
 | Puntajes del proveedor | `supplier_scores(supplier) -> {on_time, quality}` | `suppliers/services.py` |

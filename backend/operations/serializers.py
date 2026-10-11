@@ -551,16 +551,37 @@ class PurchaseOrderDetailSerializer(StatusHistoryMixin, PurchaseOrderListSeriali
         return {"id": decision.id, "kind": decision.kind, "summary": decision.summary, "detail": decision.detail}
 
 
+def local_date(value):
+    from django.utils import timezone
+
+    return timezone.localtime(value).date() if value else None
+
+
 class RouteStopSerializer(serializers.ModelSerializer):
     kind_display = serializers.CharField(source="get_kind_display", read_only=True)
     supplier = serializers.SerializerMethodField()
     customer = serializers.SerializerMethodField()
     purchase_order = serializers.SerializerMethodField()
     order = serializers.SerializerMethodField()
+    units = serializers.SerializerMethodField()
+    on_time = serializers.SerializerMethodField()
 
     class Meta:
         model = RouteStop
-        fields = ["position", "kind", "kind_display", "name", "address", "lat", "lng", "eta", "supplier", "customer", "purchase_order", "order"]
+        fields = [
+            "id", "position", "kind", "kind_display", "name", "address", "lat", "lng", "eta", "delivered_at",
+            "supplier", "customer", "purchase_order", "order", "units", "on_time",
+        ]
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_units(self, obj):
+        return sum(i.quantity for i in obj.order.items.all()) if obj.order_id else 0
+
+    @extend_schema_field(serializers.BooleanField(allow_null=True))
+    def get_on_time(self, obj):
+        """Against the promised day: the delivery if done, else the ETA."""
+        when = local_date(obj.delivered_at or obj.eta)
+        return when <= obj.order.promised_on if obj.order_id and when else None
 
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_supplier(self, obj):
@@ -576,7 +597,7 @@ class RouteStopSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_order(self, obj):
-        return {"id": obj.order_id, "code": obj.order.code} if obj.order_id else None
+        return {"id": obj.order_id, "code": obj.order.code, "promised_on": obj.order.promised_on} if obj.order_id else None
 
 
 class RouteSerializer(serializers.ModelSerializer):
@@ -586,14 +607,47 @@ class RouteSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     stops = RouteStopSerializer(many=True, read_only=True)
     stops_count = serializers.SerializerMethodField()
+    vehicle = serializers.SerializerMethodField()
+    summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Route
-        fields = ["id", "name", "date", "status", "status_display", "distance_km", "duration_min", "path", "recalculated_from", "stops_count", "stops", "created_at"]
+        fields = [
+            "id", "name", "date", "status", "status_display", "distance_km", "duration_min", "path", "recalculated_from", "stops_count", "stops",
+            "vehicle", "started_at", "completed_at", "summary", "created_at",
+        ]
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_vehicle(self, obj):
+        v = obj.vehicle
+        return {"id": v.id, "name": v.name, "color": v.color, "kind": v.kind, "capacity_units": v.capacity_units} if v else None
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_summary(self, obj):
+        """The route's justification (ADR 0026 §2): "4 entregas · 1 450 prendas (73 % de capacidad)
+        · 18 km · vuelve 12:40"."""
+        from django.utils import timezone
+
+        stops = list(obj.stops.all())
+        deliveries = [s for s in stops if s.kind == RouteStop.Kind.DELIVERY]
+        units = sum(sum(i.quantity for i in s.order.items.all()) for s in deliveries if s.order_id)
+        capacity = obj.vehicle.capacity_units if obj.vehicle_id else None
+        pct = round(units * 100 / capacity) if capacity else None
+        returns_at = stops[-1].eta if stops else None
+        parts = [f"{len(deliveries)} entrega{'s' if len(deliveries) != 1 else ''}", f"{units:,}".replace(",", " ") + " prendas" + (f" ({pct} % de capacidad)" if pct is not None else "")]
+        parts.append(f"{float(obj.distance_km):.0f} km")
+        if returns_at:
+            parts.append(f"vuelve {timezone.localtime(returns_at):%H:%M}")
+        return {
+            "deliveries": len(deliveries), "delivered": sum(1 for s in deliveries if s.delivered_at), "units": units,
+            "capacity_pct": pct, "returns_at": returns_at, "text": " · ".join(parts),
+        }
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_name(self, obj):
         """What the map shows: the delivery day, and whether it recalculates an earlier plan."""
+        if obj.vehicle_id:
+            return f"{obj.vehicle.name} · {obj.date:%d/%m}"
         name = f"Entregas del {obj.date:%d/%m}"
         if obj.recalculated_from_id and obj.recalculated_from.date != obj.date:
             name += f" (antes {obj.recalculated_from.date:%d/%m})"

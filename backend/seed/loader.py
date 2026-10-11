@@ -314,6 +314,80 @@ class Loader:
                 Order.objects.filter(pk=order.pk).update(status=status, production_stage=stage, estimated_on=estimated, risk=risk, risk_reason=reason)
                 order.refresh_from_db()
 
+    def read_fleet(self) -> dict:
+        path = self.data_dir / "fleet.json"
+        if not path.exists():
+            return {}
+        with path.open(encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def load_fleet(self):
+        """Vehicles and the orders on their way out (ADR 0026 §7). Ready and delivered orders are
+        already produced: no breakdown, so they reserve no stock and suggest no purchases."""
+        from fleet.models import Vehicle
+
+        fleet = self.read_fleet()
+        for row in fleet.get("vehicles") or []:
+            Vehicle.objects.create(**{k: row[k] for k in ("name", "plate", "kind", "capacity_units", "color", "driver_name") if k in row})
+        for row in fleet.get("orders") or []:
+            if not ORDER_CODE.match(row["code"]):
+                raise SeedError(f"fleet.json: código {row['code']!r} no cumple CP-AAAA-NNNN")
+            if row.get("status") not in ("ready", "delivered"):
+                raise SeedError(f"fleet.json: {row['code']} tiene que estar ready o delivered")
+            product = self.ref(self.products, row["product"], "producto")
+            order = Order.objects.create(
+                code=row["code"],
+                customer=self.ref(self.customers, row["customer"], "cliente"),
+                brand=product.brand or self.brand_for_code(product.code),
+                owner=self.users.get("comercial"),
+                status=row["status"],
+                issued_on=self.rel_date(row.get("issued_on")) or self.t.date(),
+                promised_on=self.rel_date(row["promised_on"]),
+                estimated_on=self.rel_date(row.get("estimated_on")),
+                delivery_address=row.get("delivery_address") or "",
+                delivery_lat=row.get("delivery_lat"),
+                delivery_lng=row.get("delivery_lng"),
+            )
+            OrderItem.objects.create(order=order, product=product, quantity=int(row["quantity"]), sizes=row.get("sizes") or {})
+            self.orders[order.code] = order
+
+    def plan_fleet(self):
+        """Yesterday's completed trips with their trail, and today's plan by vehicle."""
+        from fleet.models import Vehicle, VehiclePosition
+        from fleet.track import samples
+        from operations.models import Route
+        from operations.routes import order_stops, plan_day, plant_point, stop_for, with_dispatch_fields, write_stops
+
+        fleet = self.read_fleet()
+        plant, plant_name = plant_point()
+        if plant is None or not fleet:
+            return
+        vehicles = {v.name: v for v in Vehicle.objects.all()}
+        for vehicle in vehicles.values():  # Parked at the plant, no signal until a trip starts.
+            vehicle.last_lat, vehicle.last_lng, vehicle.last_seen_at = plant[0], plant[1], self.rel_datetime("T-1 18:00")
+            vehicle.save(update_fields=["last_lat", "last_lng", "last_seen_at", "updated_at"])
+        for row in fleet.get("completed_routes") or []:
+            vehicle = self.ref(vehicles, row["vehicle"], "vehículo")
+            start = self.rel_datetime(row["start"])
+            orders = list(with_dispatch_fields(Order.objects.filter(code__in=row["orders"])).select_related("customer"))
+            route = Route.objects.create(date=self.rel_date(row["date"]), status=Route.Status.COMPLETED, vehicle=vehicle, started_at=start)
+            write_stops(route, plant, plant_name, order_stops(plant, [stop_for(o) for o in orders]), start=start)
+            for stop in route.stops.filter(order__isnull=False):
+                stop.delivered_at = stop.eta
+                stop.save(update_fields=["delivered_at"])
+                StatusChange.objects.filter(order=stop.order, status="delivered").update(at=stop.eta, note=f"Entregada por {vehicle.name}")
+            trail = samples(route, start)
+            VehiclePosition.objects.bulk_create(
+                VehiclePosition(vehicle=vehicle, route=route, lat=p["lat"], lng=p["lng"], heading=p["heading"], speed_kmh=p["speed_kmh"], recorded_at=p["recorded_at"], source="simulator")
+                for p in trail
+            )
+            route.completed_at = trail[-1]["recorded_at"]
+            route.save(update_fields=["completed_at"])
+            vehicle.last_seen_at = route.completed_at
+            vehicle.save(update_fields=["last_seen_at"])
+        if fleet.get("plan_today"):
+            plan_day(self.t.date(), actor=None)
+
     def requirement_for(self, order: Order, kind: str, material_key, product_key) -> Requirement:
         filters = {"order": order, "kind": kind}
         if material_key:
@@ -594,10 +668,13 @@ class Loader:
         dashboard chats (a reseed during a demo must not swallow what someone just asked).
         With `reset_chats` the assistant chats start over too: messages and turns gone, the
         agent session and any pending action cleared, so the worker opens a fresh session."""
+        from fleet.models import Vehicle, VehiclePosition
         from messaging.models import Turn
         from operations.models import Route
 
+        VehiclePosition.objects.all().delete()
         Route.objects.all().delete()
+        Vehicle.objects.all().delete()
         supplier_chats = Conversation.objects.exclude(channel=Conversation.Channel.DASHBOARD)
         Turn.objects.filter(conversation__in=supplier_chats).delete()
         Message.objects.filter(conversation__in=supplier_chats).delete()
@@ -680,6 +757,7 @@ class Loader:
             if fixed[0]:  # The JSON decides the demo's dates and risk; keep them.
                 Order.objects.filter(pk=order.pk).update(estimated_on=fixed[0], risk=fixed[1], risk_reason=fixed[2])
         self.plan_routes()
+        self.plan_fleet()
 
     def plan_routes(self):
         """A planned delivery route for every day of the next month that has orders going out."""

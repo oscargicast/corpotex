@@ -141,7 +141,10 @@ def test_routes_api(scenario, sales_client, manager_client, production):
     body = planned.json()
     assert body["status"] == "planned" and body["name"] == f"Entregas del {day:%d/%m}" and body["stops_count"] == len(body["stops"]) - 2
     stop = next(s for s in body["stops"] if s["order"])
-    assert set(stop) == {"position", "kind", "kind_display", "name", "address", "lat", "lng", "eta", "supplier", "customer", "purchase_order", "order"}
+    assert set(stop) == {
+        "id", "position", "kind", "kind_display", "name", "address", "lat", "lng", "eta", "delivered_at",
+        "supplier", "customer", "purchase_order", "order", "units", "on_time",
+    }
     assert stop["kind"] == "delivery" and stop["customer"]["name"] == "Caja Piura" and stop["order"]["code"] == "CP-2026-0001"
     assert body["stops"][0]["kind"] == "plant" and "unit_price" not in planned.content.decode()
 
