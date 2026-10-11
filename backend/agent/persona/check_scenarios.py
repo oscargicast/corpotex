@@ -74,6 +74,7 @@ def parse_output(text: str, agent: str) -> tuple[list[str], list[str]]:
             in_answer = False
         elif stripped.startswith("MENSAJE:"):
             messages.append(stripped[8:].strip())
+            tools.append("send_message")  # in test mode each message stands for that tool
             in_answer = False
         elif stripped.startswith("RESPUESTA:"):
             answer = [stripped[10:].strip()]
