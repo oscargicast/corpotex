@@ -216,9 +216,9 @@ function supplierRoutes(route: string, body: BodyInit | null | undefined): Respo
   if (match) {
     const supplier = find(match[1]);
     if (!supplier) return json(404, { detail: "No existe." });
-    const { phone, name } = readBody(body);
+    const { phone, name, simulated } = readBody(body);
     const detail = (supplierDetails[supplier.id] ??= {});
-    const number = { id: Date.now(), phone: String(phone), name: String(name ?? ""), active: false };
+    const number = { id: Date.now(), phone: String(phone), name: String(name ?? ""), active: false, simulated: simulated === true };
     detail.numbers = [...(detail.numbers ?? []), number];
     return json(201, number);
   }

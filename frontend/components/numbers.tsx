@@ -11,6 +11,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
   const [confirming, setConfirming] = useState<number | null>(null);
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
+  const [simulated, setSimulated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -38,9 +39,11 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
     setBusy(true);
     setError(null);
     try {
-      await apiFetch(`/api/suppliers/${supplierId}/numbers/`, { method: "POST", json: { phone: digits, name } });
+      // A test number goes to the simulator, never to WhatsApp (P7).
+      await apiFetch(`/api/suppliers/${supplierId}/numbers/`, { method: "POST", json: { phone: digits, name, ...(simulated ? { simulated: true } : {}) } });
       setPhone("");
       setName("");
+      setSimulated(false);
       onChange();
     } catch (err) {
       setError(err instanceof ApiError && err.status === 400 ? "Ese número no es válido o ya existe." : "No se pudo agregar el número.");
@@ -109,6 +112,10 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
         <label className="text-sm">
           <span className="block text-xs text-muted">Etiqueta</span>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="dueño, encargado" className="mt-1 w-36 rounded-md px-2 py-1.5 ring-1 ring-line" />
+        </label>
+        <label className="flex min-h-11 items-center gap-2 text-sm sm:min-h-0 sm:pb-2" title="El agente le escribe por el simulador, no por WhatsApp">
+          <input type="checkbox" checked={simulated} onChange={(e) => setSimulated(e.target.checked)} className="size-4 accent-[var(--color-accent)]" />
+          Para pruebas (simulado)
         </label>
         <Button type="submit" busy={busy} disabled={!phone}>
           Agregar número

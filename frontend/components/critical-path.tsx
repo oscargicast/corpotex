@@ -53,11 +53,11 @@ function slackTone(slack: number | null): Tone {
   return slack >= 2 ? "ok" : slack >= 0 ? "tight" : "late";
 }
 
-const EXPANDED_KEY = "corpotex.criticalPath.expanded";
+// Compressed by default (one strip of blocks, Oscar 11/10 06:35). The title is
+// the toggle (P7): it expands to the timeline and the dated list, and the
+// choice lasts while the page is open (module memory, not storage).
+let rememberedExpanded = false;
 
-// Compressed by default (one strip of blocks, Oscar 11/10 06:35); "Ver detalle"
-// or the header expands it to the timeline and the dated list, remembered per
-// browser.
 export function CriticalPath({
   steps,
   promisedOn,
@@ -76,23 +76,11 @@ export function CriticalPath({
   loading?: boolean;
 }) {
   const tone = slackTone(slackDays);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(rememberedExpanded);
   const bodyId = useId();
-  useEffect(() => {
-    try {
-      setExpanded(localStorage.getItem(EXPANDED_KEY) === "1");
-    } catch {
-      // Storage blocked: compressed it is.
-    }
-  }, []);
   function toggle() {
-    const next = !expanded;
-    setExpanded(next);
-    try {
-      localStorage.setItem(EXPANDED_KEY, next ? "1" : "0");
-    } catch {
-      // Not remembered, still toggled.
-    }
+    rememberedExpanded = !expanded;
+    setExpanded(rememberedExpanded);
   }
   const slackText =
     slackDays === null ? null : slackDays >= 0 ? `${slackDays} ${slackDays === 1 ? "día" : "días"} de holgura` : `${-slackDays} ${slackDays === -1 ? "día" : "días"} de atraso`;
@@ -100,16 +88,19 @@ export function CriticalPath({
   return (
     <div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={expanded}
-          aria-controls={bodyId}
-          className="-ml-1 flex min-h-11 items-center gap-1.5 rounded-md px-1 text-left hover:bg-canvas"
-        >
-          <ChevronRight size={16} className={`text-muted transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-90" : ""}`} aria-hidden />
-          <h2 className="text-base font-semibold">Ruta crítica</h2>
-        </button>
+        {/* Disclosure: the heading holds the button (a heading inside a button is not valid HTML). */}
+        <h2 className="text-base font-semibold">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-expanded={expanded}
+            aria-controls={bodyId}
+            className="-ml-1 flex min-h-11 items-center gap-1.5 rounded-md px-1 text-left hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <ChevronRight size={16} className={`text-muted transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-90" : ""}`} aria-hidden />
+            Ruta crítica
+          </button>
+        </h2>
         <p className="text-sm tabular-nums text-muted">
           Entrega {short(promisedOn)}
           {estimatedOn && <> · estimada {short(estimatedOn)}</>}
@@ -120,12 +111,7 @@ export function CriticalPath({
             </>
           )}
         </p>
-        <div className="ml-auto flex items-center gap-1">
-          {actions}
-          <button type="button" onClick={toggle} aria-expanded={expanded} aria-controls={bodyId} className="min-h-11 rounded-md px-2 text-sm font-medium text-accent hover:bg-canvas">
-            {expanded ? "Comprimir" : "Ver detalle"}
-          </button>
-        </div>
+        {actions && <div className="ml-auto flex items-center gap-1">{actions}</div>}
       </div>
 
       <div id={bodyId} className="mt-3">
