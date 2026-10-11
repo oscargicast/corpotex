@@ -109,3 +109,11 @@ def test_roles_describe_how_to_preview_a_consolidated_purchase():
         text = assistant.load_role(role)
         assert "generate_purchase_orders" in text and price in text
     assert "generate_purchase_orders" not in assistant.load_role("sales")
+
+
+def test_purchase_quantities_arrive_as_decimal_strings():
+    state = scenario_state("sugerencia_de_compra_gerente")
+    state["alerts"][0]["total_to_order"] = "900.00"
+    state["alerts"][0]["orders"][0]["qty"] = "400.00"
+    text = turn_text(state)
+    assert 'total_por_pedir="900"' in text and 'cantidad="400"' in text
