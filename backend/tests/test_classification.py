@@ -299,8 +299,8 @@ def test_jev_budget_counts_only_its_own_calls(settings, fake_sdk):
 
 
 @pytest.mark.django_db
-def test_the_classifier_and_the_photo_use_classify_model(order_with_new_garment, settings):
-    """CLASSIFY_MODEL (faster) for generation in the form; AGENT_MODEL stays for the agents."""
+def test_the_classifier_uses_classify_model_and_the_photo_agent_model(order_with_new_garment, settings):
+    """CLASSIFY_MODEL (faster) for the new recipe; the photo and the agents keep AGENT_MODEL."""
     settings.CLASSIFY_MODEL, settings.AGENT_MODEL = "claude-sonnet-5-5", "claude-opus-5-5"
     with mock.patch("agent.sdk.complete", new=mock.AsyncMock(return_value=CLAUDE_PROPOSAL)) as complete:
         classify.complete_sync("prompt", schema=classify.PROPOSAL_SCHEMA)
@@ -310,7 +310,7 @@ def test_the_classifier_and_the_photo_use_classify_model(order_with_new_garment,
 
     with mock.patch("agent.sdk.complete", new=mock.AsyncMock(return_value={"description": "Polo blanco"})) as complete:
         describe.describe(b"img", "image/png")
-    assert complete.call_args.kwargs["model"] == "claude-sonnet-5-5" and complete.call_args.kwargs["max_turns"] == 1
+    assert complete.call_args.kwargs["model"] == "claude-opus-5-5" and complete.call_args.kwargs["max_turns"] == 1  # the photo stays on AGENT_MODEL
     settings.CLASSIFY_MODEL = ""
     assert classify.classify_model() == "claude-opus-5-5"  # empty falls back to AGENT_MODEL
 

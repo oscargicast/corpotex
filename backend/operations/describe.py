@@ -44,6 +44,12 @@ def decode(media_type: str, data: str) -> tuple[bytes, str]:
     return raw, normalized
 
 
+def describe_model() -> str:
+    """AGENT_MODEL (Opus): as fast as Sonnet on a photo and the sentence reads better on screen
+    (orquestador, 11/10, with the measurements of #147). CLASSIFY_MODEL is only for recipes."""
+    return getattr(settings, "AGENT_MODEL", "sonnet")
+
+
 def describe(raw: bytes, media_type: str, *, brand: str | None = None, customer: str | None = None) -> str:
     """The garment in one sentence. Raises on model failure or timeout (the view answers 502)."""
     from agent.persona.context import image_block
@@ -56,18 +62,16 @@ def describe(raw: bytes, media_type: str, *, brand: str | None = None, customer:
         context.append(f"cliente {customer}")
     text = "Describe la prenda de esta foto." + (f" Contexto: {', '.join(context)}." if context else "")
     blocks = [image_block(raw, media_type), {"type": "text", "text": text}]
-    from .classify import classify_model
-
     from .classify import COMPLETE_MAX_TURNS
 
     coro = asyncio.wait_for(
-        complete(blocks, system_prompt=SYSTEM_PROMPT, model=classify_model(), schema=SCHEMA, effort="low", max_turns=COMPLETE_MAX_TURNS), TIMEOUT_SECONDS
+        complete(blocks, system_prompt=SYSTEM_PROMPT, model=describe_model(), schema=SCHEMA, effort="low", max_turns=COMPLETE_MAX_TURNS), TIMEOUT_SECONDS
     )
     started = time.monotonic()
     try:
         result = _run(coro)
     finally:
-        logger.info("describe_image: claude=%.2fs (%d bytes, model %s)", time.monotonic() - started, len(raw), classify_model())
+        logger.info("describe_image: claude=%.2fs (%d bytes, model %s)", time.monotonic() - started, len(raw), describe_model())
     description = (result.get("description") if isinstance(result, dict) else "") or ""
     if not description.strip():
         raise RuntimeError("empty description")
