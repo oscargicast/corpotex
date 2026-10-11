@@ -11,6 +11,7 @@ from tests.agent_fakes import (
     MISSING_CODE,
     REPORT_URL,
     ManagerApprovalRequired,
+    PurchaseOrder,
     install,
 )
 
@@ -141,3 +142,39 @@ def test_retry_does_not_resend_messages_of_same_turn(monkeypatch):
     assert calls.sent == []
     call("send_message", {"text": "Otra cosa"})
     assert [text for _, text, _ in calls.sent] == ["Otra cosa"]
+
+
+FOLLOW_UP = SimpleNamespace(
+    turn="turno",
+    message_ids=[],
+    follow_up={"kind": "checkpoint", "reason": "punto de control del 60 %"},
+    follow_up_purchase_order_ids=[3, 4],
+)
+
+
+def test_only_follow_up_turns_can_skip(monkeypatch):
+    install(monkeypatch)
+    assert "skip_follow_up" not in toolset()
+    assert "skip_follow_up" in {t.name for t in tools.whatsapp_tools(conversation(), FOLLOW_UP)}
+
+
+def test_skip_follow_up_notes_the_reason_on_the_batch_orders_and_sends_nothing(monkeypatch):
+    calls = install(monkeypatch)
+    updates = []
+    monkeypatch.setattr(
+        PurchaseOrder,
+        "objects",
+        SimpleNamespace(
+            filter=lambda **lookup: SimpleNamespace(
+                update=lambda **fields: updates.append((lookup, fields))
+            )
+        ),
+    )
+    skip = {t.name: t for t in tools.whatsapp_tools(conversation(), FOLLOW_UP)}["skip_follow_up"]
+    out = asyncio.run(skip.handler({"reason": "  reportó   ayer y va a ritmo " + "x" * 300}))
+    assert not out.get("is_error") and "No envíes nada" in out["content"][0]["text"]
+    ((lookup, fields),) = updates
+    assert lookup == {"id__in": [3, 4]}
+    assert fields["follow_up_note"].startswith("reportó ayer y va a ritmo x")
+    assert len(fields["follow_up_note"]) == 200
+    assert calls.sent == []

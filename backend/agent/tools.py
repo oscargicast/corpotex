@@ -14,6 +14,7 @@ from claude_agent_sdk import tool
 from agent import channels
 
 INTRO_MAX = 200
+NOTE_MAX = 200
 RESEND_WINDOW = timedelta(minutes=10)  # real time, like Message.sent_at
 # Neutral on purpose (no tú/usted): used when the model's intro is missing or unsafe.
 REPORT_LINK_FALLBACK = "Para reportar avance y fotos del pedido {code}:\n{url}"
@@ -33,6 +34,7 @@ def whatsapp_tools(conversation, batch) -> list:
     from messaging.exceptions import ForeignPurchaseOrder, NumberNotAllowed, SendFailed
     from messaging.services import latest_photo_id, message_history, purchase_order_for_conversation
     from operations.exceptions import ManagerApprovalRequired
+    from operations.models import PurchaseOrder
     from operations.services import (
         cancel_by_supplier,
         confirm_purchase_order,
@@ -248,7 +250,37 @@ def whatsapp_tools(conversation, batch) -> list:
         except (NumberNotAllowed, SendFailed):
             return refuse("No se pudo enviar el link en este turno.")
 
-    return [
+    @tool(
+        "skip_follow_up",
+        "No le escribes al proveedor en este seguimiento porque escribir no aporta. El motivo "
+        "queda en el pedido y el Gerente lo ve. Después de usarla no envíes nada.",
+        {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Por qué no escribes, en una línea",
+                }
+            },
+            "required": ["reason"],
+        },
+    )
+    async def skip_follow_up(args):
+        reason = " ".join(args["reason"].split())[:NOTE_MAX]
+
+        @sync_to_async
+        def note():
+            PurchaseOrder.objects.filter(id__in=batch.follow_up_purchase_order_ids).update(
+                follow_up_note=reason
+            )
+
+        await note()
+        return ok(
+            "Seguimiento saltado; el motivo quedó en el pedido. No envíes nada en este turno."
+        )
+
+    toolset = [
         send_message,
         confirm_purchase_order_tool,
         record_progress_tool,
@@ -257,3 +289,6 @@ def whatsapp_tools(conversation, batch) -> list:
         read_history,
         send_report_link,
     ]
+    if getattr(batch, "follow_up", None):  # only follow-up turns may skip (ADR 0027)
+        toolset.append(skip_follow_up)
+    return toolset
