@@ -222,6 +222,11 @@ function StepList({ steps, purchaseOrders }: { steps: CriticalStep[]; purchaseOr
               <p className="text-sm tabular-nums text-muted">
                 {range(s.start, s.end)} · {s.days} {s.days === 1 ? "día" : "días"}
               </p>
+              {!!step.late_by && step.late_by > 0 && (
+                <p className="flex items-center gap-1 text-xs font-semibold text-danger">
+                  <OctagonAlert size={12} aria-hidden /> llega {step.late_by} {step.late_by === 1 ? "día" : "días"} tarde
+                </p>
+              )}
               {(committed || internal) && (
                 <p className={`text-xs tabular-nums ${pastLimit ? "text-danger" : "text-muted"}`}>
                   {[committed && `comprometido ${short(committed)}`, internal && `límite interno ${short(internal)}`].filter(Boolean).join(" · ")}

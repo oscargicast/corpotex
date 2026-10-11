@@ -222,6 +222,7 @@ export interface CriticalStep {
   critical: boolean;
   status: "pending" | "in_progress" | "done" | "late";
   purchase_order_id: number | null;
+  late_by?: number | null; // days the supplier's date runs past the step's start (backend, after #151)
 }
 
 // One row per status change (actor: system | agent | user | a username), oldest first.
@@ -486,14 +487,16 @@ export type ClassificationItem = S["ClassificationItem"];
 export type ClassificationMaterial = S["ClassificationMaterial"];
 
 // ADR 0028: live classification while the order is typed. POST
-// /api/orders/classify-draft/ {brand, customer?, items: [{key, description,
-// quantity}]} (an unknown brand is a 400). "pending": the line is under 12
+// /api/orders/classify-draft/ {brand, customer?, phase?, items: [{key,
+// description, quantity}]} (an unknown brand is a 400). phase "product"
+// answers in under a second (a catalog line comes classified, a new one
+// "new_pending"); phase "recipe" brings the new product and its recipe. "pending": the line is under 12
 // characters or has no quantity (no model call); "error": the model failed on
 // that line (it can be saved unclassified). With an existing product the
 // server uses the catalog recipe and ignores the materials sent.
 export interface DraftClassificationItem {
   key: string;
-  status: "classified" | "pending" | "error";
+  status: "classified" | "new_pending" | "pending" | "error"; // new_pending: phase "product" found a new product
   description?: string;
   product?: S["ClassificationProduct"];
   confidence?: number | null;

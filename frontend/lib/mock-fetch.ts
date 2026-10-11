@@ -486,6 +486,8 @@ function itemsFrom(body: Record<string, unknown>): OrderItem[] {
 }
 
 let nextOrderNumber = 200;
+const failedRecipes = new Set<string>();
+
 // ADR 0028 mock: keywords stand in for Jev and Claude.
 function draftClassification(item: { key: string; description: string; quantity: number }, brand: string): DraftClassificationItem {
   const text = (item.description ?? "").toLowerCase();
@@ -747,14 +749,26 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
   }
   // ADR 0028: live classification while the order is typed, one item per request.
   if (route === "POST /api/orders/classify-draft/") {
-    const body = readBody(init.body) as { brand?: string; items?: { key: string; description: string; quantity: number }[] };
+    const body = readBody(init.body) as { brand?: string; phase?: string; items?: { key: string; description: string; quantity: number }[] };
     if (!body.brand || !["UNICRACK", "NEXO", "Línea Médica Corpotex"].some((b) => b.toLowerCase() === body.brand!.trim().toLowerCase())) {
       return json(400, { detail: `La marca ${body.brand ?? ""} no existe` });
     }
     const items = body.items ?? [];
     const drafts = items.map((item) => draftClassification(item, body.brand!));
-    // About 1.5 s for a catalog product, 3 s for a new one (Jev alone vs Jev + Claude).
-    await new Promise((resolve) => setTimeout(resolve, drafts.some((d) => d.status === "classified" && !d.product?.existing_id) ? 3000 : 1500));
+    const isNew = (d: DraftClassificationItem) => d.status === "classified" && !d.product?.existing_id;
+    const phase = (body as { phase?: string }).phase;
+    // N7 phases: "product" in under a second (a new product only says new_pending),
+    // "recipe" brings it in about 3 s. Without a phase, everything at once.
+    if (phase === "product") {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      return json(200, { items: drafts.map((d) => (isNew(d) ? { key: d.key, status: "new_pending", confidence: d.confidence } : d)) });
+    }
+    await new Promise((resolve) => setTimeout(resolve, phase === "recipe" || drafts.some(isNew) ? 3000 : 1500));
+    // "receta falla" in a line makes its recipe fail once, to see Reintentar.
+    if (phase === "recipe" && items.some((i) => /receta falla/i.test(i.description) && !failedRecipes.has(i.key))) {
+      items.forEach((i) => failedRecipes.add(i.key));
+      return json(200, { items: items.map((i) => ({ key: i.key, status: "error", detail: "No se pudo armar la receta." })) });
+    }
     return json(200, { items: drafts });
   }
   // ADR 0025 C: the AI proposes product and materials for items without a catalog product.
