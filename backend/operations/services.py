@@ -168,11 +168,25 @@ def compute_critical_path(order: Order) -> Order:
     config = Config.load()
     durations = config.stage_durations or {}
     today = clock.today()
+    if order.status in (Order.Status.READY, Order.Status.DELIVERED, Order.Status.CANCELLED):
+        # Nothing left to produce: the estimate is the delivery itself, never a risk.
+        if order.status == Order.Status.READY:
+            order.estimated_on = min(order.estimated_on or today, max(today, order.promised_on if order.promised_on >= today else today))
+        order.risk, order.risk_reason = Order.Risk.OK, ""
+        order.save(update_fields=["estimated_on", "risk", "risk_reason", "updated_at"])
+        return order
     pos = list(_order_purchase_orders(order).select_related("supplier"))
-    live = [po for po in pos if po.status in PurchaseOrder.OPEN_STATUSES]
+    # Suggested purchase orders count: until the manager decides, they are the only plan.
+    live = [po for po in pos if po.status in PurchaseOrder.OPEN_STATUSES + ("suggested",)]
 
     def po_date(po):
-        return po.committed_on or po.internal_due_on or today
+        """A committed date is the truth. Before the supplier commits, the deadline cannot beat
+        the supplier's lead time counted from tomorrow (one day to agree): a replacement
+        workshop found today still needs its 8 days, whatever the internal due date says."""
+        if po.committed_on:
+            return po.committed_on
+        earliest = today + timedelta(days=1 + (po.supplier.lead_time_days or 0))
+        return max(po.internal_due_on or today, earliest)
 
     path = []
     materials = [po for po in live if po.supplier.kind == "material"]

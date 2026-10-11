@@ -179,10 +179,18 @@ def resolve_decision(decision: Decision, *, action: str, supplier_id=None, purch
             target = next((po for po in pos if purchase_order_id in (None, po.id)), None)
             if target is None or supplier_id is None:
                 raise ValueError("supplier_id y purchase_order_id deben apuntar a un pedido de la decisión")
-            from suppliers.models import Supplier
+            from suppliers.models import Rate, Supplier
 
             target.supplier = Supplier.objects.get(pk=supplier_id)
             target.save(update_fields=["supplier", "updated_at"])
+            # The reference price follows the supplier: the first contact proposes their own rate.
+            for item in target.items.select_related("requirement"):
+                rate = Rate.objects.filter(
+                    supplier=target.supplier, material=item.requirement.material, product=item.requirement.product
+                ).order_by("-valid_from").first()
+                if rate is not None:
+                    item.unit_price = rate.unit_price
+                    item.save(update_fields=["unit_price", "updated_at"])
         if decision.kind == "approve_assignment":
             proposed_id = (decision.detail.get("after") or {}).get("route_id")
             if proposed_id:
