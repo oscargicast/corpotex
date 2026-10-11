@@ -21,8 +21,11 @@ TURN_EFFORT = "medium"
 
 def run_batch(batch) -> sdk.TurnResult:
     conversation = batch.turn.conversation
+    session = conversation.agent_session or None
     try:
-        return _run(batch, conversation, resume=conversation.agent_session or None)
+        # A new session (first turn, or after a reset) gets the stored history so the
+        # model still sees the notice the user is answering.
+        return _run(batch, conversation, resume=session, with_history=session is None)
     except sdk.SessionNotFound:
         log.warning(
             "conversation %s: session %s is gone, reopening with history",
@@ -35,13 +38,11 @@ def run_batch(batch) -> sdk.TurnResult:
 def _run(batch, conversation, *, resume: str | None, with_history: bool = False) -> sdk.TurnResult:
     dashboard = conversation.channel == "dashboard"
     if dashboard:
-        from agent.persona import build_assistant_prompt as build_prompt
-
         from agent.assistant_tools import assistant_tools as tools_for
         from agent.assistant_tools import finish_dashboard_turn, is_alert_only
+        from agent.persona import build_assistant_prompt as build_prompt
     else:
         from agent.persona import build_prompt
-
         from agent.tools import whatsapp_tools as tools_for
 
     system, blocks = build_prompt(conversation, batch, with_history=with_history)

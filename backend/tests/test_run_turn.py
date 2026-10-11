@@ -90,6 +90,15 @@ def test_lost_session_reopens_with_history(monkeypatch):
     assert out.session_id == "s2"
 
 
+def test_new_session_starts_with_history(monkeypatch):
+    calls = install(monkeypatch)
+    seen = []
+    monkeypatch.setattr(sdk, "run", fake_run([sdk.TurnResult("s1", "")], seen))
+    worker.run_batch(make_batch(session=""))
+    assert [o.resume for o in seen] == [None]
+    assert calls.prompts == [("whatsapp", True)]
+
+
 def test_tools_reach_the_model_namespaced_and_isolated(monkeypatch):
     @tool("send_message", "Envía un mensaje.", {"text": str})
     async def send_message(args):
@@ -109,7 +118,7 @@ def test_tools_reach_the_model_namespaced_and_isolated(monkeypatch):
 def test_dashboard_uses_the_assistant_prompt(monkeypatch):
     calls = install(monkeypatch)
     monkeypatch.setattr(sdk, "run", fake_run([sdk.TurnResult("s1", "")], []))
-    worker.run_batch(make_batch(session="", channel="dashboard"))
+    worker.run_batch(make_batch(session="s0", channel="dashboard"))
     assert calls.prompts == [("dashboard", False)]
 
 

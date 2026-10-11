@@ -717,7 +717,14 @@ def _pending_summary(user, material_ids: list[int]) -> str:
             except (InvalidOperation, TypeError):
                 line += f" a {cur} {price} c/u"
         lines.append(line)
-    return "; ".join(lines)
+    ids = ", ".join(
+        f"{(r.get('material') or {}).get('id')} {(r.get('material') or {}).get('name')}"
+        f" ({(r.get('material') or {}).get('sku')})"
+        for r in rows
+    )
+    # The ids let the model narrow a later call to one material (e.g. after a "sí"
+    # to a notice that only named it).
+    return "; ".join(lines) + f". ids de insumo: {ids}"
 
 
 def _generate_purchase_orders(conversation, turn, user):
