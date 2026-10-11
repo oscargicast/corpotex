@@ -117,3 +117,24 @@ def test_purchase_quantities_arrive_as_decimal_strings():
     state["alerts"][0]["orders"][0]["qty"] = "400.00"
     text = turn_text(state)
     assert 'total_por_pedir="900"' in text and 'cantidad="400"' in text
+
+
+def test_a_yes_to_a_suggestion_in_history_asks_for_the_preview():
+    state = scenario_state("generar_pedido_confirmacion_produccion")
+    state["history"] = [
+        {
+            "sender": "assistant",
+            "text": "**Compra sugerida: cuello rib** ¿Genero el pedido?",
+            "sent_at": "2026-10-14T08:00:00-05:00",
+        }
+    ]
+    state["new_messages"] = [{"id": 1, "text": "sí", "sent_at": "2026-10-14T08:05:00-05:00"}]
+    text = turn_text(state)
+    assert "<historial>" in text
+    assert "llama la tool correspondiente con confirmed=false" in text
+    assert "no digas que no hay nada pendiente" in text
+
+
+def test_assistant_format_asks_for_human_dates():
+    system = assistant.render_system(RULES, scenario_state("asistente_confirmacion_dos_pasos"))
+    assert 'Nunca "23/10" ni abreviaturas' in system
