@@ -3,6 +3,7 @@
 - `openapi.json`: el schema OpenAPI 3 que genera drf-spectacular (`docker compose exec web python manage.py spectacular --file docs/api/openapi.json`). Es la fuente de `frontend/lib/api-types.ts`; se regenera, no se edita.
 - `examples/`: payloads de ejemplo que usan el dashboard, el simulador y el seed. Los productos y tallas son los del seed.
 - Explorador: `http://localhost:8000/api/docs/` (Swagger), con `Authorization: Token <token>`.
+- Las respuestas calculadas también van tipadas en `components.schemas` (10/10 22:30): `ClassificationResult` (`POST /api/orders/<id>/classify/`; su `ClassificationProduct`/`ClassificationMaterial` son lo que recibe `apply-classification/`), `BreakDownResult`, `GenerateResult`, `PendingPurchase` (`GET /api/requirements/pending/`), `ProductBrand`, y las listas `StatusChange` (`status_history`), `OrderRef` (`PurchaseOrder.orders`), `RequirementPurchaseOrder` (`requirements[].purchase_orders`), `RedistributedInto`; `OrderDetail.purchase_orders` y `.alerts` referencian `PurchaseOrderList` y `Alert`. Quedan como objeto libre `candidates`, `redistributions`, `pending_decision`, `Decision.detail` y los resúmenes de proveedores.
 
 Convenciones (ADR 0009 y 0014): claves en inglés, barra final en todas las URLs, `status` y `kind` con su `*_display` en español, FKs anidadas como `{id, name}` o `{id, code}`, listas sin paginación, URLs de archivos relativas (`/media/...`), fechas ISO en `America/Lima`, montos como strings con dos decimales.
 

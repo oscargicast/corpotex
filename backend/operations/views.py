@@ -1,6 +1,6 @@
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema, extend_schema_field, inline_serializer
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied as DRFPermissionDenied
@@ -102,10 +102,66 @@ class CancelInSerializer(serializers.Serializer):
     reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+# Classification (ADR 0025 C): the proposal `classify` returns is what `apply-classification`
+# takes back, edited by production, so both share these shapes (schema only: the view validates
+# the request loosely and the service checks the references).
+class ClassificationNewProductSerializer(serializers.Serializer):
+    code = serializers.CharField(required=False, allow_blank=True)
+    name = serializers.CharField()
+    brand = serializers.CharField(required=False, allow_blank=True)
+
+
+class ClassificationProductSerializer(serializers.Serializer):
+    existing_id = serializers.IntegerField(required=False, allow_null=True, help_text="A catalogue product that fits; otherwise `new`.")
+    code = serializers.CharField(required=False, allow_null=True)
+    name = serializers.CharField(required=False, allow_null=True)
+    new = ClassificationNewProductSerializer(required=False, allow_null=True)
+
+
+class ClassificationNewMaterialSerializer(serializers.Serializer):
+    sku = serializers.CharField(required=False, allow_blank=True)
+    name = serializers.CharField()
+    kind = serializers.CharField(required=False, help_text="A Material.Kind value.")
+    unit = serializers.CharField(required=False, help_text="A Material.Unit value.")
+
+
+class ClassificationMaterialSerializer(serializers.Serializer):
+    sku = serializers.CharField(required=False, allow_null=True, help_text="A known material; otherwise `new`.")
+    name = serializers.CharField(required=False, allow_null=True)
+    material_id = serializers.IntegerField(required=False, allow_null=True)
+    new = ClassificationNewMaterialSerializer(required=False, allow_null=True)
+    qty_per_unit = serializers.CharField(help_text="Per garment, in `unit`, as a decimal string.")
+    unit = serializers.CharField()
+    confidence = serializers.FloatField(required=False)
+
+
+class ClassificationItemSerializer(serializers.Serializer):
+    item_id = serializers.IntegerField()
+    description = serializers.CharField()
+    product = ClassificationProductSerializer()
+    confidence = serializers.FloatField()
+    materials = ClassificationMaterialSerializer(many=True)
+
+
+class ClassificationResultSerializer(serializers.Serializer):
+    order_id = serializers.IntegerField()
+    items = ClassificationItemSerializer(many=True)
+
+
+@extend_schema_field(ClassificationProductSerializer)
+class ClassificationProductField(serializers.DictField):
+    """Validated loosely (the service checks the references); documented as `ClassificationProduct`."""
+
+
+@extend_schema_field(ClassificationMaterialSerializer)
+class ClassificationMaterialField(serializers.DictField):
+    """Documented as `ClassificationMaterial`."""
+
+
 class ClassificationItemInSerializer(serializers.Serializer):
     item_id = serializers.IntegerField()
-    product = serializers.DictField(help_text="{existing_id} or {new: {code, name, brand}}")
-    materials = serializers.ListField(child=serializers.DictField(), required=False, default=list, help_text="[{sku} | {new: {sku, name, kind, unit}}, qty_per_unit, unit]")
+    product = ClassificationProductField(help_text="{existing_id} or {new: {code, name, brand}}")
+    materials = serializers.ListField(child=ClassificationMaterialField(), required=False, default=list, help_text="[{sku} | {new: {sku, name, kind, unit}}, qty_per_unit, unit]")
 
 
 class ApplyClassificationInSerializer(serializers.Serializer):
@@ -114,6 +170,15 @@ class ApplyClassificationInSerializer(serializers.Serializer):
 
 class BreakDownInSerializer(serializers.Serializer):
     order_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
+
+
+BreakDownResultSchema = inline_serializer(
+    "BreakDownResult",
+    fields={
+        "broken_down": serializers.ListField(child=serializers.CharField(), help_text="Order codes."),
+        "skipped": inline_serializer("BreakDownSkipped", fields={"code": serializers.CharField(), "reason": serializers.CharField()}, many=True),
+    },
+)
 
 
 class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
@@ -176,7 +241,7 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return self.detail_response(order)
 
-    @extend_schema(request=None, responses={200: dict})
+    @extend_schema(request=None, responses={200: ClassificationResultSerializer})
     @action(detail=True, methods=["post"], permission_classes=[IsManagerOrProduction])
     def classify(self, request, pk=None):
         """Proposal for every item without a catalogue product (Jev + Claude, ADR 0025 C):
@@ -210,7 +275,7 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
         response.data["warnings"] = warnings
         return response
 
-    @extend_schema(request=BreakDownInSerializer, responses={200: dict})
+    @extend_schema(request=BreakDownInSerializer, responses={200: BreakDownResultSchema})
     @action(detail=False, methods=["post"], url_path="break-down", permission_classes=[IsManagerOrProduction])
     def break_down(self, request):
         """Breaks down every `registered` order (or `order_ids`) against the inventory."""
@@ -241,13 +306,65 @@ class GenerateInSerializer(serializers.Serializer):
     supplier_overrides = serializers.DictField(child=serializers.IntegerField(), required=False, default=dict)
 
 
+GenerateResultSchema = inline_serializer(
+    "GenerateResult",
+    fields={
+        "created": PurchaseOrderDetailSerializer(many=True),
+        "decision_id": serializers.IntegerField(allow_null=True),
+        "skipped": inline_serializer("GenerateSkipped", fields={"material_id": serializers.IntegerField(), "reason": serializers.CharField()}, many=True),
+    },
+)
+
+
+class SupplierNameRefSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+
+
+class PendingPurchaseSerializer(serializers.Serializer):
+    material = inline_serializer(
+        "PendingPurchaseMaterial",
+        fields={
+            "id": serializers.IntegerField(),
+            "sku": serializers.CharField(),
+            "name": serializers.CharField(),
+            "kind": serializers.CharField(),
+            "unit": serializers.CharField(),
+            "image": serializers.CharField(allow_null=True),
+        },
+    )
+    total_to_order = serializers.CharField(help_text="Still to buy across the orders, as a decimal string.")
+    orders = inline_serializer(
+        "PendingPurchaseOrder",
+        fields={
+            "id": serializers.IntegerField(),
+            "code": serializers.CharField(),
+            "customer_name": serializers.CharField(),
+            "qty": serializers.CharField(),
+            "due_on": serializers.DateField(),
+        },
+        many=True,
+    )
+    due_on = serializers.DateField(allow_null=True)
+    suggested_supplier = SupplierNameRefSerializer(allow_null=True)
+    candidates = inline_serializer(
+        "PendingPurchaseCandidate",
+        fields={"supplier": SupplierNameRefSerializer(), "unit_price": serializers.CharField(), "currency": serializers.CharField(), "score": serializers.FloatField()},
+        many=True,
+    )
+    lead_time_days = serializers.IntegerField(allow_null=True)
+    reference_price = serializers.CharField(allow_null=True, help_text="Manager only; null for production.")
+    currency = serializers.CharField(allow_null=True)
+    alert_id = serializers.IntegerField(allow_null=True)
+
+
 class PendingPurchasesView(APIView):
     """`GET /api/requirements/pending/`: open material requirements grouped by material, the
     "Por pedir" screen (ADR 0025 A). Manager and production; prices only for the manager."""
 
     permission_classes = [IsManagerOrProduction]
 
-    @extend_schema(responses={200: serializers.ListField(child=serializers.DictField())})
+    @extend_schema(responses={200: PendingPurchaseSerializer(many=True)})
     def get(self, request):
         raw = request.query_params.get("material_ids", "")
         material_ids = [int(x) for x in raw.split(",") if x.strip().isdigit()] or None
@@ -289,7 +406,7 @@ class PurchaseOrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(Q(code__icontains=text) | Q(items__requirement__order__code__icontains=text)).distinct()
         return qs
 
-    @extend_schema(request=GenerateInSerializer, responses={201: dict})
+    @extend_schema(request=GenerateInSerializer, responses={201: GenerateResultSchema})
     @action(detail=False, methods=["post"], permission_classes=[IsManagerOrProduction])
     def generate(self, request):
         """Consolidated material purchase orders for every open requirement (or `material_ids`):
