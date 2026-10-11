@@ -71,13 +71,13 @@ class OrderItemInSerializer(serializers.Serializer):
     sizes = serializers.DictField(required=False)
     color = serializers.CharField(required=False, allow_blank=True)
     customization = serializers.CharField(required=False, allow_blank=True)
-    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2)
+    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
 
 
 class OrderInSerializer(serializers.Serializer):
     """The simulated sales system payload (`docs/api/examples/order-*.json`)."""
 
-    code = serializers.CharField()
+    code = serializers.CharField(required=False, allow_blank=True, help_text="Optional: CP-YYYY-NNNN is generated when missing.")
     customer = serializers.CharField(help_text="Customer name.")
     brand = serializers.CharField(help_text="Brand name.")
     issued_on = serializers.DateField(required=False)

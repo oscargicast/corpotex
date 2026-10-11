@@ -70,7 +70,7 @@ class OrderItem(TimeStamped):
     sizes = models.JSONField(default=dict, help_text="Quantity per size.")
     color = models.CharField(max_length=60, blank=True)
     customization = models.CharField(max_length=20, choices=Customization.choices, blank=True)
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Sale price; empty when the form does not know it yet.")
 
     class Meta:
         verbose_name = "ítem de orden"

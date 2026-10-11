@@ -101,3 +101,21 @@ def test_cancel_by_role_and_status(catalogue, sales, production, manager, other_
     producing = order("CP-2026-0303", "AIDER", 100, date(2026, 11, 20), sales)
     Order.objects.filter(pk=producing.pk).update(status="in_production")
     assert manager_client.post(f"/api/orders/{producing.id}/cancel/", {}, format="json").status_code == 400
+
+
+@pytest.mark.django_db
+def test_form_payload_without_code_or_prices_creates_the_order(catalogue, sales_client, manager_client):
+    """The dashboard form (F4.3) knows neither the sales system's code nor the sale price."""
+    body = {"customer": "Caja Piura", "brand": "UNICRACK", "promised_on": "2026-11-20", "notes": "Para el aniversario",
+            "items": [{"product": "UNI-POL-01", "quantity": 120, "color": "azul", "customization": "embroidery"}]}
+    first = sales_client.post("/api/orders/", body, format="json")
+    assert first.status_code == 201, first.content
+    data = first.json()
+    assert data["code"].startswith("CP-2026-") and data["notes"] == "Para el aniversario" and "total_amount" not in data  # prices are manager-only
+    assert data["status"] == "broken_down" and data["requirements"]
+    second = sales_client.post("/api/orders/", body, format="json")
+    assert second.status_code == 201 and second.json()["code"] != data["code"]  # No code: never the idempotent 200.
+    numbers = sorted(int(c.rsplit("-", 1)[1]) for c in Order.objects.filter(code__startswith="CP-2026-").values_list("code", flat=True))
+    assert numbers[-1] == numbers[-2] + 1
+    manager_view = manager_client.get(f"/api/orders/{data['id']}/").json()
+    assert manager_view["items"][0]["unit_price"] is None and manager_view["total_amount"] == "0.00"
