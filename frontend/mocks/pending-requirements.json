@@ -1,0 +1,154 @@
+[
+  {
+    "material": {
+      "id": 5,
+      "sku": "BOT-18L-NAC",
+      "name": "Botón 18L nácar",
+      "unit": "unit",
+      "image": null
+    },
+    "total_to_order": "900.00",
+    "due_on": "2026-10-20",
+    "orders": [
+      {
+        "id": 1,
+        "code": "CP-2026-0001",
+        "customer_name": "Caja Piura",
+        "qty": "400.00",
+        "due_on": "2026-10-20"
+      },
+      {
+        "id": 2,
+        "code": "CP-2026-0002",
+        "customer_name": "Colegio San José",
+        "qty": "500.00",
+        "due_on": "2026-10-24"
+      }
+    ],
+    "suggested_supplier": {
+      "id": 10,
+      "name": "Botones y Cierres Perú"
+    },
+    "candidates": [
+      {
+        "supplier": {
+          "id": 10,
+          "name": "Botones y Cierres Perú"
+        },
+        "unit_price": "0.18",
+        "currency": "PEN",
+        "score": "0.86"
+      },
+      {
+        "supplier": {
+          "id": 4,
+          "name": "Textiles Gamarra"
+        },
+        "unit_price": "0.21",
+        "currency": "PEN",
+        "score": "0.71"
+      }
+    ],
+    "reference_price": {
+      "unit_price": "0.18",
+      "currency": "PEN"
+    },
+    "alert_id": null
+  },
+  {
+    "material": {
+      "id": 4,
+      "sku": "RIB-CUE-01",
+      "name": "Cuello y puño rib",
+      "unit": "unit",
+      "image": null
+    },
+    "total_to_order": "1300.00",
+    "due_on": "2026-10-24",
+    "orders": [
+      {
+        "id": 2,
+        "code": "CP-2026-0002",
+        "customer_name": "Colegio San José",
+        "qty": "900.00",
+        "due_on": "2026-10-24"
+      },
+      {
+        "id": 4,
+        "code": "CP-2026-0004",
+        "customer_name": "PIQA",
+        "qty": "400.00",
+        "due_on": "2026-11-06"
+      }
+    ],
+    "suggested_supplier": {
+      "id": 4,
+      "name": "Textiles Gamarra"
+    },
+    "candidates": [
+      {
+        "supplier": {
+          "id": 4,
+          "name": "Textiles Gamarra"
+        },
+        "unit_price": "1.20",
+        "currency": "PEN",
+        "score": "0.82"
+      },
+      {
+        "supplier": {
+          "id": 6,
+          "name": "Hilos de México"
+        },
+        "unit_price": "0.31",
+        "currency": "USD",
+        "score": "0.77"
+      }
+    ],
+    "reference_price": {
+      "unit_price": "1.20",
+      "currency": "PEN"
+    },
+    "alert_id": null
+  },
+  {
+    "material": {
+      "id": 6,
+      "sku": "CIE-NYL-20",
+      "name": "Cierre nylon 20 cm",
+      "unit": "unit",
+      "image": null
+    },
+    "total_to_order": "400.00",
+    "due_on": "2026-11-06",
+    "orders": [
+      {
+        "id": 4,
+        "code": "CP-2026-0004",
+        "customer_name": "PIQA",
+        "qty": "400.00",
+        "due_on": "2026-11-06"
+      }
+    ],
+    "suggested_supplier": {
+      "id": 10,
+      "name": "Botones y Cierres Perú"
+    },
+    "candidates": [
+      {
+        "supplier": {
+          "id": 10,
+          "name": "Botones y Cierres Perú"
+        },
+        "unit_price": "0.65",
+        "currency": "PEN",
+        "score": "0.80"
+      }
+    ],
+    "reference_price": {
+      "unit_price": "0.65",
+      "currency": "PEN"
+    },
+    "alert_id": null
+  }
+]

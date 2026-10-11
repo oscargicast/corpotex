@@ -1,8 +1,11 @@
 "use client";
 
+import { ShoppingCart } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 import { PurchaseOrderList } from "@/components/purchase-order-list";
+import { useUser } from "@/components/require-auth";
 import { Card } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import type { PurchaseOrderListItem } from "@/lib/types";
@@ -16,6 +19,7 @@ const KINDS = [
 ];
 
 export default function PurchaseOrdersPage() {
+  const user = useUser();
   const [kind, setKind] = useState("");
   const [waiting, setWaiting] = useState(false);
   const query = new URLSearchParams({ ...(kind && { kind }), ...(waiting && { waiting_manager: "1" }) }).toString();
@@ -25,7 +29,14 @@ export default function PurchaseOrdersPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight">Pedidos a proveedores y talleres</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold tracking-tight">Pedidos a proveedores y talleres</h1>
+        {user.role !== "sales" && (
+          <Link href="/purchase-orders/pending" className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline">
+            <ShoppingCart size={16} /> Por pedir
+          </Link>
+        )}
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex rounded-lg bg-surface p-1 ring-1 ring-line" role="tablist">
           {KINDS.map((k) => (
