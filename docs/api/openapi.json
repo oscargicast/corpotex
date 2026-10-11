@@ -7789,6 +7789,7 @@
                     },
                     "photo": {
                         "type": "string",
+                        "description": "Its own photo, else the image of its WhatsApp or simulator message (reports saved\nbefore the agent's photos were linked).",
                         "readOnly": true
                     },
                     "source": {
