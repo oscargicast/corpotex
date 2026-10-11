@@ -28,6 +28,8 @@ def test_scenarios_are_well_formed():
         assert set(scenario) <= KNOWN_KEYS, scenario["name"]
         for pattern in (scenario.get("must") or []) + (scenario.get("must_not") or []):
             re.compile(pattern)
+            # In single-quoted YAML "\\(" stays doubled and the regex never matches.
+            assert "\\\\" not in pattern, (scenario["name"], pattern)
 
 
 def test_template_is_loaded_into_whatsapp_states():

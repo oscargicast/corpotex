@@ -422,8 +422,8 @@ scenarios:
           suggested_supplier: {id: 6, name: Avíos Gamarra}
           reference_price: "0.18"
           currency: PEN
-    must: ['900', 'CP-2026-0142', 'CP-2026-0155', 'Avíos Gamarra', '0[.,]18', '¿Genero el pedido[^\\n]*Avíos Gamarra\\?\\s*$']
-    must_not: ['\\(s[ií]/no\\)', 'https?://']
+    must: ['900', 'CP-2026-0142', 'CP-2026-0155', 'Avíos Gamarra', '0[.,]18', '¿Genero el pedido[^\n]*Avíos Gamarra\?\s*$']
+    must_not: ['\(s[ií]/no\)', 'https?://']
     forbid_tools: [generate_purchase_orders]
 
   - name: sugerencia_de_compra_produccion
@@ -446,8 +446,8 @@ scenarios:
           suggested_supplier: {id: 6, name: Avíos Gamarra}
           reference_price: null
           currency: null
-    must: ['900', 'Avíos Gamarra', '¿Genero el pedido[^\\n]*Avíos Gamarra\\?\\s*$']
-    must_not: ['S/', 'USD', '0[.,]18', '\\(s[ií]/no\\)']
+    must: ['900', 'Avíos Gamarra', '¿Genero el pedido[^\n]*Avíos Gamarra\?\s*$']
+    must_not: ['S/', 'USD', '0[.,]18', '\(s[ií]/no\)']
     forbid_tools: [generate_purchase_orders]
 
   - name: generar_pedido_confirmacion_produccion
@@ -499,9 +499,32 @@ scenarios:
           suggested_supplier: {id: 9, name: Tejidos Rib Lima}
           reference_price: null
           currency: null
-    must: ['CP-2026-0151', '1000', 'Tejidos Rib Lima', '¿Genero el pedido[^\\n]*Tejidos Rib Lima\\?\\s*$']
-    must_not: ['¿Quieres que', '\\(s[ií]/no\\)', 'S/', '1000\\.00']
+    must: ['CP-2026-0151', '1000', 'Tejidos Rib Lima', '¿Genero el pedido[^\n]*Tejidos Rib Lima\?\s*$']
+    must_not: ['¿Quieres que', '\(s[ií]/no\)', 'S/', '1000\.00']
     forbid_tools: [generate_purchase_orders]
+
+  - name: aviso_respuesta_de_avance
+    agent: assistant
+    description: "ADR 0027 §6. Comercial pidió avance y el proveedor respondió: el asistente cuenta el resumen en sus palabras, con proveedor y pedido, sin decir por dónde respondió ni preguntar sí/no."
+    state:
+      user: {first_name: Lucía, role: sales}
+      alerts:
+        - id: 131
+          kind: follow_up_answered
+          severity: info
+          detected_at: "2026-10-14T10:20:00-05:00"
+          repeat: false
+          order: null
+          purchase_order: {id: 44, code: PI-0044}
+          decision: null
+          supplier_name: Avíos Gamarra
+          order_codes: [CP-2026-0158]
+          answer_summary: "500 de 3430 conos listos; el proveedor dice que entrega todo el jueves 15."
+          requested_at: "2026-10-14T09:40:00-05:00"
+          url: /purchase-orders/44
+    must: ['PI-0044|CP-2026-0158', 'Av[ií]os Gamarra', '500', 'jueves']
+    must_not: ['whatsapp', '\(s[ií]/no\)', 'https?://', 'desde las']
+    forbid_tools: [request_follow_up]
 
   # --- Seguimiento proactivo (ADR 0027) --------------------------------------------------------
 

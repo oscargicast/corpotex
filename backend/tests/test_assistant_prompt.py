@@ -148,3 +148,14 @@ def test_mixed_batch_asks_a_single_question_about_the_purchase():
     assert "UNA sola pregunta, sobre esa compra" in text
     assert "van antes, como contexto, sin preguntas" in text
     assert 'total_por_pedir="1000"' in text
+
+
+def test_follow_up_answer_renders_the_summary_and_who_answered():
+    text = turn_text(scenario_state("aviso_respuesta_de_avance"))
+    assert '<alerta tipo="respuesta de avance" severidad="info"' in text
+    assert (
+        '<respuesta_de_avance proveedor="Avíos Gamarra" ordenes="CP-2026-0158" pedido="PI-0044" '
+        'pedido_el="miércoles 14 de octubre, 09:40">500 de 3430 conos listos' in text
+    )
+    assert "<pedido " not in text  # the answer carries the code; no duplicate object
+    assert 'nunca "por WhatsApp"' in text

@@ -23,6 +23,7 @@ ALERT_KINDS = {
     "no_channel": "pedido sin canal de WhatsApp",
     "payment_due": "pago vencido",
     "purchase_suggested": "compra sugerida",
+    "follow_up_answered": "respuesta de avance",
     "style_refresh_failed": "falló el refresco del estilo",
     "turn_failed": "falló un turno del agente",
 }
@@ -93,6 +94,14 @@ PURCHASE_SUGGESTED = (
     "Las demás alertas (órdenes en peligro, retrasos) van antes, como contexto, sin preguntas, así un "
     '"sí" del usuario se entiende como respuesta a esa pregunta. El precio de referencia solo si viene '
     "en los datos."
+)
+
+FOLLOW_UP_ANSWERED = (
+    "Hay una <respuesta_de_avance>: es la respuesta a un avance que este usuario pidió "
+    "(pedido_el). Cuéntala como una línea en negrita con el proveedor y el pedido o la orden, y en "
+    "otra línea el resumen en tus palabras: unidades, etapa y fecha. Es una respuesta, no un "
+    'problema: sin "desde cuándo" ni qué hacer. No digas por dónde respondió el proveedor (nunca '
+    '"por WhatsApp") ni lo cites entre comillas.'
 )
 
 
@@ -184,12 +193,26 @@ def _render_alerts(alerts: list[dict]) -> str:
             )
             if alert.get(key)
         ]
+        if alert.get("kind") == "follow_up_answered":
+            body = [_render_follow_up_answer(alert)]  # carries the order code itself
         if alert.get("material"):
             body.append(_render_purchase_suggestion(alert))
         rendered.append(f"<alerta{tag}>\n" + "\n".join(body) + "\n</alerta>")
     if hidden > 0:
         rendered.append(f'<mas_avisos cantidad="{hidden}"/>')
     return "<avisos>\n" + "\n".join(rendered) + "\n</avisos>"
+
+
+def _render_follow_up_answer(alert: dict) -> str:
+    """`<respuesta_de_avance>` (ADR 0027 §6): the agent's summary, never the supplier's text."""
+    head = ctx.attrs(
+        proveedor=alert.get("supplier_name"),
+        ordenes=", ".join(alert.get("order_codes") or []),
+        pedido=(alert.get("purchase_order") or {}).get("code"),
+        pedido_el=ctx.fmt_datetime(alert.get("requested_at")),
+    )
+    summary = ctx.text(alert.get("answer_summary") or "")
+    return f"<respuesta_de_avance{head}>{summary}</respuesta_de_avance>"
 
 
 def _render_purchase_suggestion(alert: dict) -> str:
@@ -250,6 +273,8 @@ def _render_what_to_do(state: dict) -> str:
                 "pidió en su mensaje, nunca una que sugiera un aviso."
             )
         steps.append(ALERTS_ONLY)
+        if any(a.get("kind") == "follow_up_answered" for a in state["alerts"]):
+            steps.append(FOLLOW_UP_ANSWERED)
         if any(a.get("kind") == "purchase_suggested" for a in state["alerts"]):
             steps.append(PURCHASE_SUGGESTED)
     return "<que_hacer>\n" + "\n".join(f"- {step}" for step in steps) + "\n</que_hacer>"
