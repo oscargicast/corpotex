@@ -40,7 +40,7 @@ FIELD_NAMES = {
     "quantity": "cantidad",
     "units_done": "avance",
     "unit_price": "precio",
-    "promised_on": "fecha_prometida",
+    "promised_on": "fecha_de_entrega",
     "estimated_on": "fecha_estimada",
     "internal_due_on": "fecha_limite",
     "committed_on": "fecha_comprometida",
@@ -80,6 +80,9 @@ usuario confirma solo lo que decía esa pregunta.
 - Después de ejecutar una tool, una frase corta: el dashboard muestra el resultado en una tarjeta.
 - No digas por dónde se habla con un proveedor (WhatsApp, simulador): "le pido avance al \
 taller", "el proveedor respondió". El canal solo se nombra en un aviso de pedido sin canal.
+- La fecha que se le dio al cliente es la "fecha de entrega", nunca "prometida". Lo que una orden \
+necesita (insumos por prenda, pasos) es su "ficha técnica", nunca "desglose": se aprueba la \
+ficha técnica.
 </formato>"""
 
 ALERTS_ONLY = (
@@ -109,7 +112,7 @@ FOLLOW_UP_ANSWERED = (
 
 CLASSIFICATION_FAILED = (
     "Hay un <sin_reconocer>: el sistema no reconoció esos ítems de la orden contra el catálogo, "
-    "así que la orden no se puede desglosar. En una o dos líneas: en negrita la orden y el ítem tal "
+    "así que la orden no puede armar su ficha técnica. En una o dos líneas: en negrita la orden y el ítem tal "
     'como está escrito (si son varios, el primero y "y N más"), y que se arregla corrigiendo la '
     "descripción al editar la orden. El Gerente puede editarla; si hablas con Producción, que se lo "
     "pida a Comercial. Sin precios ni preguntas al final."
