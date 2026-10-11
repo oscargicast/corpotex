@@ -821,7 +821,15 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     if (!order) return json(404, { detail: "No existe." });
     const body = readBody(init.body) as { instruction?: string; dry_run?: boolean; proposal?: unknown };
     if (!body.proposal && !body.instruction?.trim()) return json(400, { detail: "Escribe qué cambiar." });
-    if (body.proposal) return json(200, { order: orderDetailFor(order, user.role), warnings: ["PI-0003 ya estaba pedido: su cantidad no cambia."] });
+    if (body.proposal) {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return json(200, {
+        order: orderDetailFor(order, user.role),
+        summary: "Se agregan 2 botones por prenda, la tela sube a 0.30 kg, sale la etiqueta tejida y el corte pasa a 3 días.",
+        warnings: ["Algodón piqué 20/1: ya pedido en PI-0001; el requerimiento no se tocó."],
+        estimated_on: order.estimated_on,
+      });
+    }
     await new Promise((resolve) => setTimeout(resolve, 2500));
     if (/falla/i.test(body.instruction ?? "")) return json(502, { detail: "No se pudo preparar la propuesta. Inténtalo de nuevo." });
     const items = (orderDetails[order.id]?.items ?? []).slice(0, 2);
@@ -831,8 +839,9 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
       { sku: "HIL-POL-40", name: "Hilo poliéster 40/2", qty_per_unit: "0.02", unit: "unit" },
       { sku: "ETQ-TEJ-01", name: "Etiqueta tejida", qty_per_unit: "1", unit: "unit" },
     ];
+    const summary = "Se agregan 2 botones por prenda, la tela sube a 0.30 kg, sale la etiqueta tejida y el corte pasa a 3 días.";
+    const warnings = ["Algodón piqué 20/1: ya pedido en PI-0001; el requerimiento no se tocó."];
     const proposal = {
-      summary: "Se agregan 2 botones por prenda, la tela sube a 0.30 kg, sale la etiqueta tejida y el corte pasa a 3 días.",
       items: items.map((item) => ({
         item_id: item.id,
         current,
@@ -847,9 +856,9 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
       stage_current: { cutting: 2 },
       stage_labels: { cutting: "Corte" },
     };
-    // Like the API: the dry run answers {proposal}; applying sends {proposal} back and gets {order}.
-    if (body.dry_run) return json(200, { proposal });
-    return json(200, { order: orderDetailFor(order, user.role), warnings: ["PI-0003 ya estaba pedido: su cantidad no cambia."] });
+    // Like the API: summary, warnings and estimated_on go next to proposal, not inside it.
+    if (body.dry_run) return json(200, { proposal, summary, warnings, estimated_on: order.estimated_on });
+    return json(200, { order: orderDetailFor(order, user.role), summary, warnings, estimated_on: order.estimated_on });
   }
   const orderApply = route.match(/^POST \/api\/orders\/(\d+)\/apply-classification\/$/);
   if (orderApply) {

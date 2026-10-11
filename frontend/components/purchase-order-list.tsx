@@ -3,6 +3,7 @@ import Link from "next/link";
 import { isOpenRequest, requestedBy } from "@/lib/follow-up";
 import { formatDay, formatMoney, num } from "@/lib/format";
 import type { PurchaseOrderListItem } from "@/lib/types";
+import { KindIcon } from "./thumb";
 import { Pill, SEVERITY_TONE } from "./ui";
 
 // Table on desktop, cards on mobile. Used by /purchase-orders and the order detail.
@@ -17,7 +18,10 @@ export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] })
           <li key={po.id}>
             <Link href={`/purchase-orders/${po.id}`} className="block rounded-lg bg-surface p-3 ring-1 ring-line">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-accent">{po.code}</span>
+                <span className="flex items-center gap-1.5 font-semibold text-accent">
+                  <KindIcon kind={po.kind} className="shrink-0 text-muted" />
+                  {po.code}
+                </span>
                 <Status po={po} />
               </div>
               <p className="mt-1 text-sm">{po.supplier.name}</p>
@@ -46,7 +50,8 @@ export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] })
             {items.map((po) => (
               <tr key={po.id}>
                 <td className="py-2.5 pr-3">
-                  <Link href={`/purchase-orders/${po.id}`} className="font-semibold text-accent hover:underline">
+                  <Link href={`/purchase-orders/${po.id}`} className="inline-flex items-center gap-1.5 font-semibold text-accent hover:underline">
+                    <KindIcon kind={po.kind} className="shrink-0 text-muted" />
                     {po.code}
                   </Link>
                   <span className="block text-xs text-muted">{po.kind_display}</span>

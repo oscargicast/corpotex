@@ -138,3 +138,21 @@ body {
     animation: none;
   }
 }
+
+/* Bottom sheet (critical path step on the phone). */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+.sheet-in {
+  animation: sheet-in 220ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-in {
+    animation: none;
+  }
+}

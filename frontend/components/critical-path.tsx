@@ -1,5 +1,10 @@
-import { CalendarCheck, CalendarClock, CheckCircle2, Flame, OctagonAlert, TriangleAlert, type LucideIcon } from "lucide-react";
+"use client";
+
+import { CalendarClock, CheckCircle2, ChevronRight, Flame, OctagonAlert, TriangleAlert, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { SkeletonLines } from "./skeleton";
 import type { CriticalStep, PurchaseOrderListItem } from "@/lib/types";
 
 // Ruta crítica (ADR 0029 §3): the three dates that matter, a timeline with a
@@ -48,60 +53,233 @@ function slackTone(slack: number | null): Tone {
   return slack >= 2 ? "ok" : slack >= 0 ? "tight" : "late";
 }
 
+const EXPANDED_KEY = "corpotex.criticalPath.expanded";
+
+// Compressed by default (one strip of blocks, Oscar 11/10 06:35); "Ver detalle"
+// or the header expands it to the timeline and the dated list, remembered per
+// browser.
 export function CriticalPath({
   steps,
   promisedOn,
   estimatedOn,
   slackDays,
   purchaseOrders = [],
+  actions,
+  loading = false,
 }: {
   steps: CriticalStep[];
   promisedOn: string;
   estimatedOn: string | null;
   slackDays: number | null;
   purchaseOrders?: PurchaseOrderListItem[];
+  actions?: React.ReactNode;
+  loading?: boolean;
 }) {
   const tone = slackTone(slackDays);
-  const t = TONE[tone];
+  const [expanded, setExpanded] = useState(false);
+  const bodyId = useId();
+  useEffect(() => {
+    try {
+      setExpanded(localStorage.getItem(EXPANDED_KEY) === "1");
+    } catch {
+      // Storage blocked: compressed it is.
+    }
+  }, []);
+  function toggle() {
+    const next = !expanded;
+    setExpanded(next);
+    try {
+      localStorage.setItem(EXPANDED_KEY, next ? "1" : "0");
+    } catch {
+      // Not remembered, still toggled.
+    }
+  }
+  const slackText =
+    slackDays === null ? null : slackDays >= 0 ? `${slackDays} ${slackDays === 1 ? "día" : "días"} de holgura` : `${-slackDays} ${slackDays === -1 ? "día" : "días"} de atraso`;
 
   return (
-    <div className="space-y-5">
-      <dl className="grid grid-cols-3 gap-2 sm:gap-3">
-        <Fact icon={CalendarCheck} label="Fecha de entrega" value={short(promisedOn)} tone="none" />
-        <Fact icon={CalendarClock} label="Estimada" value={estimatedOn ? short(estimatedOn) : "—"} tone={tone} />
-        <Fact
-          icon={t.icon}
-          label="Holgura"
-          value={slackDays === null ? "—" : `${slackDays} ${Math.abs(slackDays) === 1 ? "día" : "días"}`}
-          note={t.label}
-          tone={tone}
-        />
-      </dl>
+    <div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={expanded}
+          aria-controls={bodyId}
+          className="-ml-1 flex min-h-11 items-center gap-1.5 rounded-md px-1 text-left hover:bg-canvas"
+        >
+          <ChevronRight size={16} className={`text-muted transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-90" : ""}`} aria-hidden />
+          <h2 className="text-base font-semibold">Ruta crítica</h2>
+        </button>
+        <p className="text-sm tabular-nums text-muted">
+          Entrega {short(promisedOn)}
+          {estimatedOn && <> · estimada {short(estimatedOn)}</>}
+          {slackText && (
+            <>
+              {" · "}
+              <span className={`font-semibold ${TONE[tone].text}`}>{slackText}</span>
+            </>
+          )}
+        </p>
+        <div className="ml-auto flex items-center gap-1">
+          {actions}
+          <button type="button" onClick={toggle} aria-expanded={expanded} aria-controls={bodyId} className="min-h-11 rounded-md px-2 text-sm font-medium text-accent hover:bg-canvas">
+            {expanded ? "Comprimir" : "Ver detalle"}
+          </button>
+        </div>
+      </div>
 
-      {steps.length ? (
-        <>
-          <Timeline steps={steps} promisedOn={promisedOn} estimatedOn={estimatedOn} tone={tone} />
-          <StepList steps={steps} purchaseOrders={purchaseOrders} />
-        </>
-      ) : (
-        <p className="text-sm text-muted">Sin ruta crítica todavía.</p>
-      )}
+      <div id={bodyId} className="mt-3">
+        {loading ? (
+          <SkeletonLines lines={3} />
+        ) : !steps.length ? (
+          <p className="text-sm text-muted">Sin ruta crítica todavía.</p>
+        ) : expanded ? (
+          <div className="space-y-5">
+            <Timeline steps={steps} promisedOn={promisedOn} estimatedOn={estimatedOn} tone={tone} />
+            <StepList steps={steps} purchaseOrders={purchaseOrders} />
+          </div>
+        ) : (
+          <Strip steps={steps} purchaseOrders={purchaseOrders} />
+        )}
+      </div>
     </div>
   );
 }
 
-function Fact({ icon: Icon, label, value, note, tone }: { icon: LucideIcon; label: string; value: string; note?: string; tone: Tone }) {
-  const t = TONE[tone];
+const STRIP: Record<CriticalStep["status"], string> = {
+  done: "bg-success text-white",
+  in_progress: "bg-accent text-white",
+  pending: "bg-canvas text-ink ring-1 ring-inset ring-line",
+  late: "bg-danger text-white",
+};
+
+// One block per step, as wide as its days; a click shows its dates (a popover,
+// a bottom sheet on the phone).
+function Strip({ steps, purchaseOrders }: { steps: CriticalStep[]; purchaseOrders: PurchaseOrderListItem[] }) {
+  const [open, setOpen] = useState<{ id: string; left: number; sheet: boolean } | null>(null);
+  const wrap = useRef<HTMLDivElement | null>(null);
+  const spans = steps.map(span);
+  const byId = new Map(purchaseOrders.map((po) => [po.id, po]));
+  const current = open ? steps.find((s) => s.id === open.id) : undefined;
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(null);
+    };
+    const onDown = (e: MouseEvent) => {
+      if (!open.sheet && wrap.current && !wrap.current.contains(e.target as Node)) setOpen(null);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDown);
+    };
+  }, [open]);
+
   return (
-    <div className={`rounded-xl p-3 ring-1 ring-line ${tone === "none" ? "bg-surface" : t.bg}`}>
-      <dt className="flex items-center gap-1.5 text-xs text-muted">
-        <Icon size={14} className={tone === "none" ? "text-muted" : t.text} aria-hidden />
-        {label}
-      </dt>
-      <dd className={`mt-0.5 font-semibold tabular-nums ${t.text}`}>
-        {value}
-        {note && <span className="ml-1 text-xs font-medium">· {note}</span>}
-      </dd>
+    <div ref={wrap} className="relative">
+      <div className="flex h-10 gap-1">
+        {steps.map((step, i) => {
+          const s = spans[i];
+          const active = open?.id === step.id;
+          return (
+            <button
+              key={step.id}
+              type="button"
+              title={`${step.name} · ${range(s.start, s.end)} · ${s.days} ${s.days === 1 ? "día" : "días"}`}
+              aria-label={`${step.name}, ${range(s.start, s.end)}, ${STATUS[step.status].label}${step.critical ? ", crítico" : ""}`}
+              aria-expanded={active}
+              onClick={(e) => {
+                if (active) return setOpen(null);
+                const el = e.currentTarget;
+                const width = wrap.current?.offsetWidth ?? 0;
+                const left = Math.min(Math.max(el.offsetLeft + el.offsetWidth / 2 - 144, 0), Math.max(width - 288, 0));
+                setOpen({ id: step.id, left, sheet: window.matchMedia("(max-width: 639px)").matches });
+              }}
+              style={{ flexGrow: s.days, flexBasis: 0 }}
+              className={`@container flex min-w-7 items-center justify-center gap-1 overflow-hidden rounded-md px-1.5 text-xs font-medium transition-[filter,box-shadow] duration-200 hover:brightness-110 hover:ring-2 hover:ring-ink/50 motion-reduce:transition-none sm:justify-start sm:px-2 ${STRIP[step.status]} ${active ? "ring-2 ring-ink" : ""}`}
+            >
+              {step.critical && <Flame size={12} className="shrink-0" aria-hidden />}
+              {/* The name shows when the block itself is wide enough (a container query, not a share of the total). */}
+              <span className="hidden min-w-0 truncate @min-[3rem]:inline">{step.name}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1.5 flex flex-wrap gap-x-3 text-[11px] text-muted">
+        {Object.values(STATUS).map((st) => (
+          <span key={st.label} className="flex items-center gap-1">
+            <span className={`inline-block size-2 rounded-sm ${st.bar}`} aria-hidden /> {st.label}
+          </span>
+        ))}
+        <span className="flex items-center gap-1">
+          <Flame size={11} className="text-danger" aria-hidden /> Crítico
+        </span>
+      </p>
+
+      {current && open && !open.sheet && (
+        <div role="dialog" aria-label={current.name} className="magic-in absolute top-12 z-20 w-72 rounded-xl bg-surface p-3 text-sm shadow-xl ring-1 ring-line" style={{ left: open.left }}>
+          <StepDetails step={current} po={current.purchase_order_id ? byId.get(current.purchase_order_id) : undefined} />
+        </div>
+      )}
+      {current && open?.sheet &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-end bg-ink/40" onMouseDown={(e) => e.target === e.currentTarget && setOpen(null)}>
+            <div role="dialog" aria-modal="true" aria-label={current.name} className="sheet-in w-full rounded-t-2xl bg-surface p-5 pb-8 text-sm shadow-2xl">
+              <div className="flex justify-end">
+                <button type="button" onClick={() => setOpen(null)} aria-label="Cerrar" className="-mr-2 -mt-2 flex size-11 items-center justify-center rounded-md text-muted">
+                  <X size={18} aria-hidden />
+                </button>
+              </div>
+              <StepDetails step={current} po={current.purchase_order_id ? byId.get(current.purchase_order_id) : undefined} />
+            </div>
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+}
+
+// "Corte · del 12 al 14 oct · 2 días", the supplier's dates and lateness.
+function StepDetails({ step, po }: { step: CriticalStep; po?: PurchaseOrderListItem }) {
+  const s = span(step);
+  const st = STATUS[step.status];
+  const committed = po?.committed_on ?? null;
+  const internal = po?.internal_due_on ?? null;
+  const pastLimit = !!internal && time(committed ?? s.end) > time(internal);
+  return (
+    <div className="space-y-1">
+      <p className="flex flex-wrap items-center gap-x-2 font-semibold">
+        {step.name}
+        {step.critical && (
+          <span className="inline-flex items-center gap-0.5 text-xs text-danger">
+            <Flame size={12} aria-hidden /> crítico
+          </span>
+        )}
+      </p>
+      <p className="tabular-nums">
+        {range(s.start, s.end)} · {s.days} {s.days === 1 ? "día" : "días"}
+      </p>
+      {(committed || internal) && (
+        <p className={`text-xs tabular-nums ${pastLimit ? "text-danger" : "text-muted"}`}>
+          {[committed && `comprometido ${short(committed)}`, internal && `límite ${short(internal)}`].filter(Boolean).join(" · ")}
+        </p>
+      )}
+      {!!step.late_by && step.late_by > 0 && (
+        <p className="flex items-center gap-1 text-xs font-semibold text-danger">
+          <OctagonAlert size={12} aria-hidden /> llega {step.late_by} {step.late_by === 1 ? "día" : "días"} tarde
+        </p>
+      )}
+      <p className={`flex items-center gap-1.5 text-xs font-medium ${st.text}`}>
+        <span className={`inline-block size-2 rounded-full ${st.bar}`} aria-hidden /> {st.label}
+      </p>
+      {step.purchase_order_id && (
+        <Link href={`/purchase-orders/${step.purchase_order_id}`} className="inline-flex min-h-11 items-center text-xs font-medium text-accent hover:underline sm:min-h-0">
+          Ver pedido {po?.code ?? ""}
+        </Link>
+      )}
     </div>
   );
 }
