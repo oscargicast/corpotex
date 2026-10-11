@@ -67,6 +67,7 @@ class Alert(TimeStamped):
         DECISION_PENDING = "decision_pending", "Decisión pendiente"
         CLAUDE_DISCONNECTED = "claude_disconnected", "Claude desconectado"
         PURCHASE_SUGGESTED = "purchase_suggested", "Compra sugerida"
+        FOLLOW_UP_ANSWERED = "follow_up_answered", "Avance respondido"
 
     class Severity(models.TextChoices):
         INFO = "info", "Info"

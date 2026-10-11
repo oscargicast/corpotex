@@ -242,7 +242,7 @@ def plan_for_today(now: datetime | None = None, supplier_ids=None) -> list[Plann
         reminders = {}
         for po in pos:
             due = _reminder_at(po, mode, supplier, config)
-            if due and timezone.localtime(due).date() == today:
+            if due and timezone.localtime(due).date() <= today:  # also one that came due on an earlier day (tick down, window change; agente 11/10)
                 since = timezone.localtime(po.awaiting_reply_since)
                 reminders[po.id] = (due, f"sin respuesta desde las {since:%H:%M}" if since.date() == today else f"sin respuesta desde el {since:%d/%m}")
         checkpoints = {}

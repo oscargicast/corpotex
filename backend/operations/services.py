@@ -1151,3 +1151,10 @@ def record_public_report(token, *, units_done: int, photo=None, note: str = "") 
     if po.conversation_id:
         enqueue_turn(po.conversation, "web_report")
     return report
+
+
+def answer_follow_up_requests(request_ids, *, summary: str) -> int:
+    """The agent's `answer_follow_up` (ADR 0027 §6): see `follow_up_requests`."""
+    from .follow_up_requests import answer_follow_up_requests as answer
+
+    return answer(request_ids, summary=summary)
