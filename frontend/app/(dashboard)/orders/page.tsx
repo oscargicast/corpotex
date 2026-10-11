@@ -8,6 +8,7 @@ import { ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } 
 import { useUser } from "@/components/require-auth";
 import { SkeletonTable } from "@/components/skeleton";
 import { Button, Pill, RISK_LABEL, RISK_TONE } from "@/components/ui";
+import { orderStatusLabel } from "@/lib/order-status";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { formatDay } from "@/lib/format";
 import { canCreateOrder } from "@/lib/orders";
@@ -34,7 +35,7 @@ function Orders() {
   const query = new URLSearchParams({ ...(risk && { risk }), ...(statuses.length && { status: statuses.join(",") }), ...(q && { q }) }).toString();
   const { data, error, mutate } = useSWR<OrderListItem[]>(`/api/orders/${query ? `?${query}` : ""}`, fetcher, { refreshInterval: 3000, keepPreviousData: true });
   const { data: all } = useSWR<OrderListItem[]>("/api/orders/", fetcher, { refreshInterval: 5000 });
-  const options = statusOptions(all ?? [], ORDER_STATUSES);
+  const options = statusOptions((all ?? []).map((o) => ({ ...o, status_display: orderStatusLabel(o.status, o.status_display) })), ORDER_STATUSES);
   const filtered = data ?? [];
   const filtering = !!(risk || statuses.length || q);
 
@@ -103,7 +104,7 @@ function Orders() {
                     {order.customer.name} · {order.brand.name}
                   </p>
                   <p className="mt-1 text-xs text-muted">
-                    {order.status_display} · {Number(order.total_units)} u. · prometida {formatDay(order.promised_on)}, estimada{" "}
+                    {orderStatusLabel(order.status, order.status_display)} · {Number(order.total_units)} u. · entrega {formatDay(order.promised_on)}, estimada{" "}
                     {formatDay(order.estimated_on)}
                   </p>
                 </Link>
@@ -119,7 +120,7 @@ function Orders() {
                   <th className="px-4 py-3 font-medium">Cliente</th>
                   <th className="px-4 py-3 font-medium">Estado</th>
                   <th className="px-4 py-3 text-right font-medium">Unidades</th>
-                  <th className="px-4 py-3 font-medium">Prometida</th>
+                  <th className="px-4 py-3 font-medium">Fecha de entrega</th>
                   <th className="px-4 py-3 font-medium">Estimada</th>
                   <th className="px-4 py-3 font-medium">Riesgo</th>
                 </tr>
@@ -137,7 +138,7 @@ function Orders() {
                       <span className="block text-xs text-muted">{order.brand.name}</span>
                     </td>
                     <td className="px-4 py-3">
-                      {order.status_display}
+                      {orderStatusLabel(order.status, order.status_display)}
                       {order.purchase_orders_summary?.waiting_manager ? (
                         <span className="block text-xs text-warning">{order.purchase_orders_summary.waiting_manager} esperando al Gerente</span>
                       ) : null}

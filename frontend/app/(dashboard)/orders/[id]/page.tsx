@@ -7,6 +7,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { AlertList } from "@/components/alert-list";
 import { CriticalPath } from "@/components/critical-path";
+import { orderStatusLabel } from "@/lib/order-status";
 import { PurchaseOrderList } from "@/components/purchase-order-list";
 import { RedistributionCard } from "@/components/redistribution-card";
 import { useUser } from "@/components/require-auth";
@@ -76,11 +77,11 @@ export default function OrderDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight">{order.code}</h1>
             <Pill tone={RISK_TONE[order.risk]}>{RISK_LABEL[order.risk]}</Pill>
-            <Pill>{order.status_display}</Pill>
+            <Pill>{orderStatusLabel(order.status, order.status_display)}</Pill>
           </div>
           <p className="mt-1 text-sm text-muted">
             {order.customer.name} · {order.brand.name} · {Number(order.total_units)} unidades
-            {num(order.total_amount) ? ` · ${formatMoney(order.total_amount)}` : ""}
+            {num(order.total_amount) ? ` · ${formatMoney(order.total_amount)}` : ""} · emitida {formatDay(order.issued_on)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -101,7 +102,7 @@ export default function OrderDetailPage() {
           )}
           {canConfirm && (
             <Button kind="primary" onClick={confirm} busy={confirming}>
-              {confirming ? "Confirmando…" : "Confirmar desglose"}
+              {confirming ? "Aprobando…" : "Aprobar ficha técnica"}
             </Button>
           )}
         </div>
@@ -129,30 +130,23 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Fact label="Emitida" value={formatDay(order.issued_on)} />
-        <Fact label="Prometida al cliente" value={formatDay(order.promised_on)} />
-        <Fact
-          label="Estimada"
-          value={formatDay(order.estimated_on)}
-          tone={order.slack_days !== null && order.slack_days < 0 ? "text-danger" : undefined}
-        />
-        <Fact
-          label="Holgura"
-          value={order.slack_days === null ? "—" : `${order.slack_days} días`}
-          tone={order.slack_days !== null && order.slack_days < 0 ? "text-danger" : undefined}
-        />
-      </div>
+      {/* Fecha de entrega, Estimada and Holgura live in the Ruta crítica card (ADR 0029 §3). */}
       {order.risk_reason && <p className="rounded-lg bg-warning-soft px-4 py-2 text-sm text-warning">{order.risk_reason}</p>}
 
       <Card>
         <SectionTitle>Estado</SectionTitle>
-        <StatusTimeline flow="order" status={order.status} statusDisplay={order.status_display} history={order.status_history} />
+        <StatusTimeline flow="order" status={order.status} statusDisplay={orderStatusLabel(order.status, order.status_display)} history={order.status_history} />
       </Card>
 
       <Card>
         <SectionTitle>Ruta crítica</SectionTitle>
-        <CriticalPath steps={order.critical_path} promisedOn={order.promised_on} />
+        <CriticalPath
+          steps={order.critical_path}
+          promisedOn={order.promised_on}
+          estimatedOn={order.estimated_on}
+          slackDays={order.slack_days}
+          purchaseOrders={order.purchase_orders}
+        />
       </Card>
 
       {order.redistributions.map((decision) => (
@@ -198,13 +192,13 @@ export default function OrderDetailPage() {
             (ClassifyPanel is no longer mounted). */}
         {order.needs_classification && (
           <p className="flex items-center gap-2 rounded-xl bg-accent/10 px-4 py-3 text-sm text-accent xl:col-span-2" role="status">
-            <Sparkles size={16} className="shrink-0" aria-hidden /> La IA está reconociendo los ítems. El desglose aparece aquí cuando termine.
+            <Sparkles size={16} className="shrink-0" aria-hidden /> La IA está reconociendo los ítems. La ficha técnica aparece aquí cuando termine.
           </p>
         )}
 
         {order.requirements.length > 0 && (
           <Card>
-            <SectionTitle count={order.requirements.length}>Desglose contra inventario</SectionTitle>
+            <SectionTitle count={order.requirements.length}>Ficha técnica contra inventario</SectionTitle>
             <ul className="divide-y divide-line">
               {order.requirements.map((req) => {
                 const thing = req.material ?? req.product;

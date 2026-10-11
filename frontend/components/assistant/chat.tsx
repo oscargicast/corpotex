@@ -16,7 +16,7 @@ import { MessageBubble } from "./message";
 const SUGGESTIONS: Record<Role, string[]> = {
   manager: ["¿Qué tengo pendiente?", "¿Qué órdenes están en peligro?", "¿Cuánto debo a los talleres?"],
   sales: ["¿Cuándo llega la orden de Caja Piura?", "Registrar una orden", "¿Qué órdenes están en riesgo?"],
-  production: ["Desgloses por confirmar", "¿Qué pedidos no avanzan?", "Registrar un avance"],
+  production: ["Fichas técnicas por aprobar", "¿Qué pedidos no avanzan?", "Registrar un avance"],
 };
 
 // Confirmation questions end in "(sí/no)" (personalidad's prompt rule).

@@ -19,7 +19,7 @@ export default function NewOrderPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Nueva orden</h1>
-          <p className="mt-1 text-sm text-muted">Escribe lo que pide el cliente. Cada prenda se reconoce sola y la orden se guarda ya desglosada contra inventario.</p>
+          <p className="mt-1 text-sm text-muted">Escribe lo que pide el cliente. Cada prenda se reconoce sola y la orden se guarda con su ficha técnica contra el inventario.</p>
         </div>
         <MagicOrderForm onSaved={(order) => router.push(`/orders/${order.id}`)} onCancel={() => router.push("/orders")} />
       </div>
