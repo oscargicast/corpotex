@@ -50,7 +50,7 @@ def test_claim_returns_the_batch_and_locks_the_conversation(scenario):
 
     batch = services.claim_next_turn(conversation.id)
     assert batch.message_ids == [m1.id, m2.id]
-    assert batch.follow_up_purchase_order_ids == [scenario["purchase_order"].id]  # next_follow_up_at is due
+    assert batch.follow_up_purchase_order_ids == [] and batch.follow_up is None  # only the tick's turns carry follow-ups (ADR 0027)
     assert batch.turn.status == "running"
     assert batch.turn.attempts == 1
 
@@ -64,7 +64,7 @@ def test_claim_returns_the_batch_and_locks_the_conversation(scenario):
     assert conversation.agent_session == "sess-1"
     assert Turn.objects.get(pk=batch.turn.pk).status == "done"
     scenario["purchase_order"].refresh_from_db()
-    assert scenario["purchase_order"].next_follow_up_at > timezone.now()
+    assert scenario["purchase_order"].last_follow_up_on is None  # a reply is not a follow-up
 
 
 @pytest.mark.django_db
@@ -96,8 +96,9 @@ def test_proactive_only_whatsapp_batch_waits_for_the_quiet_hours(scenario, monke
     monkeypatch.setattr(services, "QUIET_HOURS", (21, 7))  # Whatever the .env of the machine says.
     conversation = scenario["conversation"]
     scenario["purchase_order"].progress_reports.update(acknowledged_at=timezone.now())
-    PurchaseOrder.objects.filter(pk=scenario["purchase_order"].pk).update(next_follow_up_at=timezone.now() - timedelta(days=2))
-    turn = Turn.objects.create(conversation=conversation, reason="follow_up", available_at=timezone.now() - timedelta(seconds=1))
+    # QUIET_HOURS now covers the first contact only; follow-ups use the manager's window (ADR 0027).
+    PurchaseOrder.objects.filter(pk=scenario["purchase_order"].pk).update(status="approved")
+    turn = Turn.objects.create(conversation=conversation, reason="purchase_order_approved", available_at=timezone.now() - timedelta(seconds=1))
     night = timezone.make_aware(datetime(2026, 10, 10, 22, 30))
     with mock.patch("messaging.services.clock.now", return_value=night):
         assert services.claim_next_turn(conversation.id) is None
@@ -196,8 +197,8 @@ def test_turn_state_has_no_contact_name_for_simulated_numbers(scenario):
 def test_quiet_hours_can_be_disabled_from_settings(scenario, monkeypatch):
     conversation = scenario["conversation"]
     scenario["purchase_order"].progress_reports.update(acknowledged_at=timezone.now())
-    PurchaseOrder.objects.filter(pk=scenario["purchase_order"].pk).update(next_follow_up_at=timezone.now() - timedelta(days=2))
-    Turn.objects.create(conversation=conversation, reason="follow_up", available_at=timezone.now() - timedelta(seconds=1))
+    PurchaseOrder.objects.filter(pk=scenario["purchase_order"].pk).update(status="approved")
+    Turn.objects.create(conversation=conversation, reason="purchase_order_approved", available_at=timezone.now() - timedelta(seconds=1))
     night = timezone.make_aware(datetime(2026, 10, 10, 22, 30))
     monkeypatch.setattr(services, "QUIET_HOURS", None)
     with mock.patch("messaging.services.clock.now", return_value=night):

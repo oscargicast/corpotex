@@ -80,7 +80,7 @@ def test_confirm_applies_the_boss_rules_in_code(scenario):
     assert po.status == "confirmed" and po.committed_on == date(2026, 10, 13) and po.terms == "50% adelanto"
     assert po.items.get().unit_price == Decimal("6.00")
     assert [(p.kind, p.amount) for p in po.payments.order_by("id")] == [("advance", Decimal("1500.00")), ("balance", Decimal("1500.00"))]
-    assert po.next_follow_up_at is not None
+    assert po.last_follow_up_on is None and po.awaiting_reply_since is None  # follow-ups: the tick plans them (ADR 0027)
     # Idempotent for the same terms.
     services.confirm_purchase_order(po, unit_price="6.00", committed_on=date(2026, 10, 13))
     assert po.payments.count() == 2
@@ -91,11 +91,10 @@ def test_progress_delivery_and_rating(scenario, production, sales):
     po = scenario["purchase_order"]
     with pytest.raises(PermissionDenied):
         services.record_progress(po, units_done=500, actor=sales)
-    before = po.next_follow_up_at
     report = services.record_progress(po, units_done=500, note="va bien", actor=production)
     assert report.source == "web"  # No WhatsApp message behind it.
     po.refresh_from_db()
-    assert po.next_follow_up_at > before
+    assert po.progress_reports.order_by("-reported_at").first() == report
 
     services.record_delivery(po, qty_received=600, actor=production)
     po.refresh_from_db()

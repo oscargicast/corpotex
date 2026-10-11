@@ -18,7 +18,7 @@ from django.contrib.auth.models import Group
 from django.core.files import File
 from django.utils import timezone
 
-from core.models import ROLE_GROUPS, Brand, Config, Customer, Material, OnboardingStyle, Product, ProductMaterial, StyleVersion, User
+from core.models import ROLE_GROUPS, Brand, Config, Customer, FollowUpMode, Material, OnboardingStyle, Product, ProductMaterial, StyleVersion, User, default_follow_up_weekdays
 from manager.models import Alert, Decision
 from messaging.models import AllowedNumber, Conversation, Message
 from operations.models import (
@@ -171,6 +171,10 @@ class Loader:
         config.stage_durations = raw.get("stage_durations") or {"cutting": 1, "sublimation": 1, "embroidery": 1, "sewing": 3, "finishing": 1}
         config.agent_user = self.users["gerente"]
         config.agent_phone = raw.get("agent_phone") or MANAGER_PHONE
+        # Follow-up defaults (ADR 0027 §5): balanced, 09:00-18:00, Monday to Saturday.
+        config.follow_up_mode = FollowUpMode.BALANCED
+        config.follow_up_window_start, config.follow_up_window_end = time(9, 0), time(18, 0)
+        config.follow_up_weekdays = default_follow_up_weekdays()
         if plant:
             config.plant_name = plant.get("name", "")
             config.plant_lat = plant.get("lat")
@@ -746,11 +750,12 @@ class Loader:
             if conversation:
                 po.conversation = conversation
                 po.save(update_fields=["conversation"])
-        # A real supplier must not get a follow-up the second the tick runs after a reseed: the
-        # demo's first contact comes from an approval. Simulated suppliers keep the JSON's dates.
-        for po in PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES, supplier__numbers__active=True, supplier__numbers__simulated=False).distinct():
-            po.next_follow_up_at = self.t + timedelta(hours=po.supplier.follow_up_every_hours)
-            po.save(update_fields=["next_follow_up_at"])
+        # A real supplier must not get a follow-up after a reseed: the demo's first contact comes
+        # from an approval. Today's follow-up counts as done (ADR 0027 §5), on top of Sunday being
+        # outside the default working days.
+        PurchaseOrder.objects.filter(
+            status__in=PurchaseOrder.OPEN_STATUSES, supplier__numbers__active=True, supplier__numbers__simulated=False
+        ).update(last_follow_up_on=timezone.localtime(self.t).date())
         for order in Order.objects.all():
             fixed = (order.estimated_on, order.risk, order.risk_reason)
             compute_critical_path(order)

@@ -2779,6 +2779,113 @@
                 }
             }
         },
+        "/api/settings/follow-up/": {
+            "get": {
+                "operationId": "settings_follow_up_retrieve",
+                "description": "`GET/PATCH /api/settings/follow-up/` (manager only).",
+                "tags": [
+                    "settings"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FollowUpSettings"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "settings_follow_up_partial_update",
+                "description": "`GET/PATCH /api/settings/follow-up/` (manager only).",
+                "tags": [
+                    "settings"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedFollowUpSettingsRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedFollowUpSettingsRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedFollowUpSettingsRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FollowUpSettings"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/settings/follow-up/preview/": {
+            "get": {
+                "operationId": "settings_follow_up_preview_list",
+                "description": "`GET /api/settings/follow-up/preview/` (manager only): today's plan,\n`[{supplier: {id, name}, purchase_orders: [code], at, kind, reason, mode}]`.",
+                "tags": [
+                    "settings"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FollowUpPlan"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/simulator/contacts/": {
             "get": {
                 "operationId": "simulator_contacts_list",
@@ -4855,6 +4962,107 @@
                     "units"
                 ]
             },
+            "FollowUpModeEnum": {
+                "enum": [
+                    "minimal",
+                    "balanced",
+                    "high"
+                ],
+                "type": "string",
+                "description": "* `minimal` - Mínimo\n* `balanced` - Balanceado\n* `high` - Alto"
+            },
+            "FollowUpPlan": {
+                "type": "object",
+                "properties": {
+                    "supplier": {
+                        "$ref": "#/components/schemas/FollowUpSupplier"
+                    },
+                    "purchase_orders": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/FollowUpPlanKindEnum"
+                    },
+                    "reason": {
+                        "type": "string"
+                    },
+                    "mode": {
+                        "$ref": "#/components/schemas/FollowUpModeEnum"
+                    }
+                },
+                "required": [
+                    "at",
+                    "kind",
+                    "mode",
+                    "purchase_orders",
+                    "reason",
+                    "supplier"
+                ]
+            },
+            "FollowUpPlanKindEnum": {
+                "enum": [
+                    "checkpoint",
+                    "reminder"
+                ],
+                "type": "string",
+                "description": "* `checkpoint` - Punto de control\n* `reminder` - Recordatorio"
+            },
+            "FollowUpSettings": {
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "$ref": "#/components/schemas/FollowUpModeEnum"
+                    },
+                    "mode_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "window_start": {
+                        "type": "string",
+                        "format": "time",
+                        "description": "Lima time, HH:MM."
+                    },
+                    "window_end": {
+                        "type": "string",
+                        "format": "time",
+                        "description": "Lima time, HH:MM."
+                    },
+                    "weekdays": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "maximum": 6,
+                            "minimum": 0
+                        },
+                        "description": "0 = Monday … 6 = Sunday."
+                    }
+                },
+                "required": [
+                    "mode_display"
+                ]
+            },
+            "FollowUpSupplier": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ]
+            },
             "GenerateInRequest": {
                 "type": "object",
                 "properties": {
@@ -6140,6 +6348,33 @@
                     }
                 }
             },
+            "PatchedFollowUpSettingsRequest": {
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "$ref": "#/components/schemas/FollowUpModeEnum"
+                    },
+                    "window_start": {
+                        "type": "string",
+                        "format": "time",
+                        "description": "Lima time, HH:MM."
+                    },
+                    "window_end": {
+                        "type": "string",
+                        "format": "time",
+                        "description": "Lima time, HH:MM."
+                    },
+                    "weekdays": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "maximum": 6,
+                            "minimum": 0
+                        },
+                        "description": "0 = Monday … 6 = Sunday."
+                    }
+                }
+            },
             "PatchedNumberPatchRequest": {
                 "type": "object",
                 "properties": {
@@ -6250,6 +6485,17 @@
                     "follow_up_every_hours": {
                         "type": "integer",
                         "minimum": 1
+                    },
+                    "follow_up_mode": {
+                        "description": "Empty: the general mode (ADR 0027). Only the manager sets it, not the public form.\n\n* `minimal` - Mínimo\n* `balanced` - Balanceado\n* `high` - Alto",
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/FollowUpModeEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ]
                     },
                     "currency": {
                         "$ref": "#/components/schemas/CurrencyEnum"
@@ -6994,7 +7240,8 @@
                     "next_follow_up_at": {
                         "type": "string",
                         "format": "date-time",
-                        "nullable": true
+                        "nullable": true,
+                        "description": "Next follow-up opportunity, computed by the tick (ADR 0027)."
                     },
                     "total_amount": {
                         "type": "string",
@@ -7283,7 +7530,8 @@
                     "next_follow_up_at": {
                         "type": "string",
                         "format": "date-time",
-                        "nullable": true
+                        "nullable": true,
+                        "description": "Next follow-up opportunity, computed by the tick (ADR 0027)."
                     },
                     "total_amount": {
                         "type": "string",
@@ -7834,7 +8082,7 @@
                     "interval_s": {
                         "type": "integer",
                         "maximum": 30,
-                        "minimum": 1,
+                        "minimum": 2,
                         "default": 3
                     }
                 }
@@ -8311,7 +8559,19 @@
                     "follow_up_every_hours": {
                         "type": "integer",
                         "maximum": 32767,
-                        "minimum": 0
+                        "minimum": 0,
+                        "description": "Unused since ADR 0027."
+                    },
+                    "follow_up_mode": {
+                        "description": "Empty: the general mode.\n\n* `minimal` - Mínimo\n* `balanced` - Balanceado\n* `high` - Alto",
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/FollowUpModeEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ]
                     },
                     "notes": {
                         "type": "string",

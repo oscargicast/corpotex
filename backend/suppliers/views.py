@@ -9,6 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.models import FollowUpMode
 from core.permissions import IsManager
 from core.serializers import serializer_for
 from messaging.models import AllowedNumber
@@ -74,6 +75,9 @@ class SupplierPatchSerializer(serializers.Serializer):
     weekly_capacity = serializers.IntegerField(required=False, allow_null=True, min_value=0)
     lead_time_days = serializers.IntegerField(required=False, min_value=0)
     follow_up_every_hours = serializers.IntegerField(required=False, min_value=1)
+    follow_up_mode = serializers.ChoiceField(
+        choices=FollowUpMode.choices, required=False, allow_blank=True, help_text="Empty: the general mode (ADR 0027). Only the manager sets it, not the public form."
+    )
     currency = serializers.ChoiceField(choices=Currency.choices, required=False)
     notes = serializers.CharField(required=False, allow_blank=True)
 

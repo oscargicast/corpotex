@@ -144,6 +144,7 @@ SPECTACULAR_SETTINGS = {
         "SupplierSourceEnum": "suppliers.models.SUPPLIER_SOURCE",
         "SupplierStatusEnum": "suppliers.models.SUPPLIER_STATUS",
         "CurrencyEnum": "suppliers.models.Currency.choices",
+        "FollowUpModeEnum": "core.models.FollowUpMode.choices",  # Config, Supplier and the settings API (ADR 0027)
         "CustomerKindEnum": "config.enums.CUSTOMER_KIND",
         "MaterialKindEnum": "config.enums.MATERIAL_KIND",
         "MaterialUnitEnum": "config.enums.MATERIAL_UNIT",

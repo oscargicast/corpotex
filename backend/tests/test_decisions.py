@@ -137,8 +137,9 @@ def test_badges_endpoint(scenario, manager_client, sales_client, manager):
 def test_monitor_opens_and_resolves_alerts(scenario, manager):
     po = scenario["purchase_order"]
     scenario["alert"].delete()
-    po.progress_reports.update(reported_at=timezone.now() - timedelta(days=3))  # Older than the follow-up.
     late = timezone.make_aware(datetime(2026, 10, 20, 9, 0))
+    # ADR 0027: stalled = no answer to the reminder once the reminder's own gap (4 h, balanced) passed.
+    type(po).objects.filter(pk=po.pk).update(awaiting_reply_since=late - timedelta(hours=10), reminded_at=late - timedelta(hours=5))
     with mock.patch("manager.services.clock.now", return_value=late), mock.patch("manager.services.clock.today", return_value=late.date()), mock.patch(
         "operations.services.clock.now", return_value=late
     ), mock.patch("operations.services.clock.today", return_value=late.date()):

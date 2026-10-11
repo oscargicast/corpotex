@@ -124,6 +124,7 @@ class SupplierDetailSerializer(SupplierListSerializer):
         fields = SupplierListSerializer.Meta.fields + [
             "address",
             "follow_up_every_hours",
+            "follow_up_mode",
             "notes",
             "source_detail",
             "numbers",

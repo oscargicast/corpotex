@@ -38,6 +38,7 @@ class TurnBatch:
     new_purchase_order_ids: list[int] = field(default_factory=list)
     alert_ids: list[int] = field(default_factory=list)
     web_report_ids: list[int] = field(default_factory=list)
+    follow_up: dict | None = None  # {kind, reason, mode, purchase_orders: {id: {kind, reason}}}; only on the tick's turns (ADR 0027)
 
     def is_empty(self) -> bool:
         return not any(
@@ -93,6 +94,8 @@ def enqueue_turn(conversation: Conversation, reason: str) -> Turn:
     (cap 20 s from creation) so consecutive messages are batched; the dashboard waits nothing.
     Dispatches `run_turn` when the transaction commits."""
     now = timezone.now()
+    if reason == Turn.Reason.MESSAGE and conversation.channel != Conversation.Channel.DASHBOARD:
+        clear_awaiting_reply(conversation)
     with transaction.atomic():
         turn = Turn.objects.select_for_update().filter(conversation=conversation, status=Turn.Status.PENDING).first()
         if turn is None:
@@ -106,6 +109,16 @@ def enqueue_turn(conversation: Conversation, reason: str) -> Turn:
     return turn
 
 
+def clear_awaiting_reply(conversation: Conversation) -> int:
+    """The supplier wrote: their open orders stop waiting for an answer (ADR 0027 §2)."""
+    number = conversation.allowed_number
+    if number is None or number.supplier_id is None:
+        return 0
+    return PurchaseOrder.objects.filter(supplier_id=number.supplier_id, status__in=PurchaseOrder.OPEN_STATUSES).exclude(
+        awaiting_reply_since=None, reminded_at=None
+    ).update(awaiting_reply_since=None, reminded_at=None)
+
+
 def dispatch_turn(conversation_id: int, countdown: float = 0.0) -> None:
     """By task name: `messaging` never imports `agent`."""
     try:
@@ -116,6 +129,12 @@ def dispatch_turn(conversation_id: int, countdown: float = 0.0) -> None:
 
 def _paused() -> bool:
     return bool(Config.load().claude_last_error)
+
+
+def _in_follow_up_window() -> bool:
+    from manager.follow_up import in_window
+
+    return in_window(clock.now(), Config.load())
 
 
 def _quiet_hours() -> bool:
@@ -148,7 +167,9 @@ def claim_next_turn(conversation_id: int | None = None) -> TurnBatch | None:
             turn.status = Turn.Status.DONE
             turn.save(update_fields=["status", "updated_at"])
             return None
-        if turn.conversation.channel != Conversation.Channel.DASHBOARD and batch.is_proactive_only() and _quiet_hours():
+        if batch.follow_up and batch.is_proactive_only() and not _in_follow_up_window():
+            return None  # the tick's follow-up goes only inside the window set by the manager
+        if turn.conversation.channel != Conversation.Channel.DASHBOARD and batch.is_proactive_only() and not batch.follow_up and _quiet_hours():
             return None
         turn.status = Turn.Status.RUNNING
         turn.attempts += 1
@@ -180,9 +201,13 @@ def _build_batch(turn: Turn) -> TurnBatch:
         .values_list("id", flat=True)
     )
     open_pos = PurchaseOrder.objects.filter(conversation=conversation)
-    batch.follow_up_purchase_order_ids = list(
-        open_pos.filter(status__in=PurchaseOrder.OPEN_STATUSES, next_follow_up_at__lte=clock.now()).values_list("id", flat=True)
-    )
+    if turn.follow_up:
+        wanted = [int(i) for i in (turn.follow_up.get("purchase_orders") or {})]
+        batch.follow_up_purchase_order_ids = list(
+            PurchaseOrder.objects.filter(id__in=wanted, status__in=PurchaseOrder.OPEN_STATUSES).values_list("id", flat=True)
+        )
+        if batch.follow_up_purchase_order_ids:
+            batch.follow_up = turn.follow_up
     batch.new_purchase_order_ids = list(open_pos.filter(status=PurchaseOrder.Status.APPROVED).values_list("id", flat=True))
     batch.web_report_ids = list(
         ProgressReport.objects.filter(purchase_order__conversation=conversation, message__isnull=True, acknowledged_at__isnull=True)
@@ -207,9 +232,8 @@ def finish_turn(batch: TurnBatch, session_id: str | None, error: str | None = No
                 from manager.models import Decision
 
                 Decision.objects.filter(id__in=batch.decision_ids).update(communicated_at=clock.now())
-            for po in PurchaseOrder.objects.filter(id__in=batch.follow_up_purchase_order_ids).select_related("supplier"):
-                po.next_follow_up_at = clock.now() + timedelta(hours=po.supplier.follow_up_every_hours)
-                po.save(update_fields=["next_follow_up_at", "updated_at"])
+            if batch.follow_up:
+                _close_follow_up(batch, sent=Message.objects.filter(turn=turn, author=Message.Author.AGENT).exists())
             from operations.services import set_status
 
             for po in PurchaseOrder.objects.filter(id__in=batch.new_purchase_order_ids, status=PurchaseOrder.Status.APPROVED):
@@ -229,6 +253,9 @@ def finish_turn(batch: TurnBatch, session_id: str | None, error: str | None = No
             if turn.attempts >= MAX_ATTEMPTS:
                 from manager.services import open_alert
 
+                if batch.follow_up:  # counts as the day's follow-up: the tick must not retry it every minute
+                    PurchaseOrder.objects.filter(id__in=batch.follow_up_purchase_order_ids).update(last_follow_up_on=clock.today())
+
                 Message.objects.filter(id__in=batch.message_ids).update(status=Message.Status.ERROR, error=turn.error)
                 open_alert("turn_failed", text=f"El agente falló 3 veces en la conversación {conversation.id}: {turn.error[:120]}")
             else:
@@ -238,6 +265,35 @@ def finish_turn(batch: TurnBatch, session_id: str | None, error: str | None = No
             countdown = max(0.0, (pending.available_at - now).total_seconds())
             transaction.on_commit(lambda: dispatch_turn(conversation.id, countdown))
     return turn
+
+
+def _close_follow_up(batch: TurnBatch, *, sent: bool) -> None:
+    """ADR 0027 §3, agreed with `agente`: the day's follow-up is spent whether the agent wrote or
+    skipped (`skip_follow_up` leaves `follow_up_note`). A message sent without a supplier message
+    in the batch starts the wait (checkpoint) or marks the reminder. A skipped reminder is marked
+    too but keeps the wait: not insisting with the supplier must not hide the silence from the
+    manager, so the stalled alert still comes (agreed with `agente`, 11/10 01:40)."""
+    now = clock.now()
+    per_order = (batch.follow_up or {}).get("purchase_orders") or {}
+    answered = bool(batch.message_ids)
+    for po in PurchaseOrder.objects.filter(id__in=batch.follow_up_purchase_order_ids):
+        kind = (per_order.get(str(po.id)) or {}).get("kind") or batch.follow_up.get("kind")
+        po.last_follow_up_on = clock.today()
+        fields = ["last_follow_up_on", "updated_at"]
+        if sent:
+            po.follow_up_note = ""
+            fields.append("follow_up_note")
+            if not answered:
+                if kind == "reminder":
+                    po.reminded_at = now
+                    fields.append("reminded_at")
+                else:
+                    po.awaiting_reply_since, po.reminded_at = now, None
+                    fields += ["awaiting_reply_since", "reminded_at"]
+        elif kind == "reminder":
+            po.reminded_at = now
+            fields.append("reminded_at")
+        po.save(update_fields=fields)
 
 
 def _requeue(turn: Turn, *, count_attempt: bool = True) -> Turn:
@@ -296,10 +352,12 @@ def turn_state(batch: TurnBatch, *, with_history: bool = False) -> dict:
     supplier = number.supplier if number else None
     config = Config.load()
     style_md = config.agent_user.style_md if config.agent_user_id else ""
+    from manager import follow_up
+
     pos = (
         PurchaseOrder.objects.filter(supplier=supplier, status__in=PurchaseOrder.OPEN_STATUSES + ("suggested",))
         .select_related("supplier")
-        .prefetch_related("items__requirement__material", "items__requirement__product")
+        .prefetch_related("items__requirement__material", "items__requirement__product", "status_changes", "progress_reports")
         if supplier
         else PurchaseOrder.objects.none()
     )
@@ -345,6 +403,13 @@ def turn_state(batch: TurnBatch, *, with_history: bool = False) -> dict:
                 "report_link_sent_at": po.report_link_sent_at.isoformat() if po.report_link_sent_at else None,
                 "is_follow_up": po.id in batch.follow_up_purchase_order_ids,
                 "is_new": po.id in batch.new_purchase_order_ids,
+                # ADR 0027 §3 (contract with `agente`)
+                "follow_up_reason": ((batch.follow_up or {}).get("purchase_orders") or {}).get(str(po.id), {}).get("reason") if po.id in batch.follow_up_purchase_order_ids else None,
+                "expected_units": follow_up.expected_units(po),
+                "total_units": follow_up.total_units(po),
+                "last_report_at": _iso(follow_up.last_report_at(po)),
+                "awaiting_reply_since": _iso(po.awaiting_reply_since),
+                "follow_up_note": po.follow_up_note,
             }
             for po in pos
         ],
@@ -370,11 +435,45 @@ def turn_state(batch: TurnBatch, *, with_history: bool = False) -> dict:
         "style_md": style_md,
         "manager_name": config.agent_user.first_name if config.agent_user_id else "",
     }
+    if batch.follow_up:
+        state["follow_up"] = _follow_up_context(batch, conversation, supplier, config)
     if with_history:
         state["history"] = [
             {"sender": _sender(m), "text": m.text, "sent_at": m.sent_at.isoformat()} for m in message_history(conversation, 20)
         ]
     return state
+
+
+def _iso(value) -> str | None:
+    return value.isoformat() if value else None
+
+
+def _follow_up_context(batch: TurnBatch, conversation: Conversation, supplier, config: Config) -> dict:
+    """The top-level `follow_up` of a follow-up turn (ADR 0027 §3, contract with `agente`)."""
+    from manager.follow_up import effective_mode
+    from manager.models import Decision
+
+    def last(author):
+        message = conversation.messages.filter(author=author).order_by("-sent_at", "-id").first()
+        return {"text": message.text, "sent_at": message.sent_at.isoformat()} if message else None
+
+    supplier_message, agent_message = last(Message.Author.SUPPLIER), last(Message.Author.AGENT)
+    pending = (
+        Decision.objects.filter(status="pending", purchase_orders__supplier=supplier).distinct().order_by("created_at") if supplier else Decision.objects.none()
+    )
+    return {
+        "mode": effective_mode(supplier, config) if supplier else config.follow_up_mode,
+        "kind": batch.follow_up.get("kind"),
+        "reason": batch.follow_up.get("reason"),
+        "last_supplier_message_at": supplier_message["sent_at"] if supplier_message else None,
+        "last_agent_message_at": agent_message["sent_at"] if agent_message else None,
+        "last_supplier_message": supplier_message,
+        "last_agent_message": agent_message,
+        "pending_decisions": [
+            {"kind": d.kind, "summary": d.summary, "purchase_order_codes": list(d.purchase_orders.values_list("code", flat=True)), "created_at": d.created_at.isoformat()}
+            for d in pending
+        ],
+    }
 
 
 def _sender(message: Message) -> str:

@@ -295,13 +295,12 @@ def run_monitor() -> dict:
         else:
             resolve_alerts("order_in_danger", order=order)
 
+    from .follow_up import stalled_purchase_orders
+
+    stalled = {po.id for po in stalled_purchase_orders(now)}  # unanswered after the reminder (ADR 0027)
     for po in PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES).select_related("supplier"):
-        latest = po.progress_reports.order_by("-reported_at").first()
-        stalled = po.next_follow_up_at and po.next_follow_up_at < now - timedelta(hours=po.supplier.follow_up_every_hours) and (
-            latest is None or latest.reported_at < po.next_follow_up_at
-        )
-        if stalled:
-            open_alert("stalled_purchase_order", purchase_order=po, text=f"{po.supplier.name} no reporta avance del pedido {po.code}")
+        if po.id in stalled:
+            open_alert("stalled_purchase_order", purchase_order=po, text=f"{po.supplier.name} no responde el seguimiento del pedido {po.code}")
         else:
             resolve_alerts("stalled_purchase_order", purchase_order=po)
         if po.committed_on and po.committed_on < today and po.status != "delivered":
