@@ -1,3 +1,4 @@
 *.mp4
 *.webm
 *.mov
+!demo-2min.mp4

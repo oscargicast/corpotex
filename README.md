@@ -4,7 +4,7 @@ Un agente que lleva la orden del cliente hasta que el proveedor entrega. Habla p
 
 **El dolor:** al proveedor le dan 5 días cuando al cliente le prometieron 10, y aun así hay pedidos que nadie revisa hasta el día 9. Todo pasa por el Gerente y nada queda anotado.
 
-Equipo Amaru: Oscar, Valeria, Nesky y Freddy. Demo: [corpotex.oscargicast.com](https://corpotex.oscargicast.com).
+Equipo Amaru: Oscar, Valeria, Nesky y Freddy. Demo en vivo: [corpotex.oscargicast.com](https://corpotex.oscargicast.com). **[Video demo de 2 minutos](docs/demo/pitch/demo-2min.mp4)**: las ocho features del dashboard, grabadas del sistema real.
 
 ## Qué hace
 
