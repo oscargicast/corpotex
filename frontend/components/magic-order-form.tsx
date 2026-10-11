@@ -105,6 +105,10 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
   const [customerOpen, setCustomerOpen] = useState(false);
   const [brand, setBrand] = useState("");
   const [brandTouched, setBrandTouched] = useState(false);
+  // Progressive form (Oscar, 11/10 07:40): header errors only after leaving a
+  // field empty; the items unlock once the header is complete.
+  const [left, setLeft] = useState({ brand: false, customer: false, date: false });
+  const [unlocked, setUnlocked] = useState(false);
   const [promisedOn, setPromisedOn] = useState("");
   const [lines, setLines] = useState<Line[]>(() => [newLine()]);
   const [busy, setBusy] = useState(false);
@@ -351,18 +355,15 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
   // What still keeps "Crear orden" disabled, in the form's order (Oscar, 11/10
   // 06:55). A line still being recognized does not: it is saved as it is.
   const rows = drafts.filter((d) => d.line.text.trim());
-  const missing: string[] = [];
-  if (!brand) missing.push("marca");
-  if (!customer.trim()) missing.push("cliente");
-  if (!promisedOn) missing.push("fecha de entrega");
+  const missing: string[] = []; // the items only: the header has its own message
   if (!rows.length) missing.push("un ítem");
   else if (!rows.some((d) => d.description.length >= MIN_CHARS)) missing.push(`la prenda del ítem ${lines.indexOf(rows[0].line) + 1}`);
   for (const d of rows) if (!(d.quantity > 0) || !Number.isInteger(d.quantity)) missing.push(`cantidad del ítem ${lines.indexOf(d.line) + 1}`);
-  const missingText = missing.length ? `Falta: ${missing.join(", ")}` : null;
+  const missingText = !brand || !customer.trim() || !promisedOn ? "Completa los datos de la orden" : missing.length ? `Falta: ${missing.join(", ")}` : null;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (missing.length || busy) return; // the button says what is missing; red is only for the server
+    if (missingText || busy) return; // the button says what is missing; red is only for the server
     setBusy(true);
     setError(null);
     const classified = rows.filter((d) => recognized.includes(d));
@@ -417,13 +418,29 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
 
   // The customer's last order sets the brand (unless it was chosen by hand), so
   // recognition never waits for it; a customer without orders gets the first.
-  function presetBrand(name: string) {
-    if (brandTouched || !name.trim()) return;
+  function presetBrand(name: string): string {
+    if (brandTouched || !name.trim()) return brand;
     const last = (orders ?? [])
       .filter((o) => o.customer.name.toLowerCase() === name.trim().toLowerCase())
       .sort((a, b) => (b.issued_on ?? "").localeCompare(a.issued_on ?? "") || b.id - a.id)[0];
-    setBrand(last?.brand.name ?? brands[0]);
+    const next = last?.brand.name ?? brands[0];
+    setBrand(next);
+    return next;
   }
+
+  // On a committed header change (a brand picked, a customer picked or left, a
+  // date set), never while typing: the first time all three are there, the
+  // items open and the first garment gets the focus.
+  function unlockIfComplete(next: { brand?: string; customer?: string; promisedOn?: string }) {
+    const b = next.brand ?? brand;
+    const c = next.customer ?? customer;
+    const d = next.promisedOn ?? promisedOn;
+    if (unlocked || !b || !c.trim() || !d) return;
+    setUnlocked(true);
+    setFocusKey(lines[0]?.key ?? null);
+  }
+  const headerComplete = !!brand && !!customer.trim() && !!promisedOn;
+  const headerError = (field: "brand" | "customer" | "date", empty: boolean) => left[field] && empty;
 
   return (
     <form onSubmit={submit} className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
@@ -439,9 +456,12 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 onChange={(e) => {
                   setBrand(e.target.value);
                   setBrandTouched(true);
+                  unlockIfComplete({ brand: e.target.value });
                 }}
-                aria-describedby={brand ? undefined : "brand-hint"}
-                className={`${input} ${brand ? "" : "ring-warning"}`}
+                onBlur={() => setLeft((l) => ({ ...l, brand: true }))}
+                aria-invalid={headerError("brand", !brand) || undefined}
+                aria-describedby={headerError("brand", !brand) ? "brand-error" : undefined}
+                className={`${input} ${headerError("brand", !brand) ? "ring-2 ring-danger" : ""}`}
               >
                 {!brand && <option value="">Elige la marca</option>}
                 {brands.map((b) => (
@@ -450,16 +470,19 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                   </option>
                 ))}
               </select>
-              {!brand && (
-                <span id="brand-hint" className="mt-1 flex items-center gap-1 text-xs text-warning">
-                  <TriangleAlert size={12} aria-hidden /> Requerida: sin marca no se reconocen las prendas
+              {headerError("brand", !brand) && (
+                <span id="brand-error" className="mt-1 block text-xs text-danger">
+                  Elige la marca.
                 </span>
               )}
             </label>
             <label className="relative text-sm">
-              Cliente
+              Cliente <span className="text-danger" aria-hidden>*</span>
               <input
                 value={customer}
+                required
+                aria-invalid={headerError("customer", !customer.trim()) || undefined}
+                aria-describedby={headerError("customer", !customer.trim()) ? "customer-error" : undefined}
                 onChange={(e) => {
                   setCustomer(e.target.value);
                   setCustomerOpen(true);
@@ -467,11 +490,13 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 onFocus={() => setCustomerOpen(true)}
                 onBlur={() => {
                   setTimeout(() => setCustomerOpen(false), 150);
-                  if (!brand) presetBrand(customer);
+                  setLeft((l) => ({ ...l, customer: true }));
+                  const nextBrand = brand || presetBrand(customer);
+                  unlockIfComplete({ brand: nextBrand });
                 }}
                 placeholder="Busca por nombre o RUC"
                 autoComplete="off"
-                className={input}
+                className={`${input} ${headerError("customer", !customer.trim()) ? "ring-2 ring-danger" : ""}`}
                 aria-autocomplete="list"
                 aria-expanded={customerOpen}
               />
@@ -487,7 +512,7 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                         onClick={() => {
                           setCustomer(c.name);
                           setCustomerOpen(false);
-                          presetBrand(c.name);
+                          unlockIfComplete({ customer: c.name, brand: presetBrand(c.name) });
                         }}
                         className="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-canvas"
                       >
@@ -503,21 +528,53 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                   )}
                 </ul>
               )}
+              {headerError("customer", !customer.trim()) && (
+                <span id="customer-error" className="mt-1 block text-xs text-danger">
+                  Escribe o elige el cliente.
+                </span>
+              )}
             </label>
             <label className="text-sm">
-              Fecha de entrega
-              <input type="date" value={promisedOn} min={today()} onChange={(e) => setPromisedOn(e.target.value)} className={input} />
+              Fecha de entrega <span className="text-danger" aria-hidden>*</span>
+              <input
+                type="date"
+                value={promisedOn}
+                min={today()}
+                required
+                onChange={(e) => {
+                  setPromisedOn(e.target.value);
+                  unlockIfComplete({ promisedOn: e.target.value });
+                }}
+                onBlur={() => setLeft((l) => ({ ...l, date: true }))}
+                aria-invalid={headerError("date", !promisedOn) || undefined}
+                aria-describedby={headerError("date", !promisedOn) ? "date-error" : undefined}
+                className={`${input} ${headerError("date", !promisedOn) ? "ring-2 ring-danger" : ""}`}
+              />
+              {headerError("date", !promisedOn) && (
+                <span id="date-error" className="mt-1 block text-xs text-danger">
+                  Pon la fecha de entrega.
+                </span>
+              )}
             </label>
           </div>
         </Card>
 
-        <section aria-labelledby="items-title">
+        <section
+          aria-labelledby="items-title"
+          aria-disabled={!unlocked || undefined}
+          inert={!unlocked || undefined}
+          className={`transition-opacity duration-200 motion-reduce:transition-none ${unlocked ? "" : "pointer-events-none select-none opacity-50"}`}
+        >
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 id="items-title" className="flex items-center gap-2 font-semibold">
                 <Sparkles size={16} className="text-accent" aria-hidden /> Ítems
               </h2>
-              <p className="mt-0.5 text-sm text-muted">Escribe cada prenda como la pide el cliente. Se reconoce sola contra el catálogo y el inventario.</p>
+              {headerComplete ? (
+                <p className="mt-0.5 text-sm text-muted">Escribe cada prenda como la pide el cliente. Se reconoce sola contra el catálogo y el inventario.</p>
+              ) : (
+                <p className="mt-0.5 text-sm font-medium text-ink">Completa marca, cliente y fecha de entrega para agregar prendas.</p>
+              )}
             </div>
           </div>
           <div className="mt-3 hidden grid-cols-[1.5rem_minmax(0,1fr)_6rem_2.75rem] gap-x-3 px-4 text-xs font-medium text-muted sm:grid" aria-hidden>
@@ -571,6 +628,10 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
         <Card>
           <SectionTitle>Resumen</SectionTitle>
           <div aria-live="polite" className="space-y-4 text-sm">
+            {!headerComplete ? (
+              <p className="text-muted">Completa los datos de la orden.</p>
+            ) : (
+            <>
             <dl className="grid grid-cols-2 gap-2">
               <div className="rounded-lg bg-canvas p-3">
                 <dt className="text-xs text-muted">Prendas</dt>
@@ -634,6 +695,8 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 )}
               </p>
             </div>
+            </>
+            )}
           </div>
 
           {created ? (
@@ -653,12 +716,13 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 busy={busy}
                 aria-disabled={missingText ? true : undefined}
                 title={missingText ?? undefined}
-                aria-describedby={missingText ? "create-missing" : undefined}
+                aria-describedby={missingText && headerComplete ? "create-missing" : undefined}
                 className="h-12 w-full text-base aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-brand"
               >
                 {busy ? "Creando…" : "Crear orden"}
               </Button>
-              {missingText && (
+              {/* Only the items: until the header is complete, the summary says so. */}
+              {missingText && headerComplete && (
                 <p id="create-missing" className="text-xs text-muted">
                   {missingText}
                 </p>
