@@ -102,6 +102,16 @@ class CancelInSerializer(serializers.Serializer):
     reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+class ClassificationItemInSerializer(serializers.Serializer):
+    item_id = serializers.IntegerField()
+    product = serializers.DictField(help_text="{existing_id} or {new: {code, name, brand}}")
+    materials = serializers.ListField(child=serializers.DictField(), required=False, default=list, help_text="[{sku} | {new: {sku, name, kind, unit}}, qty_per_unit, unit]")
+
+
+class ApplyClassificationInSerializer(serializers.Serializer):
+    items = ClassificationItemInSerializer(many=True)
+
+
 class BreakDownInSerializer(serializers.Serializer):
     order_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
 
@@ -165,6 +175,40 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
         except UnknownReference as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return self.detail_response(order)
+
+    @extend_schema(request=None, responses={200: dict})
+    @action(detail=True, methods=["post"], permission_classes=[IsManagerOrProduction])
+    def classify(self, request, pk=None):
+        """Proposal for every item without a catalogue product (Jev + Claude, ADR 0025 C):
+        `{order_id, items: [{item_id, description, product: {existing_id, code, name} | {new: {code, name, brand}},
+        confidence, materials: [{sku, name, material_id} | {new: {sku, name, kind, unit}}, qty_per_unit, unit, confidence]}]}`."""
+        from . import classify as classifier
+
+        try:
+            return Response(classifier.classify_order(self.get_object(), actor=request.user))
+        except PermissionDenied as exc:
+            _forbidden(exc)
+        except Exception as exc:  # The model or Jev failed: say so, never a 500 on the form.
+            return Response({"detail": f"No se pudo clasificar: {exc}"[:300]}, status=status.HTTP_502_BAD_GATEWAY)
+
+    @extend_schema(request=ApplyClassificationInSerializer, responses={200: OrderDetailSerializer})
+    @action(detail=True, methods=["post"], url_path="apply-classification", permission_classes=[IsManagerOrProduction])
+    def apply_classification(self, request, pk=None):
+        """What production confirmed: creates products, materials and bills of materials, assigns
+        them to the items and breaks the order down again (`warnings` lists what was skipped)."""
+        from . import classify as classifier
+
+        data = ApplyClassificationInSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            order, warnings = classifier.apply_classification(self.get_object(), data.validated_data["items"], actor=request.user)
+        except PermissionDenied as exc:
+            _forbidden(exc)
+        except UnknownReference as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        response = self.detail_response(order)
+        response.data["warnings"] = warnings
+        return response
 
     @extend_schema(request=BreakDownInSerializer, responses={200: dict})
     @action(detail=False, methods=["post"], url_path="break-down", permission_classes=[IsManagerOrProduction])
