@@ -763,10 +763,14 @@ class Loader:
         PurchaseOrder.objects.filter(
             status__in=PurchaseOrder.OPEN_STATUSES, supplier__numbers__active=True, supplier__numbers__simulated=False
         ).update(last_follow_up_on=next_working_day(today, Config.load()) or today)
+        closed = (Order.Status.READY, Order.Status.DELIVERED, Order.Status.CANCELLED)
         for order in Order.objects.all():
             fixed = (order.estimated_on, order.risk, order.risk_reason)
             compute_critical_path(order)
-            if fixed[0]:  # The JSON decides the demo's dates and risk; keep them.
+            # An open order keeps what the critical path computes, so a technical sheet revision
+            # (ADR 0029) never attributes a stale date to its change (agente, 11/10 04:00). The
+            # JSON's date and risk stay only for orders with nothing left to produce.
+            if fixed[0] and order.status in closed:
                 Order.objects.filter(pk=order.pk).update(estimated_on=fixed[0], risk=fixed[1], risk_reason=fixed[2])
         self.plan_routes()
         self.plan_fleet()

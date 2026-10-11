@@ -54,6 +54,7 @@ def test_two_more_buttons_per_polo_dry_run_then_apply(order, production):
     assert {m["sku"]: m["qty_per_unit"] for m in item["materials"]} == {"BOT-NX": "5", "TEL-20": "0.25"}
     assert item["product"] == {"code": "UNI-POL-01", "name": "Polo"} and item["quantity"] == 100
     assert body["summary"] == "Cambia la ficha" and body["warnings"] == [] and "order" not in body
+    assert body["current_estimated_on"] == body["estimated_on"] == order.estimated_on.isoformat()  # buttons do not move dates
     assert body["proposal"]["stage_overrides"] == {} and body["proposal"]["stage_current"] == {}
     # A dry run writes nothing.
     order.refresh_from_db()
@@ -80,6 +81,7 @@ def test_cutting_takes_three_days_moves_the_estimate(order, manager):
     body = response.json()
     assert body["proposal"]["stage_overrides"] == {"cutting": 3} and body["proposal"]["stage_current"] == {"cutting": 1}
     assert body["proposal"]["stage_labels"] == {"cutting": "Corte"}
+    assert body["current_estimated_on"] == before.isoformat()
     order.refresh_from_db()
     assert order.stage_overrides == {"cutting": 3} and order.estimated_on == before + timedelta(days=2)
     assert body["estimated_on"] == order.estimated_on.isoformat() and body["order"]["stage_overrides"] == {"cutting": 3}
@@ -149,3 +151,26 @@ def test_a_supplier_date_before_its_step_start_is_late_not_backwards(order, prod
     assert all(date.fromisoformat(s["end"]) >= date.fromisoformat(s["start"]) for s in order.critical_path)
     assert all(s["late_by"] is None for s in order.critical_path if s["kind"] != "workshop")
     assert order.get_status_display() == "Confirmada" and Order.Status.BROKEN_DOWN.label == "Con ficha técnica"
+
+
+@pytest.mark.django_db
+def test_a_stale_stored_estimate_is_not_the_changes(order, production):
+    """agente, 11/10 04:00: a stored date that the critical path no longer gives (an old seed)
+    made "agregar botones" look like it moved the estimate weeks."""
+    computed = order.estimated_on
+    Order.objects.filter(pk=order.pk).update(estimated_on=computed + timedelta(days=25))
+    order.refresh_from_db()
+    response, _ = revise(client_for(production), order, {"instruction": "agrega 2 botones por polo", "dry_run": True}, answer(order, buttons=5))
+    body = response.json()
+    assert body["current_estimated_on"] == body["estimated_on"] == computed.isoformat()
+    order.refresh_from_db()
+    assert order.estimated_on == computed + timedelta(days=25)  # the dry run wrote nothing
+
+
+@pytest.mark.django_db
+def test_the_summary_names_the_garment_never_the_item_id(order, production):
+    item = order.items.get()
+    model = answer(order, buttons=5, summary=f"Se agregan 2 botones por polo en el ítem {item.id}: pasan de 3 a 5. El ítem 999 no existe.")
+    response, complete = revise(client_for(production), order, {"instruction": "agrega 2 botones por polo", "dry_run": True}, model)
+    assert response.json()["summary"] == "Se agregan 2 botones por polo en Polo: pasan de 3 a 5. El ítem 999 no existe."
+    assert "nunca por el número de ítem" in complete.call_args.args[0]
