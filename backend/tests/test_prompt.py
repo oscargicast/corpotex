@@ -212,3 +212,19 @@ def test_eve_is_detected_from_any_order_reason():
     text = turn_text(state)
     assert 'motivo_seguimiento="víspera de la entrega"' in text
     assert "Entrega cerca" in text
+
+
+def test_requested_follow_up_never_reveals_who_asked():
+    state = follow_up_state("seguimiento_a_pedido")
+    state["follow_up"]["requested_by"] = {"role": "sales", "first_name": "Lucía"}
+    text = turn_text(state)
+    assert 'tipo="a pedido"' in text
+    assert "Nunca digas que alguien te pidió preguntar" in text
+    assert "Lucía" not in text and "sales" not in text  # who asked never reaches the model
+    assert "Punto de control:" not in text and "Antes de escribir, decide" not in text
+
+
+def test_requested_follow_up_skips_only_when_already_waiting():
+    text = turn_text(follow_up_state("seguimiento_a_pedido_ya_esperando"))
+    assert 'esperando_respuesta_desde="miércoles 14 de octubre, 09:50"' in text
+    assert "La única razón para no escribir" in text

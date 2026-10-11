@@ -662,3 +662,69 @@ scenarios:
     forbid_tools: [skip_follow_up]
     max_messages: 1
     max_chars: 80
+
+  - name: seguimiento_a_pedido
+    agent: whatsapp
+    description: "ADR 0027 §6. Comercial pidió avance; el agente pregunta como si fuera suyo: avance y para cuándo sale, sin decir que alguien le pidió."
+    state:
+      purchase_orders:
+        - code: PT-0038
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo escolar blanco, quantity: "1000.00", unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-20"
+          committed_on: "2026-10-20"
+          terms: "50 % de adelanto y 50 % a la entrega"
+          units_done: "400.00"
+          total_units: "1000.00"
+          expected_units: "500.00"
+          last_report_at: "2026-10-13T16:00:00-05:00"
+          awaiting_reply_since: null
+          report_link_sent_at: "2026-10-08T09:00:00-05:00"
+          follow_up_reason: "Comercial pide avance de CP-2026-0142"
+          is_follow_up: true
+          is_new: false
+      follow_up:
+        mode: balanced
+        kind: requested
+        reason: "Comercial pide avance de CP-2026-0142"
+        pending_decisions: []
+        last_supplier_message_at: "2026-10-13T16:00:00-05:00"
+        last_agent_message_at: "2026-10-13T16:05:00-05:00"
+    must: ['cu[aá]nt|avance|van|etapa', 'cu[aá]ndo|fecha|para el|sale']
+    must_not: ['me pidieron', 'comercial', 'producci[oó]n', 'de parte', 'el equipo', 'me encargaron']
+    expect_tools: [send_message]
+    forbid_tools: [skip_follow_up]
+    max_messages: 1
+
+  - name: seguimiento_a_pedido_ya_esperando
+    agent: whatsapp
+    description: El pedido ya espera respuesta a una pregunta de hace 40 minutos; no escribe otra vez.
+    state:
+      purchase_orders:
+        - code: PT-0038
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo escolar blanco, quantity: "1000.00", unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-20"
+          committed_on: "2026-10-20"
+          terms: "50 % de adelanto y 50 % a la entrega"
+          units_done: "400.00"
+          total_units: "1000.00"
+          expected_units: "500.00"
+          last_report_at: "2026-10-13T16:00:00-05:00"
+          awaiting_reply_since: "2026-10-14T09:50:00-05:00"
+          report_link_sent_at: "2026-10-08T09:00:00-05:00"
+          follow_up_reason: "Comercial pide avance de CP-2026-0142"
+          is_follow_up: true
+          is_new: false
+      follow_up:
+        mode: balanced
+        kind: requested
+        reason: "Comercial pide avance de CP-2026-0142"
+        pending_decisions: []
+        last_agent_message: {text: "buenos días, ¿cómo va el PT-0038? ¿cuántos polos van listos? sin apuro 🙏", sent_at: "2026-10-14T09:50:00-05:00"}
+    expect_tools: [skip_follow_up]
+    forbid_tools: [send_message]
