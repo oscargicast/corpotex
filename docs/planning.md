@@ -434,6 +434,8 @@ Fuera de alcance a propósito: extracción de estilo en vivo (ADR 0011), QR en v
 
 ## Seguimiento
 
+Estado 11/10 05:20: main e29cd2c; ADR 0031 completo y mergeado (#176 backend, #177 y #180 rutas, #178, #179 y #181 disenador): tres estilos de botón con icono y confirmación por modal, FilterBar con buscador y listas por rol, pedidos agrupados por proveedor, toast de envío por WhatsApp, ruta crítica desde el título, avisos con sonido siempre activo y cierre, checkbox de número simulado y simulador más claro. Stack en 914b45d a las 05:12 y e29cd2c en despliegue; seed del 04:35 sin cambios. Pendientes: PR del video (sesión remotion, `video/` y ADR 0032) y el reseed final antes de las 08:45.
+
 Estado 11/10 04:40: main 4235f2a en el stack desde las 04:35, con reseed (`--reset-chats`, T = 04:35): las 5 alertas del guion (255 pago, 260 y 261 órdenes en peligro, 262 y 263 compras sugeridas), sin órdenes de prueba, planta al 93 % en el Monitor, agente sin pausa, cero FollowUpRequest. ADR 0030 completo: P1 (#172), P2 (#169), P3 (#171), P4 (#173), P5 (#170), más #174 (nombres finales y selects). Ningún PR abierto.
 
 Estado 11/10 04:15: main 8432b78, 88 PRs mergeados desde #80, ninguno abierto. ADR 0028 (M1-M5, N7-N8) y ADR 0029 (N1-N6, N9) completos y desplegados; formulario progresivo (#165), fotos de avance por el chat con el link como alternativa (#166, #167) y foto de WhatsApp visible en el pedido (#168) mergeados y en despliegue. En curso ADR 0030: P1 backend, P2-P4 disenador, P5 personalidad. Reseed pendiente de la decisión de Oscar (borra sus órdenes de prueba CP-2026-0184/0185 y las alertas 247/248); el último reseed va antes de las 08:45.
