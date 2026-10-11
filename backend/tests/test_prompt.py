@@ -47,7 +47,7 @@ def test_turn_message_lists_new_messages_and_follow_ups():
         },
     ]
     text = turn_text(state)
-    assert "<ahora>mié 14/10 10:30</ahora>" in text
+    assert "<ahora>miércoles 14 de octubre, 10:30</ahora>" in text
     assert "<seguimientos>PT-0001</seguimientos>" in text
     assert '<mensaje hora="10:20">buenos días</mensaje>' in text
     assert '<mensaje hora="10:21" media="imagen">así van</mensaje>' in text
@@ -125,7 +125,7 @@ def test_decisions_and_web_reports_are_rendered():
     text = turn_text(state)
     assert 'tipo="precio" resultado="aprobada" pedidos="PT-0001"' in text
     assert "nota del Gerente: ok a 13" in text
-    assert '<avance pedido="PT-0001" unidades="700" hora="mié 14/10 09:50"/>' in text
+    assert '<avance pedido="PT-0001" unidades="700" hora="miércoles 14 de octubre, 09:50"/>' in text
 
 
 def test_utc_times_are_shown_in_lima_time():
@@ -136,8 +136,8 @@ def test_utc_times_are_shown_in_lima_time():
         {"id": 1, "text": "hola", "media_url": None, "sent_at": "2026-10-11T00:00:00+00:00"}
     ]
     text = turn_text(state)
-    assert "<ahora>sáb 10/10 19:01</ahora>" in text
-    assert 'fecha_limite="sáb 10/10"' in text
+    assert "<ahora>sábado 10 de octubre, 19:01</ahora>" in text
+    assert 'fecha_limite="sábado 10 de octubre"' in text
     assert '<mensaje hora="19:00">hola</mensaje>' in text
 
 
@@ -146,4 +146,4 @@ def test_aware_datetime_objects_are_converted_too():
 
     state = base_state()
     state["now"] = datetime(2026, 10, 11, 0, 1, tzinfo=UTC)
-    assert "<ahora>sáb 10/10 19:01</ahora>" in turn_text(state)
+    assert "<ahora>sábado 10 de octubre, 19:01</ahora>" in turn_text(state)
