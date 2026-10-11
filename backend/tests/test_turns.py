@@ -9,7 +9,7 @@ from django.utils import timezone
 from core.models import Config
 from manager.models import Alert, AlertNotification
 from messaging import services
-from messaging.models import Conversation, Message, Turn
+from messaging.models import AllowedNumber, Conversation, Message, Turn
 from operations.models import PurchaseOrder
 from tests.scenario import build
 
@@ -168,7 +168,9 @@ def test_conversation_for_supplier_prefers_the_chat_with_the_latest_inbound(scen
     supplier = scenario["supplier"]
     simulated = supplier.numbers.get(simulated=True)
     sim_conversation = services.conversation_for_number(simulated, Conversation.Channel.SIMULATOR)
-    assert services.conversation_for_supplier(supplier) == scenario["conversation"]  # first active number, WhatsApp
+    assert services.conversation_for_supplier(supplier) == scenario["conversation"]  # real number first, WhatsApp
+    AllowedNumber.objects.filter(pk=scenario["number"].pk).update(id=scenario["number"].pk)  # ids do not matter: simulated goes last
+    assert services.conversation_for_supplier(supplier).channel == "whatsapp"
     inbound(sim_conversation, "desde el simulador")
     assert services.conversation_for_supplier(supplier) == sim_conversation
 

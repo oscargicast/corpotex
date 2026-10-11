@@ -149,3 +149,24 @@ def test_stock_reserved_by_an_open_order_is_not_available_to_the_next(catalogue,
     Order.objects.filter(pk=first.pk).update(status="delivered")
     services.break_down_order(second)
     assert second.requirements.get(kind="material").qty_from_stock == Decimal("100")
+
+
+@pytest.mark.django_db
+def test_ready_orders_are_never_in_danger_and_unconfirmed_suppliers_need_their_lead_time(catalogue, sales, production):
+    from datetime import timedelta
+
+    from core import clock
+
+    order, _ = services.register_order(order_payload(), actor=sales)
+    Order.objects.filter(pk=order.pk).update(status="ready", promised_on=clock.today() - timedelta(days=2))
+    order.refresh_from_db()
+    services.compute_critical_path(order)
+    assert order.risk == "ok" and order.estimated_on <= clock.today()
+
+    # A suggested workshop found today cannot deliver before tomorrow + its lead time, whatever the deadline says.
+    tight, _ = services.register_order(order_payload("CP-2026-0101"), actor=sales)
+    Order.objects.filter(pk=tight.pk).update(promised_on=clock.today() + timedelta(days=6))
+    tight.refresh_from_db()
+    services.confirm_order(tight, actor=production)  # suggested POs, workshops with lead_time_days=7 by default
+    tight.refresh_from_db()
+    assert tight.risk == "in_danger" and tight.estimated_on >= clock.today() + timedelta(days=8)

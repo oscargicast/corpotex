@@ -30,7 +30,8 @@ def test_seed_demo_loads_and_is_idempotent(monkeypatch):
     assert AllowedNumber.objects.filter(simulated=True).count() >= 5
     assert all(p.isascii() for p in AllowedNumber.objects.values_list("phone", flat=True))
     assert PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES, conversation__isnull=True, supplier__is_in_house=False).count() == 0
-    assert Conversation.objects.filter(channel="whatsapp").count() == 0  # proactive turns start on the simulator
+    scene = PurchaseOrder.objects.get(code="PT-0038")  # Valeria's workshop: proactive turns go to WhatsApp, not the simulator.
+    assert scene.conversation.channel == "whatsapp" and scene.conversation.allowed_number.phone == REAL_SUPPLIER_PHONE
 
     config = Config.load()
     assert config.agent_phone == MANAGER_PHONE and config.agent_user.username == "gerente" and config.plant_name

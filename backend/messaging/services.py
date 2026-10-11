@@ -66,9 +66,10 @@ def conversation_for_number(number: AllowedNumber, channel: str) -> Conversation
 
 def conversation_for_supplier(supplier: Supplier) -> Conversation | None:
     """Where proactive turns go (ADR 0016): the conversation with the most recent inbound
-    message among the supplier's active numbers; else a new one for the first active number
-    (WhatsApp if real, simulator if simulated); None without active numbers."""
-    numbers = list(supplier.numbers.filter(active=True).order_by("id"))
+    message among the supplier's active numbers; else a new one for the first active number,
+    real ones before simulated (WhatsApp beats the simulator, D1 finding of 10/10); None
+    without active numbers."""
+    numbers = list(supplier.numbers.filter(active=True).order_by("simulated", "id"))
     if not numbers:
         return None
     latest = (

@@ -48,6 +48,7 @@ def test_resolve_approve_assignment_approves_rejects_or_changes_supplier(scenari
     po.refresh_from_db()
     decision.refresh_from_db()
     assert po.supplier == other and po.suggested_supplier == scenario["supplier"]
+    assert po.items.get().unit_price == Decimal("7.00")  # The new supplier's rate, not the suggested one's 6.50.
     assert po.status == "approved" and decision.status == "supplier_changed"
     assert decision.detail["resolution"] == {"supplier_id": other.id, "purchase_order_id": None}
     assert decision.resolved_by == manager
