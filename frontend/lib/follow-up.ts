@@ -1,6 +1,8 @@
 // Proactive follow-up configured by the Gerente (ADR 0027).
 // GET/PATCH /api/settings/follow-up/ and GET /api/settings/follow-up/preview/.
 
+import { type PendingFollowUp, ROLE_LABELS, type Role } from "./types";
+
 export type FollowUpMode = "minimal" | "balanced" | "high";
 
 export interface FollowUpSettings {
@@ -60,4 +62,16 @@ export function minutesOf(time: string): number | null {
 export function todayWeekday(): number {
   const day = new Intl.DateTimeFormat("en-US", { timeZone: "America/Lima", weekday: "short" }).format(new Date());
   return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(day);
+}
+
+// Reactive follow-up (ADR 0027 §6) on a purchase order.
+
+// Who asked, for the waiting state: the API's label, else ours.
+export function requestedBy(pending: PendingFollowUp): string {
+  return pending.requested_by_role_display || ROLE_LABELS[pending.requested_by_role as Role] || pending.requested_by_role || "el equipo";
+}
+
+// A request still open: queued for the agent or asked and waiting.
+export function isOpenRequest(pending: PendingFollowUp | null | undefined): pending is PendingFollowUp & { status: "pending" | "asked" } {
+  return pending?.status === "pending" || pending?.status === "asked";
 }

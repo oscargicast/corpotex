@@ -1,5 +1,6 @@
 import { Clock } from "lucide-react";
 import Link from "next/link";
+import { isOpenRequest, requestedBy } from "@/lib/follow-up";
 import { formatDay, formatMoney, num } from "@/lib/format";
 import type { PurchaseOrderListItem } from "@/lib/types";
 import { Pill, SEVERITY_TONE } from "./ui";
@@ -76,12 +77,24 @@ function Status({ po }: { po: PurchaseOrderListItem }) {
     <span className="flex flex-wrap items-center gap-1">
       {po.waiting_manager ? <Pill tone="warning">Esperando al Gerente</Pill> : <Pill>{po.status_display}</Pill>}
       {po.alert_severity && <Pill tone={SEVERITY_TONE[po.alert_severity]}>alerta</Pill>}
-      {po.awaiting_reply && (
-        <span className="inline-flex text-warning" title="Esperando respuesta del proveedor">
-          <Clock size={14} aria-label="Esperando respuesta del proveedor" />
-        </span>
-      )}
+      <WaitingClock po={po} />
       {po.redistributed_from && <span className="text-xs text-muted">de {po.redistributed_from.code}</span>}
+    </span>
+  );
+}
+
+const hhmm = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+
+// The supplier owes an answer, or a request for progress is queued for the agent.
+function WaitingClock({ po }: { po: PurchaseOrderListItem }) {
+  const pending = isOpenRequest(po.pending_follow_up) ? po.pending_follow_up : null;
+  if (!po.awaiting_reply && !pending) return null;
+  const label = pending
+    ? `Avance pedido por ${requestedBy(pending)} a las ${hhmm.format(new Date(pending.requested_at))} · ${pending.status === "asked" ? "esperando respuesta" : "el agente le escribe en un momento"}`
+    : "Esperando respuesta del proveedor";
+  return (
+    <span className="inline-flex text-warning" title={label}>
+      <Clock size={14} aria-label={label} />
     </span>
   );
 }
