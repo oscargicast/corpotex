@@ -85,6 +85,7 @@ export type PurchaseOrderListItem = Omit<S["PurchaseOrderList"], PurchaseOrderLo
   currency: Currency;
   redistributed_from: Ref | null;
   alert_severity: Severity | null;
+  awaiting_reply?: boolean; // the supplier owes an answer to a follow-up (ADR 0027 §6)
 };
 
 export type Payment = Omit<S["Payment"], "purchase_order" | "due_on"> & { due_on: string | null };
@@ -120,7 +121,34 @@ export interface PurchaseOrderDetail extends PurchaseOrderListItem {
   suggested_supplier: { id: number; name: string } | null;
   redistributed_into: S["RedistributedInto"][]; // status only; label it with purchaseOrderStatusLabel
   rating: Rating | null;
+  pending_follow_up?: PendingFollowUp | null;
+  last_follow_up?: LastFollowUp | null;
 }
+
+// Reactive follow-up (ADR 0027 §6).
+export interface PendingFollowUp {
+  requested_by_role: Role | string;
+  requested_at: string;
+  status: "pending" | "asked" | "answered" | "skipped";
+  asked_at: string | null;
+}
+
+export interface LastFollowUp {
+  kind: string; // checkpoint | reminder | requested
+  at: string;
+  awaiting_reply: boolean;
+}
+
+export interface FollowUpRequestItem {
+  id?: number;
+  purchase_order?: Ref | null;
+  status?: PendingFollowUp["status"];
+  asked_at?: string | null;
+  already_asked?: boolean;
+}
+
+// POST /api/purchase-orders/<id>/follow-up/ and /api/orders/<id>/follow-up/ → 202.
+export type FollowUpRequestResponse = FollowUpRequestItem[] | { requests?: FollowUpRequestItem[]; created?: FollowUpRequestItem[]; detail?: string };
 
 export interface SupplierListItem {
   id: number;

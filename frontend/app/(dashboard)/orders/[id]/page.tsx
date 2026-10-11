@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Pencil, XCircle } from "lucide-react";
+import { ArrowLeft, MessageCircleQuestion, Pencil, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -20,6 +20,7 @@ import { CUSTOMIZATION, type OrderDetail } from "@/lib/types";
 import { SkeletonDetail } from "@/components/skeleton";
 import { canCancelOrder, canEditOrder } from "@/lib/orders";
 import { ClassifyPanel } from "@/components/classify-panel";
+import { FollowUpPanel } from "@/components/follow-up-request";
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ export default function OrderDetailPage() {
   const { data: order, mutate } = useSWR<OrderDetail>(id ? `/api/orders/${id}/` : null, fetcher, { refreshInterval: 3000 });
   const [confirming, setConfirming] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [asking, setAsking] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
@@ -37,6 +39,8 @@ export default function OrderDetailPage() {
   // Items without a catalog product get classified first (ADR 0025 C); until then
   // there is nothing complete to confirm.
   const needsClassification = order.items.some((item) => !item.product);
+  // Purchase orders a supplier still has to deliver: the ones "Pedir avance a todos" covers.
+  const openPurchaseOrders = order.purchase_orders.filter((po) => !["suggested", "delivered", "cancelled", "cancelled_by_supplier", "rejected_by_supplier", "declined_by_supplier"].includes(po.status));
   const canConfirm = order.status === "broken_down" && user.role !== "sales" && !needsClassification;
 
   async function cancelOrder() {
@@ -81,6 +85,11 @@ export default function OrderDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {openPurchaseOrders.length > 0 && !asking && (
+            <Button onClick={() => setAsking(true)}>
+              <MessageCircleQuestion size={16} /> Pedir avance a todos
+            </Button>
+          )}
           {canEditOrder(user, order) && (
             <Link href={`/orders/${order.id}/edit`} className="inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold text-ink ring-1 ring-line hover:bg-canvas">
               <Pencil size={16} /> Editar
@@ -98,6 +107,15 @@ export default function OrderDetailPage() {
           )}
         </div>
       </header>
+
+      {asking && (
+        <FollowUpPanel
+          endpoint={`/api/orders/${order.id}/follow-up/`}
+          targets={openPurchaseOrders.map((po) => ({ supplier: po.supplier.name, code: po.code, awaiting: !!po.awaiting_reply }))}
+          onClose={() => setAsking(false)}
+          onDone={() => mutate()}
+        />
+      )}
 
       {cancelling && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">

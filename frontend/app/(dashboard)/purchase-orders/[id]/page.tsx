@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageCircleQuestion } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import useSWR from "swr";
 import { ChatThread } from "@/components/chat-thread";
 import { DecisionCard } from "@/components/decision-card";
@@ -12,18 +13,20 @@ import { ProgressTimeline } from "@/components/progress-timeline";
 import { useUser } from "@/components/require-auth";
 import { purchaseOrderStatusLabel, StatusTimeline } from "@/components/status-timeline";
 import { Thumb } from "@/components/thumb";
-import { Card, Pill, SectionTitle } from "@/components/ui";
+import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import { formatDay, formatDayTime, formatMoney, num } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
 import type { ChatMessage, PurchaseOrderDetail } from "@/lib/types";
 import { SkeletonDetail } from "@/components/skeleton";
+import { FollowUpPanel, FollowUpStatus } from "@/components/follow-up-request";
 
 export default function PurchaseOrderDetailPage() {
   const params = useParams<{ id: string }>();
   const user = useUser();
   const isManager = user.role === "manager";
   const { id, notFound } = useResolvedId("purchase-orders", decodeURIComponent(params.id));
+  const [asking, setAsking] = useState(false);
   const { data: po, mutate } = useSWR<PurchaseOrderDetail>(id ? `/api/purchase-orders/${id}/` : null, fetcher, {
     refreshInterval: 3000,
   });
@@ -39,6 +42,8 @@ export default function PurchaseOrderDetailPage() {
 
   const today = new Date().toISOString().slice(0, 10);
   const open = !["delivered", "cancelled", "cancelled_by_supplier", "rejected_by_supplier"].includes(po.status);
+  // Comercial asks from the order; the purchase order is the Gerente's and Producción's.
+  const canAsk = open && po.status !== "suggested" && user.role !== "sales";
 
   return (
     <div className="space-y-5">
@@ -49,6 +54,11 @@ export default function PurchaseOrderDetailPage() {
       <header>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight">{po.code}</h1>
+          {canAsk && !asking && (
+            <Button className="ml-auto" onClick={() => setAsking(true)}>
+              <MessageCircleQuestion size={16} /> Pedir avance
+            </Button>
+          )}
           {po.waiting_manager ? <Pill tone="warning">Esperando al Gerente</Pill> : <Pill>{po.status_display}</Pill>}
           <Pill tone="info">{po.kind_display}</Pill>
         </div>
@@ -84,6 +94,15 @@ export default function PurchaseOrderDetailPage() {
         )}
       </header>
 
+      {asking && (
+        <FollowUpPanel
+          endpoint={`/api/purchase-orders/${po.id}/follow-up/`}
+          targets={[{ supplier: po.supplier.name, code: po.code, awaiting: !!po.pending_follow_up || !!po.last_follow_up?.awaiting_reply }]}
+          onClose={() => setAsking(false)}
+          onDone={() => mutate()}
+        />
+      )}
+
       {isManager && po.pending_decision && (
         <DecisionCard decision={po.pending_decision} onResolved={() => mutate()} />
       )}
@@ -91,6 +110,7 @@ export default function PurchaseOrderDetailPage() {
       <Card>
         <SectionTitle>Estado</SectionTitle>
         <StatusTimeline flow="purchase_order" status={po.status} statusDisplay={po.status_display} history={po.status_history} />
+        <FollowUpStatus po={po} />
       </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
