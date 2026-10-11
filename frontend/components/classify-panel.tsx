@@ -83,7 +83,7 @@ export function ClassifyPanel({ order, onApplied }: { order: OrderDetail; onAppl
   if (phase === "done" && !pending.length) return null;
 
   return (
-    <Card>
+    <Card className={review ? "xl:col-span-2" : ""}>
       <div className="flex flex-wrap items-center gap-2">
         <SectionTitle count={pending.length}>Desglosar componentes</SectionTitle>
         {phase === "idle" && (
@@ -102,7 +102,7 @@ export function ClassifyPanel({ order, onApplied }: { order: OrderDetail; onAppl
         <div className="flex items-center gap-3 rounded-lg bg-canvas px-3 py-3 text-sm" role="status">
           <Spinner className="text-accent" />
           <span>
-            <strong>Clasificando con IA…</strong> lee la descripción de cada prenda y arma su lista de materiales. Puede tardar entre 10 y 20 segundos.
+            <strong>Clasificando con IA…</strong> lee la descripción de cada prenda y arma su lista de materiales. Puede tardar entre 10 y 30 segundos.
           </span>
         </div>
       )}
@@ -156,7 +156,7 @@ export function ClassifyPanel({ order, onApplied }: { order: OrderDetail; onAppl
                   <Confidence value={proposal.confidence} />
                 </div>
                 {isNew && (
-                  <div className="mt-2 grid gap-2 sm:grid-cols-[8rem_minmax(0,1fr)_minmax(0,12rem)]">
+                  <div className="mt-2 grid gap-2 sm:grid-cols-[9rem_minmax(0,1fr)_minmax(0,14rem)]">
                     <label className="text-xs text-muted">
                       Código
                       <input
@@ -241,7 +241,7 @@ export function ClassifyPanel({ order, onApplied }: { order: OrderDetail; onAppl
                           </button>
                         </div>
                         {newMaterial && (
-                          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_8rem_6rem]">
+                          <div className="mt-2 grid grid-cols-[9rem_minmax(0,1fr)] gap-2 lg:grid-cols-[9rem_minmax(0,1fr)_9rem_7rem]">
                             <label className="text-xs text-muted">
                               SKU
                               <input value={material.new?.sku ?? ""} onChange={(e) => updateMaterial(index, m, { new: { ...(material.new ?? { name: "", kind: "other", unit: "unit" }), sku: e.target.value.toUpperCase() } })} className={`${input} font-mono`} />
