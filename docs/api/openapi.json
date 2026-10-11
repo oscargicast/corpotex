@@ -3448,6 +3448,12 @@
                         "items": {
                             "type": "integer"
                         }
+                    },
+                    "supplier_overrides": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
                     }
                 }
             },
@@ -4908,6 +4914,12 @@
                         },
                         "readOnly": true
                     },
+                    "material": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "description": "The material of a consolidated purchase order (all its items share it); null for workshops.",
+                        "readOnly": true
+                    },
                     "total_units": {
                         "type": "string",
                         "readOnly": true
@@ -5079,6 +5091,7 @@
                     "kind",
                     "kind_display",
                     "last_progress_at",
+                    "material",
                     "orders",
                     "paid_amount",
                     "payments",
@@ -5193,6 +5206,12 @@
                         },
                         "readOnly": true
                     },
+                    "material": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "description": "The material of a consolidated purchase order (all its items share it); null for workshops.",
+                        "readOnly": true
+                    },
                     "total_units": {
                         "type": "string",
                         "readOnly": true
@@ -5259,6 +5278,7 @@
                     "kind",
                     "kind_display",
                     "last_progress_at",
+                    "material",
                     "orders",
                     "progress_pct",
                     "redistributed_from",
