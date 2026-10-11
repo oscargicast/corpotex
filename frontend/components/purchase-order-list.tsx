@@ -1,3 +1,4 @@
+import { Clock } from "lucide-react";
 import Link from "next/link";
 import { formatDay, formatMoney, num } from "@/lib/format";
 import type { PurchaseOrderListItem } from "@/lib/types";
@@ -75,6 +76,11 @@ function Status({ po }: { po: PurchaseOrderListItem }) {
     <span className="flex flex-wrap items-center gap-1">
       {po.waiting_manager ? <Pill tone="warning">Esperando al Gerente</Pill> : <Pill>{po.status_display}</Pill>}
       {po.alert_severity && <Pill tone={SEVERITY_TONE[po.alert_severity]}>alerta</Pill>}
+      {po.awaiting_reply && (
+        <span className="inline-flex text-warning" title="Esperando respuesta del proveedor">
+          <Clock size={14} aria-label="Esperando respuesta del proveedor" />
+        </span>
+      )}
       {po.redistributed_from && <span className="text-xs text-muted">de {po.redistributed_from.code}</span>}
     </span>
   );
