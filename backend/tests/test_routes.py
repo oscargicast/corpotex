@@ -84,21 +84,24 @@ def test_replan_marks_previous_replaced(scenario):
 @pytest.mark.django_db
 def test_redistribution_proposes_a_route_and_the_decision_promotes_it(scenario, manager):
     po = scenario["purchase_order"]
+    planned = routes.plan_route(date(2026, 10, 14))  # The day PT-0001 was going to be picked up.
+    assert planned.stops.filter(purchase_order=po).exists()
     po, created, decision = services.cancel_by_supplier(po, reason="no puedo seguir")
     assert created, "the remainder must be redistributed"
     before_id, after_id = decision.detail["before"]["route_id"], decision.detail["after"]["route_id"]
     before, after = Route.objects.get(pk=before_id), Route.objects.get(pk=after_id)
-    assert before.status == "planned" and after.status == "proposed" and after.recalculated_from == before
-    assert after.date == min(p.internal_due_on for p in created)
+    assert before == planned and before.status == "planned" and after.status == "proposed" and after.recalculated_from == before
+    assert after.date == date(2026, 10, 14)
     new_codes = {p.code for p in created}
     assert {s.purchase_order.code for s in after.stops.filter(purchase_order__isnull=False)} == new_codes
-    assert not before.stops.filter(purchase_order__code__in=new_codes).exists()
+    assert {s.purchase_order.code for s in before.stops.filter(purchase_order__isnull=False)} == {"PT-0001"}
 
     resolve_decision(decision, action="approve", actor=manager)
     before.refresh_from_db()
     after.refresh_from_db()
     assert after.status == "planned" and before.status == "replaced"
     assert routes.current_route(after.date) == after
+    assert routes.current_route() == after  # The just-approved recalculation is what the map opens on.
 
 
 @pytest.mark.django_db
