@@ -147,3 +147,21 @@ def test_aware_datetime_objects_are_converted_too():
     state = base_state()
     state["now"] = datetime(2026, 10, 11, 0, 1, tzinfo=UTC)
     assert "<ahora>sábado 10 de octubre, 19:01</ahora>" in turn_text(state)
+
+
+def test_decimal_quantities_from_the_api_render_as_people_say_them():
+    from agent.persona.context import fmt_qty
+
+    assert [fmt_qty(v) for v in ("900.00", "12.50", 1000, "0.5", None)] == [
+        "900",
+        "12.5",
+        "1000",
+        "0.5",
+        "",
+    ]
+    state = base_state()
+    state["purchase_orders"][0]["items"][0]["quantity"] = "1000.00"
+    state["purchase_orders"][0]["units_done"] = "400.00"
+    text = turn_text(state)
+    assert "- 1000 Polo piqué blanco UNICRACK" in text
+    assert 'avance="400"' in text

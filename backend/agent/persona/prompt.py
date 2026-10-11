@@ -118,14 +118,16 @@ def _render_orders(orders: list[dict], currency: str) -> str:
             estado=order.get("status_display") or order.get("status"),
             fecha_limite=ctx.fmt_date(order.get("internal_due_on")),
             fecha_comprometida=ctx.fmt_date(order.get("committed_on")),
-            avance=order.get("units_done"),
+            avance=ctx.fmt_qty(order.get("units_done")),
             link_de_reporte="enviado" if order.get("report_link_sent_at") else "no enviado",
         )
         lines = []
         for item in order.get("items") or []:
             price = ctx.fmt_money(item.get("unit_price"), currency)
             suffix = f" a {price} c/u" if price else ""
-            lines.append(f"- {ctx.text(item.get('quantity'))} {ctx.text(item.get('name'))}{suffix}")
+            lines.append(
+                f"- {ctx.fmt_qty(item.get('quantity'))} {ctx.text(item.get('name'))}{suffix}"
+            )
         reference = ctx.fmt_money(order.get("rate_unit_price"), currency)
         if reference:
             lines.append(f"precio de referencia: {reference}")
