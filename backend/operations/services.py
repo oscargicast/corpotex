@@ -370,7 +370,14 @@ def open_material_requirements(material_ids=None):
     )
     if material_ids:
         qs = qs.filter(material_id__in=material_ids)
-    return [r for r in qs if r.qty_to_order > 0]
+    return [r for r in qs if remaining_to_order(r) > 0]
+
+
+def remaining_to_order(requirement: Requirement) -> Decimal:
+    """What is still to buy for a requirement: beyond stock, minus what its purchase orders
+    bring or already delivered (finding of 10/10 22:10: a delivered partial purchase order
+    made "Por pedir" and the alert say 1000 while the generated order said 400)."""
+    return max(requirement.qty_to_order - _covered(requirement), Decimal("0"))
 
 
 def pending_purchases(*, with_prices: bool, material_ids=None) -> list[dict]:
@@ -397,8 +404,9 @@ def pending_purchases(*, with_prices: bool, material_ids=None) -> list[dict]:
             },
         )
         due = requirement.order.promised_on - timedelta(days=config.buffer_days)
-        group["total_to_order"] += requirement.qty_to_order
-        group["orders"].append({"id": requirement.order_id, "code": requirement.order.code, "customer_name": requirement.order.customer.name, "qty": str(requirement.qty_to_order), "due_on": due})
+        remaining = remaining_to_order(requirement)
+        group["total_to_order"] += remaining
+        group["orders"].append({"id": requirement.order_id, "code": requirement.order.code, "customer_name": requirement.order.customer.name, "qty": str(remaining), "due_on": due})
         group["due_on"] = min(group["due_on"], due) if group["due_on"] else due
     from manager.models import Alert
 
@@ -659,7 +667,7 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
             for requirement in requirements:
                 groups.setdefault((requirement.kind, requirement.material_id, requirement.product_id), []).append(requirement)
             for group in groups.values():
-                pending = [(r, r.qty_to_order - _covered(r)) for r in group]
+                pending = [(r, remaining_to_order(r)) for r in group]
                 pending = [(r, remaining) for r, remaining in pending if remaining > 0]
                 if not pending:
                     continue
@@ -721,7 +729,7 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
                 )
             requirements = []  # The per-requirement loop below has nothing left to do.
         for requirement in requirements:
-            remaining = requirement.qty_to_order - _covered(requirement)
+            remaining = remaining_to_order(requirement)
             if remaining <= 0:
                 continue
             candidates = rank_candidates(requirement, exclude=exclude)

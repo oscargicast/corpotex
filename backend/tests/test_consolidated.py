@@ -150,3 +150,28 @@ def test_supplier_override_forces_the_supplier_or_answers_400(two_orders, catalo
     created = response.json()["created"][0]
     assert created["supplier"]["name"] == "Botones Lima" and created["items"][0]["unit_price"] == "0.25"
     assert created["suggested_supplier"]["name"] == "Botones Lima"  # The override is the suggestion of record; the ranking stays in the decision.
+
+
+@pytest.mark.django_db
+def test_a_delivered_partial_purchase_order_leaves_only_the_remainder_to_buy(two_orders, catalogue, production):
+    """Finding of 10/10 22:10 (seed PI-0032): 600 of the 1000 collars were already delivered, yet
+    "Por pedir" and the alert said 1000 while the generated purchase order said 400."""
+    from operations.models import PurchaseOrderItem
+
+    a, _ = two_orders
+    requirement = a.requirements.get(kind="material", material=catalogue["buttons"])  # 1100 to order
+    delivered = PurchaseOrder.objects.create(code="PI-0900", supplier=catalogue["gamarra"], status="delivered")
+    PurchaseOrderItem.objects.create(purchase_order=delivered, requirement=requirement, quantity=Decimal("600"), unit_price=Decimal("0.18"), qty_delivered=Decimal("600"))
+    assert services.sync_requirement_status(requirement).status == "open"  # partly covered: still to buy
+    buttons = next(g for g in client_for(production).get("/api/requirements/pending/").json() if g["material"]["sku"] == "BOT-NX")
+    assert buttons["total_to_order"] == "2000.00"
+    assert {o["code"]: o["qty"] for o in buttons["orders"]} == {"CP-2026-0301": "500.00", "CP-2026-0302": "1500.00"}
+    po = services.generate_purchase_orders([catalogue["buttons"].id], actor=production)["created"][0]
+    assert {(i.requirement.order.code, str(i.quantity)) for i in po.items.select_related("requirement__order")} == {("CP-2026-0301", "500.00"), ("CP-2026-0302", "1500.00")}
+    # Delivered in full, a requirement leaves "Por pedir" and is covered.
+    other = Requirement.objects.get(order__code="CP-2026-0302", kind="material", material=catalogue["fabric"])
+    full = PurchaseOrder.objects.create(code="PI-0901", supplier=catalogue["textil"], status="delivered")
+    PurchaseOrderItem.objects.create(purchase_order=full, requirement=other, quantity=other.qty_to_order, unit_price=Decimal("8.00"), qty_delivered=other.qty_to_order)
+    assert services.sync_requirement_status(other).status == "covered"
+    fabric = next(g for g in client_for(production).get("/api/requirements/pending/").json() if g["material"]["sku"] == "TEL-20")
+    assert [o["code"] for o in fabric["orders"]] == ["CP-2026-0301"]
