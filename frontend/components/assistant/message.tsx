@@ -34,36 +34,44 @@ export function MessageBubble({ message }: { message: AssistantMessage }) {
         {mine ? (
           <p className="whitespace-pre-wrap">{message.text}</p>
         ) : (
-          <div className="assistant-md">
-            <Markdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                // No headings or raw HTML in a bubble (agreed with personalidad).
-                h1: "strong",
-                h2: "strong",
-                h3: "strong",
-                img: () => null,
-                a: ({ href = "", children }) =>
-                  INTERNAL_HREF.test(href) ? (
-                    <Link href={href} className="whitespace-nowrap font-medium text-accent underline">
-                      {children}
-                    </Link>
-                  ) : (
-                    <span>{children}</span>
-                  ),
-                table: ({ children }) => (
-                  <div className="my-1 overflow-x-auto">
-                    <table className="text-xs">{children}</table>
-                  </div>
-                ),
-              }}
-            >
-              {linkCodes(message.text)}
-            </Markdown>
-          </div>
+          <Prose text={message.text} />
         )}
         <p className={`mt-0.5 text-right text-[10px] ${mine ? "text-white/60" : "text-muted"}`}>{formatDayTime(message.created_at)}</p>
       </div>
+    </div>
+  );
+}
+
+// Assistant text is markdown (bold, lists, tables); the same rendering serves
+// bubbles, notices and action summaries, so no card shows raw asterisks.
+function Prose({ text }: { text: string }) {
+  return (
+    <div className="assistant-md">
+      <Markdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // No headings or raw HTML in a bubble (agreed with personalidad).
+          h1: "strong",
+          h2: "strong",
+          h3: "strong",
+          img: () => null,
+          a: ({ href = "", children }) =>
+            INTERNAL_HREF.test(href) ? (
+              <Link href={href} className="whitespace-nowrap font-medium text-accent underline">
+                {children}
+              </Link>
+            ) : (
+              <span>{children}</span>
+            ),
+          table: ({ children }) => (
+            <div className="my-1 overflow-x-auto">
+              <table className="text-xs">{children}</table>
+            </div>
+          ),
+        }}
+      >
+        {linkCodes(text)}
+      </Markdown>
     </div>
   );
 }
@@ -82,7 +90,11 @@ function ActionCard({ action, text }: { action: AssistantAction; text: string })
         <p className="flex items-center gap-1.5 font-semibold">
           <AlertTriangle size={16} className="text-warning" /> Aviso
         </p>
-        {text && <p className="mt-1">{text}</p>}
+        {text && (
+          <div className="mt-1">
+            <Prose text={text} />
+          </div>
+        )}
         <ul className="mt-2 space-y-2">
           {action.alerts.map((alert) => (
             <li key={alert.id} className="flex flex-wrap items-center gap-2">
@@ -111,7 +123,11 @@ function ActionCard({ action, text }: { action: AssistantAction; text: string })
         {done ? <CheckCircle2 size={16} className="text-success" /> : <XCircle size={16} className="text-danger" />}
         {action.title}
       </p>
-      {action.summary && <p className="mt-1">{action.summary}</p>}
+      {action.summary && (
+        <div className="mt-1">
+          <Prose text={action.summary} />
+        </div>
+      )}
       {action.links.length > 0 && (
         <p className="mt-2 flex flex-wrap gap-x-3">
           {action.links.map((link) => (
