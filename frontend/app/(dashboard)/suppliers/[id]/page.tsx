@@ -1,31 +1,39 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { Suspense, useRef, useState } from "react";
 import useSWR from "swr";
 import { ChannelPill } from "@/components/channel-pill";
 import { Numbers } from "@/components/numbers";
 import { PurchaseOrderList } from "@/components/purchase-order-list";
+import { Radar, radarFromSupplier } from "@/components/radar";
 import { RoleGate } from "@/components/require-auth";
+import { SkeletonDetail, SkeletonLines } from "@/components/skeleton";
+import { SupplierForm } from "@/components/supplier-form";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
 import { formatDay, formatMoney, formatNum, formatScore, num } from "@/lib/format";
-import type { SupplierDetail } from "@/lib/types";
-import { SkeletonDetail } from "@/components/skeleton";
+import { candidateSupplier, type PurchaseOrderDetail, type SupplierDetail } from "@/lib/types";
 
 export default function SupplierDetailPage() {
   return (
     <RoleGate roles={["manager"]}>
-      <Supplier />
+      <Suspense>
+        <Supplier />
+      </Suspense>
     </RoleGate>
   );
 }
 
 function Supplier() {
   const { id } = useParams<{ id: string }>();
-  const { data: supplier, mutate } = useSWR<SupplierDetail>(`/api/suppliers/${id}/`, fetcher, { refreshInterval: 5000 });
+  const { data: supplier, error, mutate } = useSWR<SupplierDetail>(`/api/suppliers/${id}/`, fetcher, { refreshInterval: 5000 });
+  const dialog = useRef<HTMLDialogElement>(null);
+  // Remount the form on every open so it starts from the current data.
+  const [opened, setOpened] = useState(0);
+  if (error && !supplier) return <p className="text-muted">No existe el proveedor {id}.</p>;
   if (!supplier) return <SkeletonDetail />;
 
   return (
@@ -34,16 +42,48 @@ function Supplier() {
         <ArrowLeft size={16} /> Proveedores
       </Link>
 
-      <header>
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{supplier.name}</h1>
-          <ChannelPill supplier={supplier} />
-          {supplier.status !== "active" && <Pill tone="warning">{supplier.status_display}</Pill>}
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">{supplier.name}</h1>
+            <ChannelPill supplier={supplier} />
+            {supplier.status !== "active" && <Pill tone="warning">{supplier.status_display}</Pill>}
+          </div>
+          <p className="mt-1 text-sm text-muted">
+            {[supplier.kind_display, supplier.city, supplier.specialties.join(", "), `cobra en ${supplier.currency}`].filter(Boolean).join(" · ")}
+          </p>
         </div>
-        <p className="mt-1 text-sm text-muted">
-          {[supplier.kind_display, supplier.city, supplier.specialties.join(", "), `cobra en ${supplier.currency}`].filter(Boolean).join(" · ")}
-        </p>
+        <Button
+          onClick={() => {
+            setOpened((n) => n + 1);
+            dialog.current?.showModal();
+          }}
+        >
+          <Pencil size={16} /> Editar
+        </Button>
       </header>
+
+      <dialog
+        ref={dialog}
+        className="m-auto w-[min(44rem,calc(100vw-2rem))] rounded-xl p-0 backdrop:bg-ink/40"
+        onClick={(e) => e.target === dialog.current && dialog.current?.close()}
+      >
+        <div className="max-h-[90dvh] overflow-y-auto p-5">
+          <h2 className="mb-4 text-lg font-semibold">Editar {supplier.name}</h2>
+          <SupplierForm
+            key={opened}
+            method="PATCH"
+            endpoint={`/api/suppliers/${supplier.id}/`}
+            supplier={supplier}
+            submitLabel="Guardar cambios"
+            onSaved={() => {
+              dialog.current?.close();
+              mutate();
+            }}
+            onCancel={() => dialog.current?.close()}
+          />
+        </div>
+      </dialog>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Fact label="Cumplimiento" value={num(supplier.on_time_score) === null ? "—" : `${formatScore(supplier.on_time_score)} %`} />
@@ -53,6 +93,8 @@ function Supplier() {
       </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-2">
+        <Evaluation supplier={supplier} />
+
         {!supplier.is_in_house && (
           <Card>
             <SectionTitle count={supplier.numbers.length}>Números de WhatsApp</SectionTitle>
@@ -142,6 +184,76 @@ function Supplier() {
         <PurchaseOrderList items={supplier.purchase_orders} />
       </Card>
     </div>
+  );
+}
+
+// The five criteria of the matching as a radar. With ?po=<id> (the link "ver
+// evaluación" from a purchase order) it shows that run: scores, rationale and
+// the ranking of candidates; otherwise the supplier's own numbers.
+function Evaluation({ supplier }: { supplier: SupplierDetail }) {
+  const params = useSearchParams();
+  const poId = params.get("po");
+  const { data: po } = useSWR<PurchaseOrderDetail>(poId ? `/api/purchase-orders/${poId}/` : null, fetcher);
+  const fromRun = !!po?.scores;
+  const values = po?.scores ?? radarFromSupplier(supplier);
+
+  return (
+    <Card>
+      <SectionTitle>Evaluación</SectionTitle>
+      {poId && !po ? (
+        <SkeletonLines lines={5} />
+      ) : (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <Radar values={values} size={240} className="mx-auto shrink-0" title={fromRun ? `Matching para ${po?.code}` : "Datos del proveedor"} />
+          <div className="min-w-0 flex-1 text-sm">
+            {fromRun && po ? (
+              <>
+                <p className="text-xs text-muted">
+                  Matching para{" "}
+                  <Link href={`/purchase-orders/${po.id}`} className="font-medium text-accent hover:underline">
+                    {po.code}
+                  </Link>
+                </p>
+                {po.rationale && <p className="mt-1">{po.rationale}</p>}
+                {po.changed_by_manager && <p className="mt-1 text-xs text-warning">El Gerente cambió la sugerencia del matching.</p>}
+              </>
+            ) : (
+              <p className="text-xs text-muted">
+                Cumplimiento y calidad salen de sus entregas; carga libre, de los pedidos abiertos; plazo, de los días declarados. El precio se compara en cada
+                matching.
+              </p>
+            )}
+            {po?.candidates && po.candidates.length > 1 && (
+              <table className="mt-3 w-full text-sm">
+                <thead className="text-left text-xs text-muted">
+                  <tr>
+                    <th className="pb-1 font-medium">Ranking</th>
+                    <th className="pb-1 text-right font-medium">Puntaje</th>
+                    <th className="pb-1 text-right font-medium">Precio</th>
+                    <th className="pb-1 text-right font-medium">Carga</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {po.candidates.map((c, i) => {
+                    const who = candidateSupplier(c);
+                    return (
+                      <tr key={who.id} className={who.id === supplier.id ? "font-semibold" : ""}>
+                        <td className="py-1.5">
+                          {i + 1}. {who.name}
+                        </td>
+                        <td className="py-1.5 text-right tabular-nums">{formatScore(c.score)}</td>
+                        <td className="py-1.5 text-right tabular-nums">{formatMoney(c.unit_price, po.currency)}</td>
+                        <td className="py-1.5 text-right tabular-nums">{c.load_pct} %</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 

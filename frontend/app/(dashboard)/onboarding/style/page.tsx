@@ -1,15 +1,15 @@
 "use client";
 
-import { FileUp } from "lucide-react";
+import { CheckCircle2, FileUp, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import useSWR from "swr";
+import useSWR, { type KeyedMutator } from "swr";
+import { SkeletonCard } from "@/components/skeleton";
 import { StyleMarkdown } from "@/components/style-markdown";
 import { Button, Card, Pill, SectionTitle, Spinner, type Tone } from "@/components/ui";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
-import { formatDayTime } from "@/lib/format";
+import { formatDay, formatDayTime } from "@/lib/format";
 import type { StyleState, StyleSupplierStatus, SupplierListItem } from "@/lib/types";
-import { SkeletonCard } from "@/components/skeleton";
 
 const SUPPLIER_STATUS: Record<StyleSupplierStatus, { label: string; tone: Tone }> = {
   pending: { label: "En cola", tone: "neutral" },
@@ -21,6 +21,8 @@ const SUPPLIER_STATUS: Record<StyleSupplierStatus, { label: string; tone: Tone }
   not_allowed: { label: "WhatsApp inactivo", tone: "warning" },
   error: { label: "Error", tone: "danger" },
 };
+
+const FINISHED: StyleSupplierStatus[] = ["done", "no_phone", "no_chat", "not_allowed", "error"];
 
 // WhatsApp exports name the author after the date: Android "dd/mm/yy, hh:mm - Autor:",
 // iOS "[dd/mm/yy, hh:mm:ss] Autor:" (personalidad's parser uses the same patterns).
@@ -43,7 +45,7 @@ function daysAgo(days: number): string {
 
 function errorText(err: unknown): string {
   if (err instanceof ApiError) {
-    if (err.status === 409) return "Hay una extracción en curso. Espera a que termine.";
+    if (err.status === 409) return "Hay una sincronización en curso. Espera a que termine.";
     const body = err.body as { detail?: string; errors?: string[] } | null;
     if (body?.errors?.length) return `${body.detail ?? "El estilo no pasa la validación."} ${body.errors.join(" ")}`;
     if (body?.detail) return body.detail;
@@ -51,17 +53,152 @@ function errorText(err: unknown): string {
   return "No se pudo guardar. Inténtalo de nuevo.";
 }
 
+function progress(state: StyleState): { finished: number; total: number; pct: number } {
+  const total = state.suppliers.length;
+  const finished = state.suppliers.filter((s) => FINISHED.includes(s.status)).length;
+  return { finished, total, pct: total ? Math.round((finished / total) * 100) : 0 };
+}
+
+// The Gerente sees one status line and one button. The full controls (date,
+// .txt import, base profile, progress per supplier, editor) open with a triple
+// click on the title and close with another: a hidden zone, no visual hint.
 export default function OnboardingStyle() {
   const { data: state, mutate } = useSWR<StyleState>("/api/onboarding/style/", fetcher, { refreshInterval: 3000 });
-  const [since, setSince] = useState(daysAgo(90));
+  const [advanced, setAdvanced] = useState(false);
+  const [busy, setBusy] = useState<"sync" | "approve" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function post(path: string, body: Record<string, unknown> | undefined, kind: "sync" | "approve") {
+    setBusy(kind);
+    setError(null);
+    try {
+      mutate(await apiFetch<StyleState>(path, { method: "POST", json: body }), { revalidate: true });
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (!state) return <SkeletonCard lines={3} />;
+
+  const extracting = state.status === "extracting";
+  const hasDraft = !!state.style_md && state.status !== "approved" && !extracting;
+  // Sync reads from the last sync, or the last 30 days the first time.
+  const since = state.since ?? daysAgo(30);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <h2
+          className="select-none text-base font-semibold"
+          onClick={(e) => {
+            if (e.detail === 3) setAdvanced((open) => !open);
+          }}
+        >
+          Estilo del Gerente
+        </h2>
+
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <StatusLine state={state} hasDraft={hasDraft} />
+          <div className="ml-auto flex flex-wrap gap-2">
+            {hasDraft && (
+              <Button kind="primary" busy={busy === "approve"} disabled={busy !== null} onClick={() => post("/api/onboarding/style/approve/", undefined, "approve")}>
+                Aprobar
+              </Button>
+            )}
+            <Button
+              kind={hasDraft ? "ghost" : "dark"}
+              busy={busy === "sync" || extracting}
+              disabled={busy !== null}
+              onClick={() => post("/api/onboarding/style/extract/", { since }, "sync")}
+            >
+              {extracting ? "Sincronizando…" : "Sincronizar estilo"}
+            </Button>
+          </div>
+        </div>
+
+        {extracting && <ExtractionBar state={state} />}
+
+        {state.status === "error" && (
+          <p className="mt-3 text-sm text-danger" role="alert">
+            {state.error || "La sincronización falló. Inténtalo de nuevo."}
+          </p>
+        )}
+        {error && (
+          <p className="mt-3 text-sm text-danger" role="alert">
+            {error}
+          </p>
+        )}
+        <p className="mt-3 text-xs text-muted">
+          Sincronizar lee los chats de WhatsApp con los proveedores que tienen celular activo desde {state.since ? `la última sincronización (${formatDay(state.since)})` : "los últimos 30 días"},
+          anonimiza nombres y teléfonos de terceros y deja un estilo nuevo listo para aprobar.
+        </p>
+      </Card>
+
+      {advanced && <Advanced state={state} mutate={mutate} onClose={() => setAdvanced(false)} />}
+    </div>
+  );
+}
+
+function StatusLine({ state, hasDraft }: { state: StyleState; hasDraft: boolean }) {
+  if (state.status === "extracting") {
+    return (
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Spinner className="text-accent" /> Leyendo tus chats…
+      </p>
+    );
+  }
+  if (hasDraft) {
+    return (
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Sparkles size={18} className="text-brand" /> Nuevo estilo listo
+      </p>
+    );
+  }
+  if (state.status === "approved" && state.approved_at) {
+    return (
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <CheckCircle2 size={18} className="text-success" /> Estilo aprobado el {formatDayTime(state.approved_at)}
+      </p>
+    );
+  }
+  return <p className="text-sm font-medium text-muted">Sin estilo</p>;
+}
+
+function ExtractionBar({ state }: { state: StyleState }) {
+  const { finished, total, pct } = progress(state);
+  const merging = state.step === "merging";
+  return (
+    <div className="mt-3">
+      <div className="flex items-center justify-between text-xs text-muted tabular-nums">
+        <span>{merging ? "Armando el estilo con todos los chats…" : `${finished} de ${total} proveedores`}</span>
+        {!merging && <span>{pct} %</span>}
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-canvas" role="progressbar" aria-valuenow={merging ? undefined : pct} aria-valuemin={0} aria-valuemax={100}>
+        {merging ? (
+          <div className="h-full w-1/3 animate-[indeterminate_1.4s_ease-in-out_infinite] rounded-full bg-accent" />
+        ) : (
+          <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${Math.max(4, pct)}%` }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Everything the simple view hides: pick the date, extract with confirmation,
+// import a .txt export, fall back to the base profile, follow each supplier,
+// and edit the draft with a preview.
+function Advanced({ state, mutate, onClose }: { state: StyleState; mutate: KeyedMutator<StyleState>; onClose: () => void }) {
+  const [since, setSince] = useState(state.since ?? daysAgo(90));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<"extract" | "template" | null>(null);
-  const extracting = state?.status === "extracting";
+  const extracting = state.status === "extracting";
 
   useEffect(() => {
-    if (state?.since) setSince(state.since);
-  }, [state?.since]);
+    if (state.since) setSince(state.since);
+  }, [state.since]);
 
   async function run(path: string, init: Parameters<typeof apiFetch>[1]) {
     setBusy(true);
@@ -76,17 +213,17 @@ export default function OnboardingStyle() {
     }
   }
 
-  if (!state) return <SkeletonCard lines={3} />;
-
   return (
-    <div className="space-y-4">
+    <>
       <Card>
         <div className="flex flex-wrap items-center gap-2">
-          <SectionTitle>Estilo del Gerente</SectionTitle>
+          <SectionTitle>Controles</SectionTitle>
           <Pill tone={state.status === "approved" ? "success" : state.status === "error" ? "danger" : state.status === "extracting" ? "info" : "neutral"}>
             {state.status_display}
           </Pill>
-          {state.approved_at && <span className="text-xs text-muted">Aprobado el {formatDayTime(state.approved_at)}</span>}
+          <button type="button" onClick={onClose} className="ml-auto text-xs text-muted hover:underline">
+            Ocultar
+          </button>
         </div>
         <p className="text-sm text-muted">
           Se lee solo el chat de cada proveedor con celular activo, desde la fecha que elijas. Los nombres y teléfonos de terceros salen anonimizados.
@@ -145,16 +282,12 @@ export default function OnboardingStyle() {
       {(extracting || state.suppliers.some((s) => s.status !== "pending")) && <Progress state={state} />}
 
       {!extracting && state.style_md && <Editor state={state} onSaved={() => mutate()} />}
-    </div>
+    </>
   );
 }
 
-const FINISHED: StyleSupplierStatus[] = ["done", "no_phone", "no_chat", "not_allowed", "error"];
-
 function Progress({ state }: { state: StyleState }) {
-  const total = state.suppliers.length;
-  const finished = state.suppliers.filter((s) => FINISHED.includes(s.status)).length;
-  const pct = total ? Math.round((finished / total) * 100) : 0;
+  const { finished, total, pct } = progress(state);
   return (
     <Card>
       <SectionTitle>Progreso por proveedor</SectionTitle>
