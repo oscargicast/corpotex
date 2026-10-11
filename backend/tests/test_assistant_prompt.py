@@ -83,3 +83,29 @@ def test_pending_action_and_view_are_in_the_turn():
     assert '<vista path="/purchase-orders/31" view="purchase_order" id="31"/>' in text
     assert '<accion_pendiente tool="resolve_decision">' in text
     assert "responde a la pregunta de <accion_pendiente>" in text
+
+
+def test_purchase_suggested_alert_carries_the_material_and_the_price_only_for_the_manager():
+    manager_text = turn_text(scenario_state("sugerencia_de_compra_gerente"))
+    assert 'tipo="compra sugerida"' in manager_text
+    assert (
+        '<compra_sugerida sku="BTN-NX-15" insumo="botón NX 15 mm" unidad="unidad" total_por_pedir="900"'
+        in manager_text
+    )
+    assert 'proveedor_sugerido="Avíos Gamarra" precio_referencia="S/ 0.18"' in manager_text
+    assert (
+        '<orden codigo="CP-2026-0142" cantidad="400" fecha_limite="martes 20 de octubre"/>'
+        in manager_text
+    )
+    assert "¿Genero el pedido?" in manager_text
+
+    production_text = turn_text(scenario_state("sugerencia_de_compra_produccion"))
+    assert "precio_referencia" not in production_text and "0.18" not in production_text
+    assert 'proveedor_sugerido="Avíos Gamarra"' in production_text
+
+
+def test_roles_describe_how_to_preview_a_consolidated_purchase():
+    for role, price in (("manager", "S/ 0.18"), ("production", "sin precios")):
+        text = assistant.load_role(role)
+        assert "generate_purchase_orders" in text and price in text
+    assert "generate_purchase_orders" not in assistant.load_role("sales")

@@ -22,6 +22,7 @@ ALERT_KINDS = {
     "no_response": "proveedor sin respuesta",
     "no_channel": "pedido sin canal de WhatsApp",
     "payment_due": "pago vencido",
+    "purchase_suggested": "compra sugerida",
     "style_refresh_failed": "falló el refresco del estilo",
     "turn_failed": "falló un turno del agente",
 }
@@ -42,6 +43,11 @@ FIELD_NAMES = {
     "internal_due_on": "fecha_limite",
     "committed_on": "fecha_comprometida",
     "last_progress_at": "ultimo_avance",
+    "sku": "sku",
+    "name": "nombre",
+    "unit": "unidad",
+    "qty": "cantidad",
+    "due_on": "fecha_limite",
 }
 
 IDENTITY = """\
@@ -78,6 +84,12 @@ ALERTS_ONLY = (
     'alerta es repetida, di "sigue pendiente desde…". Sin URLs ni links: el dashboard los pone '
     'en la tarjeta. No termines en "(sí/no)" ni prepares ninguna acción: si sugieres algo, '
     'pregúntalo abierto ("¿quieres que lo revisemos?").'
+)
+PURCHASE_SUGGESTED = (
+    "Para una <compra_sugerida>: di cuánto hay por pedir y de qué, para qué órdenes, y el proveedor "
+    'sugerido; el precio de referencia solo si viene en los datos. Cierra con "¿Genero el pedido?". '
+    'Ejemplo: "Hay 900 botones NX por pedir para CP-2026-0142 y CP-2026-0155; sugiero Avíos Gamarra. '
+    '¿Genero el pedido?"'
 )
 
 
@@ -169,10 +181,34 @@ def _render_alerts(alerts: list[dict]) -> str:
             )
             if alert.get(key)
         ]
+        if alert.get("material"):
+            body.append(_render_purchase_suggestion(alert))
         rendered.append(f"<alerta{tag}>\n" + "\n".join(body) + "\n</alerta>")
     if hidden > 0:
         rendered.append(f'<mas_avisos cantidad="{hidden}"/>')
     return "<avisos>\n" + "\n".join(rendered) + "\n</avisos>"
+
+
+def _render_purchase_suggestion(alert: dict) -> str:
+    """`<compra_sugerida>` with the orders that need the material; the price only comes for the manager."""
+    material = alert.get("material") or {}
+    head = {
+        "sku": material.get("sku"),
+        "insumo": material.get("name"),
+        "unidad": material.get("unit"),
+        "total_por_pedir": alert.get("total_to_order"),
+        "proveedor_sugerido": (alert.get("suggested_supplier") or {}).get("name"),
+    }
+    if alert.get("reference_price") not in (None, ""):
+        head["precio_referencia"] = ctx.fmt_money(
+            alert["reference_price"], alert.get("currency") or "PEN"
+        )
+    orders = [
+        f"<orden{ctx.attrs(codigo=o.get('code'), cantidad=o.get('qty'), fecha_limite=ctx.fmt_date(o.get('due_on')))}/>"
+        for o in alert.get("orders") or []
+    ]
+    inner = ("\n" + "\n".join(orders) + "\n") if orders else ""
+    return f"<compra_sugerida{ctx.attrs(**head)}>{inner}</compra_sugerida>"
 
 
 def _render_object(tag: str, data: dict) -> str:
@@ -206,4 +242,6 @@ def _render_what_to_do(state: dict) -> str:
                 "pidió en su mensaje, nunca una que sugiera un aviso."
             )
         steps.append(ALERTS_ONLY)
+        if any(a.get("kind") == "purchase_suggested" for a in state["alerts"]):
+            steps.append(PURCHASE_SUGGESTED)
     return "<que_hacer>\n" + "\n".join(f"- {step}" for step in steps) + "\n</que_hacer>"

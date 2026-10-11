@@ -402,3 +402,71 @@ scenarios:
         - {id: 108, text: "búscame talleres de costura en Piura", sent_at: "2026-10-14T10:25:00-05:00"}
     must: ['gerente']
     forbid_tools: [suggest_suppliers]
+
+  - name: sugerencia_de_compra_gerente
+    agent: assistant
+    description: ADR 0025. Aviso purchase_suggested al Gerente, con precio de referencia; pregunta abierta, nunca (sí/no).
+    state:
+      alerts:
+        - id: 61
+          kind: purchase_suggested
+          severity: warning
+          detected_at: "2026-10-14T08:00:00-05:00"
+          repeat: false
+          order: null
+          purchase_order: null
+          decision: null
+          material: {id: 7, sku: BTN-NX-15, name: botón NX 15 mm, unit: unidad}
+          total_to_order: 900
+          orders: [{code: CP-2026-0142, qty: 400, due_on: "2026-10-20"}, {code: CP-2026-0155, qty: 500, due_on: "2026-10-24"}]
+          suggested_supplier: {id: 6, name: Avíos Gamarra}
+          reference_price: "0.18"
+          currency: PEN
+    must: ['900', 'CP-2026-0142', 'CP-2026-0155', 'Avíos Gamarra', '0[.,]18', '¿Genero el pedido\\?']
+    must_not: ['\\(s[ií]/no\\)', 'https?://']
+    forbid_tools: [generate_purchase_orders]
+
+  - name: sugerencia_de_compra_produccion
+    agent: assistant
+    description: ADR 0025. El mismo aviso a Producción, sin precio.
+    state:
+      user: {first_name: Carlos, role: production}
+      alerts:
+        - id: 61
+          kind: purchase_suggested
+          severity: warning
+          detected_at: "2026-10-14T08:00:00-05:00"
+          repeat: false
+          order: null
+          purchase_order: null
+          decision: null
+          material: {id: 7, sku: BTN-NX-15, name: botón NX 15 mm, unit: unidad}
+          total_to_order: 900
+          orders: [{code: CP-2026-0142, qty: 400, due_on: "2026-10-20"}, {code: CP-2026-0155, qty: 500, due_on: "2026-10-24"}]
+          suggested_supplier: {id: 6, name: Avíos Gamarra}
+          reference_price: null
+          currency: null
+    must: ['900', 'Avíos Gamarra', '¿Genero el pedido\\?']
+    must_not: ['S/', 'USD', '0[.,]18', '\\(s[ií]/no\\)']
+    forbid_tools: [generate_purchase_orders]
+
+  - name: generar_pedido_confirmacion_produccion
+    agent: assistant
+    description: Producción responde que sí al aviso; vista previa con confirmed=false, sin precios, y la pregunta literal.
+    state:
+      user: {first_name: Carlos, role: production}
+      new_messages:
+        - {id: 109, text: "sí, genera el pedido de los botones NX", sent_at: "2026-10-14T08:05:00-05:00"}
+    must: ['botones|botón', 'Avíos Gamarra|proveedor']
+    must_not: ['S/', 'USD']
+    expect_tools: [generate_purchase_orders]
+    ends_with: "(sí/no)"
+
+  - name: generar_pedido_sales
+    agent: assistant
+    state:
+      user: {first_name: Lucía, role: sales}
+      new_messages:
+        - {id: 110, text: "genera el pedido de los botones NX a Avíos Gamarra", sent_at: "2026-10-14T08:05:00-05:00"}
+    must: ['gerente|producci[oó]n']
+    forbid_tools: [generate_purchase_orders]
