@@ -12,6 +12,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 - Claude conectado (sin banner rojo en `/settings/claude`), instancia de WhatsApp `open` en `/settings/whatsapp`, tunnel arriba, laptop cargada, tethering probado.
 - Valeria con su celular a mano, como "Confecciones del Norte".
 - Si va el paso 3b: CP-2026-0161 (Colegio Los Algarrobos) sin clasificar, con "Desglosar componentes" visible para Producción. Si alguien aplicó la clasificación, solo un `seed_demo` la devuelve.
+- Si va el paso 9b: ninguna solicitud de avance abierta (el reseed de las 06:30 lo garantiza). Domingo: el seguimiento automático no escribe, así que no hay riesgo de mensajes a Valeria durante el pitch.
 - Si va el paso 6b: el reseed de las 06:30 deja la ruta de hoy planificada para los 3 vehículos y sin iniciar. Antes del pitch, como Producción en `/routes`, revisar:
   - En Planificar, los 3 vehículos tienen que estar "Planificada": Furgón 1 al 97 %, Camioneta 2 al 98 % y Moto 3 al 80 %. CP-2026-0177 tiene que estar en "Sin asignar".
   - En En vivo, los 3 tienen que estar "Sin señal", con "Iniciar ruta" visible. La etiqueta del mapa abajo a la izquierda debe decir "En vivo" (el SSE funciona). Si dice "Actualiza cada 3 s", el stream cayó al respaldo por polling: sirve igual, pero el movimiento se ve a saltos.
@@ -33,6 +34,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 | 7 | La misma vista, y el celular de Valeria | A la seña de Oscar, Valeria escribe que no puede terminar. El agente responde y escala. | Valeria |
 | 8 | Gerente: `/` → tarjeta "Redistribución" → "Ver la ruta nueva" | Barra 400 hechas / 600 repartidas entre dos talleres, fecha y costo antes → después. En `/routes?before=&after=`, dos rutas de entrega a clientes que salen y vuelven de la planta: la del día original (gris) y la del día nuevo (verde punteada), con el aviso "La entrega a Caja Piura (CP-2026-0142) pasa del <día> al <día nuevo>". Las rutas son entregas a clientes; nada de recojos en talleres. | Oscar |
 | 9 | Las dos ventanas a la vez | Avisos por rol: el Gerente recibe la decisión en el asistente y aprueba con el botón "Sí"; Comercial recibe solo "orden en peligro", sin precios ni proveedores. | Oscar |
+| 9b | **Opcional, la decide Oscar en el ensayo.** Comercial: asistente → "pídele avance a los pedidos de la CP-2026-0158" → "sí"; `/simulator` | Seguimiento a pedido: Comercial pide avance sin ver el chat; el agente le escribe al taller en el simulador (sin decir quién preguntó); Oscar contesta como el taller; a Comercial le llega el resumen en su asistente. Detalle abajo. | Oscar |
 | 10 | `/simulator?present=1` (atajo `P`) | El agente ya les escribió a los talleres nuevos: los contactos se resaltan y se les responde como taller. | Oscar o Nesky |
 | 11 | Celular | `/report/<token fijo>`: 500 unidades con foto. Luego `/purchase-orders/PT-0038` muestra el avance y la foto en grande (lightbox). Cierre con "Marcar pagado" en los pagos. | Oscar |
 
@@ -70,6 +72,21 @@ Duración objetivo: **1 min 30 s** (30 s en Planificar y 1 min en En vivo).
 Si el furgón no se mueve (el worker no tomó la tarea): pulsar "Detener simulación" y luego **"Marcar entregada"** en la próxima parada. El mapa y el contador cambian igual.
 
 Frase de pitch sugerida: **"Hoy nadie sabe dónde está el furgón hasta que llama el cliente. Producción arma el día en un clic, según la capacidad de cada vehículo, y cada entrega se ve en vivo."**
+
+## Seguimiento a pedido (paso 9b, opcional)
+
+Lo decide Oscar en el ensayo. Va después de los avisos por rol (paso 9), porque usa las mismas dos ventanas. Usa **CP-2026-0158**, cuyo único pedido abierto (PI-0044, Avíos Gamarra) va por el simulador: con CP-2026-0142 el mensaje saldría al WhatsApp real de Valeria.
+
+1. **Comercial**, en su asistente: "pídele avance a los pedidos de la CP-2026-0158". En unos 6 s responde con la vista previa: "Voy a pedirle avance a Avíos Gamarra sobre el pedido PI-0044 … ¿Lo envío? (sí/no)". Pulsar **Sí**. Tarjeta "Avance pedido a Avíos Gamarra (PI-0044)". Frase: "Comercial no ve el chat con el proveedor, pero puede pedir el dato".
+2. **Gerente**, en `/simulator`: unos 10 s después aparece la pregunta del agente a Avíos Gamarra, en el estilo del Gerente y sin decir quién la pidió. Contestar como el taller: **"van 1500 de los 3430, el resto el jueves"**. El agente agradece y registra el avance.
+3. **Comercial**: unos 17 s después llega el aviso "Avíos Gamarra respondió sobre el PI-0044: tiene listas 1500 de 3430 unidades; espera terminar el resto el jueves 15". Sin texto del chat.
+4. Si sobra tiempo, Producción en `/purchase-orders/PI-0044`: la línea de tiempo muestra "Avance pedido por Comercial", "esperando respuesta" y la respuesta.
+
+Duración objetivo: **1 min**. Medido en el ensayo de la madrugada: 43 s de punta a punta.
+
+Si se repite dentro de las 2 h, el agente no vuelve a escribir: responde "ya se le preguntó a las HH:MM; te aviso cuando conteste". Para repetir la escena hace falta un `seed_demo --reset-chats`.
+
+Frase de pitch sugerida: **"Cualquiera del equipo pregunta por un pedido y el agente consigue la respuesta, sin que nadie tenga que abrir WhatsApp."**
 
 ## Mensajes de Valeria (paso 6 y 7)
 
