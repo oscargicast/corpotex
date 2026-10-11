@@ -49,6 +49,8 @@ PO_PREFIX = {"workshop": "PT", "material": "PI", "finished": "PF"}
 REAL_SUPPLIER_KEY = "Confecciones del Norte"
 REAL_SUPPLIER_PHONE = "51906746241"
 MANAGER_PHONE = "51907898162"
+# Who plays each role in the demo (the team, CLAUDE.md): the profile shows a person, not "Gerente / Gerente".
+DEMO_USER_NAMES = {"gerente": ("Oscar", "Giraldo"), "comercial": ("Nesky", ""), "produccion": ("Freddy", "")}
 # The scene's purchase order gets a fixed report token so /report/<token> can be rehearsed.
 SCENE_PURCHASE_ORDER = "PT-0038"
 SCENE_REPORT_TOKEN = "11111111-1111-4111-8111-000000000038"
@@ -134,11 +136,14 @@ class Loader:
             self.out("aviso: SEED_USERS_PASSWORD no está en .env; contraseña = usuario")
         for role, group_name in ROLE_GROUPS.items():
             username = {"manager": "gerente", "sales": "comercial", "production": "produccion"}[role]
-            user, created = User.objects.get_or_create(username=username, defaults={"first_name": username.title()})
+            first_name, last_name = DEMO_USER_NAMES[username]
+            user, created = User.objects.get_or_create(username=username, defaults={"first_name": first_name, "last_name": last_name})
             if password:
                 user.set_password(password)
             elif created:
                 user.set_password(username)
+            if user.first_name in ("", username.title()):  # Still the placeholder: give the demo person's name.
+                user.first_name, user.last_name = first_name, last_name
             user.is_staff = False  # The admin is the superuser's only.
             user.save()
             user.groups.add(Group.objects.get(name=group_name))
