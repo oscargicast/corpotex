@@ -1609,6 +1609,8 @@ export interface components {
         };
         PatchedSupplierPatchRequest: {
             status?: components["schemas"]["SupplierStatusEnum"];
+            contact_name?: string;
+            rates?: components["schemas"]["RateInRequest"][];
             name?: string;
             kind?: components["schemas"]["SupplierKindEnum"];
             specialties?: string[];
@@ -1860,12 +1862,23 @@ export interface components {
         PurchaseOrderStatusEnum: "suggested" | "approved" | "negotiating" | "confirmed" | "in_progress" | "delivered" | "declined_by_supplier" | "cancelled_by_supplier" | "cancelled";
         Rate: {
             readonly id: number;
+            readonly material_id: number;
+            readonly product_id: number;
             readonly item_name: string;
             readonly image: string;
             /** Format: decimal */
             unit_price: string;
             /** Format: date */
             valid_from: string;
+        };
+        /** @description One reference price: the item by id (what the dashboard has), never both. */
+        RateInRequest: {
+            material_id?: number | null;
+            product_id?: number | null;
+            /** Format: decimal */
+            unit_price: string;
+            /** Format: date */
+            valid_from?: string | null;
         };
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
@@ -1897,6 +1910,8 @@ export interface components {
         /** @description Routes carry no prices: every role reads them. */
         Route: {
             readonly id: number;
+            /** @description What the map shows: the delivery day, and whether it recalculates an earlier plan. */
+            readonly name: string;
             /** Format: date */
             date: string;
             status?: components["schemas"]["RouteStatusEnum"];
@@ -1931,7 +1946,7 @@ export interface components {
          */
         RouteStatusEnum: "proposed" | "planned" | "in_progress" | "completed" | "replaced" | "discarded";
         RouteStop: {
-            /** @description 0 and the last one are the plant. */
+            /** @description 0 and the last one are the plant (kind=plant). */
             position: number;
             kind: components["schemas"]["RouteStopKindEnum"];
             readonly kind_display: string;
@@ -1957,11 +1972,12 @@ export interface components {
             };
         };
         /**
-         * @description * `pickup` - Recojo
+         * @description * `plant` - Planta
+         *     * `pickup` - Recojo
          *     * `delivery` - Entrega
          * @enum {string}
          */
-        RouteStopKindEnum: "pickup" | "delivery";
+        RouteStopKindEnum: "plant" | "pickup" | "delivery";
         SelfRegistered: {
             id: number;
             name: string;
@@ -2167,6 +2183,9 @@ export interface components {
             phone: string;
             /** @default  */
             contact_name: string;
+            rates?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * @description * `material` - Insumos

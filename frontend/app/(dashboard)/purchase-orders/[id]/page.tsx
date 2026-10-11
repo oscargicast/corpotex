@@ -8,18 +8,16 @@ import { ChatThread } from "@/components/chat-thread";
 import { DecisionCard } from "@/components/decision-card";
 import { Payments } from "@/components/payments";
 import { ProgressForm } from "@/components/progress-form";
+import { ProgressTimeline } from "@/components/progress-timeline";
 import { useUser } from "@/components/require-auth";
 import { StatusTimeline } from "@/components/status-timeline";
 import { Thumb } from "@/components/thumb";
-import { ZoomableImage } from "@/components/zoomable-image";
-import { Card, CRITERIA_LABELS, Pill, ScoreBar, SectionTitle } from "@/components/ui";
+import { Card, Pill, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
-import { formatDay, formatDayTime, formatMoney, formatScore, num } from "@/lib/format";
+import { formatDay, formatDayTime, formatMoney, num } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
-import { candidateSupplier, type ChatMessage, type PurchaseOrderDetail } from "@/lib/types";
+import type { ChatMessage, PurchaseOrderDetail } from "@/lib/types";
 import { SkeletonDetail } from "@/components/skeleton";
-
-const SOURCE: Record<string, string> = { whatsapp: "WhatsApp", web: "Web", manual: "Dashboard", simulator: "Simulador" };
 
 export default function PurchaseOrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -67,6 +65,15 @@ export default function PurchaseOrderDetailPage() {
           ))}
           {po.total_amount ? ` · ${formatMoney(po.total_amount, po.currency)}` : ""}
         </p>
+        {isManager && (
+          <p className="mt-1 text-sm">
+            Asignado a <strong>{po.supplier.name}</strong>
+            {po.changed_by_manager && <span className="text-warning"> (el Gerente cambió la sugerencia del matching)</span>} ·{" "}
+            <Link href={`/suppliers/${po.supplier.id}?po=${po.id}`} className="font-medium text-accent hover:underline">
+              ver evaluación →
+            </Link>
+          </p>
+        )}
         {po.redistributed_from && (
           <p className="mt-1 text-sm">
             Nace de la redistribución de{" "}
@@ -110,45 +117,6 @@ export default function PurchaseOrderDetailPage() {
       )}
 
       <div className="grid gap-5 xl:grid-cols-2">
-        {isManager && po.rationale && (
-          <Card>
-            <SectionTitle>Por qué este proveedor</SectionTitle>
-            <p className="text-sm">{po.rationale}</p>
-            {po.changed_by_manager && <p className="mt-1 text-xs text-warning">El Gerente cambió la sugerencia del matching.</p>}
-            {po.scores && (
-              <div className="mt-3 space-y-1">
-                {Object.entries(po.scores).map(([key, value]) => (
-                  <ScoreBar key={key} label={CRITERIA_LABELS[key] ?? key} value={value} />
-                ))}
-              </div>
-            )}
-            {po.candidates && po.candidates.length > 1 && (
-              <table className="mt-4 w-full text-sm">
-                <thead className="text-left text-xs text-muted">
-                  <tr>
-                    <th className="pb-1 font-medium">Ranking</th>
-                    <th className="pb-1 text-right font-medium">Puntaje</th>
-                    <th className="pb-1 text-right font-medium">Precio</th>
-                    <th className="pb-1 text-right font-medium">Carga</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {po.candidates.map((c, i) => (
-                    <tr key={candidateSupplier(c).id} className={candidateSupplier(c).id === po.supplier.id ? "font-semibold" : ""}>
-                      <td className="py-1.5">
-                        {i + 1}. {candidateSupplier(c).name}
-                      </td>
-                      <td className="py-1.5 text-right tabular-nums">{formatScore(c.score)}</td>
-                      <td className="py-1.5 text-right tabular-nums">{formatMoney(c.unit_price, po.currency)}</td>
-                      <td className="py-1.5 text-right tabular-nums">{c.load_pct} %</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Card>
-        )}
-
         <Card>
           <SectionTitle>Ítems</SectionTitle>
           <ul className="space-y-3">
@@ -171,26 +139,7 @@ export default function PurchaseOrderDetailPage() {
         <Card>
           <SectionTitle count={po.progress_reports.length}>Avances</SectionTitle>
           {po.progress_reports.length ? (
-            <ol className="space-y-3">
-              {po.progress_reports.map((report) => (
-                <li key={report.id} className="flex gap-3">
-                  {report.photo ? (
-                    <ZoomableImage src={report.photo} alt={`Avance: ${report.units_done} de ${Number(po.total_units)}`} className="size-20 rounded-lg object-cover" />
-                  ) : (
-                    <Thumb alt="" size={80} />
-                  )}
-                  <div className="text-sm">
-                    <p className="font-semibold tabular-nums">
-                      {report.units_done} de {Number(po.total_units)}
-                    </p>
-                    {report.note && <p>{report.note}</p>}
-                    <p className="text-xs text-muted">
-                      {formatDayTime(report.reported_at)} · {SOURCE[report.source] ?? report.source}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <ProgressTimeline reports={po.progress_reports} total={Number(po.total_units)} />
           ) : (
             <p className="text-sm text-muted">Sin avances todavía.</p>
           )}

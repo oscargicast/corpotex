@@ -36,6 +36,8 @@ function StyleHistory() {
   const { data: detail } = useSWR<StyleVersionDetail>(shownId ? `/api/style/versions/${shownId}/` : null, fetcher);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The full text opens with a triple click on the title (hidden zone, no hint).
+  const [showBody, setShowBody] = useState(false);
 
   async function restore() {
     if (!shownId) return;
@@ -53,7 +55,14 @@ function StyleHistory() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Estilo del Gerente</h1>
+        <h1
+          className="select-none text-2xl font-bold tracking-tight"
+          onClick={(e) => {
+            if (e.detail === 3) setShowBody((open) => !open);
+          }}
+        >
+          Estilo del Gerente
+        </h1>
         <p className="mt-1 text-sm text-muted">
           Cómo escribe el agente por WhatsApp en nombre del Gerente. Aprende solo cada madrugada con los mensajes nuevos.
         </p>
@@ -117,7 +126,13 @@ function StyleHistory() {
                     </Button>
                   </div>
                 )}
-                <StyleMarkdown source={detail.style_md} />
+                {showBody ? (
+                  <StyleMarkdown source={detail.style_md} />
+                ) : (
+                  <p className="text-sm text-muted">
+                    {detail.changelog || "Versión guardada del estilo del Gerente."} El agente escribe con la versión vigente.
+                  </p>
+                )}
               </>
             ) : (
               <SkeletonLines lines={8} />

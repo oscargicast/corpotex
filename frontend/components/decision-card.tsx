@@ -6,7 +6,8 @@ import { ApiError, apiFetch } from "@/lib/api";
 import { formatDay, formatMoney, formatScore } from "@/lib/format";
 import { DECISION_KIND, candidateSupplier, type DecisionAction, type DecisionLike, type ProposalItem } from "@/lib/types";
 import { RedistributionBody } from "./redistribution-card";
-import { Button, CRITERIA_LABELS, Pill, ScoreBar } from "./ui";
+import { Radar } from "./radar";
+import { Button, Pill } from "./ui";
 
 interface ResolveBody {
   action: DecisionAction;
@@ -156,28 +157,24 @@ function ChangeSupplier({
           const supplier = candidateSupplier(candidate);
           const current = supplier.id === item.supplier.id;
           return (
-            <li key={supplier.id} className="rounded-lg p-3 ring-1 ring-line">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            <li key={supplier.id} className="flex gap-3 rounded-lg p-3 ring-1 ring-line">
+              <Radar values={candidate.scores ?? {}} size={150} className="shrink-0" title={`Criterios de ${supplier.name}`} />
+              <div className="min-w-0 flex-1">
                 <p className="font-semibold">
                   {supplier.name} <span className="font-normal text-muted">· {formatScore(candidate.score)} pts</span>
                 </p>
-                <span className="text-sm tabular-nums text-muted">
+                <p className="text-sm tabular-nums text-muted">
                   {formatMoney(candidate.unit_price, item.currency)} c/u · carga {candidate.load_pct} %
-                </span>
+                </p>
+                <p className="mt-2 text-xs text-muted">{candidate.rationale}</p>
+                {current ? (
+                  <p className="mt-2 text-xs font-medium">Elegido ahora</p>
+                ) : (
+                  <Button kind="dark" className="mt-2" busy={busy} onClick={() => onPick(item, supplier.id)}>
+                    Elegir {supplier.name}
+                  </Button>
+                )}
               </div>
-              <div className="mt-2 space-y-1">
-                {Object.entries(candidate.scores).map(([key, value]) => (
-                  <ScoreBar key={key} label={CRITERIA_LABELS[key] ?? key} value={value} />
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-muted">{candidate.rationale}</p>
-              {current ? (
-                <p className="mt-2 text-xs font-medium">Elegido ahora</p>
-              ) : (
-                <Button kind="dark" className="mt-2" busy={busy} onClick={() => onPick(item, supplier.id)}>
-                  Elegir {supplier.name}
-                </Button>
-              )}
             </li>
           );
         })}

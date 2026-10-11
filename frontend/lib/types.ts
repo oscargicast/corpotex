@@ -146,10 +146,11 @@ export type SupplierNumber = S["AllowedNumber"];
 
 export interface SupplierDetail extends SupplierListItem {
   notes: string;
+  address?: string;
   follow_up_every_hours: number;
   source_detail: { url: string; excerpt: string } | null;
   numbers: SupplierNumber[];
-  rates: { id: number; item_name: string; unit_price: string; currency: Currency; valid_from: string }[];
+  rates: { id: number; item_name: string; unit_price: string; currency: Currency; valid_from: string; material_id?: number | null; product_id?: number | null; image?: string | null }[];
   ratings: (Rating & { purchase_order_code: string })[];
   purchase_orders: PurchaseOrderListItem[];
   payments_summary: { currency: Currency; paid: string; pending: string; overdue_count: number }[];

@@ -1,8 +1,8 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import useSWR from "swr";
 import { ChannelPill } from "@/components/channel-pill";
 import { RoleGate } from "@/components/require-auth";
@@ -11,6 +11,7 @@ import { apiFetch, fetcher } from "@/lib/api";
 import type { SupplierDetail, SupplierListItem } from "@/lib/types";
 import { formatNum, formatScore, num } from "@/lib/format";
 import { SkeletonCards } from "@/components/skeleton";
+import { SupplierForm } from "@/components/supplier-form";
 
 export default function SuppliersPage() {
   return (
@@ -22,6 +23,8 @@ export default function SuppliersPage() {
 
 function Suppliers() {
   const [tab, setTab] = useState<"active" | "review">("active");
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [opened, setOpened] = useState(0);
   const { data: active, mutate: mutateActive } = useSWR<SupplierListItem[]>("/api/suppliers/", fetcher, { refreshInterval: 5000 });
   const { data: review, mutate: mutateReview } = useSWR<SupplierListItem[]>("/api/suppliers/?status=pending_review", fetcher);
   // The in-house plant goes first.
@@ -29,7 +32,38 @@ function Suppliers() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight">Proveedores y talleres</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">Proveedores y talleres</h1>
+        <Button
+          kind="primary"
+          onClick={() => {
+            setOpened((n) => n + 1);
+            dialog.current?.showModal();
+          }}
+        >
+          <Plus size={16} /> Nuevo proveedor
+        </Button>
+      </div>
+      <dialog
+        ref={dialog}
+        className="m-auto w-[min(40rem,calc(100vw-2rem))] rounded-xl p-0 backdrop:bg-ink/40"
+        onClick={(e) => e.target === dialog.current && dialog.current?.close()}
+      >
+        <div className="max-h-[90dvh] overflow-y-auto p-5">
+          <h2 className="mb-1 text-lg font-semibold">Nuevo proveedor</h2>
+          <p className="mb-4 text-sm text-muted">El celular entra inactivo; se activa desde el detalle para que el agente pueda escribirle.</p>
+          <SupplierForm
+            key={opened}
+            endpoint="/api/suppliers/"
+            submitLabel="Crear proveedor"
+            onSaved={() => {
+              dialog.current?.close();
+              mutateActive();
+            }}
+            onCancel={() => dialog.current?.close()}
+          />
+        </div>
+      </dialog>
       <div className="flex rounded-lg bg-surface p-1 ring-1 ring-line w-fit" role="tablist">
         <TabButton active={tab === "active"} onClick={() => setTab("active")}>
           Activos

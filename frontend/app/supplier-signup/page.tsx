@@ -24,7 +24,7 @@ export default function SupplierSignupPage() {
           <h1 className="mt-6 text-xl font-bold">Registra tu taller o tu empresa de insumos</h1>
           <p className="mt-1 text-sm text-muted">Trabaja con Corpotex. Toma dos minutos; el celular es opcional, pero con él te podemos contactar directo.</p>
           <div className="mt-6 rounded-xl bg-surface p-5 ring-1 ring-line">
-            <SupplierForm endpoint="/api/suppliers/self-register/" submitLabel="Enviar registro" onCreated={() => setSent(true)} />
+            <SupplierForm endpoint="/api/suppliers/self-register/" submitLabel="Enviar registro" onSaved={() => setSent(true)} />
           </div>
         </>
       )}
