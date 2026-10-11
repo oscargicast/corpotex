@@ -399,8 +399,9 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
                         "currency": supplier.currency,
                         "committed_on": None,
                         "rationale": candidate["rationale"],
-                        "candidates": [
-                            {k: v for k, v in c.items() if k != "free_capacity"} for c in candidates
+                        "candidates": [  # Nested `supplier` like the proposal entry; flat keys kept for older cards.
+                            {**{k: v for k, v in c.items() if k != "free_capacity"}, "supplier": {"id": c["supplier_id"], "name": c["supplier_name"]}}
+                            for c in candidates
                         ],
                     }
                 )

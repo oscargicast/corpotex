@@ -96,7 +96,8 @@ def test_large_workshop_requirement_is_split_by_free_capacity(catalogue, sales):
     assert {po.code[:3] for po in workshop_pos} == {"PT-"}
     assert all(po.internal_due_on == date(2026, 10, 30) - __import__("datetime").timedelta(days=Config.load().buffer_days) for po in created)
     assert len(decision.detail["proposal"]) == len(created)
-    assert decision.detail["proposal"][0]["candidates"][0]["supplier_name"] == "Taller Barato"
+    first = decision.detail["proposal"][0]["candidates"][0]
+    assert first["supplier_name"] == "Taller Barato" and first["supplier"] == {"id": catalogue["cheap"].id, "name": "Taller Barato"}
 
 
 @pytest.mark.django_db
