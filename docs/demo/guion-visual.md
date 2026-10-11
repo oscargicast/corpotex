@@ -24,7 +24,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 | # | Pantalla | Qué se ve | Quién |
 |---|---|---|---|
 | 1 | Gerente: `/` | Monitor: KPIs, la decisión pendiente, alertas y pagos por proveedor. Una frase: "esto es lo que hoy nadie ve hasta el día 9". | Oscar |
-| 2 | Gerente: `/settings` → Estilo (`/settings/style`) | Arriba "Puesta en marcha 4/4" en verde; en Estilo, el estilo del Gerente con los ejemplos como burbujas. 20 segundos, no más. | Oscar |
+| 2 | Gerente: `/settings` → Estilo (`/settings/style`) | Arriba "Puesta en marcha 3/3" en verde; en Estilo, el estilo del Gerente con los ejemplos como burbujas. 20 segundos, no más. | Oscar |
 | 3 | Comercial: `/orders` → "Simular orden de Comercial" → Caja Piura | La orden llega por la API y aparece desglosada contra inventario, con la ruta crítica. | Oscar |
 | 3b | **Opcional, lo decide Oscar en el ensayo.** Producción: `/orders/CP-2026-0161` → "Desglosar componentes" | Creación mágica: la IA reconoce el polo del catálogo con su receta y propone la casaca como producto nuevo con los insumos que faltan. No se aplica. Detalle abajo. | Oscar |
 | 4 | Gerente: `/orders/<nueva>` → "Confirmar desglose" (o Producción en la tercera ventana, si se quiere mostrar el rol) | Lo hace Producción; el Gerente también puede. La orden pasa a confirmada y el Monitor muestra la decisión de asignación. | Oscar |

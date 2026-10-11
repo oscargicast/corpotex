@@ -200,5 +200,5 @@ Cada ruta usa el nombre de su modelo.
 | Mapa de rutas | `/routes` |
 | Reporte de avance público por pedido | `/report/[token]` |
 | Asistente (pantalla completa en móvil) | `/assistant` |
-| Configuración (solo Gerente): Seguimiento, Estilo y Conexiones; la puesta en marcha de 4 pasos queda como resumen arriba | `/settings` (Seguimiento), `/settings/style`, `/settings/claude`, `/settings/whatsapp` (`/onboarding/*`, `/style` y `/settings/suppliers` redirigen; Proveedores vive en `/suppliers`) |
+| Configuración (solo Gerente): Seguimiento, Estilo y Conexiones; la puesta en marcha de 3 pasos (Claude, WhatsApp, Estilo) queda como resumen arriba; Proveedores vive en su pestaña | `/settings` (Seguimiento), `/settings/style`, `/settings/claude`, `/settings/whatsapp` (`/onboarding/*`, `/style` y `/settings/suppliers` redirigen; Proveedores vive en `/suppliers`) |
 | Autoregistro público | `/supplier-signup` |
