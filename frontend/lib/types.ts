@@ -224,6 +224,7 @@ export interface CriticalStep {
   status: "pending" | "in_progress" | "done" | "late";
   purchase_order_id: number | null;
   late_by?: number | null; // days the supplier's date runs past the step's start (backend, after #151)
+  stage?: string | null; // plant steps: cutting, sublimation, embroidery, sewing, finishing (matches revise's stage keys)
 }
 
 // One row per status change (actor: system | agent | user | a username), oldest first.

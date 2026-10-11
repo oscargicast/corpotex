@@ -8,9 +8,11 @@ import { type CriticalStep, MATERIAL_UNIT, type OrderDetail } from "@/lib/types"
 import { Button, Card, SectionTitle } from "./ui";
 
 // Ficha técnica editable por instrucción (ADR 0029 §4), Gerente and Producción:
-// POST /api/orders/<id>/revise/ {instruction, dry_run: true} proposes, the same
-// call without dry_run applies (re-breaks the order down and recomputes the
-// critical path; materials already ordered are not touched).
+// POST /api/orders/<id>/revise/ {instruction, dry_run: true} answers
+// {proposal}; POST {proposal} sends it back as is to apply it, without asking
+// the model again, so what is applied is exactly what was shown. It re-breaks
+// the order down and recomputes the critical path (materials already ordered
+// are not touched) and answers {order}.
 
 interface RevisedMaterial {
   sku?: string | null;
@@ -22,11 +24,22 @@ interface RevisedMaterial {
 
 interface Revision {
   summary: string;
-  items: { item_id: number; materials: RevisedMaterial[]; current?: RevisedMaterial[] | null }[];
+  items: {
+    item_id: number;
+    product?: { code: string; name: string } | null;
+    quantity?: number;
+    materials: RevisedMaterial[];
+    current?: RevisedMaterial[] | null; // the effective recipe before the change
+  }[];
+  // Keys are stage codes (cutting, sublimation, embroidery, sewing, finishing);
+  // stage_labels names them as the critical path does ("Corte").
   stage_overrides?: Record<string, number> | null;
   stage_current?: Record<string, number> | null;
+  stage_labels?: Record<string, string> | null;
   warnings?: string[];
 }
+
+type ApplyResult = { order?: OrderDetail & { warnings?: string[] }; warnings?: string[]; proposal?: Revision };
 
 const SHORT_UNIT: Record<string, string> = { unit: "u.", units: "u.", kg: "kg", m: "m" };
 const unitLabel = (unit: string) => SHORT_UNIT[unit] ?? MATERIAL_UNIT[unit] ?? unit;
@@ -45,7 +58,8 @@ function errorText(err: unknown, fallback: string): string {
 function currentDays(stage: string, revision: Revision, steps: CriticalStep[]): number | null {
   const sent = revision.stage_current?.[stage];
   if (typeof sent === "number") return sent;
-  const step = steps.find((s) => s.name.toLowerCase() === stage.toLowerCase() || s.id.toLowerCase().endsWith(stage.toLowerCase()));
+  const label = (revision.stage_labels?.[stage] ?? stage).toLowerCase();
+  const step = steps.find((s) => s.stage === stage || s.name.toLowerCase() === label);
   if (!step) return null;
   return Math.max(1, Math.round((time(step.end) - time(step.start)) / DAY) + 1);
 }
@@ -54,7 +68,7 @@ export function ReviseFicha({ order, onApplied }: { order: OrderDetail; onApplie
   const [instruction, setInstruction] = useState("");
   const [busy, setBusy] = useState<"propose" | "apply" | null>(null);
   const [revision, setRevision] = useState<Revision | null>(null);
-  const [sent, setSent] = useState(""); // the instruction the proposal answers
+  const [proposal, setProposal] = useState<unknown>(null); // sent back as is to apply
   const [error, setError] = useState<{ text: string; retry: () => void } | null>(null);
   const [toast, setToast] = useState<Revision | null>(null);
 
@@ -65,8 +79,9 @@ export function ReviseFicha({ order, onApplied }: { order: OrderDetail; onApplie
     setRevision(null);
     try {
       const res = await apiFetch<Revision & { proposal?: Revision }>(`/api/orders/${order.id}/revise/`, { method: "POST", json: { instruction: text, dry_run: true } });
-      setRevision(res?.proposal ?? res);
-      setSent(text);
+      const shown = res?.proposal ?? res;
+      setRevision(shown);
+      setProposal(shown);
     } catch (err) {
       setError({ text: errorText(err, "No se pudo preparar la propuesta."), retry: () => propose(text) });
     } finally {
@@ -78,9 +93,12 @@ export function ReviseFicha({ order, onApplied }: { order: OrderDetail; onApplie
     setBusy("apply");
     setError(null);
     try {
-      const res = await apiFetch<Revision & { proposal?: Revision; order?: OrderDetail & { warnings?: string[] } }>(`/api/orders/${order.id}/revise/`, { method: "POST", json: { instruction: sent } });
-      const applied = res?.proposal ?? res;
-      setToast({ ...(revision as Revision), summary: applied?.summary || revision?.summary || "Ficha técnica actualizada.", warnings: res?.warnings ?? applied?.warnings ?? res?.order?.warnings ?? [] });
+      const res = await apiFetch<ApplyResult>(`/api/orders/${order.id}/revise/`, { method: "POST", json: { proposal } });
+      setToast({
+        ...(revision as Revision),
+        summary: res?.proposal?.summary || revision?.summary || "Ficha técnica actualizada.",
+        warnings: res?.warnings ?? res?.order?.warnings ?? res?.proposal?.warnings ?? [],
+      });
       setRevision(null);
       setInstruction("");
       onApplied();
@@ -162,7 +180,7 @@ export function ReviseFicha({ order, onApplied }: { order: OrderDetail; onApplie
                   const before = currentDays(stage, revision, order.critical_path);
                   return (
                     <li key={stage} className="tabular-nums">
-                      <span className="font-medium">{stage}</span>:{" "}
+                      <span className="font-medium">{revision.stage_labels?.[stage] ?? stage}</span>:{" "}
                       {before !== null && before !== days ? (
                         <>
                           <span className="text-muted line-through">{before}</span> → <span className="font-semibold text-accent">{days}</span> días
@@ -194,7 +212,9 @@ export function ReviseFicha({ order, onApplied }: { order: OrderDetail; onApplie
 
 function ItemDiff({ order, item }: { order: OrderDetail; item: Revision["items"][number] }) {
   const source = order.items.find((it) => it.id === item.item_id);
-  const label = source ? `${source.quantity} × ${source.description || source.product?.name || "Prenda"}` : `Ítem ${item.item_id}`;
+  const label = source
+    ? `${source.quantity} × ${source.description || source.product?.name || "Prenda"}`
+    : `${item.quantity ? `${item.quantity} × ` : ""}${item.product?.name ?? `Ítem ${item.item_id}`}`;
   const after = new Map(item.materials.map((m) => [keyOf(m), m]));
   const before = item.current ? new Map(item.current.map((m) => [keyOf(m), m])) : null;
 

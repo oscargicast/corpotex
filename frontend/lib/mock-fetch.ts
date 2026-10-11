@@ -819,10 +819,11 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
     const order = orders.find((o) => o.id === Number(orderRevise[1]));
     if (!order) return json(404, { detail: "No existe." });
-    const body = readBody(init.body) as { instruction?: string; dry_run?: boolean };
-    if (!body.instruction?.trim()) return json(400, { detail: "Escribe qué cambiar." });
+    const body = readBody(init.body) as { instruction?: string; dry_run?: boolean; proposal?: unknown };
+    if (!body.proposal && !body.instruction?.trim()) return json(400, { detail: "Escribe qué cambiar." });
+    if (body.proposal) return json(200, { order: orderDetailFor(order, user.role), warnings: ["PI-0003 ya estaba pedido: su cantidad no cambia."] });
     await new Promise((resolve) => setTimeout(resolve, 2500));
-    if (/falla/i.test(body.instruction)) return json(502, { detail: "No se pudo preparar la propuesta. Inténtalo de nuevo." });
+    if (/falla/i.test(body.instruction ?? "")) return json(502, { detail: "No se pudo preparar la propuesta. Inténtalo de nuevo." });
     const items = (orderDetails[order.id]?.items ?? []).slice(0, 2);
     const current = [
       { sku: "TEL-PIQ-01", name: "Piqué 24/1", qty_per_unit: "0.28", unit: "kg" },
@@ -842,10 +843,13 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
           { sku: "BOT-18L-NAC", name: "Botón 18L nácar", qty_per_unit: "2", unit: "unit" },
         ],
       })),
-      stage_overrides: { Corte: 3 },
-      stage_current: { Corte: 2 },
+      stage_overrides: { cutting: 3 },
+      stage_current: { cutting: 2 },
+      stage_labels: { cutting: "Corte" },
     };
-    return json(200, body.dry_run ? proposal : { ...proposal, warnings: ["PI-0003 ya estaba pedido: su cantidad no cambia."] });
+    // Like the API: the dry run answers {proposal}; applying sends {proposal} back and gets {order}.
+    if (body.dry_run) return json(200, { proposal });
+    return json(200, { order: orderDetailFor(order, user.role), warnings: ["PI-0003 ya estaba pedido: su cantidad no cambia."] });
   }
   const orderApply = route.match(/^POST \/api\/orders\/(\d+)\/apply-classification\/$/);
   if (orderApply) {
