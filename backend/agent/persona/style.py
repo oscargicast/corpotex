@@ -39,7 +39,8 @@ RUC_RE = re.compile(r"\b(?:10|20)\d{9}\b")
 # Amounts must be anonymized as <MONTO>, otherwise the agent may copy them as prices.
 AMOUNT_RE = re.compile(r"(?:S/|USD|US\$|\$)\s?\d")
 # The agent writes from the manager's own number: his phrases never name him.
-MANAGER_RE = re.compile(r"\bgerente\b", re.IGNORECASE)
+# The <GERENTE> placeholder (an anonymized name) is not a third-person mention.
+MANAGER_RE = re.compile(r"(?<!<)\bgerente\b(?!>)", re.IGNORECASE)
 
 
 def load_template() -> str:
