@@ -169,7 +169,7 @@ function createSupplier(body: Record<string, unknown>, source: "registered" | "s
     id: Math.max(...suppliers.map((s) => s.id)) + 1,
     name,
     kind: (body.kind as SupplierListItem["kind"]) ?? "workshop",
-    kind_display: body.kind === "materials" ? "Insumos" : body.kind === "finished" ? "Terminado" : "Taller",
+    kind_display: body.kind === "material" ? "Insumos" : body.kind === "finished" ? "Terminado" : "Taller",
     specialties: Array.isArray(body.specialties) ? (body.specialties as string[]) : String(body.specialties ?? "").split(";").map((x) => x.trim()).filter(Boolean),
     city: String(body.city ?? ""),
     weekly_capacity: body.weekly_capacity ? Number(body.weekly_capacity) : null,
@@ -564,9 +564,24 @@ const monitor = structuredClone(monitorSeed) as unknown as Monitor;
 const materials = structuredClone(materialsSeed) as unknown as MaterialDetail[];
 const routes = structuredClone(routesSeed) as unknown as Record<string, Route>;
 
+// Agent pause (Oscar, 11/10): global and per supplier.
+let agentPaused = false;
+const pausedSuppliers = new Set<number>([3]);
+const agentSettings = () => ({ paused: agentPaused, paused_suppliers: pausedSuppliers.size });
+function supplierExtras(s: SupplierListItem, numbers = s.active_numbers_count) {
+  return {
+    ...s,
+    whatsapp_ready: !s.is_in_house && numbers > 0,
+    agent_paused: pausedSuppliers.has(s.id),
+    purchase_orders_count: s.open_purchase_orders + 4,
+    last_delivered_on: s.open_purchase_orders ? new Date(Date.now() - (s.id % 9) * 86_400_000).toISOString().slice(0, 10) : null,
+  };
+}
+const plantLoad = () => ({ name: "Planta propia", weekly_capacity: 2000, units_in_progress: 1440, load_pct: 72, open_purchase_orders: 3 });
+
 function monitorFor(role: Role): Monitor {
   const kpis = { ...monitor.kpis, pending_decisions: monitor.decisions.length, open_alerts: monitor.alerts.length };
-  if (role === "manager") return { ...monitor, kpis };
+  if (role === "manager") return { ...monitor, kpis, plant: plantLoad(), agent: agentSettings() };
   // Other roles: no decisions, prices or payments (the API filters them by role).
   return {
     ...monitor,
@@ -574,6 +589,8 @@ function monitorFor(role: Role): Monitor {
     decisions: [],
     redistributions: [],
     payments_by_supplier: undefined,
+    plant: plantLoad(),
+    agent: agentSettings(),
   };
 }
 
@@ -937,13 +954,33 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     const handled = styleRoutes(route, init.body);
     if (handled) return handled;
   }
+  if (path === "/api/settings/agent/") {
+    if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
+    if (route === "PATCH /api/settings/agent/") agentPaused = !!(readBody(init.body) as { paused?: boolean }).paused;
+    return json(200, agentSettings());
+  }
   if (path.startsWith("/api/suppliers/")) {
     if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
     if (route === "POST /api/suppliers/") return createSupplier(readBody(init.body), "registered");
     if (route === "GET /api/suppliers/") {
       const status = new URL(path, "http://mock").searchParams.get("status");
       const list = suppliers.filter((s) => (status ? s.status === status : s.status !== "pending_review"));
-      return json(200, list.map((s) => ({ ...s, ...(supplierDetails[s.id]?.numbers && { numbers_count: supplierDetailFor(s).numbers_count, active_numbers_count: supplierDetailFor(s).active_numbers_count }) })));
+      return json(
+        200,
+        list.map((s) => {
+          const withNumbers = { ...s, ...(supplierDetails[s.id]?.numbers && { numbers_count: supplierDetailFor(s).numbers_count, active_numbers_count: supplierDetailFor(s).active_numbers_count }) };
+          return supplierExtras(withNumbers);
+        }),
+      );
+    }
+    const pause = route.match(/^PATCH \/api\/suppliers\/(\d+)\/$/);
+    const pauseBody = pause ? (readBody(init.body) as { agent_paused?: boolean }) : null;
+    if (pause && typeof pauseBody?.agent_paused === "boolean") {
+      const id = Number(pause[1]);
+      if (pauseBody.agent_paused) pausedSuppliers.add(id);
+      else pausedSuppliers.delete(id);
+      const supplier = suppliers.find((x) => x.id === id);
+      return supplier ? json(200, supplierExtras(supplier)) : json(404, { detail: "No existe." });
     }
     const handled = supplierRoutes(route, init.body);
     if (handled) return handled;
@@ -985,7 +1022,7 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
         status: "suggested",
         status_display: "Sugerido",
         waiting_manager: true,
-        supplier: { id: supplier.id, name: supplier.name, kind: "materials" },
+        supplier: { id: supplier.id, name: supplier.name, kind: "material" },
         orders: row.orders.map((o) => ({ id: o.id, code: o.code, customer_name: o.customer_name })),
         total_units: Number(row.total_to_order),
         units_done: 0,

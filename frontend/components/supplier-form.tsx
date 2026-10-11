@@ -8,7 +8,7 @@ import type { Material, SupplierDetail } from "@/lib/types";
 import { Button } from "./ui";
 import { FOLLOW_UP_MODES } from "@/lib/follow-up";
 
-type Kind = "workshop" | "materials" | "finished";
+type Kind = "workshop" | "material" | "finished";
 type Currency = "PEN" | "USD";
 
 interface Values {
@@ -185,7 +185,7 @@ export function SupplierForm({
         Tipo
         <select value={form.kind} onChange={set("kind")} className={input}>
           <option value="workshop">Taller de confección</option>
-          <option value="materials">Proveedor de insumos</option>
+          <option value="material">Proveedor de insumos</option>
           <option value="finished">Producto terminado</option>
         </select>
       </label>

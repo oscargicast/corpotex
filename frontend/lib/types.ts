@@ -145,7 +145,7 @@ export type FollowUpResult = S["FollowUpResult"];
 export interface SupplierListItem {
   id: number;
   name: string;
-  kind: "materials" | "workshop" | "finished";
+  kind: "material" | "workshop" | "finished";
   kind_display: string;
   specialties: string[];
   city: string;
@@ -163,6 +163,25 @@ export interface SupplierListItem {
   status: "active" | "pending_review" | "inactive";
   status_display: string;
   is_in_house: boolean;
+  // Agent pause and performance (Oscar, 11/10); optional until the API sends them.
+  agent_paused?: boolean;
+  whatsapp_ready?: boolean; // not the plant and with an active number
+  purchase_orders_count?: number; // all of them
+  last_delivered_on?: string | null;
+}
+
+// GET/PATCH /api/settings/agent/: the agent stops writing to every supplier.
+export interface AgentSettings {
+  paused: boolean;
+  paused_suppliers: number;
+}
+
+export interface PlantLoad {
+  name: string;
+  weekly_capacity: number;
+  units_in_progress: number;
+  load_pct: number | string; // 93.3; a string if DRF sends a decimal
+  open_purchase_orders: number;
 }
 
 export type SupplierNumber = S["AllowedNumber"];
@@ -318,6 +337,8 @@ export interface Monitor {
   orders_in_danger: OrderListItem[];
   redistributions: Decision[];
   payments_by_supplier?: PaymentSummary[];
+  plant?: PlantLoad | null;
+  agent?: AgentSettings | null;
 }
 
 export type DecisionAction = "approve" | "reject" | "change_supplier";
