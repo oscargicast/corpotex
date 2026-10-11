@@ -738,6 +738,13 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     if (typeof body.notes === "string") orderDetails[order.id] = { ...orderDetails[order.id], notes: body.notes };
     return json(200, orderDetailFor(order, user.role));
   }
+  // ADR 0028 §3b: one sentence from a garment photo (about 4 s). A tiny image is a 400.
+  if (route === "POST /api/orders/describe-image/") {
+    const body = readBody(init.body) as { image?: { media_type?: string; data?: string } };
+    if (!body.image?.data || body.image.data.length < 2000) return json(400, { detail: "La foto es demasiado pequeña para reconocer la prenda." });
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    return json(200, { description: "Polo deportivo azul marino de cuello redondo, manga corta, con escudo sublimado al pecho" });
+  }
   // ADR 0028: live classification while the order is typed, one item per request.
   if (route === "POST /api/orders/classify-draft/") {
     const body = readBody(init.body) as { brand?: string; items?: { key: string; description: string; quantity: number }[] };

@@ -1,10 +1,11 @@
 "use client";
 
-import { CalendarClock, CheckCircle2, Plus, RotateCcw, Search, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
+import { CalendarClock, Camera, CheckCircle2, Plus, RotateCcw, Search, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { num } from "@/lib/format";
+import { type GarmentPhoto, imageFrom, PHOTO_TYPES, PhotoError, shrinkPhoto } from "@/lib/garment-photo";
 import { type ClassificationMaterial, type Customer, type DraftClassification, type DraftProposal, MATERIAL_UNIT, type OrderDetail, type OrderListItem, type Product } from "@/lib/types";
 import { Button, Card, Pill, SectionTitle } from "./ui";
 
@@ -13,6 +14,7 @@ import { Button, Card, Pill, SectionTitle } from "./ui";
 // against the catalog and inventory, and the order is saved already broken down.
 
 const DRAFT_URL = "/api/orders/classify-draft/";
+const DESCRIBE_URL = "/api/orders/describe-image/";
 const DEBOUNCE_MS = 600;
 const MIN_CHARS = 12; // the API leaves shorter lines "pending"
 const PRODUCTION_DAYS = 7; // own production (Corpotex interview)
@@ -30,6 +32,15 @@ interface Line {
   proposal: DraftProposal | null;
   ai: DraftProposal | null; // the model's proposal, to undo "Cambiar producto"
   signature: string; // brand and description last sent
+  photo: Photo | null; // ADR 0028 §3b: helps write the line, never saved
+}
+
+// The garment photo of a line: shrinking, being described, done (maybe with a
+// sentence waiting for "¿Reemplazar lo escrito?") or failed.
+interface Photo extends GarmentPhoto {
+  state: "reading" | "describing" | "done" | "error";
+  error?: string;
+  proposed?: string;
 }
 
 const newLine = (): Line => ({
@@ -41,6 +52,7 @@ const newLine = (): Line => ({
   proposal: null,
   ai: null,
   signature: "",
+  photo: null,
 });
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -193,9 +205,81 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
     setFocusKey(line.key);
   }
 
+  // ---- Garment photo (ADR 0028 §3b) ----
+  const describers = useRef(new Map<string, AbortController>());
+
+  function patchPhoto(key: string, change: Partial<Photo>) {
+    patch(key, (l) => ({ photo: l.photo ? { ...l.photo, ...change } : null }));
+  }
+
+  async function addPhoto(key: string, file: File) {
+    describers.current.get(key)?.abort();
+    patch(key, { photo: { url: "", data: "", state: "reading" } });
+    try {
+      const shrunk = await shrinkPhoto(file);
+      patch(key, { photo: { ...shrunk, state: "describing" } });
+      await describePhoto(key, shrunk);
+    } catch (err) {
+      patch(key, { photo: { url: "", data: "", state: "error", error: err instanceof PhotoError ? err.message : "No se pudo leer la foto. Prueba con otra." } });
+    }
+  }
+
+  async function describePhoto(key: string, image: GarmentPhoto) {
+    describers.current.get(key)?.abort();
+    const controller = new AbortController();
+    describers.current.set(key, controller);
+    patchPhoto(key, { state: "describing", error: undefined, proposed: undefined });
+    try {
+      const res = await apiFetch<{ description: string }>(DESCRIBE_URL, {
+        method: "POST",
+        json: {
+          image: { media_type: "image/jpeg", data: image.data },
+          ...(brandRef.current && { brand: brandRef.current }),
+          ...(customerRef.current.trim() && { customer: customerRef.current.trim() }),
+        },
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      const sentence = (res?.description ?? "").trim();
+      if (!sentence) throw new Error("empty");
+      const line = linesRef.current.find((l) => l.key === key);
+      if (!line) return;
+      if (line.text.trim()) {
+        // Something was already written: ask before replacing it.
+        patchPhoto(key, { state: "done", proposed: sentence });
+      } else {
+        patch(key, (l) => ({ text: sentence, photo: l.photo ? { ...l.photo, state: "done" } : null }));
+        schedule(key);
+      }
+    } catch (err) {
+      if (controller.signal.aborted || (err as Error)?.name === "AbortError") return;
+      const detail = err instanceof ApiError ? (err.body as { detail?: string } | null)?.detail : null;
+      patchPhoto(key, { state: "error", error: detail ?? "No se pudo describir la foto." });
+    } finally {
+      if (describers.current.get(key) === controller) describers.current.delete(key);
+    }
+  }
+
+  function removePhoto(key: string) {
+    describers.current.get(key)?.abort();
+    patch(key, { photo: null });
+  }
+
+  function answerReplace(key: string, replace: boolean) {
+    const line = linesRef.current.find((l) => l.key === key);
+    const sentence = line?.photo?.proposed;
+    if (replace && sentence) {
+      patch(key, (l) => ({ text: sentence, photo: l.photo ? { ...l.photo, proposed: undefined } : null }));
+      schedule(key);
+    } else {
+      patchPhoto(key, { proposed: undefined });
+    }
+  }
+
   function removeLine(key: string) {
     clearTimeout(timers.current.get(key));
     controllers.current.get(key)?.abort();
+    describers.current.get(key)?.abort();
     setLines((all) => (all.length > 1 ? all.filter((l) => l.key !== key) : [newLine()]));
   }
 
@@ -398,7 +482,7 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
               </h2>
               <p className="mt-0.5 text-sm text-muted">Escribe cada prenda como la pide el cliente. Se reconoce sola contra el catálogo y el inventario.</p>
               <p id="quantity-help" className="mt-0.5 text-xs text-muted">
-                Si la línea empieza con la cantidad («300 polos…»), se toma sola. Enter agrega otra prenda.
+                Si la línea empieza con la cantidad («300 polos…»), se toma sola. Enter agrega otra prenda. Con una foto de la prenda (cámara, arrastrar o pegar) se escribe la descripción sola.
               </p>
             </div>
           </div>
@@ -436,6 +520,10 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 onRetry={() => recognize(line.key, true)}
                 onRemove={() => removeLine(line.key)}
                 onProposal={(proposal) => patch(line.key, { proposal })}
+                onPhoto={(file) => addPhoto(line.key, file)}
+                onPhotoRetry={() => line.photo?.data && describePhoto(line.key, line.photo)}
+                onPhotoRemove={() => removePhoto(line.key)}
+                onPhotoReplace={(replace) => answerReplace(line.key, replace)}
               />
             ))}
           </ol>
@@ -564,6 +652,10 @@ function ItemCard({
   onRetry,
   onRemove,
   onProposal,
+  onPhoto,
+  onPhotoRetry,
+  onPhotoRemove,
+  onPhotoReplace,
 }: {
   index: number;
   line: Line;
@@ -577,6 +669,10 @@ function ItemCard({
   onRetry: () => void;
   onRemove: () => void;
   onProposal: (proposal: DraftProposal) => void;
+  onPhoto: (file: File) => void;
+  onPhotoRetry: () => void;
+  onPhotoRemove: () => void;
+  onPhotoReplace: (replace: boolean) => void;
 }) {
   const parsed = splitQuantity(line.text);
   const quantityValue = line.quantityTouched ? line.quantity : parsed.quantity !== null ? String(parsed.quantity) : line.quantity;
@@ -592,18 +688,92 @@ function ItemCard({
     const el = textarea.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+    // Empty, it stays one line (the long placeholder would otherwise make it grow).
+    if (el.value) el.style.height = `${el.scrollHeight}px`;
   }, [line.text]);
 
   const control = "rounded-md bg-surface text-base leading-6 ring-1 ring-line sm:text-sm sm:leading-6";
+  const photo = line.photo;
+  const describing = photo?.state === "reading" || photo?.state === "describing";
+  const missingQuantity = !!photo && !!line.text.trim() && !describing && !(draft.quantity > 0);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   return (
-    <li className="rounded-xl bg-surface p-3 ring-1 ring-line sm:p-4">
+    <li
+      className={`rounded-xl bg-surface p-3 sm:p-4 ${dragging ? "ring-2 ring-accent" : "ring-1 ring-line"}`}
+      // A photo can be dropped on the card or pasted while the focus is in it.
+      onDragOver={(e) => {
+        if (!Array.from(e.dataTransfer.types).includes("Files")) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        const file = imageFrom(e.dataTransfer.files);
+        setDragging(false);
+        if (!file) return;
+        e.preventDefault();
+        onPhoto(file);
+      }}
+      onPaste={(e) => {
+        const file = imageFrom(e.clipboardData.items);
+        if (!file) return;
+        e.preventDefault();
+        onPhoto(file);
+      }}
+    >
       <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem] items-start gap-x-2 gap-y-2 sm:grid-cols-[1.5rem_minmax(0,1fr)_8rem_2.75rem] sm:gap-x-3">
         <span className="flex h-11 items-center justify-center" aria-hidden>
           <span className="flex size-6 items-center justify-center rounded-full bg-canvas text-xs font-semibold tabular-nums text-muted">{n}</span>
         </span>
-        <label className="min-w-0">
+        <div className="flex min-w-0 items-start gap-2">
+          <input
+            ref={fileInput}
+            type="file"
+            accept={PHOTO_TYPES.join(",")}
+            capture="environment"
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) onPhoto(file);
+            }}
+          />
+          {photo?.url ? (
+            <div className="relative size-14 shrink-0">
+              <button type="button" onClick={() => fileInput.current?.click()} className="block size-14 overflow-hidden rounded-md ring-1 ring-line" aria-label={`Cambiar la foto del ítem ${n}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo.url} alt={`Foto de la prenda del ítem ${n}`} className="size-full object-cover" />
+              </button>
+              {/* 44 px to tap, a 20 px badge to see. */}
+              <button
+                type="button"
+                onClick={onPhotoRemove}
+                aria-label={`Quitar la foto del ítem ${n}`}
+                className="absolute -right-4 -top-4 flex size-11 items-center justify-center"
+              >
+                <span className="flex size-5 items-center justify-center rounded-full bg-ink text-white shadow ring-2 ring-surface">
+                  <X size={12} aria-hidden />
+                </span>
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              aria-label={`Foto de la prenda del ítem ${n}`}
+              title="Foto de la prenda: la IA escribe la descripción"
+              className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted ring-1 ring-line hover:bg-canvas hover:text-accent"
+            >
+              <Camera size={18} aria-hidden />
+            </button>
+          )}
+          <label className="relative min-w-0 flex-1">
           <span className="sr-only">Ítem {n}: la prenda como la pide el cliente</span>
           <textarea
             ref={(el) => {
@@ -622,9 +792,17 @@ function ItemCard({
             }}
             placeholder="300 polos deportivos azul marino con escudo sublimado, tallas 6 a 14"
             aria-label={`Ítem ${n}: la prenda como la pide el cliente`}
+            readOnly={describing}
+            aria-busy={describing || undefined}
             className={`block min-h-11 w-full resize-none overflow-hidden px-3 py-2.5 text-ink ${control}`}
           />
-        </label>
+          {describing && (
+            <span className="magic-shimmer absolute inset-0 flex items-center gap-2 rounded-md px-3 text-sm font-medium text-accent ring-1 ring-accent/30" role="status">
+              <Sparkles size={15} aria-hidden /> {photo?.state === "reading" ? "Preparando la foto…" : "Describiendo la foto…"}
+            </span>
+          )}
+          </label>
+        </div>
         {/* Phone: under the text, full width. From sm: its own column. */}
         <label className="col-span-2 col-start-2 row-start-2 flex items-center gap-2 sm:col-span-1 sm:col-start-3 sm:row-start-1">
           <span className="w-16 shrink-0 text-xs text-muted sm:sr-only">Cantidad</span>
@@ -637,11 +815,20 @@ function ItemCard({
             onBlur={onBlur}
             title={fromLine ? "Tomada del inicio de la línea" : undefined}
             aria-label={`Cantidad del ítem ${n}`}
-            aria-describedby="quantity-help"
-            className={`h-11 w-full min-w-0 px-3 text-right tabular-nums text-ink sm:w-24 ${control} ${fromLine ? "bg-canvas" : ""}`}
+            aria-describedby={missingQuantity ? `quantity-missing-${line.key}` : "quantity-help"}
+            aria-invalid={missingQuantity || undefined}
+            className={`h-11 w-full min-w-0 px-3 text-right tabular-nums text-ink sm:w-24 ${control} ${fromLine ? "bg-canvas" : ""} ${missingQuantity ? "ring-2 ring-warning" : ""}`}
           />
           <span className="text-sm text-muted">u.</span>
         </label>
+        {missingQuantity && (
+          <p
+            id={`quantity-missing-${line.key}`}
+            className="col-span-2 col-start-2 row-start-3 flex items-center gap-1 text-xs font-medium text-warning sm:col-span-1 sm:col-start-3 sm:row-start-2"
+          >
+            <TriangleAlert size={12} aria-hidden /> Falta la cantidad
+          </p>
+        )}
         <button
           type="button"
           onClick={onRemove}
@@ -651,6 +838,35 @@ function ItemCard({
           <Trash2 size={16} aria-hidden />
         </button>
       </div>
+
+      {photo?.proposed && (
+        <div className="magic-in mt-3 rounded-lg bg-accent/10 px-3 py-2.5 text-sm sm:ml-9" role="status">
+          <p className="font-medium text-accent">¿Reemplazar lo escrito?</p>
+          <p className="mt-1 text-ink">«{photo.proposed}»</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button kind="dark" className="min-h-11 sm:min-h-0" onClick={() => onPhotoReplace(true)}>
+              Sí
+            </Button>
+            <Button className="min-h-11 sm:min-h-0" onClick={() => onPhotoReplace(false)}>
+              No
+            </Button>
+          </div>
+        </div>
+      )}
+      {photo?.state === "error" && (
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-warning sm:ml-9" role="alert">
+          <TriangleAlert size={15} aria-hidden /> {photo.error}
+          {photo.data ? (
+            <button type="button" onClick={onPhotoRetry} className="inline-flex min-h-11 items-center gap-1 font-medium text-accent underline sm:min-h-0">
+              <RotateCcw size={14} aria-hidden /> Reintentar
+            </button>
+          ) : (
+            <button type="button" onClick={onPhotoRemove} className="inline-flex min-h-11 items-center gap-1 font-medium text-accent underline sm:min-h-0">
+              Cerrar
+            </button>
+          )}
+        </p>
+      )}
 
       <div className="magic-reveal" data-open={open}>
         <div className="pl-8 sm:pl-9">
