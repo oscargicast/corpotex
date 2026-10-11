@@ -1,25 +1,37 @@
 {
-  "code": "CP-2026-0102",
-  "customer": "Colegio San Miguel de Piura",
+  "code": "CP-2026-0202",
+  "customer": "Colegio Los Algarrobos",
   "brand": "UNICRACK",
   "issued_on": "2026-10-11",
-  "promised_on": "2026-10-30",
+  "promised_on": "2026-11-02",
   "items": [
     {
-      "product": "POLO-ESC-01",
-      "quantity": 450,
-      "sizes": {"8": 100, "10": 120, "12": 130, "14": 100},
-      "color": "blanco",
-      "customization": "embroidery",
-      "unit_price": "16.50"
+      "product": "UNI-BUZ-01",
+      "quantity": 300,
+      "sizes": {
+        "8": 60,
+        "10": 80,
+        "12": 80,
+        "14": 50,
+        "16": 30
+      },
+      "color": "azul",
+      "customization": "sublimation",
+      "unit_price": "65.00"
     },
     {
-      "product": "BUZO-ESC-01",
-      "quantity": 450,
-      "sizes": {"8": 100, "10": 120, "12": 130, "14": 100},
-      "color": "azul marino",
-      "customization": "sublimation",
-      "unit_price": "42.00"
+      "product": "UNI-POD-01",
+      "quantity": 300,
+      "sizes": {
+        "8": 60,
+        "10": 80,
+        "12": 80,
+        "14": 50,
+        "16": 30
+      },
+      "color": "blanco",
+      "customization": "print",
+      "unit_price": "30.00"
     }
   ]
 }

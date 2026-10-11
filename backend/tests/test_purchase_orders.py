@@ -153,8 +153,8 @@ def test_orders_api_is_idempotent_and_role_checked(scenario, sales_client, manag
 
     payload = {
         "code": "CP-2026-0002",
-        "customer": "AIDER",
-        "brand": "NEXO",
+        "customer": "Caja Piura",
+        "brand": "UNICRACK",
         "promised_on": "2026-11-05",
         "items": [{"product": "POLO-ESC-01", "quantity": 200, "unit_price": "20.00"}],
     }

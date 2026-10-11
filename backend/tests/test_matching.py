@@ -14,6 +14,8 @@ from suppliers.models import Rate, Supplier
 
 @pytest.fixture
 def catalogue(db):
+    Customer.objects.create(name="Caja Piura", kind="company")
+    Brand.objects.create(name="UNICRACK")
     polo = Product.objects.create(code="UNI-POL-01", name="Polo escolar")
     fabric = Material.objects.create(sku="TEL-ALG-20", name="Jersey 20/1", kind="fabric", unit="kg", stock=Decimal("50"))
     ProductMaterial.objects.create(product=polo, material=fabric, qty_per_unit=Decimal("0.25"))
@@ -41,7 +43,6 @@ def order_payload(code="CP-2026-0100", quantity=1000):
 def test_register_order_breaks_down_against_stock(catalogue, sales):
     order, created = services.register_order(order_payload(), actor=sales)
     assert created and order.status == "broken_down"
-    assert Customer.objects.filter(name="Caja Piura").exists() and Brand.objects.filter(name="UNICRACK").exists()
     fabric = order.requirements.get(kind="material")
     assert fabric.qty_needed == Decimal("250.00") and fabric.qty_from_stock == Decimal("50")
     assert fabric.qty_to_order == Decimal("200.00")
@@ -170,3 +171,32 @@ def test_ready_orders_are_never_in_danger_and_unconfirmed_suppliers_need_their_l
     services.confirm_order(tight, actor=production)  # suggested POs, workshops with lead_time_days=7 by default
     tight.refresh_from_db()
     assert tight.risk == "in_danger" and tight.estimated_on >= clock.today() + timedelta(days=8)
+
+
+@pytest.mark.django_db
+def test_register_order_rejects_unknown_references_with_400(catalogue, sales_client, sales):
+    base = {"code": "CP-2026-0300", "customer": "Caja Piura", "brand": "UNICRACK", "promised_on": "2026-11-10", "items": [{"product": "UNI-POL-01", "quantity": 10, "unit_price": "28.00"}]}
+    assert sales_client.post("/api/orders/", {**base, "items": [{**base["items"][0], "product": "POLO-ESC-01"}]}, format="json").json() == {"detail": "El producto POLO-ESC-01 no existe"}
+    assert sales_client.post("/api/orders/", {**base, "customer": "Cliente Fantasma"}, format="json").status_code == 400
+    assert sales_client.post("/api/orders/", {**base, "brand": "ACME"}, format="json").json() == {"detail": "La marca ACME no existe"}
+    assert not Order.objects.filter(code="CP-2026-0300").exists()  # Nothing half-written.
+    assert sales_client.post("/api/orders/", {**base, "customer": "caja piura", "items": [{**base["items"][0], "product": "uni-pol-01"}]}, format="json").status_code == 201
+
+
+@pytest.mark.django_db
+def test_order_examples_match_the_seed(sales_client, manager):
+    """`docs/api/examples/order-*.json` must register against the real seed (D1 step 3)."""
+    import json
+    from pathlib import Path
+
+    from django.core.management import call_command
+
+    from seed.loader import DATA_DIR
+
+    if not (DATA_DIR / "suppliers.json").exists():
+        pytest.skip("seed data not present")
+    call_command("seed_demo", verbosity=0)
+    for path in sorted(Path(__file__).resolve().parents[2].joinpath("docs", "api", "examples").glob("order-*.json")):
+        response = sales_client.post("/api/orders/", json.loads(path.read_text()), format="json")
+        assert response.status_code == 201, (path.name, response.content)
+        assert response.json()["requirements"], path.name
