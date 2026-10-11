@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.core.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status, viewsets
@@ -46,10 +48,22 @@ class SupplierInSerializer(serializers.Serializer):
     currency = serializers.ChoiceField(choices=Currency.choices, required=False, default="PEN")
     phone = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
     contact_name = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
+    rates = serializers.ListField(child=serializers.DictField(), required=False, default=list)
+
+
+class RateInSerializer(serializers.Serializer):
+    """One reference price: the item by id (what the dashboard has), never both."""
+
+    material_id = serializers.IntegerField(required=False, allow_null=True)
+    product_id = serializers.IntegerField(required=False, allow_null=True)
+    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal("0.01"))
+    valid_from = serializers.DateField(required=False, allow_null=True)
 
 
 class SupplierPatchSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=Supplier.Status.choices, required=False)
+    contact_name = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    rates = RateInSerializer(many=True, required=False)
     name = serializers.CharField(max_length=160, required=False)
     kind = serializers.ChoiceField(choices=SupplierKind.choices, required=False)
     specialties = serializers.ListField(child=serializers.CharField(max_length=60), required=False)
@@ -107,15 +121,20 @@ class SupplierViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
     def _detail(self, supplier, http_status=status.HTTP_200_OK):
+        supplier = self.get_queryset().get(pk=supplier.pk)  # Fresh: numbers and rates may have just changed.
         cls = serializer_for(Supplier, "manager", detail=True)
         return Response(cls(supplier, context=self.get_serializer_context()).data, status=http_status)
 
     @extend_schema(request=SupplierInSerializer, responses={201: SupplierDetailSerializer})
     def create(self, request):
+        data = _validated(SupplierInSerializer, request.data)
+        data["rates"] = [_validated(RateInSerializer, r) for r in data.get("rates") or []]
         try:
-            supplier = services.create_supplier(_validated(SupplierInSerializer, request.data), actor=request.user)
+            supplier = services.create_supplier(data, actor=request.user)
         except services.NumberConflict as exc:
             raise ValidationError({"phone": str(exc)})
+        except services.RateError as exc:
+            raise ValidationError({"rates": str(exc)})
         except PermissionDenied as exc:
             raise DRFPermissionDenied(str(exc))
         return self._detail(supplier, status.HTTP_201_CREATED)
@@ -123,7 +142,10 @@ class SupplierViewSet(viewsets.ReadOnlyModelViewSet):
     @extend_schema(request=SupplierPatchSerializer, responses={200: SupplierDetailSerializer})
     def partial_update(self, request, pk=None):
         """Approve (`active`) or discard (`inactive`) a pending supplier, or edit its card."""
-        supplier = services.update_supplier(self.get_object(), _validated(SupplierPatchSerializer, request.data), actor=request.user)
+        try:
+            supplier = services.update_supplier(self.get_object(), _validated(SupplierPatchSerializer, request.data), actor=request.user)
+        except services.RateError as exc:
+            raise ValidationError({"rates": str(exc)})
         return self._detail(supplier)
 
     @extend_schema(request=SupplierInSerializer, responses={201: SelfRegisteredSchema})

@@ -22,12 +22,14 @@ class AllowedNumberSerializer(serializers.ModelSerializer):
 
 
 class RateSerializer(serializers.ModelSerializer):
+    material_id = serializers.IntegerField(read_only=True)
+    product_id = serializers.IntegerField(read_only=True)
     item_name = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
 
     class Meta:
         model = Rate
-        fields = ["id", "item_name", "image", "unit_price", "valid_from"]
+        fields = ["id", "material_id", "product_id", "item_name", "image", "unit_price", "valid_from"]
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_item_name(self, obj):
