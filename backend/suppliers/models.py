@@ -4,7 +4,7 @@
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
-from core.models import Material, Product, TimeStamped
+from core.models import FollowUpMode, Material, Product, TimeStamped
 
 
 class SupplierKind(models.TextChoices):
@@ -39,7 +39,8 @@ class Supplier(TimeStamped):
     is_in_house = models.BooleanField(default=False, help_text="Corpotex's own plant.")
     weekly_capacity = models.PositiveIntegerField(null=True, blank=True)
     lead_time_days = models.PositiveSmallIntegerField(default=7)
-    follow_up_every_hours = models.PositiveSmallIntegerField(default=48)
+    follow_up_every_hours = models.PositiveSmallIntegerField(default=48, help_text="Unused since ADR 0027.")
+    follow_up_mode = models.CharField(max_length=10, choices=FollowUpMode.choices, blank=True, default="", help_text="Empty: the general mode.")
     currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.PEN)
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.REGISTERED)
     source_detail = models.JSONField(

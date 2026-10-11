@@ -959,8 +959,7 @@ def confirm_purchase_order(po: PurchaseOrder, *, unit_price, committed_on: date,
         po.items.update(unit_price=unit_price)
         po.committed_on = committed_on
         po.terms = terms or po.terms
-        po.next_follow_up_at = clock.now() + timedelta(hours=po.supplier.follow_up_every_hours)
-        po.save(update_fields=["committed_on", "terms", "next_follow_up_at", "updated_at"])
+        po.save(update_fields=["committed_on", "terms", "updated_at"])  # follow-ups: the tick plans them (ADR 0027)
         set_status(po, PurchaseOrder.Status.CONFIRMED, actor="agent", note=f"Entrega {committed_on:%d/%m} a {unit_price}")
         _create_payments(po)
         for order in _orders_of(po):
@@ -994,8 +993,6 @@ def record_progress(po: PurchaseOrder, *, units_done: int, note: str = "", messa
             photo=photo,
             reported_at=clock.now(),
         )
-        po.next_follow_up_at = clock.now() + timedelta(hours=po.supplier.follow_up_every_hours)
-        po.save(update_fields=["next_follow_up_at", "updated_at"])
         if po.status == PurchaseOrder.Status.CONFIRMED:
             who = actor if actor is not None else ("agent" if message_id else "system")
             set_status(po, PurchaseOrder.Status.IN_PROGRESS, actor=who, note=f"Primer avance: {units_done}")

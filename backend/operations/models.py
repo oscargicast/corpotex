@@ -152,7 +152,11 @@ class PurchaseOrder(TimeStamped):
     )
     internal_due_on = models.DateField(null=True, blank=True, help_text="What we ask the supplier.")
     committed_on = models.DateField(null=True, blank=True, help_text="What the supplier agreed.")
-    next_follow_up_at = models.DateTimeField(null=True, blank=True)
+    next_follow_up_at = models.DateTimeField(null=True, blank=True, help_text="Next follow-up opportunity, computed by the tick (ADR 0027).")
+    last_follow_up_on = models.DateField(null=True, blank=True, help_text="Day of the last follow-up turn, sent or skipped.")
+    awaiting_reply_since = models.DateTimeField(null=True, blank=True, help_text="A follow-up was sent and the supplier has not answered.")
+    reminded_at = models.DateTimeField(null=True, blank=True)
+    follow_up_note = models.CharField(max_length=200, blank=True, help_text="Why the agent skipped the last follow-up.")
     terms = models.TextField(blank=True)
     rating = models.JSONField(
         null=True,

@@ -115,7 +115,7 @@ class NumberConflict(Exception):
 
 SUPPLIER_FIELDS = (
     "name", "kind", "specialties", "city", "address", "lat", "lng", "weekly_capacity",
-    "lead_time_days", "follow_up_every_hours", "currency", "notes", "is_in_house",
+    "lead_time_days", "follow_up_every_hours", "follow_up_mode", "currency", "notes", "is_in_house",
 )
 
 

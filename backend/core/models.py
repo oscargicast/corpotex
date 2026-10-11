@@ -5,6 +5,8 @@ English, labels are Spanish (ADR 0014).
 """
 
 from django.contrib.auth.models import AbstractUser
+from datetime import time
+
 from django.db import models
 
 
@@ -60,6 +62,18 @@ class User(AbstractUser):
         return None
 
 
+class FollowUpMode(models.TextChoices):
+    """How often the agent follows up with suppliers (ADR 0027)."""
+
+    MINIMAL = "minimal", "Mínimo"
+    BALANCED = "balanced", "Balanceado"
+    HIGH = "high", "Alto"
+
+
+def default_follow_up_weekdays() -> list[int]:
+    return [0, 1, 2, 3, 4, 5]  # Monday to Saturday; Sunday stays out (ADR 0027 §1)
+
+
 class Config(TimeStamped):
     """Single row. `load()` is the only way to get it."""
 
@@ -85,6 +99,10 @@ class Config(TimeStamped):
     claude_connected_at = models.DateTimeField(null=True, blank=True)
     claude_last_error = models.TextField(blank=True)
     claude_last_error_at = models.DateTimeField(null=True, blank=True)
+    follow_up_mode = models.CharField(max_length=10, choices=FollowUpMode.choices, default=FollowUpMode.BALANCED)
+    follow_up_window_start = models.TimeField(default=time(9, 0), help_text="Lima time.")
+    follow_up_window_end = models.TimeField(default=time(18, 0), help_text="Lima time.")
+    follow_up_weekdays = models.JSONField(default=default_follow_up_weekdays, help_text="0 = Monday.")
 
     class Meta:
         verbose_name = "configuración"

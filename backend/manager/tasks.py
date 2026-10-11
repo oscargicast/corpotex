@@ -10,32 +10,18 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="manager.tasks.tick")
 def tick() -> dict:
-    """Queues follow-ups, sweeps the turn queue, runs the monitor and repeats stale alerts."""
-    from core import clock
-    from messaging.models import Turn
-    from messaging.services import conversation_for_supplier, enqueue_turn, sweep_turns
-    from operations.models import PurchaseOrder
+    """Queues the day's follow-ups (ADR 0027), sweeps the turn queue, runs the monitor and
+    repeats stale alerts."""
+    from messaging.services import sweep_turns
 
-    from . import services
+    from . import follow_up, services
 
-    follow_ups = 0
-    now = clock.now()
-    due = PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES, next_follow_up_at__lte=now).select_related(
-        "supplier", "conversation__allowed_number"
-    )
-    for po in due:
-        conversation = po.conversation
-        if conversation is None or conversation.allowed_number is None or not conversation.allowed_number.active:
-            conversation = conversation_for_supplier(po.supplier)
-            if conversation is None:
-                continue
-            po.conversation = conversation
-            po.save(update_fields=["conversation", "updated_at"])
-        if conversation.turns.filter(status__in=(Turn.Status.PENDING, Turn.Status.RUNNING)).exists():
-            continue  # That turn will carry the follow-up in its batch.
-        enqueue_turn(conversation, "follow_up")
-        follow_ups += 1
-
+    try:
+        follow_ups = follow_up.enqueue_due_follow_ups()
+        follow_up.refresh_next_follow_up()
+    except Exception:  # The tick must keep sweeping and monitoring whatever the plan hits.
+        logger.exception("tick: follow-up planning failed")
+        follow_ups = 0
     swept = sweep_turns()
     monitor = services.run_monitor()
     repeated = services.repeat_open_alerts_to_manager()

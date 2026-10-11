@@ -169,6 +169,9 @@ class Turn(TimeStamped):
     attempts = models.PositiveSmallIntegerField(default=0)
     error = models.TextField(blank=True)
     available_at = models.DateTimeField(help_text="Real time.")
+    follow_up = models.JSONField(
+        null=True, blank=True, help_text="Set by the tick only (ADR 0027): kind, reason, mode and purchase_order_ids."
+    )
 
     class Meta:
         verbose_name = "turno"
