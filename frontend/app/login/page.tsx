@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
 import { getSession, saveSession } from "@/lib/auth";
 import { type LoginResponse, ROLE_LABELS, type User } from "@/lib/types";
+import { Spinner } from "@/components/ui";
 
 const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
@@ -115,8 +116,10 @@ function LoginForm() {
       <button
         type="submit"
         disabled={busy}
-        className="mt-6 w-full rounded-md bg-brand px-4 py-2.5 font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
+        aria-busy={busy || undefined}
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-2.5 font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
       >
+        {busy && <Spinner />}
         {busy ? "Entrando…" : "Entrar"}
       </button>
 

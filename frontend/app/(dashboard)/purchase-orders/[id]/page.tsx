@@ -17,6 +17,7 @@ import { fetcher } from "@/lib/api";
 import { formatDay, formatDayTime, formatMoney, formatScore, num } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
 import { candidateSupplier, type ChatMessage, type PurchaseOrderDetail } from "@/lib/types";
+import { SkeletonDetail } from "@/components/skeleton";
 
 const SOURCE: Record<string, string> = { whatsapp: "WhatsApp", web: "Web", manual: "Dashboard", simulator: "Simulador" };
 
@@ -36,7 +37,7 @@ export default function PurchaseOrderDetailPage() {
   );
 
   if (notFound) return <p className="text-muted">No existe el pedido {decodeURIComponent(params.id)}.</p>;
-  if (!po) return <div className="h-40 animate-pulse rounded-xl bg-line" />;
+  if (!po) return <SkeletonDetail />;
 
   const today = new Date().toISOString().slice(0, 10);
   const open = !["delivered", "cancelled", "cancelled_by_supplier", "rejected_by_supplier"].includes(po.status);

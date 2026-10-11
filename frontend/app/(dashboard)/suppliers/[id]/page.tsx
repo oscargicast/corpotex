@@ -13,6 +13,7 @@ import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
 import { formatDay, formatMoney, formatNum, formatScore, num } from "@/lib/format";
 import type { SupplierDetail } from "@/lib/types";
+import { SkeletonDetail } from "@/components/skeleton";
 
 export default function SupplierDetailPage() {
   return (
@@ -25,7 +26,7 @@ export default function SupplierDetailPage() {
 function Supplier() {
   const { id } = useParams<{ id: string }>();
   const { data: supplier, mutate } = useSWR<SupplierDetail>(`/api/suppliers/${id}/`, fetcher, { refreshInterval: 5000 });
-  if (!supplier) return <div className="h-40 animate-pulse rounded-xl bg-line" />;
+  if (!supplier) return <SkeletonDetail />;
 
   return (
     <div className="space-y-5">
@@ -172,7 +173,7 @@ function Notes({ supplier, onSaved }: { supplier: SupplierDetail; onSaved: () =>
       />
       <p className="mt-1 text-xs text-muted">El agente las lee antes de escribirle. Seguimiento cada {supplier.follow_up_every_hours} h.</p>
       {dirty && (
-        <Button kind="dark" className="mt-2" disabled={busy} onClick={save}>
+        <Button kind="dark" className="mt-2" busy={busy} onClick={save}>
           Guardar notas
         </Button>
       )}

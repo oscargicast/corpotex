@@ -6,6 +6,7 @@ import { PurchaseOrderList } from "@/components/purchase-order-list";
 import { Card } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import type { PurchaseOrderListItem } from "@/lib/types";
+import { SkeletonTable } from "@/components/skeleton";
 
 const KINDS = [
   { value: "", label: "Todos" },
@@ -46,7 +47,7 @@ export default function PurchaseOrdersPage() {
         </label>
       </div>
       {error && !data && <p className="text-danger">No se pudieron cargar los pedidos.</p>}
-      {!data && !error && <div className="h-40 animate-pulse rounded-xl bg-line" />}
+      {!data && !error && <SkeletonTable rows={7} cols={6} />}
       {data && (
         <Card>
           <PurchaseOrderList items={data} />

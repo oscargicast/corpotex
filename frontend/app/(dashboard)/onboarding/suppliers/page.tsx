@@ -7,6 +7,7 @@ import { SupplierForm } from "@/components/supplier-form";
 import { Card, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import type { SupplierListItem } from "@/lib/types";
+import { SkeletonLines } from "@/components/skeleton";
 
 // Step 2: suppliers and their phones. New numbers start inactive (ADR 0016);
 // they are activated from the supplier's detail. CSV import is P1.
@@ -18,7 +19,7 @@ export default function OnboardingSuppliers() {
     <div className="grid items-start gap-4 xl:grid-cols-2">
       <Card>
         <SectionTitle count={list.length}>Proveedores registrados</SectionTitle>
-        {!data && <div className="h-24 animate-pulse rounded-lg bg-line" />}
+        {!data && <SkeletonLines lines={4} />}
         {data && !list.length && <p className="text-sm text-muted">Todavía no hay proveedores.</p>}
         <ul className="divide-y divide-line">
           {list.map((supplier) => (

@@ -12,6 +12,7 @@ import { Card, Pill, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import { formatDay, formatDayTime } from "@/lib/format";
 import type { Route, RouteStop } from "@/lib/types";
+import { SkeletonCard } from "@/components/skeleton";
 
 // Leaflet touches window on import: client only.
 const RouteMap = dynamic(() => import("@/components/route-map"), {
@@ -97,6 +98,7 @@ function Routes() {
       <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
         <div className="h-[60vh] min-h-[420px]">{loading ? <div className="h-full animate-pulse rounded-xl bg-line" /> : <RouteMap routes={routes} focus={main ?? undefined} />}</div>
         <div className="space-y-4">
+          {loading && <SkeletonCard lines={4} />}
           {routes.map((route) => (
             <Card key={route.id}>
               <SectionTitle>

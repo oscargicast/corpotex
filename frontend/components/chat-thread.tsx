@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { formatDayTime } from "@/lib/format";
 import { ZoomableImage } from "./zoomable-image";
 import type { ChatMessage } from "@/lib/types";
+import { TypingDots } from "./typing-dots";
 
 const AUTHOR: Record<ChatMessage["author"], string> = {
   supplier: "Proveedor",
@@ -67,7 +68,10 @@ export function ChatThread({
       })}
       {typing && (
         <div className={`flex ${perspective === "supplier" ? "justify-start" : "justify-end"}`}>
-          <p className="rounded-2xl bg-surface px-3 py-2 text-[0.8em] text-muted ring-1 ring-line">Escribiendo…</p>
+          <p className="flex items-center gap-2 rounded-2xl bg-surface px-3 py-2 text-[0.8em] text-muted ring-1 ring-line">
+            <TypingDots />
+            Escribiendo…
+          </p>
         </div>
       )}
     </div>

@@ -16,6 +16,7 @@ interface ResolveBody {
 
 export function DecisionCard({ decision, onResolved }: { decision: DecisionLike; onResolved: () => void }) {
   const [busy, setBusy] = useState(false);
+  const [action, setAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const proposal = decision.detail.proposal ?? [];
@@ -23,6 +24,7 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
 
   async function resolve(body: ResolveBody) {
     setBusy(true);
+    setAction(body.action);
     setError(null);
     try {
       await apiFetch(`/api/manager/decisions/${decision.id}/`, { method: "POST", json: body });
@@ -78,10 +80,10 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button kind="primary" disabled={busy} onClick={() => resolve({ action: "approve" })}>
+        <Button kind="primary" disabled={busy} busy={busy && action === "approve"} onClick={() => resolve({ action: "approve" })}>
           Aprobar
         </Button>
-        <Button disabled={busy} onClick={() => resolve({ action: "reject" })}>
+        <Button disabled={busy} busy={busy && action === "reject"} onClick={() => resolve({ action: "reject" })}>
           Rechazar
         </Button>
         {proposal.some((item) => (item.candidates?.length ?? 0) > 1) && (
@@ -172,7 +174,7 @@ function ChangeSupplier({
               {current ? (
                 <p className="mt-2 text-xs font-medium">Elegido ahora</p>
               ) : (
-                <Button kind="dark" className="mt-2" disabled={busy} onClick={() => onPick(item, supplier.id)}>
+                <Button kind="dark" className="mt-2" busy={busy} onClick={() => onPick(item, supplier.id)}>
                   Elegir {supplier.name}
                 </Button>
               )}
