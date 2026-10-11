@@ -119,6 +119,8 @@ def _paused() -> bool:
 
 
 def _quiet_hours() -> bool:
+    if not QUIET_HOURS:
+        return False  # Disabled from .env (QUIET_HOURS=).
     start, end = QUIET_HOURS
     hour = timezone.localtime(clock.now()).hour
     return hour >= start or hour < end

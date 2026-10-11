@@ -330,6 +330,7 @@ class PaymentSerializer(DisplayMixin, serializers.ModelSerializer):
 @register(PurchaseOrder)
 class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
     kind = serializers.CharField(read_only=True)
+    material = serializers.SerializerMethodField()
     kind_display = serializers.CharField(source="supplier.get_kind_display", read_only=True)
     waiting_manager = serializers.SerializerMethodField()
     supplier = SupplierRefSerializer(read_only=True)
@@ -355,6 +356,7 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
             "waiting_manager",
             "supplier",
             "orders",
+            "material",
             "total_units",
             "units_done",
             "progress_pct",
@@ -371,6 +373,13 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
     @extend_schema_field(OpenApiTypes.BOOL)
     def get_waiting_manager(self, obj):
         return waiting_manager(obj)
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_material(self, obj):
+        """The material of a consolidated purchase order (all its items share it); null for workshops."""
+        item = obj.items.select_related("requirement__material").first()
+        material = item.requirement.material if item else None
+        return {"id": material.id, "sku": material.sku, "name": material.name} if material else None
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_orders(self, obj):

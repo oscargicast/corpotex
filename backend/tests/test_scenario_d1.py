@@ -24,9 +24,14 @@ PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4
 
 
 def claim(conversation):
-    """What `run_turn` does before calling the model: take the batch of that conversation."""
+    """What `run_turn` does before calling the model: take the batch of that conversation.
+    Pinned to a working hour: a proactive batch waits during the quiet hours (21-7)."""
+    from unittest import mock
+
     Turn.objects.filter(conversation=conversation, status="pending").update(available_at=timezone.now() - timedelta(seconds=1))
-    batch = messaging_services.claim_next_turn(conversation.id)
+    daytime = timezone.now().astimezone(timezone.get_default_timezone()).replace(hour=10, minute=0)
+    with mock.patch("messaging.services.clock.now", return_value=daytime):
+        batch = messaging_services.claim_next_turn(conversation.id)
     assert batch is not None, f"no turn to run on {conversation}"
     return batch
 

@@ -189,3 +189,16 @@ def test_turn_state_has_no_contact_name_for_simulated_numbers(scenario):
     scenario["number"].name = "Rosa"
     scenario["number"].save()
     assert services.turn_state(services.TurnBatch(turn=real_turn))["supplier"]["contact_name"] == "Rosa"
+
+
+@pytest.mark.django_db
+def test_quiet_hours_can_be_disabled_from_settings(scenario, monkeypatch):
+    conversation = scenario["conversation"]
+    scenario["purchase_order"].progress_reports.update(acknowledged_at=timezone.now())
+    PurchaseOrder.objects.filter(pk=scenario["purchase_order"].pk).update(next_follow_up_at=timezone.now() - timedelta(days=2))
+    Turn.objects.create(conversation=conversation, reason="follow_up", available_at=timezone.now() - timedelta(seconds=1))
+    night = timezone.make_aware(datetime(2026, 10, 10, 22, 30))
+    monkeypatch.setattr(services, "QUIET_HOURS", None)
+    with mock.patch("messaging.services.clock.now", return_value=night):
+        batch = services.claim_next_turn(conversation.id)
+    assert batch is not None and batch.is_proactive_only()
