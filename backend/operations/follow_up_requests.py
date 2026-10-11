@@ -129,7 +129,7 @@ def _detail(rows: list[dict], dry_run: bool) -> str:
     if asking:
         parts.append(("Le escribiría a " if dry_run else "Le pedimos avance a ") + _join(asking) + ".")
     for name, at in morning:
-        parts.append(f"A {name} se le escribirá a las {at}: de noche no se le escribe por WhatsApp.")
+        parts.append(f"A {name} se le escribirá a las {at}: de noche no se le escribe a los proveedores.")  # never names the channel (#119)
     for name in sorted({r["supplier_name"] for r in rows if r["status"] == FollowUpRequest.Status.SKIPPED and r["in_house"]}):
         parts.append(f"A {name} no se le escribe: es la planta propia.")
     for name in sorted({r["supplier_name"] for r in rows if r["status"] == FollowUpRequest.Status.SKIPPED and not r["in_house"]}):
