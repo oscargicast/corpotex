@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Layers, Plus } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import useSWR from "swr";
@@ -33,24 +33,16 @@ function Orders() {
   // chip counts and the registered count.
   const query = new URLSearchParams({ ...(risk && { risk }), ...(statuses.length && { status: statuses.join(",") }), ...(q && { q }) }).toString();
   const { data, error, mutate } = useSWR<OrderListItem[]>(`/api/orders/${query ? `?${query}` : ""}`, fetcher, { refreshInterval: 3000, keepPreviousData: true });
-  const { data: all, mutate: mutateAll } = useSWR<OrderListItem[]>("/api/orders/", fetcher, { refreshInterval: 5000 });
+  const { data: all } = useSWR<OrderListItem[]>("/api/orders/", fetcher, { refreshInterval: 5000 });
   const options = statusOptions(all ?? [], ORDER_STATUSES);
   const filtered = data ?? [];
-  const registered = (all ?? []).filter((order) => order.status === "registered");
   const filtering = !!(risk || statuses.length || q);
-  const [breakDownOpen, setBreakDownOpen] = useState(false);
-  const canBreakDown = user.role !== "sales" && registered.length > 0;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Órdenes</h1>
         <div className="flex flex-wrap gap-2">
-          {canBreakDown && (
-            <Button kind="primary" onClick={() => setBreakDownOpen(true)} disabled={breakDownOpen}>
-              <Layers size={16} /> Desglosar {registered.length} {registered.length === 1 ? "registrada" : "registradas"}
-            </Button>
-          )}
           {canCreateOrder(user) && (
             <Link href="/orders/new" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90">
               <Plus size={16} /> Nueva orden
@@ -59,16 +51,8 @@ function Orders() {
         </div>
       </div>
 
-      {/* Always mounted: it keeps the summary after the registered orders leave the list. */}
-      <BreakDownPanel
-        orders={registered}
-        open={breakDownOpen}
-        onClose={() => setBreakDownOpen(false)}
-        onDone={() => {
-          mutate();
-          mutateAll();
-        }}
-      />
+      {/* "Desglosar N registradas" (BreakDownPanel, below) is no longer mounted:
+          orders are born broken down (ADR 0028). */}
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Riesgo">

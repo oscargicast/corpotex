@@ -54,6 +54,7 @@ export interface OrderListItem {
   status_display: string;
   risk: Risk;
   risk_reason: string;
+  issued_on?: string; // in the API's list too; the magic form uses it for the last order's brand
   promised_on: string;
   estimated_on: string | null;
   slack_days: number | null;
@@ -228,6 +229,7 @@ export type StatusHistoryEntry = S["StatusChange"];
 
 export interface OrderDetail extends OrderListItem {
   status_history?: StatusHistoryEntry[];
+  needs_classification?: boolean; // items without a product yet (ADR 0025 C, 0028)
   issued_on: string;
   production_stage: string | null;
   owner: { id: number; first_name: string } | null;
