@@ -42,8 +42,8 @@ Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden 
 
 1. Órdenes de clientes.
 2. Pedidos a proveedores y talleres.
-3. Monitor con alertas (retrasos, órdenes en peligro).
-4. Proveedores de insumos y talleres: solo el Gerente tiene permisos.
+3. Monitor con alertas (retrasos, órdenes en peligro) y el KPI "Capacidad de planta": unidades en pedidos de taller abiertos asignados a la planta propia sobre su capacidad semanal (ADR 0030).
+4. Proveedores de insumos y talleres: solo el Gerente tiene permisos. La planta propia no aparece en la lista. Cada tarjeta muestra la ficha de desempeño y los pedidos, y el Gerente puede pausar el agente para un proveedor o para todos (`agent_paused`): el agente no escribe, los mensajes entrantes se guardan igual (ADR 0030, 11/10 04:00).
 5. Inventario de insumos (stock, reservado por órdenes abiertas, disponible, y el estado "Por pedir" con "Pedir todo" que genera los pedidos consolidados): Gerente y Producción; Comercial no lo ve (pedido de Oscar, 10/10 20:40). La vista aparte "Por pedir" se quitó el 11/10 01:30: era solo un filtro de inventario.
 
 ### Onboarding (ADR 0011)
