@@ -1,68 +1,110 @@
 """Jev, the System One model of TypeSafe AI (ADR 0025 C): typed questions over a `state`,
 structured answers with probabilities and confidence, no text generation. Optional: with
-`TYPESAFE_API_KEY` empty (or the `typesafe-sdk` package missing) every call returns None and
-the classifier falls back to Claude. The exact SDK surface is wrapped here and nowhere else."""
+`TYPESAFE_API_KEY` empty, the `typesafe-sdk` package missing, an API error or the time budget
+spent, every call returns None and the classifier goes on with Claude. The SDK surface
+(`typesafe_sdk.TypeSafeClient.system_one` with `Choice`/`Noul` questions) is wrapped here and
+nowhere else."""
 
 import logging
+import time
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 NEW = "nuevo"
+ITEM_BUDGET_SECONDS = 8.0  # Jev's total time per order item (product + materials); then Claude alone.
+MIN_CALL_SECONDS = 0.5
 
 
 def enabled() -> bool:
     return bool(getattr(settings, "TYPESAFE_API_KEY", ""))
 
 
-def _client():
+class Budget:
+    """Jev's time for one item, counted over Jev's own calls only (Claude's call in between does
+    not spend it): each call gets what is left as its timeout."""
+
+    def __init__(self, seconds: float = ITEM_BUDGET_SECONDS):
+        self.left = seconds
+
+    def remaining(self) -> float:
+        return self.left
+
+    def spend(self, seconds: float) -> None:
+        self.left -= seconds
+
+
+def _client(timeout: float):
     try:
-        from typesafe import TypeSafeClient  # typesafe-sdk
+        from typesafe_sdk import RetryPolicy, TypeSafeClient
     except ImportError:
-        logger.info("jev: typesafe-sdk is not installed; using Claude")
+        logger.warning("jev: typesafe-sdk is not installed; using Claude")
         return None
-    return TypeSafeClient(api_key=settings.TYPESAFE_API_KEY)
+    # No retries: a retry would spend the item's budget; Claude is the fallback.
+    return TypeSafeClient(api_key=settings.TYPESAFE_API_KEY, model=getattr(settings, "TYPESAFE_MODEL", "") or None, timeout=timeout, retry=RetryPolicy(max_retries=0))
 
 
-def choose(state: str, criteria: dict[str, str], instructions: str = "") -> tuple[str, float, dict] | None:
+def _ask(state: str, questions: dict, budget: Budget | None):
+    """One `system_one` call with several named questions; None when Jev is off, out of time or fails."""
+    if not enabled() or not questions:
+        return None
+    budget = budget or Budget()
+    timeout = budget.remaining()
+    if timeout < MIN_CALL_SECONDS:
+        logger.warning("jev: time budget spent; using Claude")
+        return None
+    client = _client(timeout)
+    if client is None:
+        return None
+    started = time.monotonic()
+    try:
+        with client:
+            return client.system_one(state, questions)
+    except Exception as exc:  # Never block the order flow on the classifier.
+        logger.warning("jev: system_one failed (%s): %s", type(exc).__name__, exc)
+        return None
+    finally:
+        budget.spend(time.monotonic() - started)
+
+
+def choose_many(state: str, questions: dict[str, tuple[dict[str, str], str]], budget: Budget | None = None) -> dict[str, tuple[str, float, dict]] | None:
+    """Several `Choice` questions in ONE call: `{name: (criteria, instructions)}` with criteria as
+    option -> description. Returns `{name: (choice, confidence, probabilities)}` (answers Jev left
+    out are missing) or None when Jev is off or fails."""
+    try:
+        from typesafe_sdk import Choice
+    except ImportError:
+        if enabled():
+            logger.warning("jev: typesafe-sdk is not installed; using Claude")
+        return None
+    asked = {name: Choice(criteria=criteria, instructions=instructions or None) for name, (criteria, instructions) in questions.items() if criteria}
+    response = _ask(state, asked, budget)
+    if response is None:
+        return None
+    try:
+        return {name: (str(answer.choice), float(answer.confidence), dict(answer.probabilities)) for name, answer in response.choices.items() if name in asked}
+    except Exception as exc:
+        logger.warning("jev: unexpected answer (%s): %s", type(exc).__name__, exc)
+        return None
+
+
+def choose(state: str, criteria: dict[str, str], instructions: str = "", budget: Budget | None = None) -> tuple[str, float, dict] | None:
     """One `Choice` question: which key of `criteria` (option -> description) fits `state`.
     Returns (choice, confidence, probabilities) or None when Jev is off or fails."""
-    if not enabled() or not criteria:
+    if not criteria:
         return None
-    client = _client()
-    if client is None:
-        return None
+    answers = choose_many(state, {"choice": (criteria, instructions)}, budget)
+    return (answers or {}).get("choice")
+
+
+def yes(state: str, statement: str, budget: Budget | None = None) -> float | None:
+    """One `Noul` question: probability that `statement` holds for `state`; None when Jev is off."""
     try:
-        from typesafe import Choice
-
-        question = Choice(name="choice", options=list(criteria), descriptions=criteria, instructions=instructions)
-        answer = client.ask(state=state, questions=[question], model=getattr(settings, "TYPESAFE_MODEL", "jev-latest"))
-        result = answer["choice"] if isinstance(answer, dict) else getattr(answer, "choice", answer)
-        value = getattr(result, "value", None) or (result.get("value") if isinstance(result, dict) else None)
-        confidence = float(getattr(result, "confidence", None) or (result.get("confidence") if isinstance(result, dict) else 0) or 0)
-        probabilities = getattr(result, "probabilities", None) or (result.get("probabilities") if isinstance(result, dict) else {}) or {}
-        if value is None:
-            return None
-        return str(value), confidence, dict(probabilities)
-    except Exception as exc:  # Never block the order flow on the classifier.
-        logger.warning("jev: choose failed: %s", exc)
+        from typesafe_sdk import Noul
+    except ImportError:
         return None
-
-
-def yes(state: str, statement: str) -> float | None:
-    """One `Noul` guard: probability that `statement` holds for `state`; None when Jev is off."""
-    if not enabled():
+    response = _ask(state, {"guard": Noul(instructions=statement)}, budget)
+    if response is None:
         return None
-    client = _client()
-    if client is None:
-        return None
-    try:
-        from typesafe import Noul
-
-        answer = client.ask(state=state, questions=[Noul(name="guard", statement=statement)], model=getattr(settings, "TYPESAFE_MODEL", "jev-latest"))
-        result = answer["guard"] if isinstance(answer, dict) else getattr(answer, "guard", answer)
-        probability = getattr(result, "probability", None) or (result.get("probability") if isinstance(result, dict) else None)
-        return float(probability) if probability is not None else None
-    except Exception as exc:
-        logger.warning("jev: yes failed: %s", exc)
-        return None
+    answer = response.nouls.get("guard")
+    return float(answer.noul) if answer is not None else None

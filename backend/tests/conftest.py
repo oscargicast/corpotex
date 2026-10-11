@@ -53,3 +53,10 @@ def sales_client(sales) -> APIClient:
 @pytest.fixture
 def anonymous_client() -> APIClient:
     return APIClient()
+
+
+@pytest.fixture(autouse=True)
+def _no_real_jev(settings):
+    """Tests never call TypeSafe: the stack's .env carries a real `TYPESAFE_API_KEY` and the image
+    has the SDK. Tests that exercise Jev use the stand-in SDK in test_classification.py."""
+    settings.TYPESAFE_API_KEY = ""
