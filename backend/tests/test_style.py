@@ -30,6 +30,17 @@ def test_validate_rejects_amounts_and_supplier_names():
     assert any("Avíos Gamarra" in e for e in errors)
 
 
+def test_validate_rejects_manager_phrases_that_name_the_manager():
+    md = (
+        load_template()
+        + '\n- "[G] lo del pago se lo confirma el Gerente"\n[G] eso lo ve el gerente\n'
+    )
+    errors = validate_style(md)
+    assert sum("tercera persona" in e for e in errors) == 2
+    # Descriptions may mention the manager; only his own phrases may not.
+    assert validate_style(load_template() + "\nLos pagos los decide el Gerente.\n") == []
+
+
 def test_validate_requires_sections_and_length():
     errors = validate_style("# Estilo del Gerente\n\n## Resumen\ncorto")
     assert any("## Ejemplos" in e for e in errors)

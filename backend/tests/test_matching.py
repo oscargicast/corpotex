@@ -117,3 +117,12 @@ def test_critical_path_flags_the_order_in_danger(catalogue, sales):
     assert order.risk == "in_danger"
     assert order.estimated_on > order.promised_on
     assert order.risk_reason
+
+
+@pytest.mark.django_db
+def test_decision_detail_carries_the_currency(catalogue, sales, production):
+    order, _ = services.register_order(order_payload(), actor=sales)
+    services.confirm_order(order, actor=production)
+    decision = Decision.objects.get(kind="approve_assignment")
+    assert decision.detail["after"]["currency"] in ("PEN", "USD")
+    assert {p["currency"] for p in decision.detail["proposal"]} == {"PEN", "USD"}  # fabric in USD, workshops in PEN

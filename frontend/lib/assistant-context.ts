@@ -9,6 +9,7 @@ const VIEWS: [RegExp, string, string?][] = [
   [/^\/purchase-orders$/, "purchase_orders"],
   [/^\/suppliers\/([^/]+)$/, "suppliers", "supplier"],
   [/^\/suppliers$/, "suppliers"],
+  [/^\/inventory/, "inventory"],
   [/^\/routes/, "routes"],
   [/^\/simulator/, "simulator"],
   [/^\/style/, "style"],

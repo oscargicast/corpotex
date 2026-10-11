@@ -1,0 +1,121 @@
+[
+  {
+    "kind": "price",
+    "status": "pending",
+    "purchase_orders": [
+      "PI-0042"
+    ],
+    "order": "CP-2026-0151",
+    "summary": "Hilados del Bajío pide USD 3.45/m por el drill (tarifa vigente USD 3.10/m, +11 %). ¿Aceptamos o pasamos a Textiles Lima Norte S.A.C.?",
+    "detail": {
+      "before": {
+        "unit_price": "3.10",
+        "currency": "USD",
+        "total_amount": "1984.00"
+      },
+      "after": {
+        "unit_price": "3.45",
+        "currency": "USD",
+        "total_amount": "2208.00"
+      },
+      "proposal": {
+        "supplier": "Hilados del Bajío",
+        "unit_price": "3.45",
+        "quantity": "640.00",
+        "committed_on": "T+12"
+      }
+    },
+    "new_supplier": null,
+    "note": "",
+    "resolved_at": null,
+    "channel": "dashboard",
+    "communicated_at": null
+  },
+  {
+    "kind": "approve_assignment",
+    "status": "approved",
+    "purchase_orders": [
+      "PT-0045"
+    ],
+    "order": "CP-2026-0155",
+    "summary": "Coser buzos y polos deportivos en planta (lleva sublimado).",
+    "detail": {
+      "before": null,
+      "after": {
+        "estimated_on": "T+24",
+        "total_amount": "4160.00"
+      },
+      "proposal": [
+        {
+          "supplier": "Planta Corpotex",
+          "quantity": 800,
+          "unit_price": "5.20",
+          "committed_on": "T+19",
+          "rationale": "Sublimado y costura en un mismo lugar."
+        }
+      ]
+    },
+    "new_supplier": null,
+    "note": "OK.",
+    "resolved_at": "T-3 10:15",
+    "channel": "dashboard",
+    "communicated_at": "T-3 10:16"
+  },
+  {
+    "kind": "approve_assignment",
+    "status": "supplier_changed",
+    "purchase_orders": [
+      "PT-0021"
+    ],
+    "order": "CP-2026-0097",
+    "summary": "Asignar 600 camisas escolares a Confecciones Santa Julia.",
+    "detail": {
+      "before": null,
+      "after": {
+        "estimated_on": "T-21",
+        "total_amount": "2880.00"
+      },
+      "proposal": [
+        {
+          "supplier": "Confecciones Santa Julia",
+          "quantity": 600,
+          "unit_price": "4.80",
+          "committed_on": "T-27",
+          "rationale": "Mejor puntaje."
+        }
+      ]
+    },
+    "new_supplier": "Confecciones del Norte",
+    "note": "Mejor Confecciones del Norte, ya tiene el molde.",
+    "resolved_at": "T-42 09:30",
+    "channel": "assistant",
+    "communicated_at": "T-42 09:35"
+  },
+  {
+    "kind": "terms",
+    "status": "approved",
+    "purchase_orders": [
+      "PT-0025"
+    ],
+    "order": "CP-2026-0118",
+    "summary": "Taller Costura Castilla pide entregar en T-5 en vez de T-7.",
+    "detail": {
+      "before": {
+        "committed_on": "T-7"
+      },
+      "after": {
+        "committed_on": "T-5"
+      },
+      "proposal": {
+        "supplier": "Taller Costura Castilla",
+        "committed_on": "T-5",
+        "reason": "Se le juntó otro pedido."
+      }
+    },
+    "new_supplier": null,
+    "note": "Aún hay colchón, aprobar.",
+    "resolved_at": "T-12 16:00",
+    "channel": "dashboard",
+    "communicated_at": "T-12 16:05"
+  }
+]

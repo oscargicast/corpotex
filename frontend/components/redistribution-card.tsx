@@ -20,7 +20,7 @@ export function RedistributionCard({ decision }: { decision: Decision }) {
 export function RedistributionBody({ decision, withCancelLine = true }: { decision: DecisionLike; withCancelLine?: boolean }) {
   const { before, after, proposal = [], cancelled } = decision.detail;
   const total = cancelled?.quantity ?? proposal.reduce((sum, p) => sum + p.quantity, 0);
-  const shift = before && after ? daysBetween(before.estimated_on, after.estimated_on) : null;
+  const shift = before?.estimated_on && after?.estimated_on ? daysBetween(before.estimated_on, after.estimated_on) : null;
   const costDelta = before && after ? Number(after.total_amount) - Number(before.total_amount) : null;
   const routeHref =
     before?.route_id && after?.route_id ? `/routes?before=${before.route_id}&after=${after.route_id}` : "/routes";

@@ -20,6 +20,9 @@ MANAGER_ONLY_FIELDS = frozenset(
         "scores",
         "candidates",
         "payments",
+        "conversation_id",
+        "conversation",
+        "last_message",
         "paid_amount",
         "pending_amount",
         "payments_summary",
@@ -136,12 +139,6 @@ class ClockSerializer(serializers.Serializer):
     now = serializers.DateTimeField(read_only=True)
     factor = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
     paused = serializers.BooleanField(read_only=True)
-
-
-class ClockPatchSerializer(serializers.Serializer):
-    factor = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)
-    paused = serializers.BooleanField(required=False)
-    advance_hours = serializers.FloatField(required=False)
 
 
 class StyleVersionSerializer(serializers.ModelSerializer):

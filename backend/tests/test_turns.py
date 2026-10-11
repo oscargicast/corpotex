@@ -171,3 +171,19 @@ def test_conversation_for_supplier_prefers_the_chat_with_the_latest_inbound(scen
     assert services.conversation_for_supplier(supplier) == scenario["conversation"]  # first active number, WhatsApp
     inbound(sim_conversation, "desde el simulador")
     assert services.conversation_for_supplier(supplier) == sim_conversation
+
+
+@pytest.mark.django_db
+def test_turn_state_has_no_contact_name_for_simulated_numbers(scenario):
+    supplier = scenario["supplier"]
+    simulated = supplier.numbers.get(simulated=True)
+    simulated.name = "Simulador"  # Even a named simulated number greets nobody.
+    simulated.save()
+    conversation = services.conversation_for_number(simulated, Conversation.Channel.SIMULATOR)
+    turn = Turn.objects.create(conversation=conversation, reason="follow_up", available_at=timezone.now())
+    state = services.turn_state(services.TurnBatch(turn=turn))
+    assert state["supplier"]["contact_name"] == ""
+    real_turn = Turn.objects.create(conversation=scenario["conversation"], reason="follow_up", available_at=timezone.now())
+    scenario["number"].name = "Rosa"
+    scenario["number"].save()
+    assert services.turn_state(services.TurnBatch(turn=real_turn))["supplier"]["contact_name"] == "Rosa"

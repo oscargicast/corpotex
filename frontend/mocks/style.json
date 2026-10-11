@@ -1,0 +1,33 @@
+{
+  "state": {
+    "status": "draft",
+    "status_display": "Borrador",
+    "error": "",
+    "since": "2026-10-10",
+    "step": null,
+    "suppliers": [
+      { "id": 2, "name": "Confecciones del Norte", "status": "done", "messages_read": 46, "error": "" },
+      { "id": 4, "name": "Textiles Gamarra", "status": "done", "messages_read": 31, "error": "" },
+      { "id": 6, "name": "Hilos de México", "status": "no_phone", "messages_read": null, "error": "" },
+      { "id": 3, "name": "Taller Castilla", "status": "not_allowed", "messages_read": null, "error": "" }
+    ],
+    "style_md": "## Resumen\n\nEl Gerente escribe corto, directo y cercano. Tutea a los talleres de Piura y trata de usted al proveedor de México.\n\n## Registro\n\n- Tú con talleres y proveedores de Lima; usted con México.\n- Mensajes de una o dos líneas.\n\n## Forma\n\n- Sin tildes en mensajes rápidos; con tildes cuando confirma montos.\n- Usa \"ok\" y \"listo\" para cerrar.\n\n## Saludos y despedidas\n\n- \"Hola <CONTACTO>, ¿cómo vas?\"\n- \"Gracias, cualquier cosa me avisas.\"\n\n## Muletillas\n\n- \"ya\", \"listo\", \"de una\"\n\n## Situaciones\n\n- Si el taller se atrasa, pregunta primero cuánto lleva antes de reclamar.\n- Nunca negocia precio por WhatsApp sin consultar el histórico.\n\n## Nunca dice\n\n- \"Estimado proveedor\"\n- \"Quedo atento a sus comentarios\"\n\n## Ejemplos\n\n[P] Jefe, se me complicó la tela, llega el jueves\n[G] Ya, ¿y cuánto llevas cosido? Necesito saber si llegas al 20\n[P] Unos 300\n[G] Listo, avísame el jueves apenas llegue\n",
+    "notes": [
+      { "supplier_id": 2, "supplier_name": "Confecciones del Norte", "notes": "Trato: tú, le dice <CONTACTO>\nTono: cercano, bromea\nInsistencia: tolera poco; un recordatorio cada 48 h\nHorario: responde de 8 a 13 h\nOjo: pide adelanto antes de empezar" },
+      { "supplier_id": 4, "supplier_name": "Textiles Gamarra", "notes": "Trato: tú\nTono: directo\nInsistencia: normal\nHorario: mañanas\nOjo: confirma stock antes de cotizar" }
+    ],
+    "approved_at": null
+  },
+  "versions": [
+    { "id": 3, "source": "daily", "source_display": "Diario", "changelog": "Hoy aprendí que con Textiles Gamarra confirma el stock antes de hablar de precio, y que ya no usa \"estimado\".", "created_at": "2026-10-10T08:00:00-05:00", "style_md": "## Resumen\n\nVersión diaria del 10 oct.", "notes_snapshot": {} },
+    { "id": 2, "source": "onboarding", "source_display": "Onboarding", "changelog": "Primera versión a partir de los chats con Confecciones del Norte y Textiles Gamarra.", "created_at": "2026-10-09T20:15:00-05:00", "style_md": "## Resumen\n\nVersión del onboarding.", "notes_snapshot": {} },
+    { "id": 1, "source": "template", "source_display": "Plantilla", "changelog": "Perfil base escrito desde la entrevista a Corpotex.", "created_at": "2026-10-09T18:00:00-05:00", "style_md": "## Resumen\n\nPerfil base.", "notes_snapshot": {} }
+  ],
+  "whatsapp": {
+    "state": "open",
+    "webhook": { "url": "https://corpotex.oscargicast.com/webhooks/evolution/****/", "events": ["MESSAGES_UPSERT"], "base64": true },
+    "settings": { "groupsIgnore": true, "rejectCall": false, "readMessages": false, "syncFullHistory": false },
+    "offline": false,
+    "done_at": "2026-10-10T17:40:00-05:00"
+  }
+}

@@ -327,51 +327,6 @@
                         "description": ""
                     }
                 }
-            },
-            "patch": {
-                "operationId": "clock_partial_update",
-                "tags": [
-                    "clock"
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PatchedClockPatchRequest"
-                            }
-                        },
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PatchedClockPatchRequest"
-                            }
-                        },
-                        "multipart/form-data": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PatchedClockPatchRequest"
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Clock"
-                                }
-                            }
-                        },
-                        "description": ""
-                    }
-                }
             }
         },
         "/api/conversations/{id}/messages/": {
@@ -506,7 +461,7 @@
         "/api/materials/": {
             "get": {
                 "operationId": "materials_list",
-                "description": "`GET /api/materials/`: every material ordered by kind and name. `committed` is the sum of\n`Requirement.qty_from_stock` of open orders; `available = stock - committed`.",
+                "description": "`GET /api/materials/`: every material ordered by kind and name; `?kind=`, `?q=` (sku or name). `committed` is the sum of\n`Requirement.qty_from_stock` of open orders; `available = stock - committed`.",
                 "tags": [
                     "materials"
                 ],
@@ -2269,7 +2224,7 @@
         "/api/suppliers/": {
             "get": {
                 "operationId": "suppliers_list",
-                "description": "Suppliers and workshops. Manager only: the list carries phone numbers and prices.",
+                "description": "Suppliers and workshops. Manager only (the list carries phone numbers and prices), except\n`self-register/`, which is public (ADR 0024).",
                 "tags": [
                     "suppliers"
                 ],
@@ -2296,12 +2251,60 @@
                         "description": ""
                     }
                 }
+            },
+            "post": {
+                "operationId": "suppliers_create",
+                "description": "Suppliers and workshops. Manager only (the list carries phone numbers and prices), except\n`self-register/`, which is public (ADR 0024).",
+                "tags": [
+                    "suppliers"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SupplierInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SupplierInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SupplierInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
             }
         },
         "/api/suppliers/{id}/": {
             "get": {
                 "operationId": "suppliers_retrieve",
-                "description": "Suppliers and workshops. Manager only: the list carries phone numbers and prices.",
+                "description": "Suppliers and workshops. Manager only (the list carries phone numbers and prices), except\n`self-register/`, which is public (ADR 0024).",
                 "parameters": [
                     {
                         "in": "path",
@@ -2330,6 +2333,285 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/SupplierDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "suppliers_partial_update",
+                "description": "Approve (`active`) or discard (`inactive`) a pending supplier, or edit its card.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este proveedor.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "suppliers"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedSupplierPatchRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedSupplierPatchRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedSupplierPatchRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/suppliers/{id}/numbers/": {
+            "post": {
+                "operationId": "suppliers_numbers_create",
+                "description": "Adds a phone number, inactive until the manager switches it on.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este proveedor.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "suppliers"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NumberInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NumberInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NumberInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AllowedNumber"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/suppliers/{id}/numbers/{number_id}/": {
+            "patch": {
+                "operationId": "suppliers_numbers_partial_update",
+                "description": "`PATCH /api/suppliers/<id>/numbers/<number_id>/ {active?, name?, phone?}`.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "number_id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "suppliers"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedNumberPatchRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedNumberPatchRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedNumberPatchRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AllowedNumber"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/suppliers/import/": {
+            "post": {
+                "operationId": "suppliers_import_create",
+                "description": "Multipart CSV with columns name,kind,specialties,city,weekly_capacity,lead_time_days,currency,phone,lat,lng.",
+                "tags": [
+                    "suppliers"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImportInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImportInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImportInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/suppliers/self-register/": {
+            "post": {
+                "operationId": "suppliers_self_register_create",
+                "description": "Public form: the supplier lands in `pending_review` with `source = self_registered`.",
+                "tags": [
+                    "suppliers"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SupplierInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SupplierInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SupplierInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
                                 }
                             }
                         },
@@ -2642,6 +2924,18 @@
                     "qty_received"
                 ]
             },
+            "ImportInRequest": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "binary"
+                    }
+                },
+                "required": [
+                    "file"
+                ]
+            },
             "LoginRequest": {
                 "type": "object",
                 "properties": {
@@ -2861,6 +3155,24 @@
                     null
                 ]
             },
+            "NumberInRequest": {
+                "type": "object",
+                "properties": {
+                    "phone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                    },
+                    "name": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 80
+                    }
+                },
+                "required": [
+                    "phone"
+                ]
+            },
             "OnboardingError": {
                 "type": "object",
                 "properties": {
@@ -2958,7 +3270,7 @@
             },
             "OrderDetail": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
+                "description": "`status_history: [{status, status_display, at, actor, note}]` ordered by `at` (10/10 21:40).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -3075,6 +3387,14 @@
                         },
                         "readOnly": true
                     },
+                    "status_history": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
                     "status_display": {
                         "type": "string",
                         "readOnly": true,
@@ -3109,6 +3429,7 @@
                     "risk_display",
                     "slack_days",
                     "status_display",
+                    "status_history",
                     "total_amount",
                     "total_units"
                 ]
@@ -3395,20 +3716,81 @@
                 "type": "string",
                 "description": "* `registered` - Registrada\n* `broken_down` - Desglosada\n* `confirmed` - Confirmada\n* `sourcing` - En abastecimiento\n* `in_production` - En producción\n* `ready` - Lista\n* `delivered` - Entregada\n* `cancelled` - Cancelada"
             },
-            "PatchedClockPatchRequest": {
+            "PatchedNumberPatchRequest": {
                 "type": "object",
                 "properties": {
-                    "factor": {
-                        "type": "string",
-                        "format": "decimal",
-                        "pattern": "^-?\\d{0,6}(?:\\.\\d{0,2})?$"
-                    },
-                    "paused": {
+                    "active": {
                         "type": "boolean"
                     },
-                    "advance_hours": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "phone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                    }
+                }
+            },
+            "PatchedSupplierPatchRequest": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/SupplierStatusEnum"
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/SupplierKindEnum"
+                    },
+                    "specialties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                        }
+                    },
+                    "city": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "address": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "lat": {
                         "type": "number",
-                        "format": "double"
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "weekly_capacity": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "lead_time_days": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "follow_up_every_hours": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "currency": {
+                        "$ref": "#/components/schemas/CurrencyEnum"
+                    },
+                    "notes": {
+                        "type": "string"
                     }
                 }
             },
@@ -3626,7 +4008,7 @@
             },
             "PurchaseOrderDetail": {
                 "type": "object",
-                "description": "Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared\nas real fields so the OpenAPI schema carries them), and strips manager-only fields from\nevery nested payload when the context role is not the manager (nested serializers do not\ngo through `serializer_for`).",
+                "description": "`status_history: [{status, status_display, at, actor, note}]` ordered by `at` (10/10 21:40).",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -3802,6 +4184,14 @@
                         "description": "Chat where this purchase order is negotiated.",
                         "readOnly": true
                     },
+                    "status_history": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    },
                     "status_display": {
                         "type": "string",
                         "readOnly": true,
@@ -3831,6 +4221,7 @@
                     "redistributed_from",
                     "redistributed_into",
                     "status_display",
+                    "status_history",
                     "suggested_supplier",
                     "supplier",
                     "total_amount",
@@ -4570,6 +4961,85 @@
                     "ratings",
                     "source_display",
                     "status_display"
+                ]
+            },
+            "SupplierInRequest": {
+                "type": "object",
+                "description": "Registration payload (manager) and self-registration (public). `phone` creates an inactive\nAllowedNumber; `contact_name` is that number's name.",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/SupplierKindEnum"
+                    },
+                    "specialties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                        }
+                    },
+                    "city": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 80
+                    },
+                    "address": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 200
+                    },
+                    "lat": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "weekly_capacity": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "lead_time_days": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 7
+                    },
+                    "follow_up_every_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "default": 48
+                    },
+                    "currency": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CurrencyEnum"
+                            }
+                        ],
+                        "default": "PEN"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 40
+                    },
+                    "contact_name": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 80
+                    }
+                },
+                "required": [
+                    "kind",
+                    "name"
                 ]
             },
             "SupplierKindEnum": {

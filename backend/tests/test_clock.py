@@ -45,9 +45,8 @@ def test_set_clock_requires_manager(sales, config):
 
 
 @pytest.mark.django_db
-def test_clock_api(manager_client, sales_client):
-    assert sales_client.get("/api/clock/").status_code == 200
-    assert sales_client.patch("/api/clock/", {"advance_hours": 24}).status_code == 403
-    response = manager_client.patch("/api/clock/", {"advance_hours": 24})
-    assert response.status_code == 200
-    assert set(response.json()) == {"now", "factor", "paused"}
+def test_clock_api_is_read_only(manager_client, sales_client):
+    """Since 10/10 21:40 the demo runs on real time: GET stays, PATCH is gone."""
+    body = sales_client.get("/api/clock/").json()
+    assert set(body) == {"now", "factor", "paused"}
+    assert manager_client.patch("/api/clock/", {"advance_hours": 24}).status_code == 405

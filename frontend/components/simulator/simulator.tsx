@@ -7,7 +7,6 @@ import useSWR from "swr";
 import { apiFetch, fetcher } from "@/lib/api";
 import type { ChatMessage, SimulatorContact } from "@/lib/types";
 import { ChatThread } from "../chat-thread";
-import { Clock } from "../clock";
 import { SimulateOrder } from "../simulate-order";
 import { Pill } from "../ui";
 
@@ -32,6 +31,11 @@ function save(key: string, value: unknown) {
 
 const COLORS = ["bg-accent", "bg-success", "bg-warning", "bg-ink", "bg-danger", "bg-muted"];
 
+// The contact's name is the number's label; the supplier is what the operator looks for.
+function displayName(contact: SimulatorContact) {
+  return contact.supplier?.name ?? contact.name;
+}
+
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -52,7 +56,7 @@ export function Simulator() {
   const initialized = useRef(false);
   const toasted = useRef(new Set<number>());
 
-  const selected = contacts?.find((c) => c.id === selectedId) ?? contacts?.[0] ?? null;
+  const selected = contacts?.find((c) => c.allowed_number_id === selectedId) ?? contacts?.[0] ?? null;
 
   const togglePresent = useCallback(() => {
     router.replace(present ? "/simulator" : "/simulator?present=1");
@@ -63,7 +67,7 @@ export function Simulator() {
     if (!contacts || initialized.current) return;
     initialized.current = true;
     const stored = load<Record<number, number>>(SEEN_KEY, {});
-    const base = Object.fromEntries(contacts.map((c) => [c.id, stored[c.id] ?? c.last_message?.id ?? 0]));
+    const base = Object.fromEntries(contacts.map((c) => [c.allowed_number_id, stored[c.allowed_number_id] ?? c.last_message?.id ?? 0]));
     setSeen(base);
   }, [contacts]);
 
@@ -72,21 +76,21 @@ export function Simulator() {
     if (!contacts || !initialized.current) return;
     for (const contact of contacts) {
       const last = contact.last_message;
-      if (!last || contact.id === selected?.id || last.direction !== "outbound") continue;
+      if (!last || contact.allowed_number_id === selected?.allowed_number_id || last.direction !== "outbound") continue;
       // One toast per message; the highlight stays until the contact is opened.
-      if (last.id > (seen[contact.id] ?? 0) && !toasted.current.has(last.id)) {
+      if (last.id > (seen[contact.allowed_number_id] ?? 0) && !toasted.current.has(last.id)) {
         toasted.current.add(last.id);
-        setToast(contact.name);
+        setToast(displayName(contact));
       }
     }
-  }, [contacts, seen, selected?.id]);
+  }, [contacts, seen, selected?.allowed_number_id]);
 
   // The open chat is always seen.
   useEffect(() => {
     const lastId = selected?.last_message?.id;
-    if (!selected || !lastId || seen[selected.id] === lastId) return;
+    if (!selected || !lastId || seen[selected.allowed_number_id] === lastId) return;
     setSeen((current) => {
-      const next = { ...current, [selected.id]: lastId };
+      const next = { ...current, [selected.allowed_number_id]: lastId };
       save(SEEN_KEY, next);
       return next;
     });
@@ -103,37 +107,38 @@ export function Simulator() {
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
       if (target.closest("input, textarea, select, [contenteditable]") || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (/^[1-9]$/.test(e.key) && contacts?.[Number(e.key) - 1]) setSelectedId(contacts[Number(e.key) - 1].id);
+      if (/^[1-9]$/.test(e.key) && contacts?.[Number(e.key) - 1]) setSelectedId(contacts[Number(e.key) - 1].allowed_number_id);
       if (e.key.toLowerCase() === "p") togglePresent();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [contacts, togglePresent]);
 
-  const unread = (c: SimulatorContact) => !!c.last_message && c.last_message.direction === "outbound" && c.last_message.id > (seen[c.id] ?? 0);
+  const unread = (c: SimulatorContact) => !!c.last_message && c.last_message.direction === "outbound" && c.last_message.id > (seen[c.allowed_number_id] ?? 0);
 
   const body = (
     <div className={`flex min-h-0 flex-1 overflow-hidden rounded-xl bg-surface ring-1 ring-line ${present ? "text-lg" : ""}`}>
       <nav aria-label="Contactos" className={`flex shrink-0 flex-col overflow-y-auto border-r border-line ${present ? "w-80" : "w-24 sm:w-64"}`}>
         {!contacts && <p className="p-4 text-sm text-muted">Cargando…</p>}
         {contacts?.map((contact, i) => {
-          const active = contact.id === selected?.id;
+          const active = contact.allowed_number_id === selected?.allowed_number_id;
           const isNew = unread(contact);
+          const name = displayName(contact);
           return (
             <button
-              key={contact.id}
+              key={contact.allowed_number_id}
               type="button"
-              onClick={() => setSelectedId(contact.id)}
+              onClick={() => setSelectedId(contact.allowed_number_id)}
               aria-current={active ? "true" : undefined}
               className={`flex items-center gap-3 border-b border-line px-3 py-3 text-left ${active ? "bg-canvas" : isNew ? "bg-warning-soft" : "hover:bg-canvas"}`}
             >
               <span className={`relative flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${COLORS[i % COLORS.length]}`}>
-                {initials(contact.name)}
+                {initials(name)}
                 {isNew && <span className="absolute -right-0.5 -top-0.5 size-3 rounded-full bg-danger ring-2 ring-surface" />}
               </span>
               <span className="hidden min-w-0 flex-1 sm:block">
                 <span className="flex items-center gap-2">
-                  <span className="truncate font-semibold">{contact.name}</span>
+                  <span className="truncate font-semibold">{name}</span>
                   {i < 9 && <kbd className="ml-auto rounded bg-canvas px-1 text-[11px] text-muted">{i + 1}</kbd>}
                 </span>
                 <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
@@ -145,7 +150,7 @@ export function Simulator() {
           );
         })}
       </nav>
-      {selected ? <Conversation key={selected.id} contact={selected} large={present} /> : <div className="flex-1" />}
+      {selected ? <Conversation key={selected.allowed_number_id} contact={selected} large={present} /> : <div className="flex-1" />}
     </div>
   );
 
@@ -161,7 +166,6 @@ export function Simulator() {
         <div className="flex flex-wrap items-center gap-3 rounded-xl bg-surface px-4 py-2 ring-1 ring-line">
           <span className="text-xl font-black tracking-tight">CORPOTEX · Simulador</span>
           <div className="ml-auto flex flex-wrap items-center gap-3">
-            <Clock />
             <SimulateOrder />
             <button type="button" onClick={togglePresent} className="rounded-md p-2 hover:bg-canvas" title="Salir del modo presentación (P)">
               <Minimize2 size={20} />
@@ -208,7 +212,8 @@ function Conversation({ contact, large }: { contact: SimulatorContact; large: bo
   const [picker, setPicker] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [phrases, setPhrases] = useState<string[]>(() => load<Record<number, string[]>>(PHRASES_KEY, {})[contact.id] ?? []);
+  const name = displayName(contact);
+  const [phrases, setPhrases] = useState<string[]>(() => load<Record<number, string[]>>(PHRASES_KEY, {})[contact.allowed_number_id] ?? []);
   const readOnly = contact.channel === "whatsapp";
 
   function attach(file: File | null) {
@@ -224,7 +229,7 @@ function Conversation({ contact, large }: { contact: SimulatorContact; large: bo
 
   function storePhrases(next: string[]) {
     setPhrases(next);
-    save(PHRASES_KEY, { ...load<Record<number, string[]>>(PHRASES_KEY, {}), [contact.id]: next });
+    save(PHRASES_KEY, { ...load<Record<number, string[]>>(PHRASES_KEY, {}), [contact.allowed_number_id]: next });
   }
 
   async function send(e: React.FormEvent) {
@@ -233,7 +238,7 @@ function Conversation({ contact, large }: { contact: SimulatorContact; large: bo
     setSending(true);
     setError(null);
     const form = new FormData();
-    form.set("allowed_number_id", String(contact.id));
+    form.set("allowed_number_id", String(contact.allowed_number_id));
     form.set("text", text.trim());
     if (photo) form.set("photo", photo);
     try {
@@ -251,7 +256,7 @@ function Conversation({ contact, large }: { contact: SimulatorContact; large: bo
   return (
     <section className="flex min-w-0 flex-1 flex-col">
       <header className="flex items-center gap-2 border-b border-line px-4 py-3">
-        <p className="font-semibold">{contact.name}</p>
+        <p className="font-semibold">{name}</p>
         {readOnly ? <Pill tone="success">WhatsApp real · solo lectura</Pill> : <Pill tone="info">Simulado</Pill>}
       </header>
 
@@ -318,8 +323,8 @@ function Conversation({ contact, large }: { contact: SimulatorContact; large: bo
                 }
               }}
               rows={1}
-              placeholder={`Escribe como ${contact.name}`}
-              aria-label={`Mensaje de ${contact.name}`}
+              placeholder={`Escribe como ${name}`}
+              aria-label={`Mensaje de ${name}`}
               className="max-h-32 min-h-11 flex-1 resize-none rounded-md px-3 py-2.5 ring-1 ring-line"
             />
             <button type="submit" disabled={sending || (!text.trim() && !photo)} className="rounded-md bg-ink p-3 text-white disabled:opacity-40" aria-label="Enviar">

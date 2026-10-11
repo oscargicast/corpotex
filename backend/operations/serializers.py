@@ -127,6 +127,20 @@ class RequirementSerializer(DisplayMixin, serializers.ModelSerializer):
         ]
 
 
+
+class StatusHistoryMixin(serializers.Serializer):
+    """`status_history: [{status, status_display, at, actor, note}]` ordered by `at` (10/10 21:40)."""
+
+    status_history = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_status_history(self, obj):
+        return [
+            {"status": c.status, "status_display": c.status_display, "at": c.at, "actor": c.actor or "system", "note": c.note}
+            for c in obj.status_changes.all()
+        ]
+
+
 @register(Order)
 class OrderListSerializer(DisplayMixin, serializers.ModelSerializer):
     customer = serializers.SerializerMethodField()
@@ -195,7 +209,7 @@ def waiting_manager(po: PurchaseOrder) -> bool:
 
 
 @register(Order, detail=True)
-class OrderDetailSerializer(OrderListSerializer):
+class OrderDetailSerializer(StatusHistoryMixin, OrderListSerializer):
     owner = serializers.SerializerMethodField()
     items = OrderItemSerializer(many=True, read_only=True)
     requirements = RequirementSerializer(many=True, read_only=True)
@@ -212,6 +226,7 @@ class OrderDetailSerializer(OrderListSerializer):
             "purchase_orders",
             "alerts",
             "redistributions",
+            "status_history",
         ]
 
     @extend_schema_field(OpenApiTypes.OBJECT)
@@ -424,7 +439,7 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
 
 
 @register(PurchaseOrder, detail=True)
-class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
+class PurchaseOrderDetailSerializer(StatusHistoryMixin, PurchaseOrderListSerializer):
     suggested_supplier = SupplierRefSerializer(read_only=True)
     changed_by_manager = serializers.SerializerMethodField()
     candidates = serializers.SerializerMethodField()
@@ -454,6 +469,7 @@ class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
             "redistributed_into",
             "pending_decision",
             "conversation_id",
+            "status_history",
         ]
 
     @extend_schema_field(OpenApiTypes.BOOL)

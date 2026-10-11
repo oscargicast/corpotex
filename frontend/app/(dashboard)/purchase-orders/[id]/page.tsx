@@ -9,12 +9,13 @@ import { DecisionCard } from "@/components/decision-card";
 import { Payments } from "@/components/payments";
 import { ProgressForm } from "@/components/progress-form";
 import { useUser } from "@/components/require-auth";
+import { StatusTimeline } from "@/components/status-timeline";
 import { Thumb } from "@/components/thumb";
 import { Card, CRITERIA_LABELS, Pill, ScoreBar, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import { formatDay, formatDayTime, formatMoney } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
-import type { ChatMessage, Clock, PurchaseOrderDetail } from "@/lib/types";
+import type { ChatMessage, PurchaseOrderDetail } from "@/lib/types";
 
 const SOURCE: Record<string, string> = { whatsapp: "WhatsApp", web: "Web", manual: "Dashboard", simulator: "Simulador" };
 
@@ -26,9 +27,9 @@ export default function PurchaseOrderDetailPage() {
   const { data: po, mutate } = useSWR<PurchaseOrderDetail>(id ? `/api/purchase-orders/${id}/` : null, fetcher, {
     refreshInterval: 3000,
   });
-  const { data: clock } = useSWR<Clock>("/api/clock/", fetcher);
+  // Supplier conversations hold sensitive data: only the Gerente sees them (rule of 10/10).
   const { data: chat } = useSWR<{ typing: boolean; messages: ChatMessage[] }>(
-    po?.conversation_id ? `/api/conversations/${po.conversation_id}/messages/` : null,
+    isManager && po?.conversation_id ? `/api/conversations/${po.conversation_id}/messages/` : null,
     fetcher,
     { refreshInterval: 3000 },
   );
@@ -36,7 +37,7 @@ export default function PurchaseOrderDetailPage() {
   if (notFound) return <p className="text-muted">No existe el pedido {decodeURIComponent(params.id)}.</p>;
   if (!po) return <div className="h-40 animate-pulse rounded-xl bg-line" />;
 
-  const today = (clock?.now ?? new Date().toISOString()).slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
   const open = !["delivered", "cancelled", "cancelled_by_supplier", "rejected_by_supplier"].includes(po.status);
 
   return (
@@ -77,6 +78,11 @@ export default function PurchaseOrderDetailPage() {
       {isManager && po.pending_decision && (
         <DecisionCard decision={po.pending_decision} onResolved={() => mutate()} />
       )}
+
+      <Card>
+        <SectionTitle>Estado</SectionTitle>
+        <StatusTimeline flow="purchase_order" status={po.status} statusDisplay={po.status_display} history={po.status_history} />
+      </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Fact label="Avance" value={`${po.units_done} / ${Number(po.total_units)}`} />
@@ -206,7 +212,7 @@ export default function PurchaseOrderDetailPage() {
           </Card>
         )}
 
-        {po.conversation_id && (
+        {isManager && po.conversation_id && (
           <Card className="xl:col-span-2">
             <SectionTitle>Chat con el proveedor</SectionTitle>
             <ChatThread messages={chat?.messages ?? []} typing={chat?.typing} />

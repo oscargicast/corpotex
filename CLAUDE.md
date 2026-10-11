@@ -52,7 +52,9 @@ Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), cone
 
 ## Demo
 
-- API simulada del sistema de Comercial, envío real por Evolution API con el número de Oscar, reloj acelerado.
+- API simulada del sistema de Comercial, envío real por Evolution API con el número de Oscar.
+- Sin reloj simulado (decisión de Oscar, 10/10 21:40): `core.clock` queda con factor 1 (hora real) y el dashboard no muestra reloj; las escenas con retraso salen del seed (fechas relativas a hoy).
+- Usuarios de rol del seed con contraseña `SEED_USERS_PASSWORD` del `.env`; ninguno es staff del admin (solo el superuser `admin`).
 - Escena que pide el jurado: un taller cancela a mitad del pedido y el sistema redistribuye y recalcula fecha, costo y ruta (ADR 0024).
 - Clientes en la data: Caja Piura, colegios de Piura, AIDER, PIQA.
 - Por WhatsApp solo hay un proveedor real: Valeria (`51906746241`, constante en el seed, activo en la allowlist). El Gerente escribe desde el número de Oscar (`51907898162`). Los demás proveedores van por el simulador. Oscar no puede ser proveedor: es su propio número.
@@ -104,7 +106,7 @@ Autenticación: suscripción de Claude de Oscar con `CLAUDE_CODE_OAUTH_TOKEN` (A
 - Evolution API v2.3.7 en el mac-mini (SSH `macmini`), k3s, namespace `automation`, deploy `evolution-api`, gestionado por Argo CD: los cambios de env van por el repo de infra, no con `kubectl edit`.
 - `https://evolution.oscargicast.com` está detrás de Cloudflare Access (curl externo da 302). Probar desde dentro del pod con `kubectl exec`.
 - API key global en `.secret` y token de la instancia `corpotex` en `.env` (ambos gitignored). Nunca commitearlos ni imprimirlos.
-- Tunnel: `cloudflared tunnel --config infra/cloudflared/config.yml run corpotex`. En la laptop de Oscar pasar siempre `--config`: el config global de cloudflared apunta a otro tunnel (`turbo`) y `route dns` sin él enruta al tunnel equivocado.
+- Tunnel: `cloudflared tunnel --config infra/cloudflared/config.yml run corpotex`. Cloudflare bloquea con 403 (error 1010) los user agents genéricos de Python (`Python-urllib`, `python-requests`) tanto en `evolution.oscargicast.com` como en `corpotex.oscargicast.com`: todo cliente manda un `User-Agent` propio (`EvolutionClient` ya lo hace); al probar con curl o Python, pasar uno. En la laptop de Oscar pasar siempre `--config`: el config global de cloudflared apunta a otro tunnel (`turbo`) y `route dns` sin él enruta al tunnel equivocado.
 - Enviar: `POST /message/sendText/corpotex` con el token de la instancia (`EVOLUTION_INSTANCE_TOKEN`). El backend no usa la API key global ni toca `personal-whatsapp` (ADR 0010).
 - Recibir (decidido 10/10): segunda instancia `corpotex`, vinculada al número de Oscar por QR como otro dispositivo, con su propio webhook `MESSAGES_UPSERT` hacia nuestro backend. Recibe todos los mensajes del número, así que la allowlist se filtra en nuestro código. Webhook: `https://corpotex.oscargicast.com/webhooks/evolution/<EVOLUTION_WEBHOOK_SECRET>/` (secreto en `.env`; la vista de Django lo valida), solo `MESSAGES_UPSERT`, con base64 para recibir las fotos en el payload.
 

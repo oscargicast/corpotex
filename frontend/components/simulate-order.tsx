@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import examples from "@/mocks/order-examples.json";
 import { apiFetch } from "@/lib/api";
-import type { Clock, OrderListItem } from "@/lib/types";
+import type { OrderListItem } from "@/lib/types";
 import { Button } from "./ui";
 
 // Stand-in for Comercial's system: posts one of docs/api/examples/order-*.json to POST /api/orders/.
@@ -22,9 +22,8 @@ export function SimulateOrder() {
     const { payload, promised_in_days } = examples[index];
     const code = `CP-${Date.now()}`;
     try {
-      // Dates relative to the simulated clock, so the demo works any day.
-      const clock = await apiFetch<Clock>("/api/clock/");
-      const today = new Date(clock.now);
+      // Dates relative to today, so the demo works any day.
+      const today = new Date();
       const promised = new Date(today.getTime() + promised_in_days * 86_400_000);
       const order = await apiFetch<OrderListItem>("/api/orders/", {
         method: "POST",
