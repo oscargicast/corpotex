@@ -13,6 +13,7 @@ import { AssistantToast } from "./assistant/toast";
 import { ClaudeBanner } from "./claude-banner";
 import { useUser } from "./require-auth";
 import { Isotipo, Lockup } from "./brand";
+import { WhatsAppToastHost } from "./whatsapp-toast";
 
 function Count({ value, className = "" }: { value: number | null | undefined; className?: string }) {
   if (!value) return null;
@@ -107,6 +108,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <BottomNav items={items} pathname={pathname} unread={unread} pending={pending} name={name} role={role} />
       {pathname !== "/assistant" && <AssistantPanel open={assistantOpen} onClose={() => setAssistantOpen(false)} />}
       <AssistantToast badges={badges} chatOpen={assistantOpen || pathname === "/assistant"} onOpen={openAssistant} />
+      <WhatsAppToastHost />
     </div>
   );
 }

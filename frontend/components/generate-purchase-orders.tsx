@@ -97,7 +97,7 @@ export function GeneratedToast({ result, nameOf, onClose }: { result: GeneratedP
         <CheckCircle2 size={20} className={`mt-0.5 shrink-0 ${created.length ? "text-success" : "text-muted"}`} aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="font-semibold">
-            {created.length === 0 ? "No se generó ningún pedido" : created.length === 1 ? "Pedido sugerido generado" : `${created.length} pedidos sugeridos generados`}
+            {created.length === 0 ? "No se generó ningún pedido" : `${created.length} ${created.length === 1 ? "pedido generado" : "pedidos generados"} · esperando aprobación del Gerente`}
           </p>
           {created.length > 0 && (
             <p className="mt-1">
@@ -112,7 +112,7 @@ export function GeneratedToast({ result, nameOf, onClose }: { result: GeneratedP
               ))}
             </p>
           )}
-          {result.decision_id && <p className="mt-1 text-muted">El Gerente aprueba la asignación en el Monitor.</p>}
+          {created.length > 0 && <p className="mt-1 text-muted">El agente le escribe a cada proveedor cuando el Gerente aprueba.</p>}
           {skipped.length > 0 && (
             <ul className="mt-1 text-warning">
               {skipped.map((s) => (
