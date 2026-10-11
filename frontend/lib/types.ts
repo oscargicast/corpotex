@@ -60,6 +60,7 @@ export interface OrderListItem {
   slack_days: number | null;
   total_units: number | string; // Decimal in the API
   purchase_orders_summary?: { total: number; confirmed: number; waiting_manager: number };
+  awaiting_reply?: boolean; // an open purchase order of the order owes an answer (missing before PR #176)
 }
 
 // The schema types these loosely (plain strings, untyped refs, never null);

@@ -100,7 +100,7 @@ export default function OrderDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight">{order.code}</h1>
             <Pill tone={RISK_TONE[order.risk]}>{RISK_LABEL[order.risk]}</Pill>
-            <Pill>{orderStatusLabel(order.status, order.status_display)}</Pill>
+            <Pill>{orderStatusLabel(order.status, order.status_display, user.role)}</Pill>
           </div>
           <p className="mt-1 text-sm text-muted">
             {order.customer.name} · {order.brand.name} · {Number(order.total_units)} unidades

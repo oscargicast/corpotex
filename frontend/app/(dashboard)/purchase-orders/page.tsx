@@ -1,22 +1,36 @@
 "use client";
 
-import { FilterX, ShoppingCart } from "lucide-react";
+import { FilterX, LayoutList, ShoppingCart, Users } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import useSWR from "swr";
-import { PURCHASE_ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
+import { FilterBar } from "@/components/filter-bar";
+import { matchesCode, useListParams } from "@/components/list-filters";
 import { PurchaseOrderList } from "@/components/purchase-order-list";
 import { useUser } from "@/components/require-auth";
 import { SkeletonTable } from "@/components/skeleton";
 import { Button, buttonClass, Card } from "@/components/ui";
 import { fetcher } from "@/lib/api";
+import { formatDay } from "@/lib/format";
 import type { PurchaseOrderListItem } from "@/lib/types";
 
-const KINDS = [
-  { value: "", label: "Todos" },
-  { value: "material", label: "Insumos" },
-  { value: "workshop", label: "Talleres" },
-  { value: "finished", label: "Terminados" },
+// Chips and search filter the loaded list in the browser (Oscar, 11/10). The
+// Gerente also gets the purchase orders waiting for his approval.
+type View = "open" | "awaiting" | "approve" | "delivered" | "all";
+const CLOSED = ["delivered", "cancelled", "cancelled_by_supplier", "rejected_by_supplier", "declined_by_supplier"];
+const TESTS: Record<View, (po: PurchaseOrderListItem) => boolean> = {
+  open: (po) => !CLOSED.includes(po.status),
+  awaiting: (po) => !!po.awaiting_reply,
+  approve: (po) => !!po.waiting_manager,
+  delivered: (po) => po.status === "delivered",
+  all: () => true,
+};
+const VIEWS: { key: View; label: string; manager?: boolean }[] = [
+  { key: "open", label: "Abiertos" },
+  { key: "awaiting", label: "Esperando respuesta" },
+  { key: "approve", label: "Por aprobar", manager: true },
+  { key: "delivered", label: "Entregados" },
+  { key: "all", label: "Todos" },
 ];
 
 export default function PurchaseOrdersPage() {
@@ -30,24 +44,16 @@ export default function PurchaseOrdersPage() {
 function PurchaseOrders() {
   const user = useUser();
   const params = useListParams();
-  const kind = params.get("kind");
-  const waiting = params.get("waiting") === "1";
-  const statuses = params.list("status");
+  const views = VIEWS.filter((v) => !v.manager || user.role === "manager");
+  const view = (views.some((v) => v.key === params.get("view")) ? params.get("view") : "open") as View;
   const q = params.get("q");
-  // Every filter goes to the API (B6.5): ?kind=&waiting_manager=1&status=a,b&q= (q also
-  // matches the orders' codes). The list without status/q feeds the chip counts.
-  const base = new URLSearchParams({ ...(kind && { kind }), ...(waiting && { waiting_manager: "1" }) });
-  const query = new URLSearchParams(base);
-  if (statuses.length) query.set("status", statuses.join(","));
-  if (q) query.set("q", q);
-  const { data, error } = useSWR<PurchaseOrderListItem[]>(`/api/purchase-orders/${query.size ? `?${query}` : ""}`, fetcher, {
-    refreshInterval: 3000,
-    keepPreviousData: true,
-  });
-  const { data: all } = useSWR<PurchaseOrderListItem[]>(`/api/purchase-orders/${base.size ? `?${base}` : ""}`, fetcher, { refreshInterval: 5000 });
-  const options = statusOptions(all ?? [], PURCHASE_ORDER_STATUSES);
-  const filtered = data ?? [];
-  const filtering = !!(kind || waiting || statuses.length || q);
+  // Comercial reads a plain list; Producción and the Gerente group by supplier.
+  const canGroup = user.role !== "sales";
+  const grouped = canGroup && params.get("by") !== "list";
+  const { data, error } = useSWR<PurchaseOrderListItem[]>("/api/purchase-orders/", fetcher, { refreshInterval: 3000 });
+  const all = data ?? [];
+  const filtered = all.filter((po) => TESTS[view](po) && matchesCode(q, po.code, po.supplier.name, ...po.orders.map((o) => o.code)));
+  const filtering = view !== "open" || !!q;
 
   return (
     <div className="space-y-4">
@@ -55,32 +61,31 @@ function PurchaseOrders() {
         <h1 className="text-2xl font-bold tracking-tight">Pedidos a proveedores y talleres</h1>
         {user.role !== "sales" && (
           <Link href="/inventory?to_order=1" className={buttonClass()}>
-            <ShoppingCart size={16} /> Insumos por pedir
+            <ShoppingCart size={16} aria-hidden /> Insumos por pedir
           </Link>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex rounded-lg bg-surface p-1 ring-1 ring-line" role="tablist">
-          {KINDS.map((k) => (
-            <button
-              key={k.value || "all"}
-              type="button"
-              role="tab"
-              aria-selected={kind === k.value}
-              onClick={() => params.set({ kind: k.value })}
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors duration-150 ${kind === k.value ? "bg-ink text-white" : "hover:bg-canvas"}`}
-            >
-              {k.label}
-            </button>
-          ))}
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={waiting} onChange={(e) => params.set({ waiting: e.target.checked ? "1" : null })} />
-          Solo esperando al Gerente
-        </label>
-        <SearchBox value={q} onChange={(value) => params.set({ q: value })} placeholder="Buscar por código de pedido u orden" />
-      </div>
-      {options.length > 0 && <StatusChips options={options} selected={statuses} onChange={(next) => params.set({ status: next })} allLabel="Todos los estados" />}
+
+      <FilterBar
+        search={{ value: q, onChange: (value) => params.set({ q: value }), placeholder: "Buscar por código o proveedor" }}
+        chips={{
+          label: "Pedidos",
+          value: view,
+          onChange: (next) => params.set({ view: next === "open" ? null : next }),
+          options: views.map((v) => ({ key: v.key, label: v.label, count: all.filter(TESTS[v.key]).length })),
+        }}
+      >
+        {canGroup && (
+          <div className="flex w-fit rounded-lg bg-surface p-1 ring-1 ring-line" role="group" aria-label="Agrupar">
+            <Toggle on={grouped} onClick={() => params.set({ by: null })}>
+              <Users size={14} aria-hidden /> Por proveedor
+            </Toggle>
+            <Toggle on={!grouped} onClick={() => params.set({ by: "list" })}>
+              <LayoutList size={14} aria-hidden /> Lista
+            </Toggle>
+          </div>
+        )}
+      </FilterBar>
 
       {error && !data && <p className="text-danger">No se pudieron cargar los pedidos.</p>}
       {!data && !error && <SkeletonTable rows={7} cols={6} />}
@@ -88,8 +93,8 @@ function PurchaseOrders() {
         <div className="rounded-xl bg-surface p-6 text-center text-sm text-muted ring-1 ring-line">
           {filtering ? (
             <>
-              <p>Ningún pedido coincide con {q ? `“${q}”` : "esos filtros"}.</p>
-              <Button className="mt-3" onClick={() => params.set({ kind: null, waiting: null, status: null, q: null })}>
+              <p>Ningún pedido coincide con {q ? `“${q}”` : "ese filtro"}.</p>
+              <Button className="mt-3" onClick={() => params.set({ view: null, q: null })}>
                 <FilterX size={16} aria-hidden /> Limpiar filtros
               </Button>
             </>
@@ -98,11 +103,51 @@ function PurchaseOrders() {
           )}
         </div>
       )}
-      {filtered.length > 0 && (
-        <Card>
-          <PurchaseOrderList items={filtered} />
-        </Card>
-      )}
+      {filtered.length > 0 &&
+        (grouped ? (
+          groupBySupplier(filtered).map((group) => (
+            <Card key={group.id}>
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h2 className="text-base font-semibold">{group.name}</h2>
+                <span className="text-xs text-muted">
+                  {group.items.length} {group.items.length === 1 ? "pedido" : "pedidos"} · {group.next ? `próxima fecha ${formatDay(group.next)}` : "sin fecha comprometida"}
+                </span>
+              </div>
+              <PurchaseOrderList items={group.items} grouped />
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <PurchaseOrderList items={filtered} />
+          </Card>
+        ))}
     </div>
   );
+}
+
+function Toggle({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={`inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-sm transition-colors duration-150 sm:min-h-8 ${on ? "bg-ink text-white" : "hover:bg-canvas"}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// One group per supplier, the nearest committed date first (the plant and
+// suppliers with nothing dated go last). `next` is the soonest open date.
+function groupBySupplier(items: PurchaseOrderListItem[]) {
+  const groups = new Map<number, { id: number; name: string; items: PurchaseOrderListItem[]; next: string | null }>();
+  for (const po of items) {
+    const group = groups.get(po.supplier.id) ?? { id: po.supplier.id, name: po.supplier.name, items: [], next: null };
+    group.items.push(po);
+    const due = CLOSED.includes(po.status) ? null : (po.committed_on ?? po.internal_due_on ?? null);
+    if (due && (!group.next || due < group.next)) group.next = due;
+    groups.set(po.supplier.id, group);
+  }
+  return [...groups.values()].sort((a, b) => (a.next ?? "9").localeCompare(b.next ?? "9") || a.name.localeCompare(b.name));
 }

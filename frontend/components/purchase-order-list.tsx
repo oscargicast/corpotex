@@ -7,7 +7,7 @@ import { KindIcon } from "./thumb";
 import { CARD_HOVER, Pill, ROW_HOVER, SEVERITY_TONE } from "./ui";
 
 // Table on desktop, cards on mobile. Used by /purchase-orders and the order detail.
-export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] }) {
+export function PurchaseOrderList({ items, grouped = false }: { items: PurchaseOrderListItem[]; grouped?: boolean }) {
   if (!items.length) return <p className="text-sm text-muted">Sin pedidos.</p>;
   const showAmounts = items.some((po) => po.total_amount);
 
@@ -24,7 +24,7 @@ export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] })
                 </span>
                 <Status po={po} />
               </div>
-              <p className="mt-1 text-sm">{po.supplier.name}</p>
+              <p className="mt-1 text-sm">{grouped ? po.orders.map((o) => o.code).join(", ") : po.supplier.name}</p>
               <Progress po={po} />
               <p className="mt-1 text-xs text-muted">
                 {po.kind_display} · {dueLabel(po)}
@@ -39,7 +39,7 @@ export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] })
           <thead className="text-left text-xs text-muted">
             <tr>
               <th className="pb-2 font-medium">Pedido</th>
-              <th className="pb-2 font-medium">Proveedor</th>
+              <th className="pb-2 font-medium">{grouped ? "Orden" : "Proveedor"}</th>
               <th className="pb-2 font-medium">Estado</th>
               <th className="pb-2 font-medium">Avance</th>
               <th className="pb-2 font-medium">Fecha</th>
@@ -57,8 +57,14 @@ export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] })
                   <span className="block text-xs text-muted">{po.kind_display}</span>
                 </td>
                 <td className="py-2.5 pr-3">
-                  {po.supplier.name}
-                  <span className="block text-xs text-muted">{po.orders.map((o) => o.code).join(", ")}</span>
+                  {grouped ? (
+                    po.orders.map((o) => o.code).join(", ")
+                  ) : (
+                    <>
+                      {po.supplier.name}
+                      <span className="block text-xs text-muted">{po.orders.map((o) => o.code).join(", ")}</span>
+                    </>
+                  )}
                 </td>
                 <td className="py-2.5 pr-3">
                   <Status po={po} />
