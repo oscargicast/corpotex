@@ -508,3 +508,35 @@ def test_request_follow_up_forbidden_for_the_role_tells_the_model(monkeypatch):
         {"purchase_order_code": "PT-0038", "confirmed": False},
     )
     assert is_error and "Tu rol no puede hacer eso" in text
+
+
+def test_request_follow_up_names_orders_without_a_channel_and_refuses_when_none_can_be_asked(
+    monkeypatch,
+):
+    install(monkeypatch)
+    plant = {
+        "id": None,
+        "purchase_order": {"id": 45, "code": "PT-0045"},
+        "supplier_name": "Planta Corpotex",
+        "status": "skipped",
+        "asked_at": None,
+        "skip_reason": "sin canal",
+    }
+    fake_follow_up(monkeypatch, requests=[FOLLOW_UP_REQUESTS[0], plant])
+    _, text = call(
+        conversation("sales"),
+        1,
+        "request_follow_up",
+        {"order_code": "CP-2026-0155", "confirmed": False},
+    )
+    assert "Pedir avance a Confecciones del Norte (PT-0038)" in text
+    assert "no se les puede escribir: PT-0045 (Planta Corpotex): sin canal" in text
+    assert "Planta Corpotex (PT-0045)" not in text
+    fake_follow_up(monkeypatch, requests=[plant])
+    with pytest.raises(RuntimeError, match="sin canal"):
+        call(
+            conversation("sales"),
+            2,
+            "request_follow_up",
+            {"order_code": "CP-2026-0155", "confirmed": False},
+        )
