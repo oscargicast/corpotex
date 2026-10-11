@@ -11,6 +11,8 @@ to be pointed at ``personal-whatsapp``.
 
 from __future__ import annotations
 
+import logging
+
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
@@ -43,6 +45,9 @@ WHATSAPP_JID_SUFFIX = "@s.whatsapp.net"
 # `POST /chat/findMessages` pages newest first; `offset` is the page size.
 FIND_MESSAGES_PAGE_SIZE = 50
 FIND_MESSAGES_MAX_PAGES = 40
+
+
+logger = logging.getLogger(__name__)
 
 
 class EvolutionError(Exception):
@@ -222,6 +227,80 @@ class EvolutionClient:
         return self._request("POST", f"/message/sendText/{self.instance}", json=body)
 
     def find_messages(self, jid: str, since: SinceType, *, limit: int = 300) -> list[dict]:
+        """Raw message records of a contact since ``since``, oldest first, across BOTH of
+        their chats: the phone one (``<phone>@s.whatsapp.net``) and the LID one (``<id>@lid``,
+        what WhatsApp uses since 2025; Valeria's chat on 10/10 was one). Either jid works; the
+        other is taken from ``AllowedNumber.lid`` or resolved through Evolution and cached.
+        Records are merged, deduplicated by ``key.id`` and the MOST RECENT ``limit`` kept."""
+        jids = self.chat_jids(jid)
+        collected: dict[str, dict] = {}
+        for chat in jids:
+            for record in self.find_chat_messages(chat, since, limit=limit):
+                key = record.get("key") or {}
+                collected.setdefault(key.get("id") or f"{chat}:{_timestamp(record)}:{len(collected)}", record)
+        records = sorted(collected.values(), key=_timestamp)
+        return records[-limit:] if limit > 0 else []
+
+    def chat_jids(self, jid: str) -> list[str]:
+        """The phone jid and the LID of one contact, whichever was given (cached on
+        ``AllowedNumber.lid``). Never fails: without a mapping, just the jid given."""
+        if "@" not in jid:
+            jid = f"{jid}{WHATSAPP_JID_SUFFIX}"
+        from .models import AllowedNumber
+
+        phone_jid = lid = None
+        try:
+            if jid.endswith("@lid"):
+                lid = jid
+                number = AllowedNumber.objects.filter(lid=lid).first()
+                phone = number.phone if number else self._safe(self.resolve_phone, lid)
+                phone_jid = f"{phone}{WHATSAPP_JID_SUFFIX}" if phone else None
+            else:
+                phone_jid = jid
+                phone = jid.split("@")[0]
+                number = AllowedNumber.objects.filter(phone=phone).first()
+                lid = (number.lid if number and number.lid else None) or self._safe(self.resolve_lid, phone_jid)
+                if number is not None and lid and not number.lid:
+                    number.lid = lid
+                    number.save(update_fields=["lid", "updated_at"])
+        except RuntimeError:  # No database in this context (unit tests of the raw client): just the jid given.
+            return [jid]
+        return [j for j in (phone_jid, lid) if j]
+
+    @staticmethod
+    def _safe(func, arg):
+        try:
+            return func(arg)
+        except EvolutionError as exc:
+            logger.warning("evolution: %s(%s) failed: %s", func.__name__, arg, exc)
+            return None
+
+    def resolve_lid(self, phone_jid: str) -> str | None:
+        """The LID of a phone: any message addressed by LID carries the phone in
+        ``key.remoteJidAlt`` (verified on the real instance, 10/10)."""
+        for record in self._page({"key": {"remoteJidAlt": phone_jid}}):
+            remote = (record.get("key") or {}).get("remoteJid") or ""
+            if remote.endswith("@lid"):
+                return remote
+        return None
+
+    def resolve_phone(self, lid: str) -> str | None:
+        """The phone digits behind a LID, from ``remoteJidAlt``/``senderPn`` of its messages."""
+        for record in self._page({"key": {"remoteJid": lid}}):
+            key = record.get("key") or {}
+            for name in ("remoteJidAlt", "senderPn", "previousRemoteJid"):
+                alt = key.get(name) or record.get(name) or ""
+                if alt.endswith(WHATSAPP_JID_SUFFIX):
+                    return alt.split("@")[0]
+        return None
+
+    def _page(self, where: dict) -> list[dict]:
+        data = self._request("POST", f"/chat/findMessages/{self.instance}", json={"where": where, "offset": 25, "page": 1})
+        block = data.get("messages") if isinstance(data, dict) else None
+        records = block.get("records") if isinstance(block, dict) else data
+        return [record for record in (records or []) if isinstance(record, dict)]
+
+    def find_chat_messages(self, jid: str, since: SinceType, *, limit: int = 300) -> list[dict]:
         """Raw message records of one chat since ``since``, oldest first.
 
         Records are what Evolution stores (``key``, ``message``, ``messageTimestamp``

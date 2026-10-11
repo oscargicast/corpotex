@@ -570,15 +570,18 @@ class Loader:
     # --- orchestration ----------------------------------------------------------------------
 
     def wipe(self):
-        """Demo data only: never users, tokens, the WhatsApp onboarding state nor the style."""
+        """Demo data only: never users, tokens, the WhatsApp onboarding state, the style nor the
+        dashboard chats (a reseed during a demo must not swallow what someone just asked)."""
+        from messaging.models import Turn
         from operations.models import Route
 
         Route.objects.all().delete()
-        for model in (Message, Conversation, Alert, Decision, StatusChange, Payment, Delivery, ProgressReport, PurchaseOrderItem, PurchaseOrder, Requirement, OrderItem, Order, Rate, AllowedNumber, Supplier, ProductMaterial, Product, Material, Customer, Brand):
+        supplier_chats = Conversation.objects.exclude(channel=Conversation.Channel.DASHBOARD)
+        Turn.objects.filter(conversation__in=supplier_chats).delete()
+        Message.objects.filter(conversation__in=supplier_chats).delete()
+        supplier_chats.delete()
+        for model in (Alert, Decision, StatusChange, Payment, Delivery, ProgressReport, PurchaseOrderItem, PurchaseOrder, Requirement, OrderItem, Order, Rate, AllowedNumber, Supplier, ProductMaterial, Product, Material, Customer, Brand):
             model.objects.all().delete()
-        from messaging.models import Turn
-
-        Turn.objects.all().delete()
 
     EXIT_NOTES = {
         "cancelled": "Cancelado por el Gerente",

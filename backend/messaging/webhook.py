@@ -113,13 +113,20 @@ def _handle_from_me(conversation, external_id, text, sent_at):
         return None
 
 
+LID_PHONE_KEYS = ("remoteJidAlt", "senderPn", "previousRemoteJid", "participantAlt")
+
+
 def _identify(data: dict, remote_jid: str) -> tuple[str | None, str | None]:
-    """Baileys may send `<id>@lid` instead of the phone; the number is in `remoteJidAlt`
-    or `senderPn` (verified against a real payload in B3.7)."""
+    """WhatsApp may address a chat by `<id>@lid` instead of the phone (verified on the real
+    instance on 10/10: Valeria's chat is a LID). The phone then travels in `key.remoteJidAlt`,
+    `senderPn` or `previousRemoteJid`, on the key or on the payload."""
     key = data.get("key") or {}
     if remote_jid.endswith("@lid"):
-        alt = key.get("remoteJidAlt") or data.get("remoteJidAlt") or key.get("senderPn") or data.get("senderPn") or ""
-        return (alt.split("@")[0] or None), remote_jid
+        for name in LID_PHONE_KEYS:
+            alt = key.get(name) or data.get(name) or ""
+            if alt.endswith("@s.whatsapp.net"):
+                return alt.split("@")[0], remote_jid
+        return None, remote_jid
     return remote_jid.split("@")[0] or None, None
 
 
@@ -130,7 +137,19 @@ def _allowed_number(phone, lid) -> AllowedNumber | None:
         if number:
             return number
     if lid:
-        return qs.filter(lid=lid).first()
+        number = qs.filter(lid=lid).first()
+        if number:
+            return number
+        # Unknown LID without the phone on the payload: ask Evolution once and cache it.
+        from .evolution import EvolutionClient, EvolutionError
+
+        try:
+            resolved = EvolutionClient.from_settings().resolve_phone(lid)
+        except EvolutionError as exc:
+            logger.warning("webhook: could not resolve %s: %s", lid, exc)
+            return None
+        if resolved:
+            return qs.filter(phone=resolved).first()
     return None
 
 
