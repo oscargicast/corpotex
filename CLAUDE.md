@@ -34,7 +34,7 @@ Flujo:
 2. Producción revisa y confirma.
 3. Los requerimientos de insumos quedan "por pedir" y se acumulan entre órdenes; Producción o el Gerente generan el pedido consolidado cuando lo ven necesario (el asistente lo sugiere a tiempo). Los pedidos de taller y producto terminado salen por orden. El sistema asigna proveedor por histórico (cumplimiento, precio, carga). El Gerente confirma o cambia antes de aprobar; el cambio alimenta el histórico (ADR 0025).
 4. El agente conversa con el proveedor, responde dudas y acuerda fecha. Si se cumplen todos los términos, cierra el pedido solo y actualiza pedido y orden. Si es decisión de jefe (precio, términos), no decide: crea una decisión pendiente para el Gerente y espera.
-5. Seguimiento: cualquier retraso o riesgo al plazo crea una alerta para el Gerente y marca la orden en peligro.
+5. Seguimiento: cualquier retraso o riesgo al plazo crea una alerta para el Gerente y marca la orden en peligro. El seguimiento proactivo al proveedor lo configura el Gerente en Configuración → Seguimiento (modo mínimo, balanceado o alto, rango horario y días hábiles); el agente escribe como máximo una vez por proveedor y día, más un recordatorio si no responde, y decide si vale la pena escribir (ADR 0027).
 
 Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden por ruta crítica, permisos por rol (el equipo ve el nombre del proveedor, no su número; las conversaciones con proveedores y el simulador solo los ve el Gerente: Comercial y Producción ven avances, fotos, estado y fechas, nunca el texto de WhatsApp. Pedido de Oscar, 10/10 20:50).
 
