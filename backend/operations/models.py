@@ -325,11 +325,12 @@ class Route(TimeStamped):
 
 class RouteStop(TimeStamped):
     class Kind(models.TextChoices):
-        PICKUP = "pickup", "Recojo"
+        PLANT = "plant", "Planta"
+        PICKUP = "pickup", "Recojo"  # Kept for old rows; nothing generates pickups since 10/10 23:35.
         DELIVERY = "delivery", "Entrega"
 
     route = models.ForeignKey(Route, on_delete=models.CASCADE, related_name="stops")
-    position = models.PositiveSmallIntegerField(help_text="0 and the last one are the plant.")
+    position = models.PositiveSmallIntegerField(help_text="0 and the last one are the plant (kind=plant).")
     kind = models.CharField(max_length=10, choices=Kind.choices)
     supplier = models.ForeignKey(Supplier, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     customer = models.ForeignKey(Customer, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")

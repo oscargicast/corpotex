@@ -643,15 +643,17 @@ def redistribute(po: PurchaseOrder):
     its supplier. The new purchase orders carry `redistributed_from`; the decision carries
     `before`, `after` and `cancelled`."""
     requirements = [i.requirement for i in po.items.select_related("requirement__order")]
-    for order in {r.order for r in requirements}:
+    orders = {r.order for r in requirements}
+    old_dates = {order.id: order.estimated_on or order.promised_on for order in orders}  # Delivery days as planned.
+    for order in orders:
         compute_critical_path(order)
     created, decision = match_requirements(requirements, exclude=po.supplier, redistributed_from=po)
-    for order in {r.order for r in requirements}:
+    for order in orders:
         compute_critical_path(order)
     if decision is not None:
         from .routes import propose_for_redistribution
 
-        before, after = propose_for_redistribution(created, po)
+        before, after = propose_for_redistribution(orders, old_dates)
         if after is not None:
             detail = dict(decision.detail)
             detail["before"] = {**(detail.get("before") or {}), "route_id": before.id}

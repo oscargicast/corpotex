@@ -86,7 +86,9 @@ def test_d1_eight_steps(manager_client, sales_client, manager, sales, production
     # (4) The workshop of PT-0038 cancels mid-way: redistribution, decision, new route, order at risk.
     scene_po = PurchaseOrder.objects.get(code="PT-0038")
     scene_order = scene_po.items.first().requirement.order
-    old_route = Route.objects.get(date=scene_po.committed_on, status="planned")
+    old_delivery_day = scene_order.estimated_on or scene_order.promised_on
+    old_route = Route.objects.get(date=old_delivery_day, status="planned")
+    assert old_route.stops.filter(order=scene_order).exists()  # Caja Piura's delivery, as planned.
     scene_po, created, decision = services.cancel_by_supplier(scene_po, reason="se me malogró la máquina")
     assert scene_po.status == "cancelled_by_supplier" and len(created) >= 2
     assert all(po.redistributed_from == scene_po and po.status == "suggested" for po in created)
@@ -98,6 +100,8 @@ def test_d1_eight_steps(manager_client, sales_client, manager, sales, production
     manager_services.run_monitor()  # The next tick.
     scene_order.refresh_from_db()
     assert scene_order.risk in ("at_risk", "in_danger")
+    assert proposed.date == scene_order.estimated_on and proposed.date != old_delivery_day  # The delivery moved to the new day.
+    assert proposed.stops.filter(order=scene_order).exists()
     pending = manager_client.get("/api/manager/pending/").json()
     assert decision.id in {d["id"] for d in pending["decisions"]}
 
@@ -107,7 +111,9 @@ def test_d1_eight_steps(manager_client, sales_client, manager, sales, production
     assert decision.status == "approved"
     routes = manager_client.get("/api/routes/?current=1").json()
     assert routes["current"]["id"] == proposed.id and routes["replaced"]["id"] == old_route.id
-    assert {s["purchase_order"]["code"] for s in routes["replaced"]["stops"] if s["purchase_order"]} == {"PT-0038"}
+    assert routes["current"]["name"].startswith("Entregas del") and "antes" in routes["current"]["name"]
+    assert {s["order"]["code"] for s in routes["replaced"]["stops"] if s["order"]} >= {scene_order.code}
+    assert {s["kind"] for s in routes["current"]["stops"]} == {"plant", "delivery"}
 
     # (6) Sales sees the notice without prices.
     sales_order = sales_client.get(f"/api/orders/{scene_order.id}/").json()

@@ -565,12 +565,23 @@ class RouteSerializer(serializers.ModelSerializer):
     """Routes carry no prices: every role reads them."""
 
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    name = serializers.SerializerMethodField()
     stops = RouteStopSerializer(many=True, read_only=True)
     stops_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Route
-        fields = ["id", "date", "status", "status_display", "distance_km", "duration_min", "path", "recalculated_from", "stops_count", "stops", "created_at"]
+        fields = ["id", "name", "date", "status", "status_display", "distance_km", "duration_min", "path", "recalculated_from", "stops_count", "stops", "created_at"]
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_name(self, obj):
+        """What the map shows: the delivery day, and whether it recalculates an earlier plan."""
+        name = f"Entregas del {obj.date:%d/%m}"
+        if obj.recalculated_from_id and obj.recalculated_from.date != obj.date:
+            name += f" (antes {obj.recalculated_from.date:%d/%m})"
+        elif obj.recalculated_from_id:
+            name += " (recalculada)"
+        return name
 
     @extend_schema_field(OpenApiTypes.INT)
     def get_stops_count(self, obj):
