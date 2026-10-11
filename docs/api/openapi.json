@@ -1585,6 +1585,65 @@
                 }
             }
         },
+        "/api/orders/{id}/revise/": {
+            "post": {
+                "operationId": "orders_revise_create",
+                "description": "ADR 0029 §4, manager and production: the technical sheet changed by an instruction.\n`dry_run` proposes without saving; `proposal` applies a dry run's proposal exactly, without\nthe model; neither proposes and applies at once. 400 when the instruction is not understood\nor changes nothing, 502 when the model fails.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este orden.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReviseInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReviseInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReviseInRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReviseResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/orders/break-down/": {
             "post": {
                 "operationId": "orders_break_down_create",
@@ -6525,6 +6584,9 @@
                         "description": "Some item has no catalogue product yet (ADR 0025 C)."
                     },
                     "critical_path": {},
+                    "stage_overrides": {
+                        "description": "Days per in-plant stage for this order only, over Config.stage_durations, e.g. {\"cutting\": 3} (ADR 0029)."
+                    },
                     "items": {
                         "type": "array",
                         "items": {
@@ -6941,7 +7003,7 @@
                     "cancelled"
                 ],
                 "type": "string",
-                "description": "* `registered` - Registrada\n* `broken_down` - Desglosada\n* `confirmed` - Confirmada\n* `sourcing` - En abastecimiento\n* `in_production` - En producción\n* `ready` - Lista\n* `delivered` - Entregada\n* `cancelled` - Cancelada"
+                "description": "* `registered` - Registrada\n* `broken_down` - Con ficha técnica\n* `confirmed` - Confirmada\n* `sourcing` - En abastecimiento\n* `in_production` - En producción\n* `ready` - Lista\n* `delivered` - Entregada\n* `cancelled` - Cancelada"
             },
             "PatchedDispatchPatchRequest": {
                 "type": "object",
@@ -8531,6 +8593,227 @@
                 ],
                 "type": "string",
                 "description": "* `open` - Por pedir\n* `ordered` - Pedido\n* `covered` - Cubierto"
+            },
+            "ReviseInRequest": {
+                "type": "object",
+                "properties": {
+                    "instruction": {
+                        "type": "string",
+                        "description": "E.g. \"agrega 2 botones por polo\", \"el corte toma 3 días\".",
+                        "maxLength": 1000
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Propose without saving."
+                    },
+                    "proposal": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ReviseProposalRequest"
+                            }
+                        ],
+                        "description": "A dry run's proposal, applied exactly without calling the model; wins over `instruction`."
+                    }
+                }
+            },
+            "ReviseItem": {
+                "type": "object",
+                "properties": {
+                    "item_id": {
+                        "type": "integer"
+                    },
+                    "product": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ReviseProduct"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "current": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ClassificationMaterial"
+                        },
+                        "readOnly": true,
+                        "description": "The item's recipe per garment before the change."
+                    },
+                    "materials": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ClassificationMaterial"
+                        },
+                        "description": "The full new recipe per garment; a material left out leaves the recipe."
+                    }
+                },
+                "required": [
+                    "current",
+                    "item_id",
+                    "materials",
+                    "product",
+                    "quantity"
+                ]
+            },
+            "ReviseItemRequest": {
+                "type": "object",
+                "properties": {
+                    "item_id": {
+                        "type": "integer"
+                    },
+                    "materials": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ClassificationMaterialRequest"
+                        },
+                        "description": "The full new recipe per garment; a material left out leaves the recipe."
+                    }
+                },
+                "required": [
+                    "item_id",
+                    "materials"
+                ]
+            },
+            "ReviseProduct": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "name"
+                ]
+            },
+            "ReviseProductRequest": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "code",
+                    "name"
+                ]
+            },
+            "ReviseProposal": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ReviseItem"
+                        },
+                        "description": "Only the items whose recipe changes."
+                    },
+                    "stage_overrides": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer",
+                            "maximum": 60,
+                            "minimum": 0
+                        },
+                        "description": "New days per plant stage: cutting, sublimation, embroidery, sewing, finishing. Only the stages that change."
+                    },
+                    "stage_current": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        },
+                        "readOnly": true,
+                        "description": "Today's days of each stage in `stage_overrides`."
+                    },
+                    "stage_labels": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "readOnly": true,
+                        "description": "The critical path's name of each stage in `stage_overrides`."
+                    }
+                },
+                "required": [
+                    "items",
+                    "stage_current",
+                    "stage_labels"
+                ]
+            },
+            "ReviseProposalRequest": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ReviseItemRequest"
+                        },
+                        "description": "Only the items whose recipe changes."
+                    },
+                    "stage_overrides": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer",
+                            "maximum": 60,
+                            "minimum": 0
+                        },
+                        "description": "New days per plant stage: cutting, sublimation, embroidery, sewing, finishing. Only the stages that change."
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
+            "ReviseResult": {
+                "type": "object",
+                "properties": {
+                    "proposal": {
+                        "$ref": "#/components/schemas/ReviseProposal"
+                    },
+                    "summary": {
+                        "type": "string",
+                        "description": "What changes, in Spanish."
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Requirements already ordered, left untouched."
+                    },
+                    "estimated_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "The order's estimate with the change."
+                    },
+                    "order": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/OrderDetail"
+                            }
+                        ],
+                        "description": "Only when the change was applied."
+                    }
+                },
+                "required": [
+                    "estimated_on",
+                    "proposal",
+                    "summary",
+                    "warnings"
+                ]
             },
             "Route": {
                 "type": "object",

@@ -13,7 +13,7 @@ from suppliers.models import Supplier, SupplierKind
 class Order(TimeStamped):
     class Status(models.TextChoices):
         REGISTERED = "registered", "Registrada"
-        BROKEN_DOWN = "broken_down", "Desglosada"
+        BROKEN_DOWN = "broken_down", "Con ficha técnica"
         CONFIRMED = "confirmed", "Confirmada"
         SOURCING = "sourcing", "En abastecimiento"
         IN_PRODUCTION = "in_production", "En producción"
@@ -47,6 +47,7 @@ class Order(TimeStamped):
     needs_classification = models.BooleanField(default=False, help_text="Some item has no catalogue product yet (ADR 0025 C).")
     estimated_on = models.DateField(null=True, blank=True, help_text="From the critical path.")
     critical_path = models.JSONField(default=list)
+    stage_overrides = models.JSONField(default=dict, blank=True, help_text='Days per in-plant stage for this order only, over Config.stage_durations, e.g. {"cutting": 3} (ADR 0029).')
     risk = models.CharField(max_length=20, choices=Risk.choices, default=Risk.OK)
     risk_reason = models.CharField(max_length=200, blank=True)
     # Dispatch to the customer (ADR 0026): Produccion can move a ready order to another day, and
@@ -76,6 +77,10 @@ class OrderItem(TimeStamped):
     description = models.TextField(blank=True, help_text="What the customer asked for when no catalogue product fits (ADR 0025 C).")
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Sale price; empty when the form does not know it yet.")
     photo = models.ImageField(upload_to="items/", blank=True, help_text="The garment's reference photo from the order form (ADR 0029 N1).")
+    bom_override = models.JSONField(
+        null=True, blank=True,
+        help_text='This order\'s recipe for the item, over the product\'s: [{"material_id": 3, "qty_per_unit": "0.30"}] (ADR 0029).',
+    )
 
     class Meta:
         verbose_name = "ítem de orden"

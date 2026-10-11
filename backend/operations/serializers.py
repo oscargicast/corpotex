@@ -233,6 +233,7 @@ class OrderDetailSerializer(StatusHistoryMixin, OrderListSerializer):
             "notes",
             "needs_classification",
             "critical_path",
+            "stage_overrides",
             "items",
             "requirements",
             "purchase_orders",

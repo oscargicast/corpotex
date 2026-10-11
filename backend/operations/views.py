@@ -193,6 +193,45 @@ class DescribeImageResultSerializer(serializers.Serializer):
     description = serializers.CharField()
 
 
+# ADR 0029 §4 (N2): the technical sheet edited by an instruction. What a dry run proposes is what
+# the apply call takes back; `current`, `stage_current` and `stage_labels` are for the diff.
+class ReviseProductSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    name = serializers.CharField()
+
+
+class ReviseItemSerializer(serializers.Serializer):
+    item_id = serializers.IntegerField()
+    product = ReviseProductSerializer(read_only=True)
+    quantity = serializers.IntegerField(read_only=True)
+    current = ClassificationMaterialSerializer(many=True, read_only=True, help_text="The item's recipe per garment before the change.")
+    materials = ClassificationMaterialSerializer(many=True, help_text="The full new recipe per garment; a material left out leaves the recipe.")
+
+
+class ReviseProposalSerializer(serializers.Serializer):
+    items = ReviseItemSerializer(many=True, help_text="Only the items whose recipe changes.")
+    stage_overrides = serializers.DictField(
+        child=serializers.IntegerField(min_value=0, max_value=60), required=False, default=dict,
+        help_text="New days per plant stage: cutting, sublimation, embroidery, sewing, finishing. Only the stages that change.",
+    )
+    stage_current = serializers.DictField(child=serializers.IntegerField(), read_only=True, help_text="Today's days of each stage in `stage_overrides`.")
+    stage_labels = serializers.DictField(child=serializers.CharField(), read_only=True, help_text="The critical path's name of each stage in `stage_overrides`.")
+
+
+class ReviseInSerializer(serializers.Serializer):
+    instruction = serializers.CharField(required=False, allow_blank=True, max_length=1000, help_text='E.g. "agrega 2 botones por polo", "el corte toma 3 días".')
+    dry_run = serializers.BooleanField(default=False, help_text="Propose without saving.")
+    proposal = ReviseProposalSerializer(required=False, help_text="A dry run's proposal, applied exactly without calling the model; wins over `instruction`.")
+
+
+class ReviseResultSerializer(serializers.Serializer):
+    proposal = ReviseProposalSerializer()
+    summary = serializers.CharField(help_text="What changes, in Spanish.")
+    warnings = serializers.ListField(child=serializers.CharField(), help_text="Requirements already ordered, left untouched.")
+    estimated_on = serializers.DateField(allow_null=True, help_text="The order's estimate with the change.")
+    order = OrderDetailSerializer(required=False, help_text="Only when the change was applied.")
+
+
 class KeyedClassificationItemSerializer(serializers.Serializer):
     """One line confirmed in the form: the `classify-draft` proposal, edited, by `key`."""
 
@@ -443,6 +482,31 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             logger.exception("describe-image failed")
             return Response({"detail": "No se pudo describir la foto. Escribe la prenda a mano."}, status=status.HTTP_502_BAD_GATEWAY)
         return Response({"description": text})
+
+    @extend_schema(request=ReviseInSerializer, responses={200: ReviseResultSerializer})
+    @action(detail=True, methods=["post"], permission_classes=[IsManagerOrProduction])
+    def revise(self, request, pk=None):
+        """ADR 0029 §4, manager and production: the technical sheet changed by an instruction.
+        `dry_run` proposes without saving; `proposal` applies a dry run's proposal exactly, without
+        the model; neither proposes and applies at once. 400 when the instruction is not understood
+        or changes nothing, 502 when the model fails."""
+        from . import revise as revision
+
+        order = self.get_object()
+        data = ReviseInSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        body = data.validated_data
+        try:
+            result = revision.revise_order(order, body.get("instruction"), actor=request.user, dry_run=body["dry_run"], proposal=body.get("proposal"))
+        except PermissionDenied as exc:
+            _forbidden(exc)
+        except (UnknownReference, revision.NotUnderstood) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except revision.ModelFailed as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        if not body["dry_run"]:
+            result["order"] = self.detail_response(order).data
+        return Response(result)
 
     @extend_schema(request=None, responses={200: OrderDetailSerializer})
     @action(detail=True, methods=["post"])

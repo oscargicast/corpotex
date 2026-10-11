@@ -81,11 +81,11 @@ def classify_model() -> str:
     return getattr(settings, "CLASSIFY_MODEL", "") or getattr(settings, "AGENT_MODEL", "sonnet")
 
 
-def complete_sync(prompt: str, *, schema: dict) -> dict:
+def complete_sync(prompt: str, *, schema: dict, system_prompt: str = SYSTEM_PROMPT) -> dict:
     """Claude, one structured call (wrapped so tests can mock it and views stay sync)."""
     from agent.sdk import complete
 
-    coro = complete(prompt, system_prompt=SYSTEM_PROMPT, model=classify_model(), schema=schema, effort="low", max_turns=COMPLETE_MAX_TURNS)
+    coro = complete(prompt, system_prompt=system_prompt, model=classify_model(), schema=schema, effort="low", max_turns=COMPLETE_MAX_TURNS)
     try:
         asyncio.get_running_loop()
     except RuntimeError:
@@ -176,7 +176,6 @@ def _classify_item(item: OrderItem, order: Order, products, materials, timings: 
     customer = order.customer if order.customer_id else None  # a draft (ADR 0028) may have no customer yet
     state = f"Pedido de {customer.name}, marca {order.brand.name}: {text}" if customer else f"Pedido para la marca {order.brand.name}: {text}"
     by_code = {p.code: p for p in products}
-    by_sku = {m.sku: m for m in materials}
 
     budget = jev.Budget()  # Jev's time for this item; past it, Claude alone.
 
@@ -211,10 +210,21 @@ def _classify_item(item: OrderItem, order: Order, products, materials, timings: 
         return _catalogue_answer(item, text, existing, base)
     product_out = {"new": {"code": _slug_code(product_block.get("code") or "", order.brand.name, product_block.get("name") or text), "name": product_block.get("name") or text[:160], "brand": product_block.get("brand") or order.brand.name}}
 
+    materials_out = resolve_materials(state, proposal.get("materials") or [], materials, base=base, timings=timings, budget=budget)
+    return {"item_id": item.id, "description": text, "product": product_out, "confidence": round(base, 2), "materials": materials_out}
+
+
+def resolve_materials(state: str, proposed_raw: list[dict], materials, *, base: float, timings: dict | None = None, budget=None) -> list[dict]:
+    """Claude's proposed materials, checked the classifier's way: plant processes dropped (#87),
+    a "new" one that extends a known SKU stays the known one, Jev confirms the existing ones in
+    one call. Shared with the technical sheet revision (ADR 0029)."""
+    timings = {} if timings is None else timings
+    budget = budget or jev.Budget()
+    by_sku = {m.sku: m for m in materials}
     materials_out = []
     by_name = {x.name.strip().lower(): x for x in materials}
     # Plant processes are never something to buy (#87): they are dropped before anyone is asked.
-    proposed = [m for m in proposal.get("materials") or [] if not (PROCESS.match(m.get("name") or "") and not (m.get("existing_sku") or "").strip())]
+    proposed = [m for m in proposed_raw or [] if not (PROCESS.match(m.get("name") or "") and not (m.get("existing_sku") or "").strip())]
     # 3. Jev checks every proposed material against the known SKUs (+ nuevo) in ONE call.
     sku_criteria = {**{x.sku: f"{x.name}, {x.kind}, {x.unit}" for x in materials}, jev.NEW: "Insumo nuevo: ninguno de los existentes"}
     answers = _timed(
@@ -250,7 +260,7 @@ def _classify_item(item: OrderItem, order: Order, products, materials, timings: 
         else:
             new_sku = (m.get("sku") or "").strip().upper() or _slug_code("", "MAT", m.get("name") or "nuevo")
             materials_out.append({"new": {"sku": new_sku, "name": m.get("name") or new_sku, "kind": m.get("kind") if m.get("kind") in KINDS else "other", "unit": unit}, "qty_per_unit": str(m.get("qty_per_unit") or 0), "unit": unit, "confidence": confidence})
-    return {"item_id": item.id, "description": text, "product": product_out, "confidence": round(base, 2), "materials": materials_out}
+    return materials_out
 
 
 def _known_sku(sku: str, name: str, by_sku: dict, by_name: dict) -> str:
