@@ -559,45 +559,34 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
               </p>
             )}
 
-            <div>
-              <p className="font-medium">Insumos que necesita</p>
-              {needList.length ? (
+            {/* Counts only: each card already lists its materials (Oscar, 11/10 05:25). */}
+            <p className={needList.length || newProducts ? "" : "text-muted"}>
+              {needList.length || newProducts ? (
                 <>
-                  <ul className="mt-1.5 space-y-1">
-                    {needList.slice(0, 7).map((n) => (
-                      <li key={n.name} className="flex items-baseline justify-between gap-3">
-                        <span className="min-w-0">
-                          {n.name}
-                          {n.isNew && (
-                            <span className="ml-1.5 align-middle">
-                              <Pill tone="warning">Nuevo</Pill>
-                            </span>
-                          )}
-                        </span>
-                        <span className="shrink-0 tabular-nums text-muted">
-                          {fmt(n.total)} {unitLabel(n.unit)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  {needList.length > 7 && <p className="mt-1 text-xs text-muted">y {needList.length - 7} más</p>}
-                  {pickedRecipes.length > 0 && <p className="mt-1 text-xs text-muted">Más la receta del catálogo de {pickedRecipes.join(" y ")}.</p>}
-                  {(newMaterials > 0 || newProducts > 0) && (
-                    <p className="mt-2 text-xs text-warning">
-                      {[
-                        newMaterials > 0 && `${newMaterials} ${plural(newMaterials, "insumo nuevo", "insumos nuevos")}`,
-                        newProducts > 0 && `${newProducts} ${plural(newProducts, "producto nuevo", "productos nuevos")}`,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                      : se crean al guardar.
-                    </p>
+                  <strong className="tabular-nums">{needList.length}</strong> {plural(needList.length, "insumo a comprar", "insumos a comprar")}
+                  {newMaterials > 0 && (
+                    <>
+                      {" · "}
+                      <span className="text-warning">
+                        {newMaterials} {plural(newMaterials, "nuevo", "nuevos")}
+                      </span>
+                    </>
                   )}
+                  {newProducts > 0 && (
+                    <>
+                      {" · "}
+                      <span className="text-warning">
+                        {newProducts} {plural(newProducts, "producto nuevo", "productos nuevos")}
+                      </span>
+                    </>
+                  )}
+                  {(newMaterials > 0 || newProducts > 0) && ": se crean al guardar"}
+                  {pickedRecipes.length > 0 && <span className="text-muted"> (más la receta del catálogo de {pickedRecipes.join(" y ")})</span>}
                 </>
               ) : (
-                <p className="mt-1 text-muted">Aparecen al reconocer los ítems.</p>
+                "Los insumos aparecen al reconocer los ítems."
               )}
-            </div>
+            </p>
 
             <div className={`flex items-start gap-2 rounded-lg px-3 py-2.5 ${promisedDays === null ? "bg-canvas" : atRisk ? "bg-danger-soft text-danger" : "bg-success-soft text-success"}`}>
               {atRisk ? <TriangleAlert size={16} className="mt-0.5 shrink-0" aria-hidden /> : <CalendarClock size={16} className="mt-0.5 shrink-0" aria-hidden />}
