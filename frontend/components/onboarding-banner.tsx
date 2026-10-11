@@ -14,12 +14,12 @@ export function OnboardingBanner() {
   const next = missing[0];
   return (
     <Link
-      href={`/onboarding/${next.slug}`}
+      href={`/settings/${next.slug}`}
       className="flex items-center gap-3 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning ring-1 ring-warning/20 hover:bg-warning-soft/80"
     >
       <ListChecks size={18} className="shrink-0" />
       <span>
-        Falta{missing.length > 1 ? "n" : ""} {missing.length} paso{missing.length > 1 ? "s" : ""} del onboarding: {missing.map((s) => s.label).join(", ")}.{" "}
+        Falta{missing.length > 1 ? "n" : ""} {missing.length} paso{missing.length > 1 ? "s" : ""} de la configuración: {missing.map((s) => s.label).join(", ")}.{" "}
         <span className="font-semibold underline">Continuar con {next.label}</span>
       </span>
     </Link>

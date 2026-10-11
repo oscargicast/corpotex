@@ -2,13 +2,11 @@ import {
   ClipboardList,
   Factory,
   LayoutDashboard,
-  ListChecks,
   Boxes,
   type LucideIcon,
   Map,
   MessagesSquare,
   Package,
-  PenLine,
   Settings,
   ShoppingCart,
 } from "lucide-react";
@@ -30,9 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/suppliers", label: "Proveedores", icon: Factory, roles: ["manager"] },
   { href: "/routes", label: "Rutas", icon: Map, roles: ["manager", "production"] },
   { href: "/simulator", label: "Simulador", icon: MessagesSquare, roles: ["manager"] },
-  { href: "/style", label: "Estilo", icon: PenLine, roles: ["manager"] },
-  { href: "/onboarding", label: "Onboarding", icon: ListChecks, roles: ["manager"] },
-  { href: "/settings/claude", label: "Configuración", icon: Settings, roles: ["manager"] },
+  { href: "/settings", label: "Configuración", icon: Settings, roles: ["manager"] },
 ];
 
 export function navFor(role: Role): NavItem[] {

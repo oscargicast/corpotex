@@ -144,14 +144,14 @@ async function main() {
   const W = { width: 1920, height: 1080 };
   const M = { width: 390, height: 844 };
 
-  // 1 and 2: Monitor and onboarding (single wide window).
+  // 1 and 2: Monitor and Configuración (single wide window).
   await segment(browser, "01-monitor", [W], async ([g]) => {
     await login(g, "gerente");
     await g.goto(`${BASE}/`);
     await settle(g, 6000);
-    await g.goto(`${BASE}/onboarding`);
+    await g.goto(`${BASE}/settings`);
     await settle(g, 3000);
-    await g.goto(`${BASE}/onboarding/style`);
+    await g.goto(`${BASE}/settings/style`);
     await settle(g, 6000);
   });
 

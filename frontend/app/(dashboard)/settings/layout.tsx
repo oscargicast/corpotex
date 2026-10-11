@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import { RoleGate } from "@/components/require-auth";
 import { useOnboarding } from "@/lib/onboarding";
 
-export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
+// Configuración: the four setup steps (ADR 0011) with their state, above every step page.
+export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
     <RoleGate roles={["manager"]}>
       <Stepper />
@@ -20,14 +21,14 @@ function Stepper() {
   const steps = useOnboarding();
   return (
     <div className="mb-5">
-      <h1 className="text-2xl font-bold tracking-tight">Onboarding</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Configuración</h1>
       <ol className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {steps.map((step, i) => {
-          const active = pathname === `/onboarding/${step.slug}`;
+          const active = pathname === `/settings/${step.slug}`;
           return (
             <li key={step.slug}>
               <Link
-                href={`/onboarding/${step.slug}`}
+                href={`/settings/${step.slug}`}
                 aria-current={active ? "step" : undefined}
                 className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1 ${active ? "bg-ink text-white ring-ink" : "bg-surface ring-line hover:bg-canvas"}`}
               >

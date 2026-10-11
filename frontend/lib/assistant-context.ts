@@ -12,8 +12,7 @@ const VIEWS: [RegExp, string, string?][] = [
   [/^\/inventory/, "inventory"],
   [/^\/routes/, "routes"],
   [/^\/simulator/, "simulator"],
-  [/^\/style/, "style"],
-  [/^\/onboarding/, "onboarding"],
+  [/^\/settings/, "onboarding"],
 ];
 
 export function contextFor(path: string): AssistantContext {

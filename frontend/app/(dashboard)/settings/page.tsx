@@ -11,7 +11,7 @@ const ABOUT: Record<string, string> = {
   style: "Cómo escribe el Gerente, sacado de sus chats.",
 };
 
-export default function OnboardingIndex() {
+export default function SettingsIndex() {
   const steps = useOnboarding();
   const next = steps.find((s) => s.done === false);
   return (
@@ -19,7 +19,7 @@ export default function OnboardingIndex() {
       {next ? (
         <p className="text-sm">
           Siguiente paso:{" "}
-          <Link href={`/onboarding/${next.slug}`} className="font-semibold text-accent hover:underline">
+          <Link href={`/settings/${next.slug}`} className="font-semibold text-accent hover:underline">
             {next.label}
           </Link>
           . {ABOUT[next.slug]}
