@@ -10,7 +10,13 @@ from agent import sdk, worker
 log = logging.getLogger(__name__)
 
 
-@shared_task(name="agent.tasks.run_turn", queue="turns", acks_late=True, soft_time_limit=180)
+@shared_task(
+    name="agent.tasks.run_turn",
+    queue="turns",
+    acks_late=True,
+    soft_time_limit=90,  # backstop: sdk.run already gives up at 80 s and kills the CLI
+    time_limit=120,  # hard kill; the turn then stays `running` until the tick sweeps it
+)
 def run_turn(conversation_id: int) -> None:
     """Claim this conversation's turn and run it. A duplicate or early task is a no-op."""
     from core.claude_account import mark_claude_disconnected
@@ -25,7 +31,7 @@ def run_turn(conversation_id: int) -> None:
         # Not the turn's fault: back to pending without an attempt, queue paused (ADR 0022).
         mark_claude_disconnected(str(e), batch=batch)
         return
-    except SoftTimeLimitExceeded:
+    except (sdk.TurnTimeout, SoftTimeLimitExceeded):
         finish_turn(batch, None, error="timeout")
         return
     except Exception as e:

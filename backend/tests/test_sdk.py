@@ -152,3 +152,13 @@ def test_complete_without_structured_output_fails_loudly(monkeypatch):
     monkeypatch.setattr(sdk, "query", fake_query(result()))
     with pytest.raises(sdk.ClaudeSDKError):
         asyncio.run(sdk.complete("p", system_prompt="s", model="sonnet", schema={"type": "object"}))
+
+
+def test_hung_cli_raises_turn_timeout_quickly(monkeypatch):
+    async def hung_query(*, prompt, options):
+        await asyncio.sleep(30)
+        yield result()
+
+    monkeypatch.setattr(sdk, "query", hung_query)
+    with pytest.raises(sdk.TurnTimeout):
+        asyncio.run(sdk.run("hola", options(), timeout=0.05))
