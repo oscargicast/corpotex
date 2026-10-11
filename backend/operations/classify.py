@@ -142,17 +142,22 @@ def classify_order(order: Order, *, actor) -> dict:
     return {"order_id": order.id, "items": items}
 
 
-def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
-    """Times each stage in the log (orquestador, 11/10 04:30: measure before optimising)."""
+PHASES = ("full", "product", "recipe")
+
+
+def classify_item(item: OrderItem, order: Order, products, materials, *, phase: str = "full") -> dict:
+    """Times each stage in the log (orquestador, 11/10 04:30: measure before optimising).
+    `phase` (ADR 0028 §3c): `product` stops after Jev's product choice, `recipe` skips it."""
     timings: dict[str, float] = {}
     started = time.monotonic()
     try:
-        result = _classify_item(item, order, products, materials, timings)
+        result = _classify_item(item, order, products, materials, timings, phase=phase)
     finally:
         timings["total"] = time.monotonic() - started
         logger.info(
-            "classify_item %s: %s",
+            "classify_item %s [%s]: %s",
             (item.description or "")[:40],
+            phase,
             " ".join(f"{k}={v:.2f}s" for k, v in timings.items()),
         )
     return result
@@ -166,7 +171,7 @@ def _timed(timings: dict, key: str, fn, *args, **kwargs):
         timings[key] = timings.get(key, 0.0) + time.monotonic() - started
 
 
-def _classify_item(item: OrderItem, order: Order, products, materials, timings: dict) -> dict:
+def _classify_item(item: OrderItem, order: Order, products, materials, timings: dict, *, phase: str = "full") -> dict:
     text = _item_text(item)
     customer = order.customer if order.customer_id else None  # a draft (ADR 0028) may have no customer yet
     state = f"Pedido de {customer.name}, marca {order.brand.name}: {text}" if customer else f"Pedido para la marca {order.brand.name}: {text}"
@@ -178,9 +183,12 @@ def _classify_item(item: OrderItem, order: Order, products, materials, timings: 
     # 1. A catalogue product? Jev chooses when it is on.
     criteria = {p.code: f"{p.name} · {p.brand.name if p.brand else 'sin marca'} · {', '.join(pm.material.name for pm in p.materials.all())}" for p in products}
     criteria[jev.NEW] = "Prenda nueva: ninguna del catálogo corresponde"
-    picked = _timed(timings, "jev_product", jev.choose, state, criteria, "Elige el producto del catálogo que corresponde a la prenda pedida, o 'nuevo'.", budget=budget)
-    if picked and picked[0] in by_code and picked[1] >= MIN_CONFIDENCE:
-        return _catalogue_answer(item, text, by_code[picked[0]], picked[1])
+    if phase != "recipe":
+        picked = _timed(timings, "jev_product", jev.choose, state, criteria, "Elige el producto del catálogo que corresponde a la prenda pedida, o 'nuevo'.", budget=budget)
+        if picked and picked[0] in by_code and picked[1] >= MIN_CONFIDENCE:
+            return _catalogue_answer(item, text, by_code[picked[0]], picked[1])
+        if phase == "product":  # new, unsure, or Jev off: the recipe is the next call's job
+            return {"item_id": item.id, "status": "new_pending", "confidence": round(picked[1], 2) if picked else None}
 
     # 2. New (or unsure): Claude proposes the product and its bill of materials.
     prompt = (
@@ -382,10 +390,12 @@ def auto_classify_order(order: Order) -> tuple[int, list[OrderItem]]:
 MIN_DRAFT_TEXT = 12
 
 
-def classify_draft(brand: Brand, items: list[dict], *, customer=None) -> list[dict]:
+def classify_draft(brand: Brand, items: list[dict], *, customer=None, phase: str = "full") -> list[dict]:
     """`POST /api/orders/classify-draft/` (ADR 0028 §1): the `classify` proposal for lines still
     being written, nothing saved. Short lines or lines without a quantity come back `pending`
-    without calling any model; a model failure is that line's `error`, never the request's."""
+    without calling any model; a model failure is that line's `error`, never the request's.
+    By phase (§3c): `product` answers a catalogue line in full or `new_pending` without Claude;
+    `recipe` goes straight to Claude and Jev's materials; `full` does both."""
     draft = Order(brand=brand, customer=customer)
     products = materials = None
     results = []
@@ -397,13 +407,13 @@ def classify_draft(brand: Brand, items: list[dict], *, customer=None) -> list[di
         if products is None:
             products, materials = _catalogue()
         try:
-            proposal = classify_item(OrderItem(order=draft, description=text, quantity=int(quantity)), draft, products, materials)
+            proposal = classify_item(OrderItem(order=draft, description=text, quantity=int(quantity)), draft, products, materials, phase=phase)
         except Exception as exc:  # The form keeps working: this line shows the failure and can be saved unclassified.
             logger.warning("classify_draft: line %s failed: %s", key, exc)
             results.append({"key": key, "status": "error", "detail": f"No se pudo clasificar: {exc}"[:300]})
             continue
         proposal.pop("item_id", None)
-        results.append({"key": key, "status": "classified", **proposal})
+        results.append({"key": key, "status": "classified", **proposal})  # `new_pending` keeps its own status
     return results
 
 
