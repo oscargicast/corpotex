@@ -60,3 +60,15 @@ def _no_real_jev(settings):
     """Tests never call TypeSafe: the stack's .env carries a real `TYPESAFE_API_KEY` and the image
     has the SDK. Tests that exercise Jev use the stand-in SDK in test_classification.py."""
     settings.TYPESAFE_API_KEY = ""
+
+
+@pytest.fixture(autouse=True)
+def _fresh_classifier_caches():
+    """The catalogue cache and the cached Jev client live in the process: never across tests."""
+    from operations import classify, jev
+
+    classify.clear_catalogue_cache()
+    jev.reset_client()
+    yield
+    classify.clear_catalogue_cache()
+    jev.reset_client()

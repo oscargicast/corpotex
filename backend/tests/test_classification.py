@@ -207,10 +207,10 @@ class FakeClient:
     def __exit__(self, *exc):
         return False
 
-    def system_one(self, state, questions):
+    def system_one(self, state, questions, timeout=None):
         from types import SimpleNamespace
 
-        FakeClient.calls.append((state, dict(questions), self.kwargs))
+        FakeClient.calls.append((state, dict(questions), {**self.kwargs, "call_timeout": timeout}))
         step = FakeClient.script.pop(0)
         if isinstance(step, Exception):
             raise step
@@ -272,7 +272,7 @@ def test_jev_asks_the_product_then_every_material_in_one_call(order_with_new_gar
     assert set(product_call[1]) == {"choice"} and "UNI-POL-01" in product_call[1]["choice"].criteria
     assert set(materials_call[1]) == {"m0", "m1", "m2"}  # the embroidery was never asked
     assert set(materials_call[1]["m0"].criteria) == {"BOT-NX", "TEL-20", "nuevo"}
-    assert materials_call[2]["retry"] == {"max_retries": 0} and 0 < materials_call[2]["timeout"] <= jev.ITEM_BUDGET_SECONDS
+    assert materials_call[2]["retry"] == {"max_retries": 0} and 0 < materials_call[2]["call_timeout"] <= jev.ITEM_BUDGET_SECONDS
     rows = [(m.get("sku") or m["new"]["sku"], m["confidence"]) for m in item["materials"]]
     assert rows == [("TEL-20", 0.8), ("BOT-NUEVO", 0.8), ("CIE-NYL-60", 0.8)]
 
@@ -295,3 +295,52 @@ def test_jev_budget_counts_only_its_own_calls(settings, fake_sdk):
     fake_sdk.script = [{"choice": ("a", 0.7)}]
     assert jev.choose("x", {"a": "A", "nuevo": "N"}, budget=fresh) == ("a", 0.7, {"a": 0.7})
     assert fresh.remaining() < jev.ITEM_BUDGET_SECONDS
+
+
+
+@pytest.mark.django_db
+def test_the_classifier_and_the_photo_use_classify_model(order_with_new_garment, settings):
+    """CLASSIFY_MODEL (faster) for generation in the form; AGENT_MODEL stays for the agents."""
+    settings.CLASSIFY_MODEL, settings.AGENT_MODEL = "claude-sonnet-5-5", "claude-opus-5-5"
+    with mock.patch("agent.sdk.complete", new=mock.AsyncMock(return_value=CLAUDE_PROPOSAL)) as complete:
+        classify.complete_sync("prompt", schema=classify.PROPOSAL_SCHEMA)
+    assert complete.call_args.kwargs["model"] == "claude-sonnet-5-5" and complete.call_args.kwargs["effort"] == "low"
+    assert complete.call_args.kwargs["max_turns"] == 1  # no tools, one turn
+    from operations import describe
+
+    with mock.patch("agent.sdk.complete", new=mock.AsyncMock(return_value={"description": "Polo blanco"})) as complete:
+        describe.describe(b"img", "image/png")
+    assert complete.call_args.kwargs["model"] == "claude-sonnet-5-5" and complete.call_args.kwargs["max_turns"] == 1
+    settings.CLASSIFY_MODEL = ""
+    assert classify.classify_model() == "claude-opus-5-5"  # empty falls back to AGENT_MODEL
+
+
+@pytest.mark.django_db
+def test_the_catalogue_is_cached_until_it_changes(order_with_new_garment):
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    first = classify._catalogue()
+    with CaptureQueriesContext(connection) as again:
+        second = classify._catalogue()
+    assert second is first and len(again) == 3  # only the three version aggregates
+    Material.objects.create(sku="TEL-NUEVA", name="Tela nueva", kind="fabric", unit="m", stock=0)
+    third = classify._catalogue()
+    assert third is not first and "TEL-NUEVA" in {m.sku for m in third[1]}
+    classify._catalogue_cache["at"] -= classify.CATALOGUE_TTL + 1  # stale by age even if nothing changed
+    assert classify._catalogue() is not third
+
+
+def test_the_jev_client_is_built_once_per_process(settings, fake_sdk):
+    built = []
+    original = fake_sdk.__init__
+
+    def counting(self, **kwargs):
+        built.append(kwargs)
+        original(self, **kwargs)
+
+    with mock.patch.object(fake_sdk, "__init__", counting):
+        fake_sdk.script = [{"choice": ("a", 0.9)}, {"choice": ("a", 0.8)}]
+        jev.choose("x", {"a": "A", "nuevo": "N"})
+        jev.choose("y", {"a": "A", "nuevo": "N"})
+    assert len(built) == 1 and len(fake_sdk.calls) == 2 and all(call[2]["call_timeout"] > 0 for call in fake_sdk.calls)

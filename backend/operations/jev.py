@@ -34,14 +34,32 @@ class Budget:
         self.left -= seconds
 
 
+_cached_client: dict = {"key": None, "client": None}
+
+
 def _client(timeout: float):
+    """One client per process and key (its HTTP connection pool is reused, orquestador 11/10);
+    the item's remaining budget goes as each call's timeout."""
     try:
         from typesafe_sdk import RetryPolicy, TypeSafeClient
     except ImportError:
         logger.warning("jev: typesafe-sdk is not installed; using Claude")
         return None
-    # No retries: a retry would spend the item's budget; Claude is the fallback.
-    return TypeSafeClient(api_key=settings.TYPESAFE_API_KEY, model=getattr(settings, "TYPESAFE_MODEL", "") or None, timeout=timeout, retry=RetryPolicy(max_retries=0))
+    key = (settings.TYPESAFE_API_KEY, getattr(settings, "TYPESAFE_MODEL", "") or None)
+    if _cached_client["key"] != key or _cached_client["client"] is None:
+        # No retries: a retry would spend the item's budget; Claude is the fallback.
+        _cached_client.update(key=key, client=TypeSafeClient(api_key=key[0], model=key[1], timeout=ITEM_BUDGET_SECONDS, retry=RetryPolicy(max_retries=0)))
+    return _cached_client["client"]
+
+
+def reset_client() -> None:
+    client = _cached_client.get("client")
+    _cached_client.update(key=None, client=None)
+    try:
+        if client is not None and hasattr(client, "close"):
+            client.close()
+    except Exception:
+        pass
 
 
 def _ask(state: str, questions: dict, budget: Budget | None):
@@ -58,8 +76,7 @@ def _ask(state: str, questions: dict, budget: Budget | None):
         return None
     started = time.monotonic()
     try:
-        with client:
-            return client.system_one(state, questions)
+        return client.system_one(state, questions, timeout=timeout)
     except Exception as exc:  # Never block the order flow on the classifier.
         logger.warning("jev: system_one failed (%s): %s", type(exc).__name__, exc)
         return None

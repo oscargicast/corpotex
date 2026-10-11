@@ -7,6 +7,7 @@ proposal and `apply_classification` writes it."""
 import asyncio
 import logging
 import re
+import time
 from decimal import Decimal
 
 from django.conf import settings
@@ -73,11 +74,18 @@ SYSTEM_PROMPT = (
 PROCESS = re.compile(r"^\s*(bordad|sublimad|estampad|serigraf|corte\b|costura\b|confecci)", re.IGNORECASE)
 
 
+COMPLETE_MAX_TURNS = 1  # measured 11/10: the structured-output step does not count as a turn; guards against a runaway loop
+
+
+def classify_model() -> str:
+    return getattr(settings, "CLASSIFY_MODEL", "") or getattr(settings, "AGENT_MODEL", "sonnet")
+
+
 def complete_sync(prompt: str, *, schema: dict) -> dict:
     """Claude, one structured call (wrapped so tests can mock it and views stay sync)."""
     from agent.sdk import complete
 
-    coro = complete(prompt, system_prompt=SYSTEM_PROMPT, model=getattr(settings, "AGENT_MODEL", "sonnet"), schema=schema, effort="low")
+    coro = complete(prompt, system_prompt=SYSTEM_PROMPT, model=classify_model(), schema=schema, effort="low", max_turns=COMPLETE_MAX_TURNS)
     try:
         asyncio.get_running_loop()
     except RuntimeError:
@@ -95,10 +103,36 @@ def _item_text(item: OrderItem) -> str:
     return ". ".join(p for p in parts if p)
 
 
+CATALOGUE_TTL = 60.0
+_catalogue_cache: dict = {"version": None, "at": 0.0, "value": None}
+
+
+def _catalogue_version():
+    """Cheap and valid across processes (the worker's auto-classifier creates products too): any
+    product, material or bill-of-materials change moves a count or a timestamp."""
+    from django.db.models import Count, Max
+
+    return tuple(
+        tuple(model.objects.aggregate(n=Count("id"), last=Max("updated_at")).values()) for model in (Product, Material, ProductMaterial)
+    )
+
+
 def _catalogue():
+    """Products (with brand and bill of materials) and materials, cached 60 s while nothing changed."""
+    started = time.monotonic()
+    version = _catalogue_version()
+    cached = _catalogue_cache
+    if cached["value"] is not None and cached["version"] == version and started - cached["at"] < CATALOGUE_TTL:
+        return cached["value"]
     products = list(Product.objects.select_related("brand").prefetch_related("materials__material").order_by("code"))
     materials = list(Material.objects.order_by("kind", "sku"))
-    return products, materials
+    cached.update(version=version, at=started, value=(products, materials))
+    logger.info("classify: catalogue loaded in %.3fs (%d products, %d materials)", time.monotonic() - started, len(products), len(materials))
+    return cached["value"]
+
+
+def clear_catalogue_cache() -> None:
+    _catalogue_cache.update(version=None, at=0.0, value=None)
 
 
 def classify_order(order: Order, *, actor) -> dict:
@@ -109,6 +143,30 @@ def classify_order(order: Order, *, actor) -> dict:
 
 
 def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
+    """Times each stage in the log (orquestador, 11/10 04:30: measure before optimising)."""
+    timings: dict[str, float] = {}
+    started = time.monotonic()
+    try:
+        result = _classify_item(item, order, products, materials, timings)
+    finally:
+        timings["total"] = time.monotonic() - started
+        logger.info(
+            "classify_item %s: %s",
+            (item.description or "")[:40],
+            " ".join(f"{k}={v:.2f}s" for k, v in timings.items()),
+        )
+    return result
+
+
+def _timed(timings: dict, key: str, fn, *args, **kwargs):
+    started = time.monotonic()
+    try:
+        return fn(*args, **kwargs)
+    finally:
+        timings[key] = timings.get(key, 0.0) + time.monotonic() - started
+
+
+def _classify_item(item: OrderItem, order: Order, products, materials, timings: dict) -> dict:
     text = _item_text(item)
     customer = order.customer if order.customer_id else None  # a draft (ADR 0028) may have no customer yet
     state = f"Pedido de {customer.name}, marca {order.brand.name}: {text}" if customer else f"Pedido para la marca {order.brand.name}: {text}"
@@ -120,7 +178,7 @@ def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
     # 1. A catalogue product? Jev chooses when it is on.
     criteria = {p.code: f"{p.name} · {p.brand.name if p.brand else 'sin marca'} · {', '.join(pm.material.name for pm in p.materials.all())}" for p in products}
     criteria[jev.NEW] = "Prenda nueva: ninguna del catálogo corresponde"
-    picked = jev.choose(state, criteria, "Elige el producto del catálogo que corresponde a la prenda pedida, o 'nuevo'.", budget=budget)
+    picked = _timed(timings, "jev_product", jev.choose, state, criteria, "Elige el producto del catálogo que corresponde a la prenda pedida, o 'nuevo'.", budget=budget)
     if picked and picked[0] in by_code and picked[1] >= MIN_CONFIDENCE:
         return _catalogue_answer(item, text, by_code[picked[0]], picked[1])
 
@@ -135,7 +193,7 @@ def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
         "El color y la talla no crean un insumo nuevo: van en la orden; reusa el SKU existente de la misma tela o avío. "
         "Solo insumos que se compran, no procesos de planta (corte, costura, bordado, sublimado); el bordado puede pedir hilo de bordar."
     )
-    proposal = complete_sync(prompt, schema=PROPOSAL_SCHEMA)
+    proposal = _timed(timings, "claude", complete_sync, prompt, schema=PROPOSAL_SCHEMA)
     base = float(proposal.get("confidence") or FALLBACK_CONFIDENCE)
     product_block = proposal.get("product") or {}
     existing = by_code.get(product_block.get("existing_code") or "")
@@ -151,7 +209,10 @@ def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
     proposed = [m for m in proposal.get("materials") or [] if not (PROCESS.match(m.get("name") or "") and not (m.get("existing_sku") or "").strip())]
     # 3. Jev checks every proposed material against the known SKUs (+ nuevo) in ONE call.
     sku_criteria = {**{x.sku: f"{x.name}, {x.kind}, {x.unit}" for x in materials}, jev.NEW: "Insumo nuevo: ninguno de los existentes"}
-    answers = jev.choose_many(
+    answers = _timed(
+        timings,
+        "jev_materials",
+        jev.choose_many,
         state,
         {f"m{i}": (sku_criteria, f"Insumo propuesto: {m.get('name')} ({m.get('kind')}, {m.get('unit')}). Elige el SKU existente que es este mismo insumo, o 'nuevo'.") for i, m in enumerate(proposed)},
         budget=budget,

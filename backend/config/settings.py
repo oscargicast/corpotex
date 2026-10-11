@@ -22,6 +22,7 @@ env = environ.Env(
     CF_ACCESS_CLIENT_ID=(str, ""),
     CF_ACCESS_CLIENT_SECRET=(str, ""),
     AGENT_MODEL=(str, "sonnet"),
+    CLASSIFY_MODEL=(str, "claude-sonnet-5-5"),
     STYLE_ANALYSIS_MODEL=(str, "sonnet"),
     TYPESAFE_API_KEY=(str, ""),
     TYPESAFE_MODEL=(str, "jev-latest"),
@@ -196,6 +197,9 @@ TURN_SOFT_TIME_LIMIT = 180
 CLAUDE_CONFIG_DIR = env("CLAUDE_CONFIG_DIR")
 AGENT_HOME = str(Path(CLAUDE_CONFIG_DIR).parent)
 AGENT_MODEL = env("AGENT_MODEL")
+# Generation inside the order form (classification proposal, photo description): a faster model
+# than the agent's; WhatsApp turns and the assistant keep AGENT_MODEL (orquestador, 11/10 04:30).
+CLASSIFY_MODEL = env("CLASSIFY_MODEL")
 # A garment photo travels as base64 JSON (describe-image, up to 5 MB of base64): the default 2.5 MB
 # would reject it before the view can answer in Spanish.
 DATA_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
