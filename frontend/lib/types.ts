@@ -270,7 +270,7 @@ export interface Candidate {
 export interface ProposalItem {
   purchase_order: Ref | null;
   supplier: { id: number; name: string };
-  quantity: number;
+  quantity: number | string; // Decimal in the API
   unit_price: string;
   currency: Currency;
   rationale: string;
@@ -280,6 +280,7 @@ export interface ProposalItem {
 export interface Snapshot {
   estimated_on?: string | null; // price decisions carry only the amount
   total_amount: string;
+  currency?: Currency;
   route_id?: number | null;
 }
 

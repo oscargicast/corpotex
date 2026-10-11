@@ -19,7 +19,7 @@ export function RedistributionCard({ decision }: { decision: Decision }) {
 // Split bar, before and after, and the route link. Also used inside the pending decision.
 export function RedistributionBody({ decision, withCancelLine = true }: { decision: DecisionLike; withCancelLine?: boolean }) {
   const { before, after, proposal = [], cancelled } = decision.detail;
-  const total = cancelled?.quantity ?? proposal.reduce((sum, p) => sum + p.quantity, 0);
+  const total = cancelled?.quantity ?? proposal.reduce((sum, p) => sum + Number(p.quantity), 0);
   const shift = before?.estimated_on && after?.estimated_on ? daysBetween(before.estimated_on, after.estimated_on) : null;
   const costDelta = before && after ? Number(after.total_amount) - Number(before.total_amount) : null;
   const routeHref =
@@ -45,9 +45,9 @@ export function RedistributionBody({ decision, withCancelLine = true }: { decisi
               <span
                 key={i}
                 className={`flex items-center justify-center ${SPLIT_COLORS[i % SPLIT_COLORS.length]}`}
-                style={{ width: `${(p.quantity / total) * 100}%` }}
+                style={{ width: `${(Number(p.quantity) / total) * 100}%` }}
               >
-                {p.quantity}
+                {Number(p.quantity)}
               </span>
             ))}
           </div>
@@ -74,9 +74,9 @@ export function RedistributionBody({ decision, withCancelLine = true }: { decisi
           />
           <Delta
             label="Costo total"
-            from={before ? formatMoney(before.total_amount) : null}
-            to={formatMoney(after.total_amount)}
-            change={costDelta ? `${costDelta > 0 ? "+" : "−"}${formatMoney(Math.abs(costDelta))}` : null}
+            from={before ? formatMoney(before.total_amount, before.currency ?? after.currency) : null}
+            to={formatMoney(after.total_amount, after.currency)}
+            change={costDelta ? `${costDelta > 0 ? "+" : "−"}${formatMoney(Math.abs(costDelta), after.currency)}` : null}
             worse={(costDelta ?? 0) > 0}
           />
         </dl>
