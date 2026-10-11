@@ -36,7 +36,8 @@ function Pending() {
   const [busy, setBusy] = useState<number | "all" | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const [generated, setGenerated] = useState<GeneratedPurchaseOrders["purchase_orders"]>([]);
+  const [generated, setGenerated] = useState<GeneratedPurchaseOrders["created"]>([]);
+  const [skipped, setSkipped] = useState<GeneratedPurchaseOrders["skipped"]>([]);
   const today = new Date().toISOString().slice(0, 10);
 
   async function generate(materialIds: number[] | null) {
@@ -49,7 +50,8 @@ function Pending() {
         method: "POST",
         json: { ...(materialIds && { material_ids: materialIds }), ...(Object.keys(supplier_overrides).length && { supplier_overrides }) },
       });
-      setGenerated((current) => [...result.purchase_orders, ...current]);
+      setGenerated((current) => [...result.created, ...current]);
+      setSkipped(result.skipped ?? []);
       setConfirmAll(false);
       mutate();
     } catch (err) {
@@ -114,6 +116,16 @@ function Pending() {
             ))}
           </ul>
         </div>
+      )}
+
+      {skipped.length > 0 && (
+        <ul className="rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning" role="alert">
+          {skipped.map((s) => (
+            <li key={s.material_id}>
+              {rows.find((r) => r.material.id === s.material_id)?.material.name ?? `Material ${s.material_id}`}: {s.reason}
+            </li>
+          ))}
+        </ul>
       )}
 
       {problem && (
@@ -278,14 +290,10 @@ function SupplierPicker({ row, value, onChange }: { row: PendingRequirement; val
     <span className="inline-flex flex-wrap items-center gap-2 text-sm">
       <span className="font-medium">{chosen.name}</span>
       {value !== undefined && value !== row.suggested_supplier?.id && <Pill tone="warning">cambiado</Pill>}
-      {candidates.length > 1 ? (
+      {candidates.length > 1 && (
         <button type="button" onClick={() => setOpen(true)} className="text-xs font-medium text-accent hover:underline">
           Cambiar
         </button>
-      ) : (
-        <span className="text-xs text-muted" title="El matching no encontró otro proveedor para este insumo">
-          único
-        </span>
       )}
     </span>
   );
@@ -294,7 +302,12 @@ function SupplierPicker({ row, value, onChange }: { row: PendingRequirement; val
 // Reference price of the chosen supplier (the matching's rate), Gerente only.
 function ReferencePrice({ row, supplierId }: { row: PendingRequirement; supplierId: number | undefined }) {
   const candidate = row.candidates?.find((c) => c.supplier.id === (supplierId ?? row.suggested_supplier?.id));
-  const price = candidate?.unit_price != null ? { unit_price: candidate.unit_price, currency: candidate.currency ?? "PEN" } : row.reference_price;
+  const price =
+    candidate?.unit_price != null
+      ? { unit_price: candidate.unit_price, currency: candidate.currency ?? row.currency ?? "PEN" }
+      : row.reference_price != null
+        ? { unit_price: row.reference_price, currency: row.currency ?? "PEN" }
+        : null;
   if (!price) return <span className="text-muted">—</span>;
   const unit = num(price.unit_price) ?? 0;
   const total = unit * (num(row.total_to_order) ?? 0);

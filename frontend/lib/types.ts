@@ -211,6 +211,7 @@ export interface OrderDetail extends OrderListItem {
   issued_on: string;
   production_stage: string | null;
   owner: { id: number; first_name: string } | null;
+  notes?: string | null;
   total_amount?: string | null;
   items: OrderItem[];
   requirements: Requirement[];
@@ -419,12 +420,40 @@ export interface PendingRequirement {
   due_on: string | null; // the earliest of its orders
   orders: { id: number; code: string; customer_name: string; qty: Decimal; due_on: string | null }[];
   suggested_supplier: { id: number; name: string } | null;
-  candidates?: { supplier: { id: number; name: string }; unit_price?: Decimal | null; currency?: Currency; score?: Decimal | null }[];
-  reference_price?: { unit_price: Decimal; currency: Currency } | null;
+  candidates?: { supplier: { id: number; name: string }; unit_price?: Decimal | null; currency?: Currency; score?: Decimal | null }[]; // [] for Producción
+  reference_price?: Decimal | null; // Gerente only; per unit, in `currency`
+  currency?: Currency;
   alert_id?: number | null;
 }
 
-// POST /api/purchase-orders/generate/ {material_ids?, supplier_overrides?}
+// POST /api/purchase-orders/generate/ {material_ids?, supplier_overrides?} → 201
 export interface GeneratedPurchaseOrders {
-  purchase_orders: { id: number; code: string; supplier: { id: number; name: string }; material: { id: number; sku: string; name: string }; orders: Ref[] }[];
+  created: { id: number; code: string; supplier: { id: number; name: string }; material: { id: number; sku: string; name: string }; orders: Ref[] }[];
+  skipped: { material_id: number; reason: string }[];
+}
+
+// Order form (ADR 0025 B): GET /api/customers/ and GET /api/products/.
+export interface Customer {
+  id: number;
+  name: string;
+  ruc?: string | null;
+}
+
+export interface Product {
+  id: number;
+  code: string;
+  name: string;
+  brand?: { id: number; name: string } | null;
+  image?: string | null;
+}
+
+// POST /api/orders/ and PATCH /api/orders/<id>/ (items replace the list).
+export interface OrderInput {
+  code?: string;
+  customer: string;
+  brand: string;
+  promised_on: string;
+  issued_on?: string;
+  notes?: string;
+  items: { product: string; quantity: number; color?: string; customization?: string; sizes?: Record<string, number> }[];
 }

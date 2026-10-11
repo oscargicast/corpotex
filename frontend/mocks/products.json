@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "code": "UNI-POL-01",
+    "name": "Polo escolar UNICRACK",
+    "brand": {
+      "id": 1,
+      "name": "UNICRACK"
+    },
+    "image": null
+  },
+  {
+    "id": 2,
+    "code": "UNI-CAM-01",
+    "name": "Camisa escolar UNICRACK",
+    "brand": {
+      "id": 1,
+      "name": "UNICRACK"
+    },
+    "image": null
+  },
+  {
+    "id": 3,
+    "code": "UNI-BUZ-01",
+    "name": "Buzo deportivo UNICRACK",
+    "brand": {
+      "id": 1,
+      "name": "UNICRACK"
+    },
+    "image": null
+  },
+  {
+    "id": 4,
+    "code": "UNI-POD-01",
+    "name": "Polo deportivo UNICRACK",
+    "brand": {
+      "id": 1,
+      "name": "UNICRACK"
+    },
+    "image": null
+  },
+  {
+    "id": 5,
+    "code": "NEX-CAM-01",
+    "name": "Camisa de trabajo drill NEXO",
+    "brand": {
+      "id": 2,
+      "name": "NEXO"
+    },
+    "image": null
+  },
+  {
+    "id": 6,
+    "code": "NEX-PAN-01",
+    "name": "Pantalón cargo drill NEXO",
+    "brand": {
+      "id": 2,
+      "name": "NEXO"
+    },
+    "image": null
+  },
+  {
+    "id": 7,
+    "code": "NEX-CHA-01",
+    "name": "Chaleco de trabajo NEXO",
+    "brand": {
+      "id": 2,
+      "name": "NEXO"
+    },
+    "image": null
+  },
+  {
+    "id": 8,
+    "code": "LMC-BAT-01",
+    "name": "Bata médica Línea Médica Corpotex",
+    "brand": {
+      "id": 3,
+      "name": "Línea Médica Corpotex"
+    },
+    "image": null
+  },
+  {
+    "id": 9,
+    "code": "LMC-CHQ-01",
+    "name": "Chaqueta médica Línea Médica Corpotex",
+    "brand": {
+      "id": 3,
+      "name": "Línea Médica Corpotex"
+    },
+    "image": null
+  }
+]

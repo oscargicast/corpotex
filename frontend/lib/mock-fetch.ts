@@ -2,11 +2,13 @@
 // Enabled with NEXT_PUBLIC_USE_MOCKS=1. Shapes follow docs/backend/modelo-de-datos.md.
 import badgesByRole from "@/mocks/badges.json";
 import conversationsSeed from "@/mocks/conversations.json";
+import customersSeed from "@/mocks/customers.json";
 import materialsSeed from "@/mocks/materials.json";
 import monitorSeed from "@/mocks/monitor.json";
 import ordersSeed from "@/mocks/orders.json";
 import pendingSeed from "@/mocks/pending-requirements.json";
 import poDetailsSeed from "@/mocks/purchase-order-details.json";
+import productsSeed from "@/mocks/products.json";
 import purchaseOrdersSeed from "@/mocks/purchase-orders.json";
 import routesSeed from "@/mocks/routes.json";
 import simulatorContactsSeed from "@/mocks/simulator-contacts.json";
@@ -19,12 +21,15 @@ import type {
   ChatMessage,
   ClaudeStatus,
   Clock,
+  Customer,
   GeneratedPurchaseOrders,
   MaterialDetail,
   Monitor,
   OrderDetail,
+  OrderItem,
   OrderListItem,
   PendingRequirement,
+  Product,
   PurchaseOrderDetail,
   PurchaseOrderListItem,
   Role,
@@ -395,12 +400,33 @@ function orderDetailFor(order: OrderListItem, role: Role): OrderDetail {
   return detail;
 }
 
-function createOrder(body: Record<string, unknown>): Response {
+const customers = structuredClone(customersSeed) as Customer[];
+const products = structuredClone(productsSeed) as Product[];
+
+type ItemInput = { product: string; quantity: number; color?: string; customization?: string; sizes?: Record<string, number> };
+
+function itemsFrom(body: Record<string, unknown>): OrderItem[] {
+  return ((body.items as ItemInput[]) ?? []).map((item, i) => {
+    const product = products.find((p) => p.code === item.product);
+    return {
+      id: i + 1,
+      product: { id: product?.id ?? 0, code: item.product, name: product?.name ?? item.product, image: product?.image ?? null },
+      quantity: Number(item.quantity),
+      sizes: item.sizes ?? {},
+      color: item.color ?? "",
+      customization: item.customization ?? "",
+      unit_price: null,
+    } as OrderItem;
+  });
+}
+
+function createOrder(body: Record<string, unknown>, user: User): Response {
   const code = String(body.code);
   const existing = orders.find((o) => o.code === code);
   if (existing) return json(200, existing); // idempotent by code, like the API
   const items = (body.items as { quantity: number }[]) ?? [];
   const customer = String(body.customer);
+  if (!customers.some((c) => c.name === customer)) customers.push({ id: 90 + customers.length, name: customer, ruc: null });
   const order: OrderListItem = {
     id: Math.max(...orders.map((o) => o.id)) + 1,
     code,
@@ -417,6 +443,12 @@ function createOrder(body: Record<string, unknown>): Response {
     purchase_orders_summary: { total: 0, confirmed: 0, waiting_manager: 0 },
   };
   orders.unshift(order);
+  orderDetails[order.id] = {
+    issued_on: String(body.issued_on ?? new Date().toISOString().slice(0, 10)),
+    owner: { id: user.id, first_name: user.first_name || user.username },
+    notes: typeof body.notes === "string" ? body.notes : "",
+    items: itemsFrom(body),
+  };
   return json(201, order);
 }
 
@@ -560,7 +592,42 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
   }
   if (route === "POST /api/orders/") {
     if (user.role === "production") return json(403, { detail: "Solo Comercial y Gerente." });
-    return createOrder(readBody(init.body));
+    return createOrder(readBody(init.body), user);
+  }
+  if (route === "GET /api/customers/") return json(200, customers);
+  if (route === "GET /api/products/") return json(200, products);
+  const orderPatch = route.match(/^PATCH \/api\/orders\/(\d+)\/$/);
+  if (orderPatch) {
+    const order = orders.find((o) => o.id === Number(orderPatch[1]));
+    if (!order) return json(404, { detail: "No existe." });
+    const detail = orderDetails[order.id] ?? {};
+    const own = detail.owner?.id === user.id;
+    if (user.role === "production" || (user.role === "sales" && !(own && ["registered", "broken_down"].includes(order.status)))) {
+      return json(403, { detail: "No puedes editar esta orden." });
+    }
+    const body = readBody(init.body);
+    if (typeof body.customer === "string") order.customer = { ...order.customer, name: body.customer };
+    if (typeof body.brand === "string") order.brand = { ...order.brand, name: body.brand };
+    if (typeof body.promised_on === "string") order.promised_on = body.promised_on;
+    if (Array.isArray(body.items)) {
+      const items = itemsFrom(body);
+      order.total_units = items.reduce((sum, item) => sum + item.quantity, 0);
+      orderDetails[order.id] = { ...detail, items };
+    }
+    if (typeof body.notes === "string") orderDetails[order.id] = { ...orderDetails[order.id], notes: body.notes };
+    return json(200, orderDetailFor(order, user.role));
+  }
+  const orderCancel = route.match(/^POST \/api\/orders\/(\d+)\/cancel\/$/);
+  if (orderCancel) {
+    const order = orders.find((o) => o.id === Number(orderCancel[1]));
+    if (!order) return json(404, { detail: "No existe." });
+    const own = orderDetails[order.id]?.owner?.id === user.id;
+    if (user.role === "production" || (user.role === "sales" && !(own && ["registered", "broken_down"].includes(order.status)))) {
+      return json(403, { detail: "No puedes cancelar esta orden." });
+    }
+    order.status = "cancelled";
+    order.status_display = "Cancelada";
+    return json(200, orderDetailFor(order, user.role));
   }
   const orderMatch = route.match(/^GET \/api\/orders\/(\d+)\/$/);
   if (orderMatch) {
@@ -620,7 +687,7 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
       pending.map((row) =>
         user.role === "manager"
           ? row
-          : { ...row, reference_price: null, candidates: row.candidates?.map((c) => ({ ...c, unit_price: null })) },
+          : { ...row, reference_price: null, candidates: [] },
       ),
     );
   }
@@ -628,14 +695,18 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
     const body = readBody(init.body) as { material_ids?: number[]; supplier_overrides?: Record<string, number> };
     const ids = body.material_ids ?? pending.map((row) => row.material.id);
-    const created: GeneratedPurchaseOrders["purchase_orders"] = [];
+    const created: GeneratedPurchaseOrders["created"] = [];
+    const skipped: GeneratedPurchaseOrders["skipped"] = [];
     for (const id of ids) {
       const index = pending.findIndex((row) => row.material.id === id);
       if (index < 0) continue;
       const row = pending[index];
       const override = body.supplier_overrides?.[String(id)];
       const supplier = row.candidates?.find((c) => c.supplier.id === override)?.supplier ?? row.suggested_supplier;
-      if (!supplier) return json(400, { detail: `${row.material.name} no tiene proveedor sugerido.` });
+      if (!supplier) {
+        skipped.push({ material_id: id, reason: "sin proveedor sugerido" });
+        continue;
+      }
       const candidate = row.candidates?.find((c) => c.supplier.id === supplier.id);
       const po: PurchaseOrderListItem = {
         id: nextPurchaseOrderId++,
@@ -663,7 +734,7 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
       pending.splice(index, 1);
       created.push({ id: po.id, code: po.code, supplier, material: row.material, orders: row.orders.map((o) => ({ id: o.id, code: o.code })) });
     }
-    return json(201, { purchase_orders: created });
+    return json(201, { created, skipped });
   }
   if (route === "GET /api/purchase-orders/") {
     const params = new URL(path, "http://mock").searchParams;
