@@ -5,7 +5,10 @@ import mimetypes
 from datetime import date, datetime
 from decimal import Decimal
 from html import escape
+from zoneinfo import ZoneInfo
 
+# Times in the prompt are always Lima time: the services hand us UTC-aware datetimes.
+LIMA = ZoneInfo("America/Lima")
 WEEKDAYS = ("lun", "mar", "mié", "jue", "vie", "sáb", "dom")
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 AUDIO_EXTENSIONS = {".ogg", ".oga", ".opus", ".mp3", ".m4a", ".aac", ".wav"}
@@ -27,22 +30,22 @@ def attrs(**values) -> str:
     return (" " + " ".join(parts)) if parts else ""
 
 
+def as_datetime(value) -> datetime | None:
+    """Aware datetimes (and ISO strings with offset) converted to Lima; naive ones kept."""
+    if value in (None, ""):
+        return None
+    moment = value if isinstance(value, datetime) else datetime.fromisoformat(str(value))
+    return moment.astimezone(LIMA) if moment.tzinfo else moment
+
+
 def as_date(value) -> date | None:
     if value in (None, ""):
         return None
-    if isinstance(value, datetime):
-        return value.date()
+    if isinstance(value, datetime) or (isinstance(value, str) and len(value) > 10):
+        return as_datetime(value).date()  # the Lima day, not the UTC one
     if isinstance(value, date):
         return value
     return date.fromisoformat(str(value)[:10])
-
-
-def as_datetime(value) -> datetime | None:
-    if value in (None, ""):
-        return None
-    if isinstance(value, datetime):
-        return value
-    return datetime.fromisoformat(str(value))
 
 
 def fmt_date(value) -> str:
