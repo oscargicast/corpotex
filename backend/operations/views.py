@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from core.permissions import IsManager, IsManagerOrProduction
 from core.serializers import serializer_for
 
-from . import services
+from . import describe, services
 from .exceptions import UnknownReference
 from .models import Order, Payment, PurchaseOrder
 from .serializers import OrderDetailSerializer, PaymentSerializer, PurchaseOrderDetailSerializer, RouteSerializer
@@ -125,6 +125,11 @@ class ClassificationMaterialField(serializers.DictField):
     """Documented as `ClassificationMaterial`."""
 
 
+class ImageInSerializer(serializers.Serializer):
+    media_type = serializers.CharField(help_text="image/jpeg, image/png or image/webp (or jpeg, png, webp).")
+    data = serializers.CharField(help_text="Base64, up to 5 MB; a data URL is accepted too.", trim_whitespace=True)
+
+
 class OrderItemInSerializer(serializers.Serializer):
     key = serializers.CharField(required=False, allow_blank=True, max_length=60, help_text="The form's line key; matches `classification.items[].key` (ADR 0028).")
     product = serializers.CharField(required=False, allow_blank=True, allow_null=True, help_text="Product code; empty for a made-to-order item.")
@@ -134,6 +139,11 @@ class OrderItemInSerializer(serializers.Serializer):
     color = serializers.CharField(required=False, allow_blank=True)
     customization = serializers.CharField(required=False, allow_blank=True)
     unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
+    photo = ImageInSerializer(required=False, allow_null=True, help_text="ADR 0029 N1: the garment's photo, same checks as describe-image.")
+    photo_url = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True,
+        help_text="On a PATCH, the item's `photo_url` from the detail keeps that photo; `photo` wins when both come.",
+    )
 
 
 class DraftLineInSerializer(serializers.Serializer):
@@ -160,11 +170,6 @@ class DraftLineResultSerializer(serializers.Serializer):
 
 class ClassifyDraftResultSerializer(serializers.Serializer):
     items = DraftLineResultSerializer(many=True)
-
-
-class ImageInSerializer(serializers.Serializer):
-    media_type = serializers.CharField(help_text="image/jpeg, image/png or image/webp (or jpeg, png, webp).")
-    data = serializers.CharField(help_text="Base64, up to 5 MB; a data URL is accepted too.", trim_whitespace=True)
 
 
 class DescribeImageInSerializer(serializers.Serializer):
@@ -297,7 +302,7 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             order, created = services.register_order(data.validated_data, actor=request.user)
         except PermissionDenied as exc:
             _forbidden(exc)
-        except UnknownReference as exc:
+        except (UnknownReference, describe.BadImage) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         response = self.detail_response(order, status.HTTP_201_CREATED if created else status.HTTP_200_OK)
         response.data["warnings"] = getattr(order, "classification_warnings", [])
@@ -314,7 +319,7 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             order, warnings = services.update_order(order, data.validated_data, actor=request.user)
         except PermissionDenied as exc:
             _forbidden(exc)
-        except UnknownReference as exc:
+        except (UnknownReference, describe.BadImage) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         response = self.detail_response(order)
         response.data["warnings"] = warnings
@@ -413,8 +418,6 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
     def describe_image(self, request):
         """M4 (ADR 0028, photos), the three roles: a garment photo becomes the line's text, one
         sentence without quantity or sizes. 400 for a bad image, 502 when the model fails."""
-        from . import describe
-
         data = DescribeImageInSerializer(data=request.data)
         if not data.is_valid():
             return Response({"detail": "Falta la foto o viene incompleta.", "errors": data.errors}, status=status.HTTP_400_BAD_REQUEST)

@@ -5,7 +5,7 @@ from drf_spectacular.utils import extend_schema_field, inline_serializer
 from rest_framework import serializers
 
 from core.models import Customer, Brand, Material, Product
-from core.serializers import DisplayMixin, register
+from core.serializers import DisplayMixin, RelativeFileField, register
 from suppliers.serializers import SupplierRefSerializer
 
 from .models import (
@@ -90,10 +90,11 @@ class MaterialRefSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(DisplayMixin, serializers.ModelSerializer):
     product = ProductRefSerializer(read_only=True, allow_null=True)
+    photo_url = RelativeFileField(source="photo", read_only=True, allow_null=True, help_text="`/media/items/...`; null without a photo (ADR 0029 N1).")
 
     class Meta:
         model = OrderItem
-        fields = ["id", "product", "description", "quantity", "sizes", "color", "customization", "unit_price"]
+        fields = ["id", "product", "description", "quantity", "sizes", "color", "customization", "unit_price", "photo_url"]
 
 
 class RequirementSerializer(DisplayMixin, serializers.ModelSerializer):

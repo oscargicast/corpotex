@@ -92,6 +92,7 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
     if brand is None:
         raise UnknownReference(f"La marca {payload['brand']} no existe")
     _, _, products = _resolve_references({"items": payload["items"]})
+    photos = item_photos(payload["items"])
     with transaction.atomic():
         order = Order.objects.create(
             code=order_code or next_order_code(),  # `code` below is reused for product codes
@@ -104,7 +105,7 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
         )
         StatusChange.objects.create(order=order, status=order.status, at=clock.now(), actor=actor_label(actor))
         keyed = []
-        for item in payload["items"]:
+        for item, photo in zip(payload["items"], photos):
             created = OrderItem.objects.create(
                 order=order,
                 product=products.get(str(item.get("product") or "").strip()),
@@ -114,6 +115,7 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
                 color=item.get("color", ""),
                 customization=item.get("customization", ""),
                 unit_price=Decimal(str(item["unit_price"])) if item.get("unit_price") is not None else None,
+                photo=photo,
             )
             keyed.append((item.get("key"), created))
         order.classification_warnings = []
@@ -124,6 +126,23 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
         break_down_order(order)
         schedule_auto_classify(order)
     return order, True
+
+
+def item_photos(items: list[dict]) -> list:
+    """N1 (ADR 0029): each item's photo, checked before anything is written (a bad one is a 400
+    `BadImage` and the order stays as it was). A new `photo` wins over a re-sent `photo_url`;
+    neither leaves the item without a photo."""
+    from .describe import kept_photo, photo_file
+
+    photos = []
+    for item in items:
+        if item.get("photo"):
+            photos.append(photo_file(item["photo"]))
+        elif item.get("photo_url"):
+            photos.append(kept_photo(item["photo_url"]))
+        else:
+            photos.append("")
+    return photos
 
 
 def schedule_auto_classify(order: Order) -> bool:
@@ -274,6 +293,7 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
     already covers are left alone and reported in the warnings."""
     check_order_edit(order, actor=actor)
     customer, brand, products = _resolve_references(payload)
+    photos = item_photos(payload.get("items") or [])
     warnings: list[str] = []
     with transaction.atomic():
         if customer is not None:
@@ -287,7 +307,7 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
         if payload.get("items") is not None:
             order.items.all().delete()
             keyed = []
-            for item in payload["items"]:
+            for item, photo in zip(payload["items"], photos):
                 created = OrderItem.objects.create(
                     order=order,
                     product=products.get(str(item.get("product") or "").strip()),
@@ -297,6 +317,7 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
                     color=item.get("color", "") or "",
                     customization=item.get("customization", "") or "",
                     unit_price=Decimal(str(item["unit_price"])) if item.get("unit_price") is not None else None,
+                    photo=photo,
                 )
                 keyed.append((item.get("key"), created))
             if payload.get("classification"):  # ADR 0028: the edit's new items come classified too
