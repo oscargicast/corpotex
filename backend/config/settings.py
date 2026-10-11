@@ -27,6 +27,7 @@ env = environ.Env(
     TYPESAFE_MODEL=(str, "jev-latest"),
     STYLE_BOSS_MODEL=(str, "opus"),
     STYLE_REFRESH_ENABLED=(bool, True),
+    VEHICLE_SAMPLE_SECONDS=(int, 300),
 )
 
 SECRET_KEY = env("SECRET_KEY")
@@ -180,6 +181,7 @@ CELERY_TASK_ROUTES = {
     "manager.tasks.tick": {"queue": "periodic"},
     "core.tasks.run_style_extraction": {"queue": "style"},
     "core.tasks.refresh_style": {"queue": "style"},
+    "fleet.tasks.simulate_tick": {"queue": "periodic"},
 }
 CELERY_BEAT_SCHEDULE = {
     "tick": {"task": "manager.tasks.tick", "schedule": 10.0},
@@ -207,6 +209,9 @@ CF_ACCESS_CLIENT_ID = env("CF_ACCESS_CLIENT_ID")
 CF_ACCESS_CLIENT_SECRET = env("CF_ACCESS_CLIENT_SECRET")
 
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL")
+
+# Fleet (ADR 0026): every position moves the vehicle; one sample is stored every this many seconds.
+VEHICLE_SAMPLE_SECONDS = env("VEHICLE_SAMPLE_SECONDS")
 
 LOGGING = {
     "version": 1,

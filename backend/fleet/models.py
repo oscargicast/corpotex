@@ -24,6 +24,14 @@ class Vehicle(TimeStamped):
     last_heading = models.FloatField(null=True, blank=True, help_text="Degrees from north, clockwise.")
     last_speed_kmh = models.FloatField(null=True, blank=True)
     last_seen_at = models.DateTimeField(null=True, blank=True)
+    # Simulator state (ADR 0026 §5): metres covered along the route in progress, the speed-up,
+    # the tick, the wait at a stop, and the run each tick belongs to (a restart orphans the old chain).
+    sim_active = models.BooleanField(default=False)
+    sim_progress_m = models.FloatField(default=0)
+    sim_speed_factor = models.FloatField(default=12)
+    sim_interval_s = models.PositiveSmallIntegerField(default=3)
+    sim_wait_until = models.DateTimeField(null=True, blank=True)
+    sim_run = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = "vehículo"
