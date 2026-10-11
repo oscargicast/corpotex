@@ -458,7 +458,7 @@ function createOrder(body: Record<string, unknown>, user: User): Response {
 }
 
 const monitor = structuredClone(monitorSeed) as unknown as Monitor;
-const materials = structuredClone(materialsSeed) as MaterialDetail[];
+const materials = structuredClone(materialsSeed) as unknown as MaterialDetail[];
 const routes = structuredClone(routesSeed) as unknown as Record<string, Route>;
 
 function monitorFor(role: Role): Monitor {

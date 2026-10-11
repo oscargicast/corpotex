@@ -2,7 +2,8 @@
 
 import { ArrowLeft, CheckCircle2, ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import useSWR from "swr";
 import { RoleGate, useUser } from "@/components/require-auth";
 import { SkeletonTable } from "@/components/skeleton";
@@ -19,7 +20,9 @@ const unitLabel = (unit: string) => UNIT_LABEL[unit] ?? unit;
 export default function PendingPage() {
   return (
     <RoleGate roles={["manager", "production"]}>
-      <Pending />
+      <Suspense>
+        <Pending />
+      </Suspense>
     </RoleGate>
   );
 }
@@ -31,6 +34,15 @@ function Pending() {
   const user = useUser();
   const isManager = user.role === "manager";
   const { data, error, mutate } = useSWR<PendingRequirement[]>(PENDING_URL, fetcher, { refreshInterval: 5000 });
+  // ?material=<id> (from Inventario's "Generar pedido"): highlight that row and bring it into view once.
+  const focusId = Number(useSearchParams().get("material")) || null;
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    if (!focusId || !data || scrolled) return;
+    const target = [...document.querySelectorAll<HTMLElement>(`[data-material="${focusId}"]`)].find((el) => el.offsetParent !== null);
+    target?.scrollIntoView({ block: "center", behavior: "smooth" });
+    setScrolled(true);
+  }, [focusId, data, scrolled]);
   // Supplier picked with "Cambiar", per material; the suggestion otherwise.
   const [overrides, setOverrides] = useState<Record<number, number>>({});
   const [busy, setBusy] = useState<number | "all" | null>(null);
@@ -170,7 +182,7 @@ function Pending() {
               </thead>
               <tbody className="divide-y divide-line align-top">
                 {rows.map((row) => (
-                  <tr key={row.material.id}>
+                  <tr key={row.material.id} data-material={row.material.id} className={row.material.id === focusId ? "bg-warning-soft" : ""}>
                     <td className="py-3 pr-3">
                       <div className="flex items-center gap-3">
                         <Thumb src={row.material.image} alt={row.material.name} size={40} />
@@ -208,8 +220,8 @@ function Pending() {
 
           <ul className="space-y-3 md:hidden">
             {rows.map((row) => (
-              <li key={row.material.id}>
-                <Card>
+              <li key={row.material.id} data-material={row.material.id}>
+                <Card className={row.material.id === focusId ? "ring-2 ring-warning" : ""}>
                   <div className="flex items-center gap-3">
                     <Thumb src={row.material.image} alt={row.material.name} size={44} />
                     <div className="min-w-0 flex-1">
