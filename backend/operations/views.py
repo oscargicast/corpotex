@@ -155,15 +155,26 @@ class DraftLineInSerializer(serializers.Serializer):
 class ClassifyDraftInSerializer(serializers.Serializer):
     brand = serializers.CharField(help_text="Brand name.")
     customer = serializers.CharField(required=False, allow_blank=True, help_text="Customer name, optional: a draft may not have it yet.")
+    phase = serializers.ChoiceField(
+        choices=[("full", "Todo"), ("product", "Solo producto (Jev)"), ("recipe", "Solo receta (Claude y Jev insumos)")],
+        default="full",
+        help_text="ADR 0028 §3c: `product` answers in under a second (a catalogue line classified, a new one "
+        "`new_pending`); `recipe` skips the product step and brings the new product with its recipe.",
+    )
     items = DraftLineInSerializer(many=True, help_text="One line per call is the intended use: the form calls in parallel.")
 
 
 class DraftLineResultSerializer(serializers.Serializer):
     key = serializers.CharField()
-    status = serializers.ChoiceField(choices=[("classified", "Clasificado"), ("pending", "Falta texto o cantidad"), ("error", "Falló la clasificación")])
+    status = serializers.ChoiceField(choices=[
+        ("classified", "Clasificado"),
+        ("new_pending", "Producto nuevo: falta la receta"),
+        ("pending", "Falta texto o cantidad"),
+        ("error", "Falló la clasificación"),
+    ])
     description = serializers.CharField(required=False)
     product = ClassificationProductSerializer(required=False)
-    confidence = serializers.FloatField(required=False)
+    confidence = serializers.FloatField(required=False, allow_null=True, help_text="On `new_pending`, Jev's confidence; null when Jev did not answer.")
     materials = ClassificationMaterialSerializer(many=True, required=False)
     detail = serializers.CharField(required=False, help_text="Only on error.")
 
@@ -399,7 +410,7 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
     def classify_draft(self, request):
         """The magic form (ADR 0028 §1), the three roles: the `classify` proposal for lines still
         being written, by `key`, nothing saved. Lines under 12 characters or without a quantity
-        come back `pending` without calling the model."""
+        come back `pending` without calling the model. `phase` splits it in two calls (§3c)."""
         from core.models import Brand, Customer
 
         from . import classify as classifier
@@ -411,7 +422,7 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             return Response({"detail": f"La marca {data.validated_data['brand']} no existe"}, status=status.HTTP_400_BAD_REQUEST)
         name = (data.validated_data.get("customer") or "").strip()
         customer = Customer.objects.filter(name__iexact=name).first() if name else None
-        return Response({"items": classifier.classify_draft(brand, data.validated_data["items"], customer=customer)})
+        return Response({"items": classifier.classify_draft(brand, data.validated_data["items"], customer=customer, phase=data.validated_data["phase"])})
 
     @extend_schema(request=DescribeImageInSerializer, responses={200: DescribeImageResultSerializer})
     @action(detail=False, methods=["post"], url_path="describe-image")

@@ -1636,7 +1636,7 @@
         "/api/orders/classify-draft/": {
             "post": {
                 "operationId": "orders_classify_draft_create",
-                "description": "The magic form (ADR 0028 §1), the three roles: the `classify` proposal for lines still\nbeing written, by `key`, nothing saved. Lines under 12 characters or without a quantity\ncome back `pending` without calling the model.",
+                "description": "The magic form (ADR 0028 §1), the three roles: the `classify` proposal for lines still\nbeing written, by `key`, nothing saved. Lines under 12 characters or without a quantity\ncome back `pending` without calling the model. `phase` splits it in two calls (§3c).",
                 "tags": [
                     "orders"
                 ],
@@ -4732,6 +4732,15 @@
                         "type": "string",
                         "description": "Customer name, optional: a draft may not have it yet."
                     },
+                    "phase": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PhaseEnum"
+                            }
+                        ],
+                        "default": "full",
+                        "description": "ADR 0028 §3c: `product` answers in under a second (a catalogue line classified, a new one `new_pending`); `recipe` skips the product step and brings the new product with its recipe.\n\n* `full` - Todo\n* `product` - Solo producto (Jev)\n* `recipe` - Solo receta (Claude y Jev insumos)"
+                    },
                     "items": {
                         "type": "array",
                         "items": {
@@ -5298,7 +5307,9 @@
                     },
                     "confidence": {
                         "type": "number",
-                        "format": "double"
+                        "format": "double",
+                        "nullable": true,
+                        "description": "On `new_pending`, Jev's confidence; null when Jev did not answer."
                     },
                     "materials": {
                         "type": "array",
@@ -5319,11 +5330,12 @@
             "DraftLineResultStatusEnum": {
                 "enum": [
                     "classified",
+                    "new_pending",
                     "pending",
                     "error"
                 ],
                 "type": "string",
-                "description": "* `classified` - Clasificado\n* `pending` - Falta texto o cantidad\n* `error` - Falló la clasificación"
+                "description": "* `classified` - Clasificado\n* `new_pending` - Producto nuevo: falta la receta\n* `pending` - Falta texto o cantidad\n* `error` - Falló la clasificación"
             },
             "FollowUpInRequest": {
                 "type": "object",
@@ -7419,6 +7431,15 @@
                     "id",
                     "qty"
                 ]
+            },
+            "PhaseEnum": {
+                "enum": [
+                    "full",
+                    "product",
+                    "recipe"
+                ],
+                "type": "string",
+                "description": "* `full` - Todo\n* `product` - Solo producto (Jev)\n* `recipe` - Solo receta (Claude y Jev insumos)"
             },
             "PlanDay": {
                 "type": "object",
