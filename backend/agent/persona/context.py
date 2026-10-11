@@ -78,6 +78,14 @@ def fmt_time(value) -> str:
     return f"{moment:%H:%M}" if moment else ""
 
 
+def fmt_qty(value) -> str:
+    """`"900.00"` → `900`, `"12.50"` → `12.5`: the API sends decimals, people say integers."""
+    if value in (None, ""):
+        return ""
+    number = Decimal(str(value)).normalize()
+    return str(int(number)) if number == number.to_integral_value() else format(number, "f")
+
+
 def fmt_money(amount, currency: str = "PEN") -> str:
     if amount in (None, ""):
         return ""

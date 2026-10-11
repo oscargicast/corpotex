@@ -196,7 +196,7 @@ def _render_purchase_suggestion(alert: dict) -> str:
         "sku": material.get("sku"),
         "insumo": material.get("name"),
         "unidad": material.get("unit"),
-        "total_por_pedir": alert.get("total_to_order"),
+        "total_por_pedir": ctx.fmt_qty(alert.get("total_to_order")),
         "proveedor_sugerido": (alert.get("suggested_supplier") or {}).get("name"),
     }
     if alert.get("reference_price") not in (None, ""):
@@ -204,7 +204,7 @@ def _render_purchase_suggestion(alert: dict) -> str:
             alert["reference_price"], alert.get("currency") or "PEN"
         )
     orders = [
-        f"<orden{ctx.attrs(codigo=o.get('code'), cantidad=o.get('qty'), fecha_limite=ctx.fmt_date(o.get('due_on')))}/>"
+        f"<orden{ctx.attrs(codigo=o.get('code'), cantidad=ctx.fmt_qty(o.get('qty')), fecha_limite=ctx.fmt_date(o.get('due_on')))}/>"
         for o in alert.get("orders") or []
     ]
     inner = ("\n" + "\n".join(orders) + "\n") if orders else ""
