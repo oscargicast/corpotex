@@ -85,7 +85,7 @@ function Suppliers() {
       {confirmAgent && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning" role="alert">
           {globalPaused
-            ? "El agente vuelve a escribir a los proveedores, salvo los que pausaste uno por uno. ¿Reanudar?"
+            ? "El agente vuelve a escribir a los proveedores, salvo los que pausaste uno por uno, y manda el primer mensaje de los pedidos aprobados durante la pausa. ¿Reanudar?"
             : "El agente deja de escribir a todos los proveedores hasta que lo reanudes. ¿Pausar?"}
           <Button kind="dark" busy={agentBusy} onClick={() => setAgentPaused(!globalPaused)}>
             {globalPaused ? "Reanudar agente" : "Pausar agente"}

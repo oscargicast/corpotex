@@ -577,7 +577,7 @@ function supplierExtras(s: SupplierListItem, numbers = s.active_numbers_count) {
     last_delivered_on: s.open_purchase_orders ? new Date(Date.now() - (s.id % 9) * 86_400_000).toISOString().slice(0, 10) : null,
   };
 }
-const plantLoad = () => ({ name: "Planta propia", weekly_capacity: 2000, units_in_progress: 1440, load_pct: 72, open_purchase_orders: 3 });
+const plantLoad = () => ({ name: "Planta Corpotex", weekly_capacity: 1500, units_in_progress: 1400, load_pct: 93.3, open_purchase_orders: 2 });
 
 function monitorFor(role: Role): Monitor {
   const kpis = { ...monitor.kpis, pending_decisions: monitor.decisions.length, open_alerts: monitor.alerts.length };
