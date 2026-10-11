@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, MessageCircleQuestion, Pencil, XCircle } from "lucide-react";
+import { ArrowLeft, MessageCircleQuestion, Pencil, Sparkles, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -19,7 +19,6 @@ import { useResolvedId } from "@/lib/resolve";
 import { CUSTOMIZATION, type OrderDetail } from "@/lib/types";
 import { SkeletonDetail } from "@/components/skeleton";
 import { canCancelOrder, canEditOrder } from "@/lib/orders";
-import { ClassifyPanel } from "@/components/classify-panel";
 import { FollowUpPanel } from "@/components/follow-up-request";
 
 export default function OrderDetailPage() {
@@ -194,7 +193,14 @@ export default function OrderDetailPage() {
           </ul>
         </Card>
 
-        {user.role !== "sales" && order.items.some((item) => !item.product) && <ClassifyPanel order={order} onApplied={() => mutate()} />}
+        {/* Orders are born broken down (ADR 0028); lines the AI could not place yet are
+            classified by the backend in the background, so there is no button here
+            (ClassifyPanel is no longer mounted). */}
+        {order.needs_classification && (
+          <p className="flex items-center gap-2 rounded-xl bg-accent/10 px-4 py-3 text-sm text-accent xl:col-span-2" role="status">
+            <Sparkles size={16} className="shrink-0" aria-hidden /> La IA está reconociendo los ítems. El desglose aparece aquí cuando termine.
+          </p>
+        )}
 
         {order.requirements.length > 0 && (
           <Card>

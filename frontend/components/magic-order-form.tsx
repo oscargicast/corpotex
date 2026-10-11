@@ -1,11 +1,11 @@
 "use client";
 
 import { CalendarClock, CheckCircle2, Plus, RotateCcw, Search, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { num } from "@/lib/format";
-import { type ClassificationMaterial, type Customer, type DraftClassification, type DraftProposal, MATERIAL_UNIT, type OrderDetail, type Product } from "@/lib/types";
+import { type ClassificationMaterial, type Customer, type DraftClassification, type DraftProposal, MATERIAL_UNIT, type OrderDetail, type OrderListItem, type Product } from "@/lib/types";
 import { Button, Card, Pill, SectionTitle } from "./ui";
 
 // Orden mágica (ADR 0028): each item is one line as the customer says it. When
@@ -82,9 +82,11 @@ function firstError(err: unknown): string {
 export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDetail) => void; onCancel: () => void }) {
   const { data: customers } = useSWR<Customer[]>("/api/customers/", fetcher);
   const { data: products } = useSWR<Product[]>("/api/products/", fetcher);
+  const { data: orders } = useSWR<OrderListItem[]>("/api/orders/", fetcher);
   const [customer, setCustomer] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
   const [brand, setBrand] = useState("");
+  const [brandTouched, setBrandTouched] = useState(false);
   const [promisedOn, setPromisedOn] = useState("");
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<Line[]>(() => [newLine()]);
@@ -201,8 +203,11 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
   const drafts = lines.map((line) => ({ line, ...draftOf(line) }));
   const counted = drafts.filter((d) => d.description && d.quantity > 0);
   const garments = counted.reduce((sum, d) => sum + d.quantity, 0);
-  // Recognized for the text as it is now (an edited line waits for its new result).
-  const recognized = counted.filter((d) => d.line.state === "done" && d.line.proposal && signatureOf(brand, d.description) === d.line.signature);
+  // Exactly what the cards show: a result on screen counts and is saved. (Tying
+  // it to the last request's brand and text left the summary empty while the
+  // card showed a result, e.g. after a brand change.) An edit hides the old
+  // result as soon as the new request starts.
+  const recognized = counted.filter((d) => d.line.state === "done" && !!d.line.proposal);
   const recognizing = lines.filter((l) => l.state === "recognizing").length;
   const needs = new Map<string, { name: string; unit: string; total: number; isNew: boolean }>();
   for (const { line, quantity } of recognized) {
@@ -287,6 +292,16 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
   const exact = (customers ?? []).some((c) => c.name.toLowerCase() === query);
   const brands = [...new Set([...BRANDS, ...(products ?? []).map((p) => p.brand?.name).filter((b): b is string => !!b)])];
 
+  // The customer's last order sets the brand (unless it was chosen by hand), so
+  // recognition never waits for it; a customer without orders gets the first.
+  function presetBrand(name: string) {
+    if (brandTouched || !name.trim()) return;
+    const last = (orders ?? [])
+      .filter((o) => o.customer.name.toLowerCase() === name.trim().toLowerCase())
+      .sort((a, b) => (b.issued_on ?? "").localeCompare(a.issued_on ?? "") || b.id - a.id)[0];
+    setBrand(last?.brand.name ?? brands[0]);
+  }
+
   return (
     <form onSubmit={submit} className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
       <div className="min-w-0 space-y-4">
@@ -301,7 +316,10 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                   setCustomerOpen(true);
                 }}
                 onFocus={() => setCustomerOpen(true)}
-                onBlur={() => setTimeout(() => setCustomerOpen(false), 150)}
+                onBlur={() => {
+                  setTimeout(() => setCustomerOpen(false), 150);
+                  if (!brand) presetBrand(customer);
+                }}
                 placeholder="Busca por nombre o RUC"
                 autoComplete="off"
                 className={input}
@@ -320,6 +338,7 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                         onClick={() => {
                           setCustomer(c.name);
                           setCustomerOpen(false);
+                          presetBrand(c.name);
                         }}
                         className="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-canvas"
                       >
@@ -338,14 +357,27 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
             </label>
             <label className="text-sm">
               Marca
-              <select value={brand} onChange={(e) => setBrand(e.target.value)} className={input}>
-                <option value="">Elige la marca</option>
+              <select
+                value={brand}
+                onChange={(e) => {
+                  setBrand(e.target.value);
+                  setBrandTouched(true);
+                }}
+                aria-describedby={brand ? undefined : "brand-hint"}
+                className={`${input} ${brand ? "" : "ring-warning"}`}
+              >
+                {!brand && <option value="">Elige la marca</option>}
                 {brands.map((b) => (
                   <option key={b} value={b}>
                     {b}
                   </option>
                 ))}
               </select>
+              {!brand && (
+                <span id="brand-hint" className="mt-1 flex items-center gap-1 text-xs text-warning">
+                  <TriangleAlert size={12} aria-hidden /> Elige la marca para reconocer
+                </span>
+              )}
             </label>
             <label className="text-sm">
               Prometida al cliente
@@ -365,9 +397,18 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 <Sparkles size={16} className="text-accent" aria-hidden /> Ítems
               </h2>
               <p className="mt-0.5 text-sm text-muted">Escribe cada prenda como la pide el cliente. Se reconoce sola contra el catálogo y el inventario.</p>
+              <p id="quantity-help" className="mt-0.5 text-xs text-muted">
+                Si la línea empieza con la cantidad («300 polos…»), se toma sola. Enter agrega otra prenda.
+              </p>
             </div>
           </div>
-          <ol className="mt-3 space-y-3">
+          <div className="mt-3 hidden grid-cols-[1.5rem_minmax(0,1fr)_8rem_2.75rem] gap-x-3 px-4 text-xs font-medium text-muted sm:grid" aria-hidden>
+            <span />
+            <span>Prenda</span>
+            <span>Cantidad</span>
+            <span />
+          </div>
+          <ol className="mt-1.5 space-y-3">
             {lines.map((line, i) => (
               <ItemCard
                 key={line.key}
@@ -545,59 +586,74 @@ function ItemCard({
   const waitingBrand = needsBrand && draft.description.length >= MIN_CHARS && draft.quantity > 0;
   const open = line.state !== "idle" || waitingBrand;
 
+  // One line at first (44 px, like the quantity); it grows with the text.
+  const textarea = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const el = textarea.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [line.text]);
+
+  const control = "rounded-md bg-surface text-base leading-6 ring-1 ring-line sm:text-sm sm:leading-6";
+
   return (
     <li className="rounded-xl bg-surface p-3 ring-1 ring-line sm:p-4">
-      <div className="flex items-start gap-2 sm:gap-3">
-        <span className="mt-3 flex size-6 shrink-0 items-center justify-center rounded-full bg-canvas text-xs font-semibold tabular-nums text-muted" aria-hidden>
-          {n}
+      <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem] items-start gap-x-2 gap-y-2 sm:grid-cols-[1.5rem_minmax(0,1fr)_8rem_2.75rem] sm:gap-x-3">
+        <span className="flex h-11 items-center justify-center" aria-hidden>
+          <span className="flex size-6 items-center justify-center rounded-full bg-canvas text-xs font-semibold tabular-nums text-muted">{n}</span>
         </span>
-        <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_7rem]">
-          <label className="text-xs text-muted">
-            Prenda
-            <textarea
-              ref={fieldRef}
-              value={line.text}
-              rows={2}
-              onChange={(e) => onText(e.target.value)}
-              onBlur={onBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  onEnter();
-                }
-              }}
-              placeholder="300 polos deportivos azul marino con escudo sublimado, tallas 6 a 14"
-              aria-label={`Ítem ${n}: la prenda como la pide el cliente`}
-              className={`${input} resize-none text-ink`}
-            />
-          </label>
-          <label className="max-w-36 text-xs text-muted sm:max-w-none">
-            Cantidad
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={quantityValue}
-              onChange={(e) => onQuantity(e.target.value)}
-              onBlur={onBlur}
-              aria-label={`Cantidad del ítem ${n}`}
-              className={`${input} tabular-nums text-ink`}
-            />
-            {fromLine && <span className="mt-0.5 block text-[11px]">de la línea</span>}
-          </label>
-        </div>
+        <label className="min-w-0">
+          <span className="sr-only">Ítem {n}: la prenda como la pide el cliente</span>
+          <textarea
+            ref={(el) => {
+              textarea.current = el;
+              fieldRef(el);
+            }}
+            value={line.text}
+            rows={1}
+            onChange={(e) => onText(e.target.value)}
+            onBlur={onBlur}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                onEnter();
+              }
+            }}
+            placeholder="300 polos deportivos azul marino con escudo sublimado, tallas 6 a 14"
+            aria-label={`Ítem ${n}: la prenda como la pide el cliente`}
+            className={`block min-h-11 w-full resize-none overflow-hidden px-3 py-2.5 text-ink ${control}`}
+          />
+        </label>
+        {/* Phone: under the text, full width. From sm: its own column. */}
+        <label className="col-span-2 col-start-2 row-start-2 flex items-center gap-2 sm:col-span-1 sm:col-start-3 sm:row-start-1">
+          <span className="w-16 shrink-0 text-xs text-muted sm:sr-only">Cantidad</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={quantityValue}
+            onChange={(e) => onQuantity(e.target.value)}
+            onBlur={onBlur}
+            title={fromLine ? "Tomada del inicio de la línea" : undefined}
+            aria-label={`Cantidad del ítem ${n}`}
+            aria-describedby="quantity-help"
+            className={`h-11 w-full min-w-0 px-3 text-right tabular-nums text-ink sm:w-24 ${control} ${fromLine ? "bg-canvas" : ""}`}
+          />
+          <span className="text-sm text-muted">u.</span>
+        </label>
         <button
           type="button"
           onClick={onRemove}
           aria-label={`Quitar ítem ${n}`}
-          className="mt-5 flex size-11 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-danger sm:size-9"
+          className="col-start-3 row-start-1 flex size-11 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-danger sm:col-start-4"
         >
           <Trash2 size={16} aria-hidden />
         </button>
       </div>
 
       <div className="magic-reveal" data-open={open}>
-        <div className="sm:pl-9">
+        <div className="pl-8 sm:pl-9">
           {line.state === "recognizing" && (
             <div className="mt-3 rounded-lg p-3 magic-shimmer" role="status">
               <p className="flex items-center gap-2 text-sm font-medium text-accent">
@@ -609,7 +665,7 @@ function ItemCard({
               </div>
             </div>
           )}
-          {waitingBrand && line.state === "idle" && <p className="mt-3 text-sm text-muted">Elige la marca arriba para reconocerla.</p>}
+          {waitingBrand && line.state === "idle" && <p className="mt-3 text-sm text-warning">Elige la marca arriba para reconocerla.</p>}
           {line.state === "pending" && <p className="mt-3 text-sm text-muted">Agrega la prenda y la cantidad para reconocerla.</p>}
           {line.state === "error" && (
             <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-warning" role="alert">
