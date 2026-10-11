@@ -1,0 +1,215 @@
+<style>
+  .wa{--brand:#ff8c06;--accent:#0062fa;--ink:#15141c;--muted:#5f5e6b;--line:#e3e3e8;--canvas:#f5f5f7;--surface:#fff;--danger:#c4281c;--warning:#9a5b00;--warning-soft:#fff4e0;--success:#12773d;--success-soft:#e6f4ea;--wa-green:#25d366;--wa-out:#d9fdd3;--wa-bg:#efeae2;
+    position:relative;width:1600px;height:900px;overflow:hidden;background:var(--paper,#f5f5f7);color:var(--ink);
+    font-family:var(--sans,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);font-size:20px;line-height:1.45;box-sizing:border-box}
+  .wa-canvas{position:absolute;inset:0;z-index:1;padding:100px 80px 40px}
+  /* Deck furniture, same values as the shell, so the fragment also reads alone. */
+  .wa .pg{position:absolute;right:80px;bottom:30px;font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:20px;opacity:.45}
+  .wa .mark{position:absolute;right:80px;top:52px;width:238px;height:54px}
+  .wa *,.wa *::before,.wa *::after{box-sizing:border-box;margin:0}
+  .wa.is-instant *,.wa.is-instant *::before,.wa.is-instant *::after{transition:none!important;animation:none!important}
+  .wa svg{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .wa-kicker{display:flex;align-items:baseline;gap:18px;margin-bottom:20px;margin-top:-40px}
+  .wa-kicker .wa-num{font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:20px;letter-spacing:5px;color:var(--maroon,#5B2230);opacity:.85}
+  .wa-kicker h2{font-family:var(--serif,Georgia,"Times New Roman",serif);font-size:40px;font-weight:400;letter-spacing:-.005em}
+  .wa-kicker p{font-size:20px;color:var(--muted);max-width:980px}
+  .wa-stage{display:grid;grid-template-columns:420px 1fr;gap:56px;align-items:start}
+  /* The phone */
+  .wa-phone{width:420px;height:720px;border-radius:44px;background:#111;padding:14px;box-shadow:0 30px 60px rgba(21,20,28,.25),inset 0 0 0 2px #333}
+  .wa-screen{height:100%;border-radius:32px;overflow:hidden;background:var(--wa-bg);display:flex;flex-direction:column;position:relative}
+  .wa-screen::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,rgba(0,0,0,.035) 0 2px,transparent 3px),radial-gradient(circle at 70% 60%,rgba(0,0,0,.035) 0 2px,transparent 3px);background-size:48px 48px,64px 64px;pointer-events:none}
+  .wa-head{background:#fff;padding:22px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #ddd;position:relative}
+  .wa-avatar{width:40px;height:40px;border-radius:50%;background:#e6ecfb;color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:16px}
+  .wa-head b{display:block;font-size:17px}
+  .wa-head small{display:block;font-size:13px;color:var(--muted);min-height:16px}
+  .wa-head .wa-glyph{margin-left:auto;color:var(--success);font-size:24px}
+  .wa-chat{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:8px;position:relative}
+  .wa-day{align-self:center;font-size:12px;color:var(--muted);background:#fff;padding:3px 10px;border-radius:8px;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+  .wa-b{max-width:82%;padding:8px 12px 6px;border-radius:12px;background:#fff;font-size:16.5px;line-height:1.35;box-shadow:0 1px 1px rgba(0,0,0,.08);display:none;position:relative}
+  .wa-b.is-on{display:block;animation:wa-in .22s ease-out both}
+  .wa-b.out{align-self:flex-end;background:var(--wa-out);border-bottom-right-radius:4px}
+  .wa-b.in{align-self:flex-start;border-bottom-left-radius:4px}
+  .wa-b .wa-t{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11px;color:#7a7a84;margin-top:2px}
+  .wa-b .wa-t svg{width:15px;height:15px;color:#53bdeb;stroke-width:2.4}
+  .wa-b .wa-who{font-size:12px;font-weight:600;color:var(--brand);margin-bottom:2px}
+  @keyframes wa-in{from{opacity:0;transform:translateY(6px) scale(.98)}}
+  .wa-typing{display:none;align-self:flex-start;padding:10px 14px;border-radius:12px;background:#fff;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+  .wa-typing.out{align-self:flex-end;background:var(--wa-out)}
+  .wa-typing.is-on{display:flex;gap:4px;animation:wa-in .2s ease-out both}
+  .wa-typing i{width:7px;height:7px;border-radius:50%;background:#8a8a94;animation:wa-dot 1s ease-in-out infinite}
+  .wa-typing i:nth-child(2){animation-delay:.15s}.wa-typing i:nth-child(3){animation-delay:.3s}
+  @keyframes wa-dot{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-4px);opacity:1}}
+  .wa-photo{width:220px;height:150px;border-radius:8px;overflow:hidden;position:relative;margin:2px 0 4px;background:#5b6e8c}
+  .wa-photo::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,#3f4f6b 0 14px,#5b6e8c 14px 28px);opacity:.9}
+  .wa-photo::after{content:"";position:absolute;left:16px;right:16px;top:28px;bottom:28px;border-radius:999px 999px 20px 20px;border:12px solid #e9edf4;border-bottom-color:transparent;transform:rotate(-8deg);opacity:.95}
+  .wa-photo span{position:absolute;left:10px;bottom:8px;font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  .wa-input{display:flex;align-items:center;gap:10px;padding:10px 12px 16px;position:relative}
+  .wa-input div{flex:1;height:38px;border-radius:19px;background:#fff;color:#9896a3;font-size:15px;display:flex;align-items:center;padding:0 14px}
+  .wa-input b{width:38px;height:38px;border-radius:50%;background:#00a884;color:#fff;display:grid;place-items:center;font-size:18px}
+  /* The purchase order card */
+  .wa-card{background:var(--surface);border-radius:16px;box-shadow:0 0 0 1px var(--line);padding:28px;margin-top:40px}
+  .wa-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .wa-top h3{font-size:30px;font-weight:700;letter-spacing:-.01em}
+  .wa-pill{font-size:15px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--canvas);color:var(--muted);display:inline-flex;align-items:center;gap:6px;transition:opacity .25s,transform .25s}
+  .wa-pill.warn{background:var(--warning-soft);color:var(--warning)}
+  .wa-pill.ok{background:var(--success-soft);color:var(--success)}
+  .wa-pill.info{background:#e6ecfb;color:var(--accent)}
+  .wa-pill.is-gone{opacity:0;transform:scale(.9);position:absolute;pointer-events:none}
+  .wa-sub{color:var(--muted);font-size:18px;margin-top:6px}
+  .wa-sub a{color:var(--accent);text-decoration:none;font-weight:500}
+  .wa-prog{margin-top:28px}
+  .wa-prog .wa-l{display:flex;justify-content:space-between;font-size:17px;color:var(--muted)}
+  .wa-prog b{font-size:30px;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .wa-bar{height:14px;border-radius:7px;background:var(--canvas);overflow:hidden;margin-top:10px}
+  .wa-bar i{display:block;height:100%;width:0;border-radius:7px;background:var(--success);transition:width .9s cubic-bezier(.2,.8,.2,1)}
+  .wa-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+  .wa-kv{padding:14px 16px;border-radius:12px;background:var(--canvas)}
+  .wa-kv small{display:block;font-size:14px;color:var(--muted)}
+  .wa-kv b{font-size:20px;font-weight:600}
+  .wa-last{margin-top:26px;border-top:1px solid var(--line);padding-top:18px}
+  .wa-last h4{font-size:17px;font-weight:600;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .wa-rep{display:flex;align-items:center;gap:16px;opacity:0;transform:translateY(6px);transition:opacity .3s ease-out,transform .3s ease-out}
+  .wa-rep.is-on{opacity:1;transform:none}
+  .wa-rep .wa-photo{width:120px;height:84px;margin:0;flex:none}
+  .wa-rep .wa-photo::after{border-width:7px;left:9px;right:9px;top:15px;bottom:15px}
+  .wa-rep p{font-size:18px}
+  .wa-rep p small{display:block;color:var(--muted);font-size:15px}
+  .wa-note{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:15px;color:var(--accent);background:#e6ecfb;padding:5px 12px;border-radius:999px;opacity:0;transition:opacity .25s}
+  .wa-note.is-on{opacity:1}
+  .wa-caption{color:var(--muted);font-size:16px;margin-top:16px;text-align:center;width:420px}
+</style>
+<section class="slide feature wa" data-feature="whatsapp-en-vivo">
+<svg class="mark" viewBox="0 0 238 54" aria-hidden="true"><use href="#ciso" x="0" y="0" width="46" height="54"/><use href="#cword" x="56" y="15" width="182" height="23"/></svg>
+<div class="wa-canvas">
+<div class="wa-kicker"><span class="wa-num">08</span><h2>WhatsApp en vivo</h2><p>El agente escribe con el estilo del Gerente, lee la respuesta y la foto, y actualiza el pedido solo.</p></div>
+<div class="wa-stage">
+  <div>
+    <div class="wa-phone"><div class="wa-screen">
+      <div class="wa-head"><span class="wa-avatar">TR</span><div><b>Tejidos Rib Lima</b><small data-status>en línea</small></div><span class="wa-glyph"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg></span></div>
+      <div class="wa-chat" data-chat>
+        <span class="wa-day">Hoy</span>
+        <div class="wa-typing out" data-typing-out><i></i><i></i><i></i></div>
+        <div class="wa-b out" data-b="1"><div class="wa-who">Gerente · agente</div>buenas, ¿cómo va lo de los cuellos rib?<div class="wa-t">10:41 <svg viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></div></div>
+        <div class="wa-typing" data-typing-in><i></i><i></i><i></i></div>
+        <div class="wa-b in" data-b="2">ya van 200<div class="wa-t">10:42</div></div>
+        <div class="wa-b in" data-b="3"><div class="wa-photo"><span>10:42</span></div></div>
+        <div class="wa-typing out" data-typing-out2><i></i><i></i><i></i></div>
+        <div class="wa-b out" data-b="4">gracias, ya anoté las 200 👍<div class="wa-t">10:42 <svg viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></div></div>
+      </div>
+      <div class="wa-input"><div>Mensaje</div><b><svg viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></b></div>
+    </div></div>
+    <p class="wa-caption">Desde el número del Gerente, con su forma de escribir.</p>
+  </div>
+  <div class="wa-card">
+    <div class="wa-top"><h3>PI-0041</h3><span class="wa-pill info">Insumo</span><span class="wa-pill" data-state>En proceso</span><span class="wa-pill warn" data-waiting><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Esperando respuesta</span></div>
+    <p class="wa-sub">Tejidos Rib Lima · <a>CP-2026-0155</a> (Colegio San José) · S/ 1,200 · acordado 19 oct.</p>
+    <div class="wa-prog">
+      <div class="wa-l"><span>Avance</span><span><b data-done>0</b><span style="font-size:22px"> / 500 u.</span></span></div>
+      <div class="wa-bar"><i data-bar></i></div>
+    </div>
+    <div class="wa-grid">
+      <div class="wa-kv"><small>Cuello rib tejido</small><b>500 u. · azul marino</b></div>
+      <div class="wa-kv"><small>Último seguimiento</small><b data-follow>Hoy 10:41 · el agente preguntó</b></div>
+    </div>
+    <div class="wa-last">
+      <h4><svg viewBox="0 0 24 24"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>Fotos de avance</h4>
+      <div class="wa-rep" data-rep><div class="wa-photo"></div><p>200 de 500 · Tejidos Rib Lima<small>Hoy 10:42 · llegó por WhatsApp</small></p></div>
+      <span class="wa-note" data-note><svg viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>El agente leyó la respuesta y registró el avance</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="pg">08</div>
+</section>
+<script>
+(function () {
+  const root = document.querySelector('.feature[data-feature="whatsapp-en-vivo"]');
+  const $ = (sel) => root.querySelector(sel);
+  const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("reduced");
+  // One .slide in the document: opened on its own or in the preview iframe; the deck has eleven.
+  const standalone = document.querySelectorAll(".slide").length === 1;
+  let timers = [];
+  const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const on = (sel) => $(sel).classList.add("is-on");
+  const off = (sel) => $(sel).classList.remove("is-on");
+
+  function countTo(el, value, ms) {
+    const from = Number(el.textContent) || 0;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / ms);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(from + (value - from) * e);
+      if (p < 1) timers.push(setTimeout(() => requestAnimationFrame(tick), 16));
+    };
+    requestAnimationFrame(tick);
+  }
+
+  const steps = [
+    [500, () => on("[data-typing-out]")],
+    [1500, () => { off("[data-typing-out]"); on('[data-b="1"]'); }],
+    [3400, () => { $("[data-status]").textContent = "escribiendo…"; on("[data-typing-in]"); }],
+    [4800, () => { off("[data-typing-in]"); $("[data-status]").textContent = "en línea"; on('[data-b="2"]'); }],
+    [5900, () => on('[data-b="3"]')],
+    [7300, () => on("[data-typing-out2]")],
+    [8300, () => { off("[data-typing-out2]"); on('[data-b="4"]'); }],
+    [8900, () => {
+      $("[data-waiting]").classList.add("is-gone");
+      countTo($("[data-done]"), 200, 900);
+      $("[data-bar]").style.width = "40%";
+      $("[data-follow]").textContent = "Hoy 10:42 · respondió: 200 de 500";
+    }],
+    [9800, () => on("[data-rep]")],
+    [10500, () => on("[data-note]")],
+  ];
+
+  const FINAL = () => {
+    on('[data-b="1"]'); on('[data-b="2"]'); on('[data-b="3"]'); on('[data-b="4"]');
+    $("[data-waiting]").classList.add("is-gone");
+    $("[data-done]").textContent = "200";
+    $("[data-bar]").style.width = "40%";
+    $("[data-follow]").textContent = "Hoy 10:42 · respondió: 200 de 500";
+    on("[data-rep]"); on("[data-note]");
+  };
+
+  function reset() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    root.classList.remove("is-instant");
+    root.querySelectorAll(".is-on").forEach((el) => el.classList.remove("is-on"));
+    $("[data-status]").textContent = "en línea";
+    $("[data-waiting]").classList.remove("is-gone");
+    $("[data-done]").textContent = "0";
+    $("[data-bar]").style.width = "0";
+    $("[data-follow]").textContent = "Hoy 10:41 · el agente preguntó";
+  }
+
+  function start() {
+    reset();
+    if (reduced()) { root.classList.add("is-instant"); FINAL(); return; }
+    steps.forEach(([t, fn]) => later(t, fn));
+  }
+
+  window.features = window.features || {};
+  window.features["whatsapp-en-vivo"] = { start, reset, duration: 15000 };
+
+  if (standalone) {
+    const fit = () => {
+      const s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+      root.style.transformOrigin = "top left";
+      root.style.transform = `scale(${s})`;
+      document.body.style.margin = "0";
+      document.body.style.background = "#15141c";
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    window.addEventListener("message", (e) => {
+      const m = e.data || {};
+      if (m.feature !== "whatsapp-en-vivo") return;
+      if (m.action === "start") start();
+      if (m.action === "reset") reset();
+    });
+    if (window === window.top) later(400, start);
+  }
+})();
+</script>

@@ -34,15 +34,15 @@
   <div class="frame" id="frame"><div class="empty">Elige una feature arriba</div></div>
 </main>
 <script>
-  // Each fragment is a self-contained <section>; opened in an iframe it
-  // listens to postMessage({feature, action}) and plays on demand.
+  // Each fragment (features/NN-slug.html, see ../README.md) is style + section +
+  // script; opened alone in an iframe it listens to postMessage({feature, action}).
   const FEATURES = [
-    ["orden-magica", "05 · Orden mágica"],
-    ["ficha-tecnica", "06 · Ficha técnica"],
-    ["pedido-en-lote", "07 · Pedido en lote"],
-    ["whatsapp-en-vivo", "08 · WhatsApp en vivo"],
-    ["cancelacion-redistribucion", "09 · Cancelación y redistribución"],
-    ["rutas-flota", "10 · Rutas y flota"],
+    ["orden-magica", "05 · Orden mágica", "05-orden-magica.html"],
+    ["ficha-tecnica", "06 · Ficha técnica", "06-ficha-tecnica.html"],
+    ["pedido-en-lote", "07 · Pedido en lote", "07-pedido-en-lote.html"],
+    ["whatsapp-en-vivo", "08 · WhatsApp en vivo", "08-whatsapp-en-vivo.html"],
+    ["cancelacion-redistribucion", "09 · Cancelación y redistribución", "09-cancelacion-redistribucion.html"],
+    ["rutas-flota", "10 · Rutas y flota", "10-rutas-flota.html"],
   ];
   const list = document.getElementById("list");
   const frame = document.getElementById("frame");
@@ -63,7 +63,7 @@
     for (const b of list.children) b.setAttribute("aria-pressed", String(b.dataset.slug === slug));
     frame.innerHTML = "";
     iframe = document.createElement("iframe");
-    iframe.src = `${slug}.html`;
+    iframe.src = FEATURES.find(([s]) => s === slug)[2];
     iframe.title = slug;
     frame.appendChild(iframe);
     iframe.addEventListener("load", () => setTimeout(play, 300));

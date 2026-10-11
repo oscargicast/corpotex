@@ -1,18 +1,18 @@
-<!doctype html>
-<meta charset="utf-8">
-<title>Orden mágica · Corpotex</title>
-<section class="slide feature om" data-feature="orden-magica">
 <style>
   .om{--brand:#ff8c06;--brand-hover:#f07f00;--accent:#0062fa;--ink:#15141c;--muted:#5f5e6b;--line:#e3e3e8;--canvas:#f5f5f7;--surface:#fff;--danger:#c4281c;--danger-soft:#fdecea;--warning:#9a5b00;--warning-soft:#fff4e0;--success:#12773d;--success-soft:#e6f4ea;
-    position:relative;width:1600px;height:900px;overflow:hidden;background:var(--canvas);color:var(--ink);
-    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:20px;line-height:1.45;box-sizing:border-box;padding:48px 64px}
+    position:relative;width:1600px;height:900px;overflow:hidden;background:var(--paper,#f5f5f7);color:var(--ink);
+    font-family:var(--sans,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);font-size:20px;line-height:1.45;box-sizing:border-box}
+  .om-canvas{position:absolute;inset:0;z-index:1;padding:100px 80px 40px}
+  /* Deck furniture, same values as the shell, so the fragment also reads alone. */
+  .om .pg{position:absolute;right:80px;bottom:30px;font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:20px;opacity:.45}
+  .om .mark{position:absolute;right:80px;top:52px;width:238px;height:54px}
   .om *,.om *::before,.om *::after{box-sizing:border-box;margin:0}
   .om.is-instant *,.om.is-instant *::before,.om.is-instant *::after{transition:none!important;animation:none!important}
   .om svg{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
-  .om-kicker{display:flex;align-items:baseline;gap:20px;margin-bottom:28px}
-  .om-kicker .om-num{font-size:18px;font-weight:600;letter-spacing:.14em;color:var(--brand)}
-  .om-kicker h2{font-size:34px;font-weight:700;letter-spacing:-.01em}
-  .om-kicker p{font-size:20px;color:var(--muted)}
+  .om-kicker{display:flex;align-items:baseline;gap:18px;margin-bottom:20px;margin-top:-40px}
+  .om-kicker .om-num{font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:20px;letter-spacing:5px;color:var(--maroon,#5B2230);opacity:.85}
+  .om-kicker h2{font-family:var(--serif,Georgia,"Times New Roman",serif);font-size:40px;font-weight:400;letter-spacing:-.005em}
+  .om-kicker p{font-size:20px;color:var(--muted);max-width:980px}
   .om-stage{display:grid;grid-template-columns:1fr 440px;gap:24px;align-items:start}
   .om-card{background:var(--surface);border-radius:16px;box-shadow:0 0 0 1px var(--line);padding:24px}
   .om-h{font-size:22px;font-weight:600;margin-bottom:18px}
@@ -62,6 +62,9 @@
   .om-hint{font-size:15px;color:var(--muted);text-align:center;margin-top:10px;min-height:22px}
   .om-hint.is-ready{color:var(--success);font-weight:600}
 </style>
+<section class="slide feature om" data-feature="orden-magica">
+<svg class="mark" viewBox="0 0 238 54" aria-hidden="true"><use href="#ciso" x="0" y="0" width="46" height="54"/><use href="#cword" x="56" y="15" width="182" height="23"/></svg>
+<div class="om-canvas">
 <div class="om-kicker"><span class="om-num">05</span><h2>Orden mágica</h2><p>Comercial escribe la orden en lenguaje natural; la IA reconoce la prenda y arma la ficha técnica al instante.</p></div>
 <div class="om-stage">
   <div class="om-card">
@@ -99,12 +102,17 @@
     </div>
   </div>
 </div>
+</div>
+<div class="pg">05</div>
+</section>
 <script>
 (function () {
   const root = document.querySelector('.feature[data-feature="orden-magica"]');
   const $ = (sel) => root.querySelector(sel);
   const TEXT = "300 polos deportivos azul marino con escudo sublimado, tallas 6 a 14";
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("reduced");
+  // One .slide in the document: opened on its own or in the preview iframe; the deck has eleven.
+  const standalone = document.querySelectorAll(".slide").length === 1;
   let timers = [];
   const later = (ms, fn) => timers.push(setTimeout(fn, ms));
 
@@ -175,7 +183,7 @@
 
   function start() {
     reset();
-    if (reduced) {
+    if (reduced()) {
       // Straight to the end: everything typed, recognised and counted.
       root.classList.add("is-instant");
       $("[data-item]").classList.add("is-live");
@@ -199,9 +207,9 @@
   window.features = window.features || {};
   window.features["orden-magica"] = { start, reset, duration: 15000 };
 
-  // Opened on its own (no shell): fit the viewport and play; a preview iframe
-  // drives it with postMessage({feature, action}).
-  if (!window.__featureShell) {
+  // Opened on its own: fit the viewport and play; the preview iframe drives it
+  // with postMessage({feature, action}). Inside the deck the shell calls start/reset.
+  if (standalone) {
     const fit = () => {
       const s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
       root.style.transformOrigin = "top left";
@@ -221,4 +229,3 @@
   }
 })();
 </script>
-</section>
