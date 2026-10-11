@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Features · vista previa</title>
+<style>
+  :root{--ink:#15141c;--muted:#9896a3;--line:#2a2933;--brand:#ff8c06}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0f0e14;color:#fff;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  header .list{display:flex;flex-wrap:wrap;gap:6px}
+  button{height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:#1b1a22;color:#fff;font:inherit;cursor:pointer}
+  button[aria-pressed="true"]{background:#fff;color:var(--ink);border-color:#fff}
+  button.primary{background:var(--brand);color:var(--ink);border-color:var(--brand);font-weight:600}
+  .spacer{flex:1}
+  .note{color:var(--muted)}
+  .note kbd{font:inherit;padding:1px 5px;border:1px solid var(--line);border-radius:4px}
+  main{position:absolute;inset:55px 0 0 0;display:grid;place-items:center;padding:16px}
+  .frame{position:relative;width:1600px;height:900px;transform-origin:top left;background:#f5f5f7;box-shadow:0 20px 60px rgba(0,0,0,.5);border-radius:6px;overflow:hidden}
+  .frame iframe{width:1600px;height:900px;border:0;display:block}
+  .empty{position:absolute;inset:0;display:grid;place-items:center;color:#5f5e6b;font-size:24px}
+</style>
+</head>
+<body>
+<header>
+  <div class="list" id="list"></div>
+  <span class="spacer"></span>
+  <button id="start" class="primary" type="button">▶ Reproducir</button>
+  <button id="reset" type="button">Reiniciar</button>
+  <span class="note">Lienzo 1600×900, escalado al visor · <kbd>espacio</kbd> reproduce · <kbd>r</kbd> reinicia · <kbd>←</kbd> <kbd>→</kbd> cambian de feature</span>
+</header>
+<main>
+  <div class="frame" id="frame"><div class="empty">Elige una feature arriba</div></div>
+</main>
+<script>
+  // Each fragment is a self-contained <section>; opened in an iframe it
+  // listens to postMessage({feature, action}) and plays on demand.
+  const FEATURES = [
+    ["orden-magica", "05 · Orden mágica"],
+    ["ficha-tecnica", "06 · Ficha técnica"],
+    ["pedido-en-lote", "07 · Pedido en lote"],
+    ["whatsapp-en-vivo", "08 · WhatsApp en vivo"],
+    ["cancelacion-redistribucion", "09 · Cancelación y redistribución"],
+    ["rutas-flota", "10 · Rutas y flota"],
+  ];
+  const list = document.getElementById("list");
+  const frame = document.getElementById("frame");
+  let current = null;
+  let iframe = null;
+
+  function fit() {
+    const w = window.innerWidth - 32, h = window.innerHeight - 55 - 32;
+    const s = Math.min(w / 1600, h / 900, 1);
+    frame.style.transform = `scale(${s})`;
+    frame.style.marginRight = `${1600 * s - 1600}px`;
+    frame.style.marginBottom = `${900 * s - 900}px`;
+  }
+
+  function load(slug) {
+    current = slug;
+    history.replaceState(null, "", `?f=${slug}`);
+    for (const b of list.children) b.setAttribute("aria-pressed", String(b.dataset.slug === slug));
+    frame.innerHTML = "";
+    iframe = document.createElement("iframe");
+    iframe.src = `${slug}.html`;
+    iframe.title = slug;
+    frame.appendChild(iframe);
+    iframe.addEventListener("load", () => setTimeout(play, 300));
+  }
+  const send = (action) => iframe?.contentWindow?.postMessage({ feature: current, action }, "*");
+  const play = () => send("start");
+  const reset = () => send("reset");
+
+  for (const [slug, label] of FEATURES) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.slug = slug;
+    b.textContent = label;
+    b.addEventListener("click", () => load(slug));
+    list.appendChild(b);
+  }
+  document.getElementById("start").addEventListener("click", play);
+  document.getElementById("reset").addEventListener("click", reset);
+  window.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT") return;
+    const i = FEATURES.findIndex(([s]) => s === current);
+    if (e.key === " ") { e.preventDefault(); play(); }
+    if (e.key === "r") reset();
+    if (e.key === "ArrowRight") load(FEATURES[(i + 1) % FEATURES.length][0]);
+    if (e.key === "ArrowLeft") load(FEATURES[(i - 1 + FEATURES.length) % FEATURES.length][0]);
+  });
+  window.addEventListener("resize", fit);
+  fit();
+  const wanted = new URLSearchParams(location.search).get("f");
+  load(FEATURES.some(([s]) => s === wanted) ? wanted : FEATURES[0][0]);
+</script>
+</body>
+</html>
