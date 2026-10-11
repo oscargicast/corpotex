@@ -615,6 +615,16 @@ def redistribute(po: PurchaseOrder):
     created, decision = match_requirements(requirements, exclude=po.supplier, redistributed_from=po)
     for order in {r.order for r in requirements}:
         compute_critical_path(order)
+    if decision is not None:
+        from .routes import propose_for_redistribution
+
+        before, after = propose_for_redistribution(created)
+        if after is not None:
+            detail = dict(decision.detail)
+            detail["before"] = {**(detail.get("before") or {}), "route_id": before.id}
+            detail["after"] = {**(detail.get("after") or {}), "route_id": after.id}
+            decision.detail = detail
+            decision.save(update_fields=["detail", "updated_at"])
     return created, decision
 
 

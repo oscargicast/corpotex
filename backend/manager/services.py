@@ -184,6 +184,14 @@ def resolve_decision(decision: Decision, *, action: str, supplier_id=None, purch
             target.supplier = Supplier.objects.get(pk=supplier_id)
             target.save(update_fields=["supplier", "updated_at"])
         if decision.kind == "approve_assignment":
+            proposed_id = (decision.detail.get("after") or {}).get("route_id")
+            if proposed_id:
+                from operations.models import Route
+                from operations.routes import discard, promote
+
+                proposed = Route.objects.filter(pk=proposed_id).first()
+                if proposed is not None:
+                    (promote if action in ("approve", "change_supplier") else discard)(proposed)
             if action in ("approve", "change_supplier"):
                 approve_purchase_orders(pos, actor=actor)
             else:
