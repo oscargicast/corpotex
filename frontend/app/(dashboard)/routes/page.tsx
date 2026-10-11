@@ -105,7 +105,7 @@ function Routes() {
               </SectionTitle>
               <p className="-mt-1 mb-3 text-sm text-muted tabular-nums">
                 {deliveries(route).length} {deliveries(route).length === 1 ? "entrega" : "entregas"} · {Number(route.distance_km).toFixed(1)} km ·{" "}
-                {Math.round(route.duration_min / 6) / 10} h
+                {Math.round(Number(route.duration_min) / 6) / 10} h
               </p>
               <ol className={`space-y-2 ${route.status === "replaced" ? "opacity-60" : ""}`}>
                 {[...route.stops]

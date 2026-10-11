@@ -14,9 +14,9 @@ import { Thumb } from "@/components/thumb";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { Card, CRITERIA_LABELS, Pill, ScoreBar, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
-import { formatDay, formatDayTime, formatMoney } from "@/lib/format";
+import { formatDay, formatDayTime, formatMoney, formatScore, num } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
-import type { ChatMessage, PurchaseOrderDetail } from "@/lib/types";
+import { candidateSupplier, type ChatMessage, type PurchaseOrderDetail } from "@/lib/types";
 
 const SOURCE: Record<string, string> = { whatsapp: "WhatsApp", web: "Web", manual: "Dashboard", simulator: "Simulador" };
 
@@ -101,7 +101,7 @@ export default function PurchaseOrderDetailPage() {
                 <Link href={`/purchase-orders/${child.id}`} className="font-medium text-accent hover:underline">
                   {child.code}
                 </Link>{" "}
-                · {child.supplier_name} · {child.quantity} u. · {child.status_display}
+                · {child.supplier_name} · {num(child.quantity)} u. · {child.status_display}
               </li>
             ))}
           </ul>
@@ -133,11 +133,11 @@ export default function PurchaseOrderDetailPage() {
                 </thead>
                 <tbody className="divide-y divide-line">
                   {po.candidates.map((c, i) => (
-                    <tr key={c.supplier.id} className={c.supplier.id === po.supplier.id ? "font-semibold" : ""}>
+                    <tr key={candidateSupplier(c).id} className={candidateSupplier(c).id === po.supplier.id ? "font-semibold" : ""}>
                       <td className="py-1.5">
-                        {i + 1}. {c.supplier.name}
+                        {i + 1}. {candidateSupplier(c).name}
                       </td>
-                      <td className="py-1.5 text-right tabular-nums">{Math.round(c.score * 100)}</td>
+                      <td className="py-1.5 text-right tabular-nums">{formatScore(c.score)}</td>
                       <td className="py-1.5 text-right tabular-nums">{formatMoney(c.unit_price, po.currency)}</td>
                       <td className="py-1.5 text-right tabular-nums">{c.load_pct} %</td>
                     </tr>

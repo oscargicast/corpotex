@@ -11,7 +11,7 @@ import { PurchaseOrderList } from "@/components/purchase-order-list";
 import { RoleGate } from "@/components/require-auth";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
-import { formatDay, formatMoney } from "@/lib/format";
+import { formatDay, formatMoney, formatNum, formatScore, num } from "@/lib/format";
 import type { SupplierDetail } from "@/lib/types";
 
 export default function SupplierDetailPage() {
@@ -45,8 +45,8 @@ function Supplier() {
       </header>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Fact label="Cumplimiento" value={supplier.on_time_score === null ? "—" : `${Math.round(supplier.on_time_score * 100)} %`} />
-        <Fact label="Calidad" value={supplier.quality_score === null ? "—" : `${supplier.quality_score.toFixed(1)} / 5`} />
+        <Fact label="Cumplimiento" value={num(supplier.on_time_score) === null ? "—" : `${formatScore(supplier.on_time_score)} %`} />
+        <Fact label="Calidad" value={num(supplier.quality_score) === null ? "—" : `${formatNum(supplier.quality_score)} / 5`} />
         <Fact label="Capacidad" value={supplier.weekly_capacity ? `${supplier.weekly_capacity} u./sem.` : "—"} />
         <Fact label="Carga actual" value={supplier.load_pct === null ? "—" : `${supplier.load_pct} %`} />
       </div>
@@ -121,9 +121,9 @@ function Supplier() {
                   <tr key={r.purchase_order_code}>
                     <td className="py-1.5">{r.purchase_order_code}</td>
                     <td className={`py-1.5 text-right ${r.delay_days > 0 ? "text-danger" : ""}`}>{r.delay_days} d</td>
-                    <td className="py-1.5 text-right">{r.quality.toFixed(1)}</td>
-                    <td className="py-1.5 text-right">{r.defect_pct.toFixed(1)} %</td>
-                    <td className="py-1.5 text-right font-semibold">{Math.round(r.score * 100)}</td>
+                    <td className="py-1.5 text-right">{formatNum(r.quality)}</td>
+                    <td className="py-1.5 text-right">{formatNum(r.defect_pct)} %</td>
+                    <td className="py-1.5 text-right font-semibold">{formatScore(r.score)}</td>
                   </tr>
                 ))}
               </tbody>

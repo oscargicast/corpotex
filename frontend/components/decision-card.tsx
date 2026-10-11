@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
-import { formatDay, formatMoney } from "@/lib/format";
-import { DECISION_KIND, type DecisionAction, type DecisionLike, type ProposalItem } from "@/lib/types";
+import { formatDay, formatMoney, formatScore } from "@/lib/format";
+import { DECISION_KIND, candidateSupplier, type DecisionAction, type DecisionLike, type ProposalItem } from "@/lib/types";
 import { RedistributionBody } from "./redistribution-card";
 import { Button, CRITERIA_LABELS, Pill, ScoreBar } from "./ui";
 
@@ -84,7 +84,7 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
         <Button disabled={busy} onClick={() => resolve({ action: "reject" })}>
           Rechazar
         </Button>
-        {proposal.some((item) => item.candidates.length > 1) && (
+        {proposal.some((item) => (item.candidates?.length ?? 0) > 1) && (
           <Button disabled={busy} onClick={() => dialog.current?.showModal()}>
             Cambiar proveedor
           </Button>
@@ -150,13 +150,14 @@ function ChangeSupplier({
       )}
       <p className="mt-3 text-sm text-muted">Ranking del matching para esta parte. El elegido hoy es {item.supplier.name}.</p>
       <ul className="mt-3 max-h-[60vh] space-y-3 overflow-y-auto">
-        {item.candidates.map((candidate) => {
-          const current = candidate.supplier.id === item.supplier.id;
+        {(item.candidates ?? []).map((candidate) => {
+          const supplier = candidateSupplier(candidate);
+          const current = supplier.id === item.supplier.id;
           return (
-            <li key={candidate.supplier.id} className="rounded-lg p-3 ring-1 ring-line">
+            <li key={supplier.id} className="rounded-lg p-3 ring-1 ring-line">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold">
-                  {candidate.supplier.name} <span className="font-normal text-muted">· {Math.round(candidate.score * 100)} pts</span>
+                  {supplier.name} <span className="font-normal text-muted">· {formatScore(candidate.score)} pts</span>
                 </p>
                 <span className="text-sm tabular-nums text-muted">
                   {formatMoney(candidate.unit_price, item.currency)} c/u · carga {candidate.load_pct} %
@@ -171,8 +172,8 @@ function ChangeSupplier({
               {current ? (
                 <p className="mt-2 text-xs font-medium">Elegido ahora</p>
               ) : (
-                <Button kind="dark" className="mt-2" disabled={busy} onClick={() => onPick(item, candidate.supplier.id)}>
-                  Elegir {candidate.supplier.name}
+                <Button kind="dark" className="mt-2" disabled={busy} onClick={() => onPick(item, supplier.id)}>
+                  Elegir {supplier.name}
                 </Button>
               )}
             </li>

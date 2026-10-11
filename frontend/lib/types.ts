@@ -6,6 +6,18 @@ import type { components } from "./api-types";
 
 type S = components["schemas"];
 
+// DRF serializes decimals as strings; a few views still send numbers. Always go
+// through num()/formatNum() (lib/format) before arithmetic or .toFixed.
+export type Decimal = string | number;
+
+export interface Rating {
+  delay_days: number;
+  quality: Decimal;
+  defect_pct: Decimal;
+  score: Decimal;
+  rated_at: string;
+}
+
 export type Role = "manager" | "sales" | "production";
 
 export interface User {
@@ -81,7 +93,7 @@ export type ChatMessage = S["Message"] & { media_kind?: "image" | "audio" | "doc
 export interface PurchaseOrderDetail extends PurchaseOrderListItem {
   status_history?: StatusHistoryEntry[];
   rationale: string | null;
-  scores: Record<string, number> | null;
+  scores: Record<string, Decimal> | null;
   candidates: Candidate[] | null;
   changed_by_manager: boolean;
   terms: string;
@@ -103,8 +115,8 @@ export interface PurchaseOrderDetail extends PurchaseOrderListItem {
   // Reduced in the API: {id, kind, summary, detail}.
   pending_decision: DecisionLike | null;
   suggested_supplier: { id: number; name: string } | null;
-  redistributed_into: (Ref & { supplier_name: string; quantity: number; status_display: string })[];
-  rating: { delay_days: number; quality: number; defect_pct: number; score: number; rated_at: string } | null;
+  redistributed_into: (Ref & { supplier_name: string; quantity: Decimal; status_display: string })[];
+  rating: Rating | null;
 }
 
 export interface SupplierListItem {
@@ -118,8 +130,8 @@ export interface SupplierListItem {
   lead_time_days: number | null;
   currency: Currency;
   load_pct: number | null;
-  on_time_score: number | null; // 0 to 1
-  quality_score: number | null; // 1 to 5
+  on_time_score: Decimal | null; // 0 to 1
+  quality_score: Decimal | null; // 1 to 5
   open_purchase_orders: number;
   numbers_count: number;
   active_numbers_count: number;
@@ -138,7 +150,7 @@ export interface SupplierDetail extends SupplierListItem {
   source_detail: { url: string; excerpt: string } | null;
   numbers: SupplierNumber[];
   rates: { id: number; item_name: string; unit_price: string; currency: Currency; valid_from: string }[];
-  ratings: { purchase_order_code: string; delay_days: number; quality: number; defect_pct: number; score: number; rated_at: string }[];
+  ratings: (Rating & { purchase_order_code: string })[];
   purchase_orders: PurchaseOrderListItem[];
   payments_summary: { currency: Currency; paid: string; pending: string; overdue_count: number }[];
 }
@@ -219,10 +231,14 @@ export interface Alert {
   purchase_order: (Ref & { supplier_name: string }) | null;
 }
 
+// The matching sends the supplier nested; the redistribution sends it flat
+// (supplier_id, supplier_name). Read it through candidateSupplier().
 export interface Candidate {
-  supplier: { id: number; name: string };
-  score: number;
-  scores: Record<string, number>; // on_time, price, load, quality: 0 to 1
+  supplier?: { id: number; name: string } | null;
+  supplier_id?: number;
+  supplier_name?: string;
+  score: Decimal;
+  scores: Record<string, Decimal>; // on_time, price, load, quality: 0 to 1
   unit_price: string;
   load_pct: number;
   rationale: string;
@@ -256,7 +272,7 @@ export interface Decision {
     before?: Snapshot | null;
     after?: Snapshot;
     proposal?: ProposalItem[];
-    cancelled?: { code: string; supplier_name: string; quantity: number; units_done: number };
+    cancelled?: { code: string; supplier_name: string; quantity: Decimal; units_done: number };
   };
   created_at: string;
   purchase_orders: (Ref & { supplier_name: string })[];
@@ -389,3 +405,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   sales: "Comercial",
   production: "Producción",
 };
+
+export function candidateSupplier(candidate: Candidate): { id: number; name: string } {
+  return candidate.supplier ?? { id: candidate.supplier_id ?? 0, name: candidate.supplier_name ?? "—" };
+}
