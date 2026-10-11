@@ -15,6 +15,7 @@ urlpatterns = [
     path("api/", include("operations.urls")),
     path("api/", include("messaging.urls")),
     path("api/", include("manager.urls")),
+    path("api/", include("fleet.urls")),
     path("webhooks/evolution/<str:secret>/", evolution_webhook, name="evolution-webhook"),
 ]
 

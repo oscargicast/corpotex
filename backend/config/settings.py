@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "operations",
     "messaging",
     "manager",
+    "fleet",
     "agent",
     "seed",
 ]

@@ -1,0 +1,33 @@
+{
+  "vehicles": [
+    {"name": "Furgón 1", "plate": "P1F-482", "kind": "van", "capacity_units": 1500, "color": "#0072B2", "driver_name": "Chofer del furgón"},
+    {"name": "Camioneta 2", "plate": "P2C-317", "kind": "pickup", "capacity_units": 800, "color": "#E69F00", "driver_name": "Chofer de la camioneta"},
+    {"name": "Moto 3", "plate": "P3M-905", "kind": "motorcycle", "capacity_units": 150, "color": "#009E73", "driver_name": "Motorizado"}
+  ],
+  "orders": [
+    {"code": "CP-2026-0170", "customer": "Caja Piura", "product": "NEX-CAM-01", "quantity": 100, "status": "ready", "issued_on": "T-25", "promised_on": "T-1", "estimated_on": "T-1",
+     "delivery_address": "Agencia Centro, Jr. Lima 512, Piura", "delivery_lat": -5.1958, "delivery_lng": -80.6315},
+    {"code": "CP-2026-0171", "customer": "Colegio Los Tallanes", "product": "UNI-POL-01", "quantity": 700, "status": "ready", "issued_on": "T-22", "promised_on": "T+0", "estimated_on": "T+0"},
+    {"code": "CP-2026-0172", "customer": "Caja Piura", "product": "NEX-CAM-01", "quantity": 600, "status": "ready", "issued_on": "T-22", "promised_on": "T+0", "estimated_on": "T+0",
+     "delivery_address": "Agencia Castilla, Av. Progreso 301, Castilla", "delivery_lat": -5.1981, "delivery_lng": -80.6189},
+    {"code": "CP-2026-0173", "customer": "Caja Piura", "product": "NEX-PAN-01", "quantity": 300, "status": "ready", "issued_on": "T-20", "promised_on": "T+0", "estimated_on": "T+0",
+     "delivery_address": "Agencia Sánchez Cerro, Av. Sánchez Cerro 1150, Piura", "delivery_lat": -5.1872, "delivery_lng": -80.6468},
+    {"code": "CP-2026-0174", "customer": "Caja Piura", "product": "NEX-CHA-01", "quantity": 120, "status": "ready", "issued_on": "T-18", "promised_on": "T+0", "estimated_on": "T+0",
+     "delivery_address": "Agencia Veintiséis de Octubre, Av. Country 640, Piura", "delivery_lat": -5.1846, "delivery_lng": -80.6705},
+    {"code": "CP-2026-0175", "customer": "I.E. Santa Rosa de Castilla", "product": "UNI-BUZ-01", "quantity": 450, "status": "ready", "issued_on": "T-21", "promised_on": "T+1", "estimated_on": "T+0"},
+    {"code": "CP-2026-0176", "customer": "AIDER", "product": "LMC-BAT-01", "quantity": 80, "status": "ready", "issued_on": "T-15", "promised_on": "T+1", "estimated_on": "T+0"},
+    {"code": "CP-2026-0177", "customer": "Colegio San José Obrero", "product": "UNI-POD-01", "quantity": 400, "status": "ready", "issued_on": "T-19", "promised_on": "T+3", "estimated_on": "T+0"},
+    {"code": "CP-2026-0178", "customer": "Caja Piura", "product": "NEX-CAM-01", "quantity": 500, "status": "ready", "issued_on": "T-20", "promised_on": "T+2", "estimated_on": "T+1",
+     "delivery_address": "Agencia Castilla, Av. Progreso 301, Castilla", "delivery_lat": -5.1981, "delivery_lng": -80.6189},
+    {"code": "CP-2026-0179", "customer": "Colegio Vicús", "product": "UNI-CAM-01", "quantity": 350, "status": "ready", "issued_on": "T-18", "promised_on": "T+2", "estimated_on": "T+1"},
+    {"code": "CP-2026-0180", "customer": "Colegio Los Algarrobos", "product": "UNI-POD-01", "quantity": 200, "status": "ready", "issued_on": "T-16", "promised_on": "T+3", "estimated_on": "T+1"},
+    {"code": "CP-2026-0181", "customer": "Caja Piura", "product": "NEX-PAN-01", "quantity": 300, "status": "delivered", "issued_on": "T-28", "promised_on": "T-1", "estimated_on": "T-1",
+     "delivery_address": "Agencia Centro, Jr. Lima 512, Piura", "delivery_lat": -5.1958, "delivery_lng": -80.6315},
+    {"code": "CP-2026-0182", "customer": "Colegio Los Tallanes", "product": "UNI-CAM-01", "quantity": 250, "status": "delivered", "issued_on": "T-26", "promised_on": "T+0", "estimated_on": "T-1"},
+    {"code": "CP-2026-0183", "customer": "Colegio Vicús", "product": "UNI-BUZ-01", "quantity": 180, "status": "delivered", "issued_on": "T-26", "promised_on": "T-1", "estimated_on": "T-1"}
+  ],
+  "completed_routes": [
+    {"date": "T-1", "vehicle": "Furgón 1", "start": "T-1 08:20", "orders": ["CP-2026-0181", "CP-2026-0182", "CP-2026-0183"]}
+  ],
+  "plan_today": true
+}

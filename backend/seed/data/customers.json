@@ -30,5 +30,41 @@
     "contact_name": "Diego Seminario",
     "lat": -5.1625,
     "lng": -80.665
+  },
+  {
+    "name": "Colegio Los Tallanes",
+    "tax_id": "20530044556",
+    "kind": "school",
+    "contact_name": "Prof. Carmen Ruiz",
+    "address": "Av. Los Cocos 450, Piura",
+    "lat": -5.1838,
+    "lng": -80.6262
+  },
+  {
+    "name": "I.E. Santa Rosa de Castilla",
+    "tax_id": "20530077889",
+    "kind": "school",
+    "contact_name": "Lic. Jorge Palacios",
+    "address": "Av. Guardia Civil 820, Castilla",
+    "lat": -5.2052,
+    "lng": -80.6118
+  },
+  {
+    "name": "Colegio San José Obrero",
+    "tax_id": "20530099001",
+    "kind": "school",
+    "contact_name": "Hna. Teresa Ramos",
+    "address": "Av. Sullana Norte 1200, Piura",
+    "lat": -5.1688,
+    "lng": -80.6402
+  },
+  {
+    "name": "Colegio Vicús",
+    "tax_id": "20530012345",
+    "kind": "school",
+    "contact_name": "Prof. Raúl Chunga",
+    "address": "Calle Ayacucho 230, Castilla",
+    "lat": -5.1893,
+    "lng": -80.6047
   }
 ]

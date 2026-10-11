@@ -28,6 +28,7 @@ class Command(BaseCommand):
                 loader.load_catalogue()
                 loader.load_suppliers()
                 loader.load_orders()
+                loader.load_fleet()
                 loader.load_purchase_orders()
                 loader.load_decisions()
                 loader.load_alerts()

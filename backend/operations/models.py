@@ -49,6 +49,12 @@ class Order(TimeStamped):
     critical_path = models.JSONField(default=list)
     risk = models.CharField(max_length=20, choices=Risk.choices, default=Risk.OK)
     risk_reason = models.CharField(max_length=200, blank=True)
+    # Dispatch to the customer (ADR 0026): Produccion can move a ready order to another day, and
+    # an order can go to its own address (a Caja Piura agency) instead of the customer's.
+    scheduled_delivery_on = models.DateField(null=True, blank=True, help_text="Day it goes out, set by Produccion; wins over estimated_on.")
+    delivery_address = models.CharField(max_length=200, blank=True)
+    delivery_lat = models.FloatField(null=True, blank=True)
+    delivery_lng = models.FloatField(null=True, blank=True)
 
     class Meta:
         verbose_name = "orden"
@@ -323,6 +329,11 @@ class Route(TimeStamped):
     recalculated_from = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="recalculated_into"
     )
+    # Without a vehicle it is the projected route of the redistribution (ADR 0024); with one,
+    # a vehicle's trip of the day (ADR 0026).
+    vehicle = models.ForeignKey("fleet.Vehicle", null=True, blank=True, on_delete=models.SET_NULL, related_name="routes")
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "ruta"
@@ -350,6 +361,7 @@ class RouteStop(TimeStamped):
     lat = models.FloatField()
     lng = models.FloatField()
     eta = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "parada"

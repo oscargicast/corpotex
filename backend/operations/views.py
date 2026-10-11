@@ -546,18 +546,27 @@ class RoutePlanInSerializer(serializers.Serializer):
     date = serializers.DateField()
 
 
+ROUTE_PREFETCH = ("stops__supplier", "stops__customer", "stops__purchase_order", "stops__order__items")
+
+
+def route_queryset():
+    from .models import Route
+
+    return Route.objects.select_related("vehicle", "recalculated_from").prefetch_related(*ROUTE_PREFETCH)
+
+
 class RouteListView(APIView):
-    """`GET /api/routes/`: all routes (`?date=`, `?status=`), or with `?current=1` the pair
-    `{current, replaced}` the map shows (ADR 0024)."""
+    """`GET /api/routes/`: all routes (`?date=`, `?status=a,b`; `?fleet=1` only the vehicles'
+    trips, `?vehicle_ids=1,2`), or with `?current=1` the pair `{current, replaced}` the map shows
+    (ADR 0024)."""
 
     @extend_schema(responses={200: RoutePairSchema})
     def get(self, request):
         from . import routes
-        from .models import Route
         from .serializers import RouteSerializer
 
         params = request.query_params
-        qs = Route.objects.prefetch_related("stops__supplier", "stops__customer", "stops__purchase_order", "stops__order")
+        qs = route_queryset()
         if params.get("current") == "1":
             current = routes.current_route(params.get("date") or None)
             replaced = current.recalculated_from if current and current.recalculated_from_id and current.recalculated_from.status == "replaced" else None
@@ -567,9 +576,14 @@ class RouteListView(APIView):
                     "replaced": RouteSerializer(qs.get(pk=replaced.pk)).data if replaced else None,
                 }
             )
-        for name in ("date", "status"):
-            if params.get(name):
-                qs = qs.filter(**{name: params[name]})
+        if params.get("date"):
+            qs = qs.filter(date=params["date"])
+        if params.get("status"):
+            qs = qs.filter(status__in=params["status"].split(","))
+        if params.get("fleet") == "1":
+            qs = qs.filter(vehicle__isnull=False)
+        if params.get("vehicle_ids"):
+            qs = qs.filter(vehicle_id__in=[int(v) for v in params["vehicle_ids"].split(",") if v.isdigit()])
         return Response(RouteSerializer(qs, many=True).data)
 
 
@@ -578,10 +592,9 @@ class RouteDetailView(APIView):
 
     @extend_schema(responses={200: RouteSerializer})
     def get(self, request, pk: int):
-        from .models import Route
         from .serializers import RouteSerializer
 
-        route = Route.objects.prefetch_related("stops__supplier", "stops__customer", "stops__purchase_order", "stops__order").filter(pk=pk).first()
+        route = route_queryset().filter(pk=pk).first()
         if route is None:
             return Response(status=404)
         return Response(RouteSerializer(route).data)
