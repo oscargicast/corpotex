@@ -481,11 +481,14 @@ class Loader:
 
     def load_style(self, *, reset: bool):
         manager = self.users["gerente"]
+        notes_snapshot = {str(s.id): s.notes for s in self.suppliers.values() if s.notes}
         if not reset and StyleVersion.objects.filter(user=manager).exists():
+            # The style is kept, but the Estilo step must still show as done.
+            if manager.style_md:
+                self.mark_style_approved({"style_md": manager.style_md}, notes_snapshot)
             return
         StyleVersion.objects.filter(user=manager).delete()
         template = self.template_style()
-        notes_snapshot = {str(s.id): s.notes for s in self.suppliers.values() if s.notes}
         versions = [{"source": "template", "style_md": template, "changelog": "Perfil base", "created_at": "T-30 11:00"}]
         for row in self.read("style_versions"):
             style_md = row.get("style_md")
