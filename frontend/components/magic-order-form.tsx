@@ -380,7 +380,13 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
           brand,
           promised_on: promisedOn,
           issued_on: today(),
-          items: rows.map((d) => ({ key: d.line.key, description: d.description, quantity: d.quantity })),
+          // The photo is saved with its item (ADR 0029 §2): the same shrunk JPEG sent to describe-image.
+          items: rows.map((d) => ({
+            key: d.line.key,
+            description: d.description,
+            quantity: d.quantity,
+            ...(d.line.photo?.data && { photo: { media_type: "image/jpeg", data: d.line.photo.data } }),
+          })),
           ...(classification.length && { classification: { items: classification } }),
         },
       });

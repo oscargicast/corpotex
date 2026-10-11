@@ -15,6 +15,7 @@ interface ItemRow {
   quantity: string;
   product: string; // catalog code, "" = new product
   unit_price: string; // optional sale price per garment
+  photo_url?: string | null; // resent as is so the PATCH keeps the photo
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -86,6 +87,7 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
           quantity: String(item.quantity),
           product: item.product?.code ?? "",
           unit_price: item.unit_price != null ? String(item.unit_price) : "",
+          photo_url: item.photo_url ?? null,
         }))
       : [newRow()],
   );
@@ -127,6 +129,7 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
         quantity: Number(r.quantity),
         ...(r.product && { product: r.product }),
         ...(r.unit_price !== "" && { unit_price: r.unit_price }),
+        ...(r.photo_url && { photo_url: r.photo_url }),
       })),
     };
     try {

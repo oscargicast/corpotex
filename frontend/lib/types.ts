@@ -197,6 +197,7 @@ export interface OrderItem {
   color: string;
   customization: string;
   unit_price?: string | null;
+  photo_url?: string | null; // the customer's garment photo (ADR 0029 §2), "/media/items/…"
 }
 
 export interface Requirement {
