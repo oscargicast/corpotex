@@ -2,14 +2,16 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 import type { FleetRoute, FleetStop, LivePosition, TrailPoint, Vehicle } from "./fleet-types";
 import { hhmm, signalOf, type Signal } from "./fleet-utils";
 
 const PIURA: [number, number] = [-5.1945, -80.6328];
-const CARTO = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+// CARTO's free basemaps now ask for an API key, so OSM tiles washed out to a
+// light, Positron-like base: the vehicles' colours stand out on top.
 const OSM = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const LIGHT_TILES = "[filter:grayscale(0.9)_brightness(1.08)_contrast(0.88)]";
 const GRAY = "#8a8994";
 
 // Lucide icons as raw SVG for Leaflet's divIcon (no React inside markers).
@@ -22,14 +24,18 @@ const FACTORY =
   '<path d="M12 16h.01"/><path d="M16 16h.01"/><path d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H3z"/><path d="M8 16h.01"/>';
 const CHECK = '<path d="M20 6 9 17l-5-5"/>';
 
+// Colours go into marker HTML: only a hex value gets through.
+const safeColor = (value: string | undefined) => (value && /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : GRAY);
+
 function routePoints(route: FleetRoute): [number, number][] {
   if (route.path?.coordinates.length) return route.path.coordinates.map(([lng, lat]) => [lat, lng]);
   return [...route.stops].sort((a, b) => a.position - b.position).map((s) => [s.lat, s.lng]);
 }
 
-function stopIcon(stop: FleetStop, color: string, faded: boolean) {
+function stopIcon(stop: FleetStop, rawColor: string, faded: boolean) {
+  const color = safeColor(rawColor);
   const done = !!stop.delivered_at;
-  const inner = done ? svg(CHECK, 14, color) : String(stop.position);
+  const inner = done ? svg(CHECK, 14, color) : String(Number(stop.position));
   return L.divIcon({
     className: "",
     iconSize: [28, 28],
@@ -46,7 +52,7 @@ const PLANT_ICON = L.divIcon({
 });
 
 function vehicleIcon(vehicle: Vehicle, heading: number | null, signal: Signal) {
-  const color = signal === "none" ? GRAY : vehicle.color;
+  const color = signal === "none" ? GRAY : safeColor(vehicle.color);
   const pulse = signal === "live" ? `<span class="animate-ping" style="position:absolute;inset:2px;border-radius:9999px;background:${color};opacity:.35"></span>` : "";
   const arrow =
     heading !== null && signal !== "none"
@@ -72,9 +78,10 @@ function VehicleMarker({ vehicle, position, signal }: { vehicle: Vehicle; positi
   const lastUpdate = useRef(0);
 
   useEffect(() => {
-    const m = L.marker([position.lat, position.lng], { icon: vehicleIcon(vehicle, position.heading, signal), zIndexOffset: 1000, keyboard: false })
-      .bindTooltip(vehicle.name, { permanent: true, direction: "right", offset: [18, 0], className: "font-semibold" })
-      .addTo(map);
+    const label = document.createElement("span");
+    label.textContent = vehicle.name; // Text, never HTML.
+    const m = L.marker([position.lat, position.lng], { icon: vehicleIcon(vehicle, position.heading, signal), zIndexOffset: 1000, keyboard: false }).addTo(map);
+    m.bindTooltip(label, { permanent: signal !== "none", direction: "right", offset: [18, 0], className: "font-semibold" });
     marker.current = m;
     return () => {
       cancelAnimationFrame(frame.current);
@@ -87,6 +94,17 @@ function VehicleMarker({ vehicle, position, signal }: { vehicle: Vehicle; positi
   useEffect(() => {
     marker.current?.setIcon(vehicleIcon(vehicle, position.heading, signal));
   }, [vehicle, position.heading, signal]);
+
+  // The name stays on screen while the vehicle has signal; parked ones show it
+  // on hover, so the vehicles waiting at the plant do not cover each other.
+  useEffect(() => {
+    const m = marker.current;
+    const tooltip = m?.getTooltip();
+    if (!m || !tooltip) return;
+    const content = tooltip.getContent();
+    m.unbindTooltip();
+    m.bindTooltip(content ?? vehicle.name, { permanent: signal !== "none", direction: "right", offset: [18, 0], className: "font-semibold" });
+  }, [signal]);
 
   useEffect(() => {
     const m = marker.current;
@@ -117,20 +135,25 @@ function VehicleMarker({ vehicle, position, signal }: { vehicle: Vehicle; positi
 
 // Fit to what is on screen when asked (button, first load, another day), and
 // keep the followed vehicle centred.
-function Camera({ bounds, fitSignal, follow, fullscreen }: { bounds: [number, number][]; fitSignal: number; follow: [number, number] | null; fullscreen: boolean }) {
+function Camera({ bounds, fitSignal, follow, fullscreen, padLeft }: { bounds: [number, number][]; fitSignal: number; follow: [number, number] | null; fullscreen: boolean; padLeft: number }) {
   const map = useMap();
   const boundsRef = useRef(bounds);
   boundsRef.current = bounds;
-  useEffect(() => {
-    if (boundsRef.current.length) map.fitBounds(L.latLngBounds(boundsRef.current), { padding: [56, 56], maxZoom: 15 });
-  }, [map, fitSignal]);
+  const fit = () => {
+    if (boundsRef.current.length) map.fitBounds(L.latLngBounds(boundsRef.current), { paddingTopLeft: [padLeft + 40, 72], paddingBottomRight: [40, 48], maxZoom: 15 });
+  };
+  useEffect(fit, [map, fitSignal]);
   useEffect(() => {
     if (follow) map.panTo(follow, { animate: !reducedMotion() });
   }, [map, follow?.[0], follow?.[1]]);
+  // The container changed size (full screen in or out): measure again and fit.
   useEffect(() => {
-    const id = setTimeout(() => map.invalidateSize(), 250);
+    const id = setTimeout(() => {
+      map.invalidateSize();
+      fit();
+    }, 250);
     return () => clearTimeout(id);
-  }, [map, fullscreen]);
+  }, [map, fullscreen, padLeft]);
   return null;
 }
 
@@ -146,19 +169,29 @@ export interface FleetMapProps {
   fullscreen: boolean;
   now: number;
   plant: [number, number] | null;
+  padLeft?: number; // The floating panel's width in full screen.
 }
 
-export default function FleetMap({ routes, vehicles, positions, trails, visible, showVehicles, follow, fitSignal, fullscreen, now, plant }: FleetMapProps) {
-  const [tiles, setTiles] = useState(CARTO);
-  const errors = useRef(0);
+export default function FleetMap({ routes, vehicles, positions, trails, visible, showVehicles, follow, fitSignal, fullscreen, now, plant, padLeft = 0 }: FleetMapProps) {
   const shown = useMemo(() => routes.filter((r) => r.vehicle && visible.includes(r.vehicle.id)), [routes, visible]);
 
+  // Parked vehicles share the plant's point: without signal, each one sits a
+  // few metres apart so the markers and their names do not pile up.
   const where = (v: Vehicle) => {
     const p = positions[v.id];
     const lat = p?.lat ?? v.last_lat;
     const lng = p?.lng ?? v.last_lng;
     if (lat === null || lng === null) return null;
-    return { lat, lng, heading: p?.heading ?? v.last_heading, at: p?.at ?? v.last_seen_at };
+    const at = p?.at ?? v.last_seen_at;
+    const index = vehicles.findIndex((x) => x.id === v.id);
+    const parked = signalOf(at, now) === "none";
+    const angle = (index * 2 * Math.PI) / Math.max(vehicles.length, 1);
+    return {
+      lat: parked ? lat + 0.0012 * Math.sin(angle) : lat,
+      lng: parked ? lng + 0.0012 * Math.cos(angle) : lng,
+      heading: p?.heading ?? v.last_heading,
+      at,
+    };
   };
   const onMap = showVehicles ? vehicles.filter((v) => visible.includes(v.id)) : [];
 
@@ -171,17 +204,7 @@ export default function FleetMap({ routes, vehicles, positions, trails, visible,
 
   return (
     <MapContainer center={PIURA} zoom={13} scrollWheelZoom className="h-full w-full" attributionControl zoomControl={false}>
-      <TileLayer
-        key={tiles}
-        url={tiles}
-        attribution={'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' + (tiles === CARTO ? ' &copy; <a href="https://carto.com/attributions">CARTO</a>' : "")}
-        eventHandlers={{
-          tileerror: () => {
-            errors.current += 1;
-            if (errors.current > 6 && tiles === CARTO) setTiles(OSM); // CARTO unreachable: OSM as fallback.
-          },
-        }}
-      />
+      <TileLayer url={OSM} className={LIGHT_TILES} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' />
       {shown.map((route) => {
         const color = route.vehicle?.color ?? GRAY;
         const done = route.status === "completed";
@@ -195,7 +218,7 @@ export default function FleetMap({ routes, vehicles, positions, trails, visible,
           ) : null;
         })}
       {plant && (
-        <Marker position={plant} icon={PLANT_ICON}>
+        <Marker position={plant} icon={PLANT_ICON} title="Planta Corpotex">
           <Tooltip direction="top" offset={[0, -14]}>
             <strong>Planta Corpotex</strong>
             <br />
@@ -207,7 +230,12 @@ export default function FleetMap({ routes, vehicles, positions, trails, visible,
         route.stops
           .filter((stop) => stop.kind === "delivery")
           .map((stop) => (
-            <Marker key={`${route.id}-${stop.id}`} position={[stop.lat, stop.lng]} icon={stopIcon(stop, route.vehicle?.color ?? GRAY, route.status === "completed")}>
+            <Marker
+              key={`${route.id}-${stop.id}`}
+              position={[stop.lat, stop.lng]}
+              icon={stopIcon(stop, route.vehicle?.color ?? GRAY, route.status === "completed")}
+              title={`${route.vehicle?.name ?? ""}, parada ${stop.position}: ${stop.name}${stop.delivered_at ? ", entregada" : ""}`}
+            >
               <Tooltip direction="top" offset={[0, -12]}>
                 <strong>
                   {stop.position}. {stop.name}
@@ -225,7 +253,7 @@ export default function FleetMap({ routes, vehicles, positions, trails, visible,
         const p = where(v);
         return p ? <VehicleMarker key={v.id} vehicle={v} position={p} signal={signalOf(p.at, now)} /> : null;
       })}
-      <Camera bounds={bounds} fitSignal={fitSignal} follow={followAt ? [followAt.lat, followAt.lng] : null} fullscreen={fullscreen} />
+      <Camera bounds={bounds} fitSignal={fitSignal} follow={followAt ? [followAt.lat, followAt.lng] : null} fullscreen={fullscreen} padLeft={padLeft} />
     </MapContainer>
   );
 }

@@ -63,7 +63,8 @@ export default function FleetView() {
 
   const { data: vehicles = [], mutate: reloadVehicles } = useSWR<Vehicle[]>("/api/vehicles/", fetcher, { refreshInterval: 15000 });
   const routesKey = tab === "delivered" ? "/api/routes/?fleet=1&status=completed" : `/api/routes/?fleet=1&date=${date}&status=planned,in_progress,completed`;
-  const { data: routes = [], mutate: reloadRoutes } = useSWR<FleetRoute[]>(routesKey, fetcher, { refreshInterval: tab === "live" ? 6000 : 15000 });
+  const { data: routesData, mutate: reloadRoutes } = useSWR<FleetRoute[]>(routesKey, fetcher, { refreshInterval: tab === "live" ? 6000 : 15000 });
+  const routes = routesData ?? [];
   const { data: pool = [], mutate: reloadPool } = useSWR<Dispatch[]>(tab === "plan" ? `/api/dispatches/?status=ready&to=${date}` : null, fetcher);
   const { data: delivered } = useSWR<Dispatch[]>(tab === "delivered" ? `/api/dispatches/?status=delivered&from=${from}&to=${to}` : null, fetcher, { refreshInterval: 15000 });
 
@@ -99,10 +100,12 @@ export default function FleetView() {
   const [follow, setFollow] = useState<number | null>(null);
   const [fitSignal, setFitSignal] = useState(0);
 
-  // Fit again when the day, the tab or the first data change; the user's pan
-  // and zoom are kept otherwise.
-  const loaded = routes.length > 0 || vehicles.length > 0;
-  useEffect(() => setFitSignal((n) => n + 1), [tab, date, from, to, loaded]);
+  // Fit once the routes of this view arrive (another tab or day fits again);
+  // the user's pan and zoom are kept otherwise.
+  const fitKey = routesData && vehicles.length ? `${routesKey}|${from}|${to}` : "";
+  useEffect(() => {
+    if (fitKey) setFitSignal((n) => n + 1);
+  }, [fitKey]);
   useEffect(() => setLastPlan(null), [date]);
 
   const act = async (key: string, run: () => Promise<unknown>) => {
@@ -208,7 +211,7 @@ export default function FleetView() {
             <button type="button" className="flex size-11 items-center justify-center rounded-md hover:bg-canvas" onClick={() => setParams({ date: addDays(date, -1) })} aria-label="Día anterior">
               <ChevronLeft size={18} />
             </button>
-            <span className="min-w-28 text-center text-sm font-semibold capitalize tabular-nums">{date === today ? `Hoy, ${dayLabel(date)}` : dayLabel(date)}</span>
+            <span className="min-w-28 text-center text-sm font-semibold tabular-nums">{date === today ? `Hoy, ${dayLabel(date)}` : dayLabel(date)}</span>
             <button type="button" className="flex size-11 items-center justify-center rounded-md hover:bg-canvas" onClick={() => setParams({ date: addDays(date, 1) })} aria-label="Día siguiente">
               <ChevronRight size={18} />
             </button>
@@ -259,12 +262,13 @@ export default function FleetView() {
               positions={positions}
               trails={tab === "live" ? trails : {}}
               visible={tab === "delivered" ? allIds : visible}
-              showVehicles={tab !== "delivered"}
+              showVehicles={tab === "live"}
               follow={tab === "live" ? follow : null}
               fitSignal={fitSignal}
               fullscreen={fullscreen}
               now={now}
               plant={plant}
+              padLeft={fullscreen && drawer ? 380 : 0}
             />
 
             <div className="pointer-events-none absolute inset-x-3 top-3 z-[1000] flex items-start justify-between gap-2">
@@ -277,7 +281,7 @@ export default function FleetView() {
                 )}
               </div>
               <div className="pointer-events-auto flex gap-2">
-                <Button className="min-h-11 bg-surface shadow" onClick={() => setFitSignal((n) => n + 1)}>
+                <Button className="min-h-11 bg-surface shadow" onClick={() => setFitSignal((n) => n + 1)} aria-label="Ajustar el mapa a las rutas y vehículos">
                   <LocateFixed size={16} aria-hidden />
                   <span className="hidden sm:inline">Ajustar</span>
                 </Button>

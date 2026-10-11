@@ -116,7 +116,9 @@ export default function PlanPanel({ date, today, vehicles, routes, pool, lastPla
                   {d.order.units} prendas · promesa {formatDay(d.order.promised_on)}
                   {d.scheduled_on < today && <span className="ml-1 font-semibold text-danger">· Atrasada</span>}
                 </p>
-                <p className="mt-0.5 text-xs font-medium text-warning">{reasons.get(d.order.id) ?? "Sin vehículo todavía"}</p>
+                <p className="mt-0.5 text-xs font-medium text-warning">
+                  {reasons.get(d.order.id) ?? (live.length ? "No entró en la planificación (capacidad o jornada)" : "Sin planificar todavía")}
+                </p>
                 <div className="mt-1.5 flex flex-wrap gap-2">
                   <Button className="min-h-11" busy={busy === `reschedule-${d.order.id}`} onClick={() => onReschedule(d.order.id, addDays(date, 1))}>
                     Pasar a mañana
