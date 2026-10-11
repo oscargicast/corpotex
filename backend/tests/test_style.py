@@ -39,6 +39,8 @@ def test_validate_rejects_manager_phrases_that_name_the_manager():
     assert sum("tercera persona" in e for e in errors) == 2
     # Descriptions may mention the manager; only his own phrases may not.
     assert validate_style(load_template() + "\nLos pagos los decide el Gerente.\n") == []
+    # An anonymized name is a placeholder, not a third-person mention.
+    assert validate_style(load_template() + '\n- "[G] hola, soy <GERENTE> de Corpotex"\n') == []
 
 
 def test_validate_requires_sections_and_length():
