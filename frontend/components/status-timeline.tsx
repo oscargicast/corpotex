@@ -14,8 +14,8 @@ interface Step {
 // not steps: they paint red the step where the flow left the path.
 const FLOWS: Record<Flow, Step[]> = {
   order: [
-    { status: "registered", label: "Registrada", next: "el agente desglosa la orden contra el inventario" },
-    { status: "broken_down", label: "Desglosada", next: "Producción revisa y confirma el desglose" },
+    { status: "registered", label: "Registrada", next: "la IA arma la ficha técnica contra el inventario" },
+    { status: "broken_down", label: "Con ficha técnica", next: "Producción revisa y aprueba la ficha técnica" },
     { status: "confirmed", label: "Confirmada", next: "el Gerente aprueba los pedidos a proveedores" },
     { status: "sourcing", label: "En abastecimiento", next: "llegan los insumos y los talleres confirman" },
     { status: "in_production", label: "En producción", next: "corte, confección y acabado" },
@@ -111,7 +111,8 @@ export function StatusTimeline({
             </span>
             <div className={`min-w-0 pb-4 md:pb-0 md:text-center ${future ? "text-muted" : ""}`}>
               <p className={`text-sm ${isCurrent ? "font-semibold" : "font-medium"}`}>
-                {failed ? (exitEntry?.status_display ?? statusDisplay ?? EXIT_LABEL[exit!]) : (entry?.status_display ?? step.label)}
+                {/* The order's broken_down reads "Con ficha técnica" (ADR 0029), whatever the history says. */}
+                {failed ? (exitEntry?.status_display ?? statusDisplay ?? EXIT_LABEL[exit!]) : flow === "order" && step.status === "broken_down" ? step.label : (entry?.status_display ?? step.label)}
               </p>
               {failed && (
                 <p className="text-xs text-danger">

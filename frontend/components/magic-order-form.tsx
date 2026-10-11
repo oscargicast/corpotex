@@ -331,7 +331,7 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
     const rows = drafts.filter((d) => d.line.text.trim());
     if (!customer.trim()) return setError("Elige o escribe el cliente.");
     if (!brand) return setError("Elige la marca.");
-    if (!promisedOn) return setError("Pon la fecha prometida al cliente.");
+    if (!promisedOn) return setError("Pon la fecha de entrega.");
     if (!rows.length) return setError("Escribe al menos un ítem.");
     const bad = rows.find((d) => !d.description || !(d.quantity > 0) || !Number.isInteger(d.quantity));
     if (bad) {
@@ -369,8 +369,8 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
       const warned = warnings.length ? ` Ojo: ${warnings[0]}${warnings.length > 1 ? ` (y ${warnings.length - 1} más)` : ""}.` : "";
       setCreated(
         (order as { needs_classification?: boolean }).needs_classification || left > 0
-          ? `Orden ${order.code} creada. ${left > 0 ? `${left} ${plural(left, "ítem queda", "ítems quedan")} por clasificar` : "Queda por desglosar"}: Producción lo desglosa desde el detalle.`
-          : `Orden ${order.code} creada y desglosada: ${toOrder} ${plural(toOrder, "insumo", "insumos")} por pedir.${warned}`,
+          ? `Orden ${order.code} creada. ${left > 0 ? `${left} ${plural(left, "ítem queda", "ítems quedan")} por clasificar` : "Queda sin ficha técnica"}: la IA la arma en segundo plano.`
+          : `Orden ${order.code} creada con ficha técnica: ${toOrder} ${plural(toOrder, "insumo", "insumos")} por pedir.${warned}`,
       );
       setTimeout(() => onSaved(order), 1600);
     } catch (err) {
@@ -474,7 +474,7 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
               )}
             </label>
             <label className="text-sm">
-              Prometida al cliente
+              Fecha de entrega
               <input type="date" value={promisedOn} min={today()} onChange={(e) => setPromisedOn(e.target.value)} className={input} />
             </label>
           </div>
@@ -594,10 +594,10 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 Necesita {estimated ? "unos " : ""}
                 {neededDays} días
                 {promisedDays === null ? (
-                  <span className="text-muted">. Pon la fecha prometida para compararla.</span>
+                  <span className="text-muted">. Pon la fecha de entrega para compararla.</span>
                 ) : (
                   <>
-                    ; prometida en {promisedDays} → <strong>{atRisk ? "en riesgo" : "a tiempo"}</strong>
+                    ; entrega en {promisedDays} → <strong>{atRisk ? "en riesgo" : "a tiempo"}</strong>
                     {estimated ? " (estimado)" : ""}
                   </>
                 )}
@@ -622,7 +622,7 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
               <Button type="button" onClick={onCancel} disabled={busy} className="min-h-11 w-full">
                 Cancelar
               </Button>
-              {recognizing > 0 && <p className="text-xs text-muted">Puedes guardar ya: lo que no termine de reconocerse lo desglosa Producción después.</p>}
+              {recognizing > 0 && <p className="text-xs text-muted">Puedes guardar ya: lo que no termine de reconocerse lo arma la IA en segundo plano.</p>}
             </div>
           )}
         </Card>
@@ -876,7 +876,7 @@ function ItemCard({
           {line.state === "pending" && <p className="mt-3 text-sm text-muted">Agrega la prenda y la cantidad para reconocerla.</p>}
           {line.state === "error" && (
             <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-warning" role="alert">
-              <TriangleAlert size={15} aria-hidden /> No se pudo reconocer. Se guarda igual y Producción la desglosa después.
+              <TriangleAlert size={15} aria-hidden /> No se pudo reconocer. Se guarda igual y la IA arma su ficha técnica en segundo plano.
               <button type="button" onClick={onRetry} className="inline-flex min-h-11 items-center gap-1 font-medium text-accent underline sm:min-h-0">
                 <RotateCcw size={14} aria-hidden /> Reintentar
               </button>
@@ -1007,7 +1007,7 @@ function Proposal({
           })}
         </ul>
       ) : (
-        <p className="mt-1 text-sm text-muted">Sin insumos: Producción los agrega al desglosar.</p>
+        <p className="mt-1 text-sm text-muted">Sin insumos: Producción los agrega en la ficha técnica.</p>
       )}
     </div>
   );

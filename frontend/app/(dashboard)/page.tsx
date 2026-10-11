@@ -83,7 +83,7 @@ export default function MonitorPage() {
                       <Pill tone={RISK_TONE[order.risk]}>{RISK_LABEL[order.risk]}</Pill>
                     </div>
                     <p className="mt-1 text-sm text-muted">
-                      Prometida {formatDay(order.promised_on)} · estimada{" "}
+                      Entrega {formatDay(order.promised_on)} · estimada{" "}
                       <span className="font-medium text-danger">{formatDay(order.estimated_on)}</span>
                       {order.risk_reason ? ` · ${order.risk_reason}` : ""}
                     </p>

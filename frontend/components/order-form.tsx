@@ -25,7 +25,7 @@ const BRANDS = ["UNICRACK", "NEXO", "Línea Médica Corpotex"];
 const FIELD_LABEL: Record<string, string> = {
   customer: "cliente",
   brand: "marca",
-  promised_on: "fecha prometida",
+  promised_on: "fecha de entrega",
   items: "ítem",
   description: "descripción",
   product: "producto",
@@ -109,7 +109,7 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
     const rows = items.filter((r) => r.description.trim() || r.quantity || r.product);
     if (!customer.trim()) return setError("Elige o escribe el cliente.");
     if (!brand) return setError("Elige la marca.");
-    if (!promisedOn) return setError("Pon la fecha prometida al cliente.");
+    if (!promisedOn) return setError("Pon la fecha de entrega.");
     if (!rows.length) return setError("Agrega al menos un ítem.");
     const bad = rows.find((r) => !r.description.trim() || !(Number(r.quantity) > 0) || (r.unit_price !== "" && !(Number(r.unit_price) > 0)));
     if (bad) return setError("Cada ítem necesita una descripción y una cantidad mayor a 0 (el precio, si lo pones, mayor a 0).");
@@ -200,7 +200,7 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
           </select>
         </label>
         <label className="text-sm">
-          Prometida al cliente
+          Fecha de entrega
           <input type="date" value={promisedOn} min={today()} onChange={(e) => setPromisedOn(e.target.value)} className={input} />
         </label>
         <label className="text-sm">
@@ -213,7 +213,7 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
         <legend className="text-sm font-medium">Ítems</legend>
         <p className="mt-1 text-xs text-muted">
           Describe cada prenda como la pide el cliente: modelo, color, cuello, logo y dónde va, tallas. Si existe en el catálogo, elige el producto base; si no,
-          Producción desglosa los componentes después.
+          la IA arma su ficha técnica.
         </p>
         {catalogDown && <p className="mt-1 text-xs text-warning">El catálogo de productos no está disponible: los ítems entran como producto nuevo.</p>}
         <ul className="mt-2 space-y-2">
@@ -298,7 +298,7 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
         </Button>
       </div>
       {initial && initial.status !== "registered" && (
-        <p className="text-xs text-muted">La orden ya está desglosada: al guardar se vuelve a desglosar; los insumos ya pedidos no se tocan.</p>
+        <p className="text-xs text-muted">La orden ya tiene ficha técnica: al guardar se vuelve a armar; los insumos ya pedidos no se tocan.</p>
       )}
     </form>
   );

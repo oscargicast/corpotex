@@ -46,7 +46,7 @@ function EditOrder() {
         <Card>
           <p className="text-sm text-muted">
             {user.role === "sales"
-              ? "Comercial edita sus órdenes hasta que Producción confirma el desglose; después, solo el Gerente."
+              ? "Comercial edita sus órdenes hasta que Producción aprueba la ficha técnica; después, solo el Gerente."
               : "Esta orden ya no se puede editar."}
           </p>
         </Card>
