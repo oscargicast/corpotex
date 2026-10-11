@@ -240,3 +240,14 @@ def test_follow_up_settings_api(ten_days, manager_client, sales_client, producti
     assert manager_client.patch(supplier_url, {"follow_up_mode": "minimal"}, format="json").json()["follow_up_mode"] == "minimal"
     assert manager_client.patch(supplier_url, {"follow_up_mode": ""}, format="json").json()["follow_up_mode"] == ""
     assert manager_client.patch(supplier_url, {"follow_up_mode": "mucho"}, format="json").status_code == 400
+
+
+@pytest.mark.django_db
+def test_an_overdue_reminder_from_an_earlier_day_still_goes(ten_days):
+    """agente, 11/10: a reminder due yesterday (tick down, window changed) must not be lost."""
+    po = ten_days["purchase_order"]
+    PurchaseOrder.objects.filter(pk=po.pk).update(last_follow_up_on=date(2026, 10, 14), awaiting_reply_since=at(14, 10, 0))  # due 14/10 14:00, never sent
+    with frozen(at(16, 11)):
+        plan = follow_up.plan_for_today()
+        assert [(p.kind, p.reason, p.at) for p in plan] == [("reminder", "sin respuesta desde el 14/10", at(14, 14, 0))]
+        assert follow_up.enqueue_due_follow_ups() == 1

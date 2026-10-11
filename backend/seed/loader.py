@@ -753,9 +753,16 @@ class Loader:
         # A real supplier must not get a follow-up after a reseed: the demo's first contact comes
         # from an approval. Today's follow-up counts as done (ADR 0027 §5), on top of Sunday being
         # outside the default working days.
+        # The real supplier also goes in `minimal` and its order counts as followed up on the next
+        # working day (orquestador, 11/10 01:00): no message to the real number on Monday 12/10
+        # after the demo, even if an "always" rule (progress behind) fires. Oscar decides after that.
+        from manager.follow_up import next_working_day
+
+        today = timezone.localtime(self.t).date()
+        Supplier.objects.filter(numbers__active=True, numbers__simulated=False).update(follow_up_mode=FollowUpMode.MINIMAL)
         PurchaseOrder.objects.filter(
             status__in=PurchaseOrder.OPEN_STATUSES, supplier__numbers__active=True, supplier__numbers__simulated=False
-        ).update(last_follow_up_on=timezone.localtime(self.t).date())
+        ).update(last_follow_up_on=next_working_day(today, Config.load()) or today)
         for order in Order.objects.all():
             fixed = (order.estimated_on, order.risk, order.risk_reason)
             compute_critical_path(order)

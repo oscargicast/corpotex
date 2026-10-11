@@ -358,6 +358,24 @@ class PaymentSerializer(DisplayMixin, serializers.ModelSerializer):
         return {"id": obj.purchase_order_id, "code": obj.purchase_order.code, "supplier_name": obj.purchase_order.supplier.name}
 
 
+class PendingFollowUpSerializer(serializers.Serializer):
+    """Schema of `pending_follow_up` (ADR 0027 §6)."""
+
+    requested_by_role = serializers.CharField(allow_null=True)
+    requested_by_role_display = serializers.CharField()
+    requested_at = serializers.DateTimeField()
+    status = serializers.ChoiceField(choices=[("pending", "Pendiente"), ("asked", "Preguntado"), ("answered", "Respondido"), ("skipped", "Sin respuesta")])
+    asked_at = serializers.DateTimeField(allow_null=True)
+    answered_at = serializers.DateTimeField(allow_null=True)
+    answer_summary = serializers.CharField(allow_null=True)
+
+
+class LastFollowUpSerializer(serializers.Serializer):
+    kind = serializers.CharField(help_text="checkpoint, reminder or requested")
+    at = serializers.DateTimeField()
+    awaiting_reply = serializers.BooleanField()
+
+
 @register(PurchaseOrder)
 class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
     kind = serializers.CharField(read_only=True)
@@ -374,6 +392,9 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
     currency = serializers.CharField(source="supplier.currency", read_only=True)
     redistributed_from = serializers.SerializerMethodField()
     alert_severity = serializers.SerializerMethodField()
+    awaiting_reply = serializers.SerializerMethodField()
+    pending_follow_up = serializers.SerializerMethodField()
+    last_follow_up = serializers.SerializerMethodField()
 
     class Meta:
         model = PurchaseOrder
@@ -395,6 +416,9 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
             "committed_on",
             "last_progress_at",
             "next_follow_up_at",
+            "awaiting_reply",
+            "pending_follow_up",
+            "last_follow_up",
             "total_amount",
             "currency",
             "redistributed_from",
@@ -451,6 +475,23 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_redistributed_from(self, obj):
         return _ref(obj.redistributed_from, "code")
+
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_awaiting_reply(self, obj) -> bool:
+        return obj.awaiting_reply_since is not None
+
+    @extend_schema_field(PendingFollowUpSerializer(allow_null=True))
+    def get_pending_follow_up(self, obj):
+        """The latest progress request (ADR 0027 §6), with the answer once there is one."""
+        from .follow_up_requests import pending_follow_up
+
+        return pending_follow_up(obj)
+
+    @extend_schema_field(LastFollowUpSerializer(allow_null=True))
+    def get_last_follow_up(self, obj):
+        from .follow_up_requests import last_follow_up
+
+        return last_follow_up(obj)
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_alert_severity(self, obj):

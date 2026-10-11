@@ -184,7 +184,12 @@ def test_seed_reset_chats_and_real_supplier_follow_ups(manager):
     assert conversation.agent_session == "" and conversation.pending_action is None
     # Open purchase orders of the real supplier are not due for a follow-up right after the seed.
     real = PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES, supplier__numbers__simulated=False, supplier__numbers__active=True).distinct()
-    assert real.exists() and all(po.last_follow_up_on == timezone.localdate() for po in real)  # today's follow-up counts as done (ADR 0027 §5)
+    from core.models import Config
+    from manager.follow_up import next_working_day
+
+    # ADR 0027 §5 + orquestador 11/10: the real supplier in minimal, followed up "on" the next working day.
+    assert real.exists() and all(po.last_follow_up_on == next_working_day(timezone.localdate(), Config.load()) for po in real)
+    assert {po.supplier.follow_up_mode for po in real} == {"minimal"}
 
 
 @pytest.mark.django_db

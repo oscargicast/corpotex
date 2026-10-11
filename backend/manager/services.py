@@ -29,6 +29,7 @@ ALERT_ROLES = {
     "style_refresh_failed": ("manager",),
     "claude_disconnected": ("manager",),
     "purchase_suggested": ("manager", "production"),
+    "follow_up_answered": (),  # only whoever asked, see follow_up_requests._notify_answer
 }
 SEVERITY = {
     "order_in_danger": "critical",
@@ -129,7 +130,7 @@ def repeat_open_alerts_to_manager() -> int:
 
     count = 0
     cutoff = clock.now() - timedelta(days=1)
-    for alert in Alert.objects.filter(status="open"):
+    for alert in Alert.objects.filter(status="open").exclude(kind="follow_up_answered"):
         for user in User.objects.filter(is_active=True, groups__name="Gerente"):
             last = alert.notifications.filter(user=user).order_by("-id").first()
             if last and last.sent_at and last.sent_at <= cutoff:
@@ -298,6 +299,9 @@ def run_monitor() -> dict:
     from .follow_up import stalled_purchase_orders
 
     stalled = {po.id for po in stalled_purchase_orders(now)}  # unanswered after the reminder (ADR 0027)
+    from operations.follow_up_requests import skip_closed
+
+    skip_closed()  # requests of orders that closed before the answer (ADR 0027 §6)
     for po in PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES).select_related("supplier"):
         if po.id in stalled:
             open_alert("stalled_purchase_order", purchase_order=po, text=f"{po.supplier.name} no responde el seguimiento del pedido {po.code}")

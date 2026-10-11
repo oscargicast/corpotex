@@ -157,6 +157,8 @@ class PurchaseOrder(TimeStamped):
     awaiting_reply_since = models.DateTimeField(null=True, blank=True, help_text="A follow-up was sent and the supplier has not answered.")
     reminded_at = models.DateTimeField(null=True, blank=True)
     follow_up_note = models.CharField(max_length=200, blank=True, help_text="Why the agent skipped the last follow-up.")
+    last_follow_up_kind = models.CharField(max_length=12, blank=True, help_text="checkpoint, reminder or requested: the last follow-up message sent.")
+    last_follow_up_at = models.DateTimeField(null=True, blank=True, help_text="When that follow-up message went out.")
     terms = models.TextField(blank=True)
     rating = models.JSONField(
         null=True,
@@ -184,6 +186,35 @@ class PurchaseOrder(TimeStamped):
     @property
     def kind(self) -> str:
         return self.supplier.kind
+
+
+class FollowUpRequest(TimeStamped):
+    """A person asked for progress (ADR 0027 §6): Comercial, Producción or the Gerente, from their
+    assistant or the dashboard. One per open purchase order; the supplier's answer goes back to
+    whoever asked."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pendiente"
+        ASKED = "asked", "Preguntado"
+        ANSWERED = "answered", "Respondido"
+        SKIPPED = "skipped", "Sin respuesta"
+
+    purchase_order = models.ForeignKey("PurchaseOrder", on_delete=models.CASCADE, related_name="follow_up_requests")
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    requested_at = models.DateTimeField()
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    asked_at = models.DateTimeField(null=True, blank=True, help_text="When the supplier was asked (the original question when it hung on an existing wait).")
+    answered_at = models.DateTimeField(null=True, blank=True)
+    answer_summary = models.CharField(max_length=300, blank=True, help_text="The agent's summary, never the chat's literal text.")
+    skip_reason = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = "pedido de avance"
+        verbose_name_plural = "pedidos de avance"
+        ordering = ["-requested_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.purchase_order.code} · {self.get_status_display()}"
 
 
 class PurchaseOrderItem(TimeStamped):

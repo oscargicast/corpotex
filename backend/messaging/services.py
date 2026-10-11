@@ -38,7 +38,8 @@ class TurnBatch:
     new_purchase_order_ids: list[int] = field(default_factory=list)
     alert_ids: list[int] = field(default_factory=list)
     web_report_ids: list[int] = field(default_factory=list)
-    follow_up: dict | None = None  # {kind, reason, mode, purchase_orders: {id: {kind, reason}}}; only on the tick's turns (ADR 0027)
+    follow_up: dict | None = None  # {kind, reason, mode, purchase_orders: {id: {kind, reason}}}; the tick's or a person's request (ADR 0027)
+    follow_up_request_ids: list[int] = field(default_factory=list)  # asked requests the supplier may be answering (ADR 0027 §6)
 
     def is_empty(self) -> bool:
         return not any(
@@ -137,6 +138,13 @@ def _in_follow_up_window() -> bool:
     return in_window(clock.now(), Config.load())
 
 
+def _night_for_requests() -> bool:
+    """`QUIET_HOURS`, or 21-7 when it is off in `.env`: a person's request never wakes a supplier."""
+    start, end = QUIET_HOURS or (21, 7)
+    hour = timezone.localtime(clock.now()).hour
+    return hour >= start or hour < end
+
+
 def _quiet_hours() -> bool:
     if not QUIET_HOURS:
         return False  # Disabled from .env (QUIET_HOURS=).
@@ -167,10 +175,14 @@ def claim_next_turn(conversation_id: int | None = None) -> TurnBatch | None:
             turn.status = Turn.Status.DONE
             turn.save(update_fields=["status", "updated_at"])
             return None
-        if batch.follow_up and batch.is_proactive_only() and not _in_follow_up_window():
+        requested = (batch.follow_up or {}).get("kind") == "requested"
+        channel = turn.conversation.channel
+        if batch.follow_up and not requested and batch.is_proactive_only() and not _in_follow_up_window():
             return None  # the tick's follow-up goes only inside the window set by the manager
-        if turn.conversation.channel != Conversation.Channel.DASHBOARD and batch.is_proactive_only() and not batch.follow_up and _quiet_hours():
-            return None
+        if requested and channel == Conversation.Channel.WHATSAPP and batch.is_proactive_only() and _night_for_requests():
+            return None  # a person's request skips window and mode, not the night on a real number
+        if not batch.follow_up and channel != Conversation.Channel.DASHBOARD and batch.is_proactive_only() and _quiet_hours():
+            return None  # the first contact keeps QUIET_HOURS
         turn.status = Turn.Status.RUNNING
         turn.attempts += 1
         turn.save(update_fields=["status", "attempts", "updated_at"])
@@ -213,6 +225,11 @@ def _build_batch(turn: Turn) -> TurnBatch:
         ProgressReport.objects.filter(purchase_order__conversation=conversation, message__isnull=True, acknowledged_at__isnull=True)
         .values_list("id", flat=True)
     )
+    number = conversation.allowed_number
+    if (batch.message_ids or batch.web_report_ids) and number is not None and number.supplier_id:
+        from operations.follow_up_requests import open_request_ids_for_supplier
+
+        batch.follow_up_request_ids = open_request_ids_for_supplier(number.supplier_id)
     return batch
 
 
@@ -242,6 +259,9 @@ def finish_turn(batch: TurnBatch, session_id: str | None, error: str | None = No
                 from manager.models import AlertNotification
 
                 AlertNotification.objects.filter(user=conversation.user, alert_id__in=batch.alert_ids, sent_at__isnull=True).update(sent_at=now)
+                from manager.models import Alert
+
+                Alert.objects.filter(id__in=batch.alert_ids, kind="follow_up_answered", status="open").update(status="resolved", resolved_at=clock.now())
             ProgressReport.objects.filter(id__in=batch.web_report_ids).update(acknowledged_at=now)
             turn.status = Turn.Status.DONE
             turn.error = ""
@@ -276,14 +296,19 @@ def _close_follow_up(batch: TurnBatch, *, sent: bool) -> None:
     now = clock.now()
     per_order = (batch.follow_up or {}).get("purchase_orders") or {}
     answered = bool(batch.message_ids)
+    requested = []
     for po in PurchaseOrder.objects.filter(id__in=batch.follow_up_purchase_order_ids):
         kind = (per_order.get(str(po.id)) or {}).get("kind") or batch.follow_up.get("kind")
         po.last_follow_up_on = clock.today()
         fields = ["last_follow_up_on", "updated_at"]
         if sent:
             po.follow_up_note = ""
-            fields.append("follow_up_note")
-            if not answered:
+            po.last_follow_up_kind, po.last_follow_up_at = kind, now
+            fields += ["follow_up_note", "last_follow_up_kind", "last_follow_up_at"]
+            if kind == "requested":  # a person asked: the wait starts even if the supplier was writing
+                po.awaiting_reply_since, po.reminded_at = now, None
+                fields += ["awaiting_reply_since", "reminded_at"]
+            elif not answered:
                 if kind == "reminder":
                     po.reminded_at = now
                     fields.append("reminded_at")
@@ -294,6 +319,12 @@ def _close_follow_up(batch: TurnBatch, *, sent: bool) -> None:
             po.reminded_at = now
             fields.append("reminded_at")
         po.save(update_fields=fields)
+        if kind == "requested":
+            requested.append(po.id)
+    if requested:
+        from operations.follow_up_requests import mark_asked
+
+        mark_asked(requested, sent=sent)
 
 
 def _requeue(turn: Turn, *, count_attempt: bool = True) -> Turn:
@@ -437,6 +468,12 @@ def turn_state(batch: TurnBatch, *, with_history: bool = False) -> dict:
     }
     if batch.follow_up:
         state["follow_up"] = _follow_up_context(batch, conversation, supplier, config)
+    from operations.models import FollowUpRequest
+
+    state["open_follow_up_requests"] = [
+        {"id": r.id, "purchase_order_code": r.purchase_order.code, "asked_at": _iso(r.asked_at)}
+        for r in FollowUpRequest.objects.filter(id__in=batch.follow_up_request_ids).select_related("purchase_order").order_by("asked_at", "id")
+    ]
     if with_history:
         state["history"] = [
             {"sender": _sender(m), "text": m.text, "sent_at": m.sent_at.isoformat()} for m in message_history(conversation, 20)
@@ -505,6 +542,19 @@ def assistant_turn_state(batch: TurnBatch, *, with_history: bool = False) -> dic
             else None
         )
         data["repeat"] = AlertNotification.objects.filter(alert=alert, user=user, sent_at__isnull=False).exists()
+        if alert.kind == "follow_up_answered":
+            detail = alert.detail or {}
+            data.update(
+                {
+                    "purchase_order": detail.get("purchase_order"),
+                    "supplier_name": detail.get("supplier_name"),
+                    "order_codes": detail.get("order_codes") or [],
+                    "answer_summary": detail.get("answer_summary"),
+                    "requested_at": detail.get("requested_at"),
+                    "url": detail.get("url"),
+                }
+            )
+            data.pop("detail", None)
         if alert.kind == "purchase_suggested":
             detail = alert.detail or {}
             with_prices = user.role == "manager"

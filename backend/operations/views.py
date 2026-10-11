@@ -168,6 +168,36 @@ class ApplyClassificationInSerializer(serializers.Serializer):
     items = ClassificationItemInSerializer(many=True)
 
 
+class FollowUpInSerializer(serializers.Serializer):
+    dry_run = serializers.BooleanField(required=False, default=False, help_text="The assistant's preview: creates and queues nothing (200).")
+
+
+class FollowUpRequestRowSerializer(serializers.Serializer):
+    id = serializers.IntegerField(allow_null=True, help_text="Null on a dry run.")
+    purchase_order = inline_serializer("FollowUpRequestPurchaseOrder", fields={"id": serializers.IntegerField(), "code": serializers.CharField()})
+    supplier_name = serializers.CharField()
+    status = serializers.ChoiceField(choices=[("pending", "Pendiente"), ("asked", "Preguntado"), ("skipped", "Sin canal")])
+    asked_at = serializers.DateTimeField(allow_null=True, help_text="The original question when it hangs on an existing wait.")
+    already_asked = serializers.BooleanField()
+    skip_reason = serializers.CharField(allow_blank=True, help_text='"sin canal" for the own plant or a supplier without a number.')
+
+
+class FollowUpResultSerializer(serializers.Serializer):
+    requests = FollowUpRequestRowSerializer(many=True)
+    detail = serializers.CharField()
+
+
+def _follow_up_response(request, purchase_orders, subject: str):
+    """ADR 0027 §6: 202 with the requests, 200 on `dry_run`."""
+    from .follow_up_requests import request_follow_up
+
+    data = FollowUpInSerializer(data=request.data)
+    data.is_valid(raise_exception=True)
+    dry_run = data.validated_data["dry_run"]
+    result = request_follow_up(purchase_orders, actor=request.user, subject=subject, dry_run=dry_run)
+    return Response(FollowUpResultSerializer(result).data, status=status.HTTP_200_OK if dry_run else status.HTTP_202_ACCEPTED)
+
+
 class BreakDownInSerializer(serializers.Serializer):
     order_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
 
@@ -287,6 +317,15 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             _forbidden(exc)
         return Response(result)
 
+    @extend_schema(request=FollowUpInSerializer, responses={202: FollowUpResultSerializer, 200: FollowUpResultSerializer})
+    @action(detail=True, methods=["post"], url_path="follow-up")
+    def follow_up(self, request, pk=None):
+        """Ask every open purchase order of the order for progress (ADR 0027 §6): the three roles."""
+        from .follow_up_requests import open_purchase_orders_of_order
+
+        order = self.get_object()
+        return _follow_up_response(request, list(open_purchase_orders_of_order(order)), order.code)
+
     @extend_schema(request=None, responses={200: OrderDetailSerializer})
     @action(detail=True, methods=["post"])
     def confirm(self, request, pk=None):
@@ -387,6 +426,7 @@ class DeliveryInSerializer(serializers.Serializer):
 class PurchaseOrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
     model = PurchaseOrder
     queryset = PurchaseOrder.objects.select_related("supplier", "suggested_supplier", "redistributed_from").prefetch_related(
+        "follow_up_requests__requested_by",
         "items__requirement__order__customer", "progress_reports", "payments", "alerts", "decisions"
     )
 
@@ -405,6 +445,14 @@ class PurchaseOrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             text = params["q"].strip()
             qs = qs.filter(Q(code__icontains=text) | Q(items__requirement__order__code__icontains=text)).distinct()
         return qs
+
+    @extend_schema(request=FollowUpInSerializer, responses={202: FollowUpResultSerializer, 200: FollowUpResultSerializer})
+    @action(detail=True, methods=["post"], url_path="follow-up", permission_classes=[IsManagerOrProduction])
+    def follow_up(self, request, pk=None):
+        """Ask this purchase order for progress (ADR 0027 §6): manager and production; sales asks
+        through the order."""
+        po = self.get_object()
+        return _follow_up_response(request, [po], po.code)
 
     @extend_schema(request=GenerateInSerializer, responses={201: GenerateResultSchema})
     @action(detail=False, methods=["post"], permission_classes=[IsManagerOrProduction])
