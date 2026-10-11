@@ -16,7 +16,6 @@ const DRAFT_URL = "/api/orders/classify-draft/";
 const DEBOUNCE_MS = 600;
 const MIN_CHARS = 12; // the API leaves shorter lines "pending"
 const PRODUCTION_DAYS = 7; // own production (Corpotex interview)
-const BUFFER_DAYS = 5; // Config.buffer_days default; the API does not expose it
 const BRANDS = ["UNICRACK", "NEXO", "Línea Médica Corpotex"];
 const input = "mt-1 w-full rounded-md bg-surface px-3 py-2.5 text-base ring-1 ring-line sm:text-sm";
 
@@ -221,7 +220,10 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
   const pickedRecipes = recognized.filter((d) => d.line.proposal!.product.existing_id && !d.line.proposal!.materials.length).map((d) => d.line.proposal!.product.name ?? d.line.proposal!.product.code);
   const leads = recognized.map((d) => d.line.proposal!.lead_time_days).filter((v): v is number => typeof v === "number");
   const lead = leads.length ? Math.max(...leads) : null;
-  const neededDays = (lead ?? PRODUCTION_DAYS) + BUFFER_DAYS;
+  // No buffer_days here: the backend's internal due date already holds it back,
+  // so adding it again would count it twice and contradict the order's detail.
+  const neededDays = lead ?? PRODUCTION_DAYS;
+  const estimated = lead === null;
   const promisedDays = promisedOn ? Math.round((new Date(`${promisedOn}T12:00:00`).getTime() - new Date(`${today()}T12:00:00`).getTime()) / 86_400_000) : null;
   const atRisk = promisedDays !== null && neededDays > promisedDays;
 
@@ -468,12 +470,14 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
             <div className={`flex items-start gap-2 rounded-lg px-3 py-2.5 ${promisedDays === null ? "bg-canvas" : atRisk ? "bg-danger-soft text-danger" : "bg-success-soft text-success"}`}>
               {atRisk ? <TriangleAlert size={16} className="mt-0.5 shrink-0" aria-hidden /> : <CalendarClock size={16} className="mt-0.5 shrink-0" aria-hidden />}
               <p>
-                Necesita {neededDays} días{lead === null ? " (estimado)" : ""}
+                Necesita {estimated ? "unos " : ""}
+                {neededDays} días
                 {promisedDays === null ? (
                   <span className="text-muted">. Pon la fecha prometida para compararla.</span>
                 ) : (
                   <>
-                    ; prometida en {promisedDays} {plural(promisedDays, "día", "días")} → <strong>{atRisk ? "en riesgo" : "a tiempo"}</strong>
+                    ; prometida en {promisedDays} → <strong>{atRisk ? "en riesgo" : "a tiempo"}</strong>
+                    {estimated ? " (estimado)" : ""}
                   </>
                 )}
               </p>
