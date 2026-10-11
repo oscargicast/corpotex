@@ -229,6 +229,9 @@ class ReviseResultSerializer(serializers.Serializer):
     summary = serializers.CharField(help_text="What changes, in Spanish.")
     warnings = serializers.ListField(child=serializers.CharField(), help_text="Requirements already ordered, left untouched.")
     estimated_on = serializers.DateField(allow_null=True, help_text="The order's estimate with the change.")
+    current_estimated_on = serializers.DateField(
+        allow_null=True, help_text="The estimate of the current sheet, computed the same way in the same transaction: compare against this one."
+    )
     order = OrderDetailSerializer(required=False, help_text="Only when the change was applied.")
 
 

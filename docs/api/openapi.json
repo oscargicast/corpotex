@@ -8799,6 +8799,12 @@
                         "nullable": true,
                         "description": "The order's estimate with the change."
                     },
+                    "current_estimated_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "The estimate of the current sheet, computed the same way in the same transaction: compare against this one."
+                    },
                     "order": {
                         "allOf": [
                             {
@@ -8809,6 +8815,7 @@
                     }
                 },
                 "required": [
+                    "current_estimated_on",
                     "estimated_on",
                     "proposal",
                     "summary",

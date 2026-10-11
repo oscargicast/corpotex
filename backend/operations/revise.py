@@ -6,6 +6,7 @@ catalogue never changes. A dry run applies it inside a transaction that is rolle
 estimate and warnings are the real ones."""
 
 import logging
+import re
 import time
 from decimal import Decimal, InvalidOperation
 
@@ -97,7 +98,9 @@ class ModelFailed(RuntimeError):
 def revise_order(order: Order, instruction: str | None = None, *, actor, dry_run: bool = False, proposal: dict | None = None) -> dict:
     """`POST /api/orders/<id>/revise/`. With `proposal` it is applied exactly, without Claude (it
     wins over `instruction`); otherwise Claude proposes from `instruction`. `dry_run` saves nothing.
-    Returns `{proposal, summary, warnings, estimated_on}`."""
+    Returns `{proposal, summary, warnings, estimated_on, current_estimated_on}`: both dates come
+    from `compute_critical_path` in the same transaction, without and with the change, so the
+    difference is the change's and never a stale stored date's."""
     require_role(actor, "production", "manager")
     if order.status not in REVISABLE:
         raise UnknownReference(f"La orden {order.code} ya está en estado «{order.get_status_display()}»: su ficha técnica ya no se ajusta")
@@ -109,13 +112,20 @@ def revise_order(order: Order, instruction: str | None = None, *, actor, dry_run
         proposal = normalize(order, proposal)
         summary = describe_changes(proposal)
     with transaction.atomic():
+        current_estimated_on = compute_critical_path(order).estimated_on
         warnings = apply(order, proposal)
         estimated_on = order.estimated_on
         if dry_run:
             transaction.set_rollback(True)
     if dry_run:
         order.refresh_from_db()
-    return {"proposal": proposal, "summary": summary, "warnings": warnings, "estimated_on": estimated_on}
+    return {
+        "proposal": proposal,
+        "summary": summary,
+        "warnings": warnings,
+        "estimated_on": estimated_on,
+        "current_estimated_on": current_estimated_on,
+    }
 
 
 # --- the current sheet --------------------------------------------------------------------
@@ -172,7 +182,8 @@ def propose(order: Order, instruction: str) -> tuple[dict, str]:
         "siguen igual (con existing_sku y su cantidad), los que cambian y los nuevos (sku, nombre, tipo y unidad; "
         "existing_sku cuando un insumo del inventario sirve). Un insumo que se quita no va en la lista. "
         "Cantidades por prenda, en la unidad del insumo. En stages solo los pasos cuyos días cambian. "
-        "summary: una o dos frases en español con lo que cambia. Si la instrucción no se entiende o no cambia "
+        "summary: una o dos frases en español con lo que cambia, nombrando cada prenda por su producto "
+        "(\"en los polos escolares\"), nunca por el número de ítem. Si la instrucción no se entiende o no cambia "
         "nada, understood=false y summary dice por qué.",
     ]
     started = time.monotonic()
@@ -182,7 +193,7 @@ def propose(order: Order, instruction: str) -> tuple[dict, str]:
         logger.exception("revise_order %s: the model failed", order.code)
         raise ModelFailed("No se pudo preparar el ajuste. Prueba de nuevo en un momento.") from exc
     claude_seconds = time.monotonic() - started
-    summary = (answer.get("summary") or "").strip()
+    summary = readable(answer.get("summary") or "", items)
     if not answer.get("understood"):
         raise NotUnderstood(summary or "No entendí qué cambiar en la ficha técnica.")
 
@@ -200,6 +211,23 @@ def propose(order: Order, instruction: str) -> tuple[dict, str]:
     proposal = normalize(order, {"items": proposed_items, "stage_overrides": stages})
     logger.info("revise_order %s: claude=%.2fs jev=%.2fs", order.code, claude_seconds, timings.get("jev_materials", 0.0))
     return proposal, summary or describe_changes(proposal)
+
+
+ITEM_REF = re.compile(r"\b(?:(en|de|del|para) )?(?:el |los )?[íi]tems? (?:n\.?º ?|#)?(\d+)\b", re.IGNORECASE)
+
+
+def readable(summary: str, items: list[OrderItem]) -> str:
+    """The person reads the garment, never an internal id: "en el ítem 394" becomes "en Polo
+    escolar UNICRACK" when the model slips (agente, 11/10 04:00)."""
+    names = {str(item.id): item.product.name for item in items}
+
+    def name(match):
+        product = names.get(match.group(2))
+        if product is None:
+            return match.group(0)
+        return f"{match.group(1)} {product}" if match.group(1) else product
+
+    return ITEM_REF.sub(name, summary.strip())
 
 
 def _clean(material: dict) -> dict:

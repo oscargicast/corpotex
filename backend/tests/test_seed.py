@@ -220,3 +220,21 @@ def test_seed_order_classified_on_arrival(manager):
     manager_services.run_monitor()
     assert not Alert.objects.filter(status="open", order=order).exists()
     assert set(Alert.objects.filter(status="open", kind="purchase_suggested").values_list("material__sku", flat=True)) == {"RIB-CUE-01", "HIL-POL-40"}
+
+
+@pytest.mark.django_db
+def test_open_orders_keep_the_estimate_the_critical_path_computes():
+    """An open order's stored estimate is what `compute_critical_path` gives, so a technical
+    sheet revision (ADR 0029) compares against the same number (agente, 11/10 04:00). Ready and
+    delivered orders keep the JSON's dates."""
+    from operations.models import Order
+    from operations.services import compute_critical_path
+
+    call_command("seed_demo", verbosity=0)
+    open_orders = Order.objects.exclude(status__in=["ready", "delivered", "cancelled"])
+    assert open_orders.count() >= 5
+    for order in open_orders:
+        stored = (order.estimated_on, order.risk)
+        computed = compute_critical_path(Order.objects.get(pk=order.pk))
+        assert (computed.estimated_on, computed.risk) == stored, order.code
+    assert set(Order.objects.filter(risk="in_danger").values_list("code", flat=True)) >= {"CP-2026-0151", "CP-2026-0158"}
