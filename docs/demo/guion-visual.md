@@ -35,7 +35,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 Lo decide Oscar en el ensayo. Va después de que Comercial registra la orden y antes de "Por pedir".
 
 1. Como Producción, abrir `/orders/CP-2026-0161` (Colegio Los Algarrobos): dos prendas descritas en texto libre, "Producto nuevo, sin ficha todavía".
-2. Pulsar "Desglosar componentes". La propuesta tarda unos 15 a 20 s (lo hace Claude); mientras carga, Oscar habla.
+2. Pulsar "Desglosar componentes". La propuesta tarda unos 10 s: Jev (TypeSafe AI) elige del catálogo y del inventario, y Claude propone solo lo que es nuevo. Mientras carga, Oscar habla. Si Jev falla, sigue Claude sola y tarda unos 20 s.
 3. Mostrar que el polo se reconoce como un producto del catálogo (Polo deportivo UNICRACK, UNI-POD-01) con su receta: tela, cuello rib, hilo, etiqueta.
 4. Mostrar que la casaca es un producto nuevo, con los insumos que faltan en el inventario (taslán, polar, cierre separable), marcados como "Insumo nuevo". Los nombres y códigos que propone la IA cambian un poco entre corridas.
 5. **No pulsar "Confirmar desglose" en el ensayo ni en la demo.** Si se aplica, la orden ya no sirve para la demo hasta el próximo `seed_demo`. Para salir, "Cancelar".
