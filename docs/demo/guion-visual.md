@@ -52,4 +52,5 @@ Nada de nombres reales, RUC ni cuentas.
 - En la demo, Valeria reporta **400** polos ("ya van 400 del PT-0038") y no 720: así la cancelación deja 600 por repartir y la redistribución entra en dos o tres talleres (con 720 solo quedaron 280 y un taller).
 - La respuesta del bot a la cancelación llega en dos burbujas (~10 s); esperar la segunda ("déjeme revisarlo y le confirmo") antes de pasar al Monitor.
 - El Monitor tarda hasta 10 s más (tick) en mostrar la orden en peligro y los avisos por rol.
+- Después del último deploy que toque prompts o tools y en el seed final: `seed_demo --reset-chats` (o `POST /api/assistant/reset/` por rol). Una sesión vieja del asistente arrastra reglas anteriores y puede negar una tool nueva (visto 10/10 21:30 con Producción).
 

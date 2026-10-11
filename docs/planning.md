@@ -336,7 +336,7 @@ Manual, sin automatizar: WhatsApp real (A2.3), el flujo OAuth de Claude (B4.3), 
 | 06:30 | D4: dos ventanas lado a lado (Gerente izquierda, Comercial derecha), `/simulator?present=1` en una tercera, fotos de demo cargadas, `/routes` abierto, celular con `/orders` | disenador | Captura de pantalla de las tres ventanas en el canal del equipo |
 | 06:45 | D5: guion cronometrado, dos corridas, `seed_demo` (conserva el estilo por defecto; `--reset-style` lo recrea) entre corridas; orden: Monitor con seed → onboarding hecho y estilo aprobado → orden de Comercial y confirmación → matching y aprobación → WhatsApp real → cancelación, redistribución y ruta → avisos por rol → aprobación y contacto a los talleres → pago | Oscar | Cada corrida ≤ 8 min sin tocar código |
 | 07:15 | D6: video de respaldo de la corrida completa (pantalla + celular) | todos | Archivo guardado en dos lugares (laptop y celular) |
-| 07:30 | Hito 4. Sesiones de desarrollo quietas; `seed_demo` (conserva el estilo por defecto; `--reset-style` lo recrea) final; reloj en pausa hasta el pitch | orquestador | `GET /api/clock/` `paused: true` |
+| 07:30 | Hito 4. Sesiones de desarrollo quietas; `seed_demo --reset-chats` final (conserva el estilo; `--reset-style` lo recrea; `--reset-chats` limpia los asistentes para que no arrastren sesiones viejas); reloj en pausa hasta el pitch | orquestador | `GET /api/clock/` `paused: true` |
 | 08:00 a 09:00 | `connection_state()` `open`, tunnel arriba, laptop cargada, tethering probado, ventanas abiertas | Oscar | Pitch a las 09:00 |
 
 ### F. Preguntas abiertas
