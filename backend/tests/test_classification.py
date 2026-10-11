@@ -122,3 +122,53 @@ def test_jev_is_off_without_a_key(settings):
     settings.TYPESAFE_API_KEY = "k"
     with mock.patch.object(jev, "_client", return_value=None):
         assert jev.choose("x", {"a": "A"}) is None
+
+
+@pytest.mark.django_db
+def test_claude_picking_a_catalogue_product_returns_its_bill_of_materials(order_with_new_garment, production):
+    """Finding of 10/10 22:35 (CP-2026-0161): Claude mapped the polo to UNI-POD-01 but listed new
+    materials that `apply_classification` would never create for an existing product."""
+    order = order_with_new_garment
+    proposal = {
+        "product": {"existing_code": "UNI-POL-01", "code": "UNI-POL-01", "name": "Polo", "brand": "UNICRACK"},
+        "materials": [{"existing_sku": None, "sku": "TEL-AMA", "name": "Jersey amarillo (franja)", "kind": "fabric", "unit": "kg", "qty_per_unit": 0.01}],
+        "confidence": 0.8,
+    }
+    with mock.patch.object(classify, "complete_sync", return_value=proposal), mock.patch.object(jev, "choose", return_value=None):
+        item = client_for(production).post(f"/api/orders/{order.id}/classify/", {}, format="json").json()["items"][0]
+    assert item["product"]["code"] == "UNI-POL-01" and item["confidence"] == 0.8
+    assert {m["sku"] for m in item["materials"]} == {"BOT-NX", "TEL-20"} and all("new" not in m for m in item["materials"])
+
+
+@pytest.mark.django_db
+def test_plant_processes_are_not_proposed_as_materials(order_with_new_garment, production):
+    order = order_with_new_garment
+    proposal = {**CLAUDE_PROPOSAL, "materials": CLAUDE_PROPOSAL["materials"] + [
+        {"existing_sku": None, "sku": "BOR-ESC-01", "name": "Bordado escudo pecho", "kind": "other", "unit": "unit", "qty_per_unit": 1},
+        {"existing_sku": None, "sku": "SUB-ESC-01", "name": "Sublimado escudo", "kind": "other", "unit": "unit", "qty_per_unit": 1},
+    ]}
+    with mock.patch.object(classify, "complete_sync", return_value=proposal) as complete, mock.patch.object(jev, "choose", return_value=None):
+        item = client_for(production).post(f"/api/orders/{order.id}/classify/", {}, format="json").json()["items"][0]
+    assert [m.get("sku") or m["new"]["sku"] for m in item["materials"]] == ["TEL-20", "CIE-NYL-60"]
+    assert complete.call_count == 1 and "se hacen en la planta" in classify.SYSTEM_PROMPT
+
+
+@pytest.mark.django_db
+def test_a_new_material_that_extends_a_known_sku_stays_the_known_one(order_with_new_garment, production):
+    """Finding of 10/10 22:40: "TEL-ALG-30-AM" (the same jersey in yellow) came out as a new
+    material next to TEL-ALG-30. Colour and size go in the order, not in a new SKU."""
+    order = order_with_new_garment
+    proposal = {**CLAUDE_PROPOSAL, "materials": [
+        {"existing_sku": "TEL-20", "sku": "TEL-20", "name": "Jersey 20/1", "kind": "fabric", "unit": "kg", "qty_per_unit": 0.5},
+        {"existing_sku": None, "sku": "TEL-20-AZM", "name": "Jersey 20/1 azul marino", "kind": "fabric", "unit": "kg", "qty_per_unit": 0.1},
+        {"existing_sku": None, "sku": "BOTON-X", "name": "botón nx", "kind": "button", "unit": "unit", "qty_per_unit": 4},
+        {"existing_sku": None, "sku": "CIE-NYL-60", "name": "Cierre nylon 60 cm", "kind": "zipper", "unit": "unit", "qty_per_unit": 1},
+    ]}
+    with mock.patch.object(classify, "complete_sync", return_value=proposal) as complete, mock.patch.object(jev, "choose", return_value=None):
+        item = client_for(production).post(f"/api/orders/{order.id}/classify/", {}, format="json").json()["items"][0]
+    rows = {m.get("sku") or m["new"]["sku"]: m for m in item["materials"]}
+    assert list(rows) == ["TEL-20", "BOT-NX", "CIE-NYL-60"]
+    assert rows["TEL-20"]["qty_per_unit"] == "0.6" and rows["TEL-20"]["material_id"] == Material.objects.get(sku="TEL-20").id
+    assert rows["BOT-NX"]["material_id"] == Material.objects.get(sku="BOT-NX").id  # same name, any case
+    assert "new" in rows["CIE-NYL-60"]
+    assert "reusa el SKU existente" in complete.call_args.args[0] and "el bordado puede pedir hilo de bordar" in complete.call_args.args[0]
