@@ -192,6 +192,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dispatches/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET /api/dispatches/?status=ready,delivered&from=&to=&vehicle_ids=&unassigned=1`. */
+        get: operations["dispatches_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dispatches/{order_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description `PATCH /api/dispatches/<order_id>/ {scheduled_on?, vehicle_id?}`: reschedule or move. */
+        patch: operations["dispatches_partial_update"];
+        trace?: never;
+    };
     "/api/manager/decisions/{id}/": {
         parameters: {
             query?: never;
@@ -234,7 +268,8 @@ export interface paths {
         };
         /**
          * @description `GET /api/materials/`: every material ordered by kind and name; `?kind=`, `?q=` (sku or name). `committed` is the sum of
-         *     `Requirement.qty_from_stock` of open orders; `available = stock - committed`.
+         *     `Requirement.qty_from_stock` of open orders; `available = stock - committed`; `to_order` is what is still to buy
+         *     (as in "Por pedir") and `incoming` the live purchase orders that will bring it.
          */
         get: operations["materials_list"];
         put?: never;
@@ -539,6 +574,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{id}/follow-up/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ask every open purchase order of the order for progress (ADR 0027 §6): the three roles. */
+        post: operations["orders_follow_up_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/break-down/": {
         parameters: {
             query?: never;
@@ -668,6 +720,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/purchase-orders/{id}/follow-up/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Ask this purchase order for progress (ADR 0027 §6): manager and production; sales asks
+         *     through the order.
+         */
+        post: operations["purchase_orders_follow_up_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/purchase-orders/{id}/progress/": {
         parameters: {
             query?: never;
@@ -756,8 +828,9 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description `GET /api/routes/`: all routes (`?date=`, `?status=`), or with `?current=1` the pair
-         *     `{current, replaced}` the map shows (ADR 0024).
+         * @description `GET /api/routes/`: all routes (`?date=`, `?status=a,b`; `?fleet=1` only the vehicles'
+         *     trips, `?vehicle_ids=1,2`), or with `?current=1` the pair `{current, replaced}` the map shows
+         *     (ADR 0024).
          */
         get: operations["routes_retrieve"];
         put?: never;
@@ -785,6 +858,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/routes/{id}/complete/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description `POST /api/routes/<id>/complete/`: in_progress → completed. */
+        post: operations["routes_complete_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/{id}/start/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description `POST /api/routes/<id>/start/`: planned → in_progress. */
+        post: operations["routes_start_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/{id}/stops/{stop_id}/deliver/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description `POST /api/routes/<id>/stops/<stop_id>/deliver/`: the order goes `delivered`. */
+        post: operations["routes_stops_deliver_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/routes/plan/": {
         parameters: {
             query?: never;
@@ -796,6 +920,23 @@ export interface paths {
         put?: never;
         /** @description `POST /api/routes/plan/ {date}` (manager and production): plans or re-plans that day. */
         post: operations["routes_plan_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/plan-day/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description `POST /api/routes/plan-day/ {date, vehicle_ids?, order_ids?}` (ADR 0026 §2). */
+        post: operations["routes_plan_day_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -912,6 +1053,44 @@ export interface paths {
             cookie?: never;
         };
         get: operations["settings_claude_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/follow-up/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET/PATCH /api/settings/follow-up/` (manager only). */
+        get: operations["settings_follow_up_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description `GET/PATCH /api/settings/follow-up/` (manager only). */
+        patch: operations["settings_follow_up_partial_update"];
+        trace?: never;
+    };
+    "/api/settings/follow-up/preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description `GET /api/settings/follow-up/preview/` (manager only): today's plan,
+         *     `[{supplier: {id, name}, purchase_orders: [code], at, kind, reason, mode}]`.
+         */
+        get: operations["settings_follow_up_preview_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1131,6 +1310,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vehicles/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET /api/vehicles/`: the active fleet with its last position. */
+        get: operations["vehicles_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vehicles/{id}/positions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description `POST /api/vehicles/<id>/positions/` (manager, production and the simulator) moves the
+         *     vehicle and keeps one sample every `VEHICLE_SAMPLE_SECONDS`; `GET ?from=&to=` is the trail.
+         */
+        get: operations["vehicles_positions_list"];
+        put?: never;
+        /**
+         * @description `POST /api/vehicles/<id>/positions/` (manager, production and the simulator) moves the
+         *     vehicle and keeps one sample every `VEHICLE_SAMPLE_SECONDS`; `GET ?from=&to=` is the trail.
+         */
+        post: operations["vehicles_positions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vehicles/{id}/simulate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description `POST /api/vehicles/<id>/simulate/ {speed_factor=12, interval_s=3}` starts the simulator on
+         *     the vehicle's route in progress; `DELETE` stops it.
+         */
+        post: operations["vehicles_simulate_create"];
+        /**
+         * @description `POST /api/vehicles/<id>/simulate/ {speed_factor=12, interval_s=3}` starts the simulator on
+         *     the vehicle's route in progress; `DELETE` stops it.
+         */
+        delete: operations["vehicles_simulate_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vehicles/live/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET /api/vehicles/live/?ids=1,2`: the current picture, for the polling fallback. */
+        get: operations["vehicles_live_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vehicles/stream/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description `GET /api/vehicles/stream/?ids=1,2`: server-sent events (ADR 0026 §4). The front reads it
+         *     with `fetch` (the token goes in a header, which `EventSource` cannot send).
+         */
+        get: operations["vehicles_stream_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1191,9 +1472,10 @@ export interface components {
          *     * `decision_pending` - Decisión pendiente
          *     * `claude_disconnected` - Claude desconectado
          *     * `purchase_suggested` - Compra sugerida
+         *     * `follow_up_answered` - Avance respondido
          * @enum {string}
          */
-        AlertKindEnum: "stalled_purchase_order" | "delay" | "order_in_danger" | "no_response" | "payment_due" | "instance_down" | "no_channel" | "turn_failed" | "style_refresh_failed" | "decision_pending" | "claude_disconnected" | "purchase_suggested";
+        AlertKindEnum: "stalled_purchase_order" | "delay" | "order_in_danger" | "no_response" | "payment_due" | "instance_down" | "no_channel" | "turn_failed" | "style_refresh_failed" | "decision_pending" | "claude_disconnected" | "purchase_suggested" | "follow_up_answered";
         /**
          * @description * `info` - Info
          *     * `warning` - Advertencia
@@ -1516,6 +1798,118 @@ export interface components {
         Detail: {
             detail: string;
         };
+        /**
+         * @description A customer order on its way out (ADR 0026 §3). `dispatch` is the delivery to the
+         *     customer; `Delivery` is a supplier's delivery at the plant.
+         */
+        Dispatch: {
+            order: components["schemas"]["DispatchOrder"];
+            status: string;
+            /** Format: date */
+            scheduled_on: string;
+            /** Format: date-time */
+            delivered_at: string | null;
+            address: string;
+            /** Format: double */
+            lat: number | null;
+            /** Format: double */
+            lng: number | null;
+            route_id: number | null;
+            readonly vehicle: {
+                [key: string]: unknown;
+            } | null;
+            readonly stop: {
+                [key: string]: unknown;
+            } | null;
+            on_time: boolean | null;
+        };
+        DispatchOrder: {
+            id: number;
+            code: string;
+            customer_name: string;
+            units: number;
+            /** Format: date */
+            promised_on: string;
+        };
+        FollowUpInRequest: {
+            /**
+             * @description The assistant's preview: creates and queues nothing (200).
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /**
+         * @description * `minimal` - Mínimo
+         *     * `balanced` - Balanceado
+         *     * `high` - Alto
+         * @enum {string}
+         */
+        FollowUpModeEnum: "minimal" | "balanced" | "high";
+        FollowUpPlan: {
+            supplier: components["schemas"]["FollowUpSupplier"];
+            purchase_orders: string[];
+            /** Format: date-time */
+            at: string;
+            kind: components["schemas"]["FollowUpPlanKindEnum"];
+            reason: string;
+            mode: components["schemas"]["FollowUpModeEnum"];
+        };
+        /**
+         * @description * `checkpoint` - Punto de control
+         *     * `reminder` - Recordatorio
+         * @enum {string}
+         */
+        FollowUpPlanKindEnum: "checkpoint" | "reminder";
+        FollowUpRequestPurchaseOrder: {
+            id: number;
+            code: string;
+        };
+        FollowUpRequestRow: {
+            /** @description Null on a dry run. */
+            id: number | null;
+            purchase_order: components["schemas"]["FollowUpRequestPurchaseOrder"];
+            supplier_name: string;
+            status: components["schemas"]["FollowUpRequestRowStatusEnum"];
+            /**
+             * Format: date-time
+             * @description The original question when it hangs on an existing wait.
+             */
+            asked_at: string | null;
+            already_asked: boolean;
+            /** @description "sin canal" for the own plant or a supplier without a number. */
+            skip_reason: string;
+        };
+        /**
+         * @description * `pending` - Pendiente
+         *     * `asked` - Preguntado
+         *     * `skipped` - Sin canal
+         * @enum {string}
+         */
+        FollowUpRequestRowStatusEnum: "pending" | "asked" | "skipped";
+        FollowUpResult: {
+            requests: components["schemas"]["FollowUpRequestRow"][];
+            detail: string;
+        };
+        FollowUpSettings: {
+            mode?: components["schemas"]["FollowUpModeEnum"];
+            readonly mode_display: string;
+            /**
+             * Format: time
+             * @description Lima time, HH:MM.
+             */
+            window_start?: string;
+            /**
+             * Format: time
+             * @description Lima time, HH:MM.
+             */
+            window_end?: string;
+            /** @description 0 = Monday … 6 = Sunday. */
+            weekdays?: number[];
+        };
+        FollowUpSupplier: {
+            id: number;
+            name: string;
+        };
         GenerateInRequest: {
             material_ids?: number[];
             supplier_overrides?: {
@@ -1534,6 +1928,39 @@ export interface components {
         ImportInRequest: {
             /** Format: binary */
             file: string;
+        };
+        /** @description A live purchase order of the material (schema only: built by `incoming_by_material`). */
+        IncomingPurchaseOrder: {
+            id: number;
+            code: string;
+            status: string;
+            status_display: string;
+            /** @description What its items of this material still have to bring, as a decimal string. */
+            qty_pending: string;
+        };
+        LastFollowUp: {
+            /** @description checkpoint, reminder or requested */
+            kind: string;
+            /** Format: date-time */
+            at: string;
+            awaiting_reply: boolean;
+        };
+        /** @description Also the payload of the SSE `position` event and of each `snapshot` item. */
+        Live: {
+            vehicle_id: number;
+            /** Format: double */
+            lat: number | null;
+            /** Format: double */
+            lng: number | null;
+            /** Format: double */
+            heading: number | null;
+            /** Format: double */
+            speed_kmh: number | null;
+            /** Format: date-time */
+            at: string | null;
+            route_id: number | null;
+            next_stop: components["schemas"]["NextStop"] | null;
+            simulating: boolean;
         };
         LoginRequest: {
             username: string;
@@ -1561,6 +1988,9 @@ export interface components {
             stock?: string;
             readonly committed: string;
             readonly available: string;
+            /** @description Still to buy: the same number as `total_to_order` in "Por pedir" (#81). */
+            readonly to_order: string;
+            readonly incoming: components["schemas"]["IncomingPurchaseOrder"][];
             /** Format: uri */
             readonly image: string | null;
         };
@@ -1578,6 +2008,9 @@ export interface components {
             stock?: string;
             readonly committed: string;
             readonly available: string;
+            /** @description Still to buy: the same number as `total_to_order` in "Por pedir" (#81). */
+            readonly to_order: string;
+            readonly incoming: components["schemas"]["IncomingPurchaseOrder"][];
             /** Format: uri */
             readonly image: string | null;
             readonly requirements: components["schemas"]["MaterialRequirement"][];
@@ -1674,6 +2107,13 @@ export interface components {
             stalled_purchase_orders: number;
             pending_decisions: number | null;
             open_alerts: number;
+        };
+        NextStop: {
+            id: number;
+            position: number;
+            name: string;
+            /** Format: date-time */
+            eta: string | null;
         };
         /** @enum {unknown} */
         NullEnum: null;
@@ -1906,6 +2346,26 @@ export interface components {
          * @enum {string}
          */
         OrderStatusEnum: "registered" | "broken_down" | "confirmed" | "sourcing" | "in_production" | "ready" | "delivered" | "cancelled";
+        PatchedDispatchPatchRequest: {
+            /** Format: date */
+            scheduled_on?: string;
+            vehicle_id?: number;
+        };
+        PatchedFollowUpSettingsRequest: {
+            mode?: components["schemas"]["FollowUpModeEnum"];
+            /**
+             * Format: time
+             * @description Lima time, HH:MM.
+             */
+            window_start?: string;
+            /**
+             * Format: time
+             * @description Lima time, HH:MM.
+             */
+            window_end?: string;
+            /** @description 0 = Monday … 6 = Sunday. */
+            weekdays?: number[];
+        };
         PatchedNumberPatchRequest: {
             active?: boolean;
             name?: string;
@@ -1938,6 +2398,14 @@ export interface components {
             weekly_capacity?: number | null;
             lead_time_days?: number;
             follow_up_every_hours?: number;
+            /**
+             * @description Empty: the general mode (ADR 0027). Only the manager sets it, not the public form.
+             *
+             *     * `minimal` - Mínimo
+             *     * `balanced` - Balanceado
+             *     * `high` - Alto
+             */
+            follow_up_mode?: components["schemas"]["FollowUpModeEnum"] | components["schemas"]["BlankEnum"];
             currency?: components["schemas"]["CurrencyEnum"];
             notes?: string;
         };
@@ -1986,6 +2454,27 @@ export interface components {
          * @enum {string}
          */
         PaymentMethodEnum: "yape" | "transfer" | "cash";
+        /** @description Schema of `pending_follow_up` (ADR 0027 §6). */
+        PendingFollowUp: {
+            requested_by_role: string | null;
+            requested_by_role_display: string;
+            /** Format: date-time */
+            requested_at: string;
+            status: components["schemas"]["PendingFollowUpStatusEnum"];
+            /** Format: date-time */
+            asked_at: string | null;
+            /** Format: date-time */
+            answered_at: string | null;
+            answer_summary: string | null;
+        };
+        /**
+         * @description * `pending` - Pendiente
+         *     * `asked` - Preguntado
+         *     * `answered` - Respondido
+         *     * `skipped` - Sin respuesta
+         * @enum {string}
+         */
+        PendingFollowUpStatusEnum: "pending" | "asked" | "answered" | "skipped";
         PendingPurchase: {
             material: components["schemas"]["PendingPurchaseMaterial"];
             /** @description Still to buy across the orders, as a decimal string. */
@@ -2023,6 +2512,54 @@ export interface components {
             qty: string;
             /** Format: date */
             due_on: string;
+        };
+        PlanDay: {
+            routes: components["schemas"]["Route"][];
+            unassigned: components["schemas"]["PlanDayUnassigned"][];
+            suggested_next_day: number[];
+        };
+        PlanDayInRequest: {
+            /** Format: date */
+            date: string;
+            vehicle_ids?: number[];
+            order_ids?: number[];
+        };
+        PlanDayUnassigned: {
+            order_id: number;
+            code: string;
+            reason: string;
+            reason_display: string;
+        };
+        Position: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            /** Format: double */
+            heading?: number | null;
+            /** Format: double */
+            speed_kmh?: number | null;
+            /** Format: date-time */
+            recorded_at: string;
+            source?: components["schemas"]["Source884Enum"];
+            route?: number | null;
+        };
+        PositionInRequest: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            /** Format: double */
+            heading?: number | null;
+            /** Format: double */
+            speed_kmh?: number | null;
+            /** Format: date-time */
+            recorded_at?: string;
+            /** @default device */
+            source: components["schemas"]["Source884Enum"];
+        };
+        PositionStored: {
+            stored: boolean;
         };
         Product: {
             readonly id: number;
@@ -2113,8 +2650,14 @@ export interface components {
             committed_on?: string | null;
             /** Format: date-time */
             readonly last_progress_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Next follow-up opportunity, computed by the tick (ADR 0027).
+             */
             next_follow_up_at?: string | null;
+            readonly awaiting_reply: boolean;
+            readonly pending_follow_up: components["schemas"]["PendingFollowUp"] | null;
+            readonly last_follow_up: components["schemas"]["LastFollowUp"] | null;
             readonly total_amount: string;
             readonly currency: string;
             readonly redistributed_from: {
@@ -2201,8 +2744,14 @@ export interface components {
             committed_on?: string | null;
             /** Format: date-time */
             readonly last_progress_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Next follow-up opportunity, computed by the tick (ADR 0027).
+             */
             next_follow_up_at?: string | null;
+            readonly awaiting_reply: boolean;
+            readonly pending_follow_up: components["schemas"]["PendingFollowUp"] | null;
+            readonly last_follow_up: components["schemas"]["LastFollowUp"] | null;
             readonly total_amount: string;
             readonly currency: string;
             readonly redistributed_from: {
@@ -2314,6 +2863,20 @@ export interface components {
             recalculated_from?: number | null;
             readonly stops_count: number;
             readonly stops: components["schemas"]["RouteStop"][];
+            readonly vehicle: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            started_at?: string | null;
+            /** Format: date-time */
+            completed_at?: string | null;
+            /**
+             * @description The route's justification (ADR 0026 §2): "4 entregas · 1 450 prendas (73 % de capacidad)
+             *     · 18 km · vuelve 12:40".
+             */
+            readonly summary: {
+                [key: string]: unknown;
+            };
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -2336,6 +2899,7 @@ export interface components {
          */
         RouteStatusEnum: "proposed" | "planned" | "in_progress" | "completed" | "replaced" | "discarded";
         RouteStop: {
+            readonly id: number;
             /** @description 0 and the last one are the plant (kind=plant). */
             position: number;
             kind: components["schemas"]["RouteStopKindEnum"];
@@ -2348,6 +2912,8 @@ export interface components {
             lng: number;
             /** Format: date-time */
             eta?: string | null;
+            /** Format: date-time */
+            delivered_at?: string | null;
             readonly supplier: {
                 [key: string]: unknown;
             };
@@ -2360,6 +2926,8 @@ export interface components {
             readonly order: {
                 [key: string]: unknown;
             };
+            readonly units: number;
+            readonly on_time: boolean | null;
         };
         /**
          * @description * `plant` - Planta
@@ -2373,6 +2941,15 @@ export interface components {
             name: string;
             status: string;
             source: string;
+        };
+        SimulateInRequest: {
+            /**
+             * Format: double
+             * @default 12
+             */
+            speed_factor: number;
+            /** @default 3 */
+            interval_s: number;
         };
         SimulatorContact: {
             allowed_number_id: number;
@@ -2401,6 +2978,13 @@ export interface components {
             /** Format: binary */
             photo?: string;
         };
+        /**
+         * @description * `simulator` - Simulador
+         *     * `device` - Dispositivo
+         *     * `manual` - Manual
+         * @enum {string}
+         */
+        Source884Enum: "simulator" | "device" | "manual";
         StatusChange: {
             status: string;
             status_display: string;
@@ -2520,7 +3104,16 @@ export interface components {
             readonly active_numbers_count: number;
             readonly has_style_notes: boolean;
             address?: string;
+            /** @description Unused since ADR 0027. */
             follow_up_every_hours?: number;
+            /**
+             * @description Empty: the general mode.
+             *
+             *     * `minimal` - Mínimo
+             *     * `balanced` - Balanceado
+             *     * `high` - Alto
+             */
+            follow_up_mode?: components["schemas"]["FollowUpModeEnum"] | components["schemas"]["BlankEnum"];
             /** @description How to treat them; approved style notes. */
             notes?: string;
             /** @description url and excerpt of an external source; no prompt reads it. */
@@ -2673,6 +3266,41 @@ export interface components {
              */
             is_staff?: boolean;
         };
+        Vehicle: {
+            readonly id: number;
+            name: string;
+            plate?: string;
+            kind?: components["schemas"]["VehicleKindEnum"];
+            readonly kind_display: string;
+            /** @description Garments it carries in one trip. */
+            capacity_units: number;
+            /** @description Hex colour on the map (Okabe-Ito palette). */
+            color?: string;
+            driver_name?: string;
+            is_active?: boolean;
+            /** Format: double */
+            last_lat?: number | null;
+            /** Format: double */
+            last_lng?: number | null;
+            /**
+             * Format: double
+             * @description Degrees from north, clockwise.
+             */
+            last_heading?: number | null;
+            /** Format: double */
+            last_speed_kmh?: number | null;
+            /** Format: date-time */
+            last_seen_at?: string | null;
+            sim_active?: boolean;
+        };
+        /**
+         * @description * `van` - Furgón
+         *     * `pickup` - Camioneta
+         *     * `motorcycle` - Moto
+         *     * `truck` - Camión
+         * @enum {string}
+         */
+        VehicleKindEnum: "van" | "pickup" | "motorcycle" | "truck";
         WebhookSummary: {
             /** @description Secret masked as ****. */
             url: string;
@@ -2940,6 +3568,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Customer"][];
+                };
+            };
+        };
+    };
+    dispatches_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dispatch"][];
+                };
+            };
+        };
+    };
+    dispatches_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedDispatchPatchRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedDispatchPatchRequest"];
+                "multipart/form-data": components["schemas"]["PatchedDispatchPatchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dispatch"];
                 };
             };
         };
@@ -3561,6 +4235,42 @@ export interface operations {
             };
         };
     };
+    orders_follow_up_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este orden. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["FollowUpInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpInRequest"];
+                "multipart/form-data": components["schemas"]["FollowUpInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpResult"];
+                };
+            };
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpResult"];
+                };
+            };
+        };
+    };
     orders_break_down_create: {
         parameters: {
             query?: never;
@@ -3743,6 +4453,42 @@ export interface operations {
             };
         };
     };
+    purchase_orders_follow_up_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este pedido. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["FollowUpInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpInRequest"];
+                "multipart/form-data": components["schemas"]["FollowUpInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpResult"];
+                };
+            };
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpResult"];
+                };
+            };
+        };
+    };
     purchase_orders_progress_create: {
         parameters: {
             query?: never;
@@ -3903,6 +4649,70 @@ export interface operations {
             };
         };
     };
+    routes_complete_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Route"];
+                };
+            };
+        };
+    };
+    routes_start_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Route"];
+                };
+            };
+        };
+    };
+    routes_stops_deliver_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                stop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Route"];
+                };
+            };
+        };
+    };
     routes_plan_create: {
         parameters: {
             query?: never;
@@ -3924,6 +4734,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Route"];
+                };
+            };
+        };
+    };
+    routes_plan_day_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanDayInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlanDayInRequest"];
+                "multipart/form-data": components["schemas"]["PlanDayInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanDay"];
                 };
             };
         };
@@ -4107,6 +4942,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClaudeStatus"];
+                };
+            };
+        };
+    };
+    settings_follow_up_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpSettings"];
+                };
+            };
+        };
+    };
+    settings_follow_up_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedFollowUpSettingsRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedFollowUpSettingsRequest"];
+                "multipart/form-data": components["schemas"]["PatchedFollowUpSettingsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpSettings"];
+                };
+            };
+        };
+    };
+    settings_follow_up_preview_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpPlan"][];
                 };
             };
         };
@@ -4431,6 +5329,161 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SelfRegistered"];
+                };
+            };
+        };
+    };
+    vehicles_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehicle"][];
+                };
+            };
+        };
+    };
+    vehicles_positions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Position"][];
+                };
+            };
+        };
+    };
+    vehicles_positions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PositionInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PositionInRequest"];
+                "multipart/form-data": components["schemas"]["PositionInRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PositionStored"];
+                };
+            };
+        };
+    };
+    vehicles_simulate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SimulateInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SimulateInRequest"];
+                "multipart/form-data": components["schemas"]["SimulateInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehicle"];
+                };
+            };
+        };
+    };
+    vehicles_simulate_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehicle"];
+                };
+            };
+        };
+    };
+    vehicles_live_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Live"][];
+                };
+            };
+        };
+    };
+    vehicles_stream_retrieve: {
+        parameters: {
+            query?: {
+                format?: "event-stream" | "json";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
                 };
             };
         };

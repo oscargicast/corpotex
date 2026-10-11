@@ -73,7 +73,10 @@ type PurchaseOrderLoose =
   | "currency"
   | "redistributed_from"
   | "alert_severity"
-  | "material";
+  | "material"
+  | "awaiting_reply"
+  | "pending_follow_up"
+  | "last_follow_up";
 
 export type PurchaseOrderListItem = Omit<S["PurchaseOrderList"], PurchaseOrderLoose> & {
   kind: "material" | "workshop" | "finished";
@@ -85,7 +88,10 @@ export type PurchaseOrderListItem = Omit<S["PurchaseOrderList"], PurchaseOrderLo
   currency: Currency;
   redistributed_from: Ref | null;
   alert_severity: Severity | null;
-  awaiting_reply?: boolean; // the supplier owes an answer to a follow-up (ADR 0027 §6)
+  // Reactive follow-up (ADR 0027 §6); optional so older mocks still type.
+  awaiting_reply?: boolean; // the supplier owes an answer to a follow-up
+  pending_follow_up?: PendingFollowUp | null; // the latest request, whatever its status
+  last_follow_up?: LastFollowUp | null;
 };
 
 export type Payment = Omit<S["Payment"], "purchase_order" | "due_on"> & { due_on: string | null };
@@ -126,29 +132,14 @@ export interface PurchaseOrderDetail extends PurchaseOrderListItem {
 }
 
 // Reactive follow-up (ADR 0027 §6).
-export interface PendingFollowUp {
-  requested_by_role: Role | string;
-  requested_at: string;
-  status: "pending" | "asked" | "answered" | "skipped";
-  asked_at: string | null;
-}
+export type PendingFollowUp = S["PendingFollowUp"];
+export type LastFollowUp = S["LastFollowUp"];
+export type FollowUpRequestRow = S["FollowUpRequestRow"];
 
-export interface LastFollowUp {
-  kind: string; // checkpoint | reminder | requested
-  at: string;
-  awaiting_reply: boolean;
-}
-
-export interface FollowUpRequestItem {
-  id?: number;
-  purchase_order?: Ref | null;
-  status?: PendingFollowUp["status"];
-  asked_at?: string | null;
-  already_asked?: boolean;
-}
-
-// POST /api/purchase-orders/<id>/follow-up/ and /api/orders/<id>/follow-up/ → 202.
-export type FollowUpRequestResponse = FollowUpRequestItem[] | { requests?: FollowUpRequestItem[]; created?: FollowUpRequestItem[]; detail?: string };
+// POST /api/purchase-orders/<id>/follow-up/ and /api/orders/<id>/follow-up/:
+// 202 with the requests, 200 with {dry_run: true} (creates and queues nothing).
+// `detail` says it in words: who gets a message, who doesn't and why.
+export type FollowUpResult = S["FollowUpResult"];
 
 export interface SupplierListItem {
   id: number;

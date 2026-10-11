@@ -24,7 +24,8 @@ import type {
   ClaudeStatus,
   Clock,
   Customer,
-  FollowUpRequestItem,
+  FollowUpRequestRow,
+  FollowUpResult,
   GeneratedPurchaseOrder,
   GeneratedPurchaseOrders,
   MaterialDetail,
@@ -51,9 +52,17 @@ import type {
 const poDetails = structuredClone(poDetailsSeed) as unknown as Record<string, Partial<PurchaseOrderDetail> & { decision_id?: number }>;
 const conversations = structuredClone(conversationsSeed) as unknown as Record<string, ChatMessage[]>;
 
-// Reactive follow-up (ADR 0027 §6): open requests per purchase order.
+// Reactive follow-up (ADR 0027 §6): the latest request per purchase order.
 const followUps: Record<number, PendingFollowUp> = {
-  7: { requested_by_role: "sales", requested_at: todayAt("10:05"), status: "asked", asked_at: todayAt("10:06") },
+  7: {
+    requested_by_role: "sales",
+    requested_by_role_display: "Comercial",
+    requested_at: todayAt("10:05"),
+    status: "asked",
+    asked_at: todayAt("10:06"),
+    answered_at: null,
+    answer_summary: null,
+  },
 };
 
 function todayAt(hhmm: string): string {
@@ -61,15 +70,40 @@ function todayAt(hhmm: string): string {
 }
 
 const CLOSED_PO = ["suggested", "delivered", "cancelled", "cancelled_by_supplier", "rejected_by_supplier", "declined_by_supplier"];
+const ROLE_DISPLAY: Record<Role, string> = { manager: "Gerente", sales: "Comercial", production: "Producción" };
 
-function requestFollowUp(po: PurchaseOrderListItem, role: Role): FollowUpRequestItem {
-  const existing = followUps[po.id];
-  if (existing && existing.status === "asked") {
-    return { purchase_order: { id: po.id, code: po.code }, status: "asked", asked_at: existing.asked_at, already_asked: true };
-  }
+// Like the API: the own plant gets no message, an order already waiting hangs
+// on that question, the rest are asked now. `dry_run` changes nothing.
+function requestFollowUp(pos: PurchaseOrderListItem[], role: Role, dryRun: boolean): FollowUpResult {
   const now = new Date().toISOString();
-  followUps[po.id] = { requested_by_role: role, requested_at: now, status: "asked", asked_at: now };
-  return { purchase_order: { id: po.id, code: po.code }, status: "asked", asked_at: now };
+  const rows: (FollowUpRequestRow & { in_house: boolean })[] = pos.map((po, i) => {
+    const in_house = !!suppliers.find((s) => s.id === po.supplier.id)?.is_in_house;
+    const existing = followUps[po.id];
+    const waiting = !in_house && existing?.status === "asked" ? existing.asked_at : null;
+    const status = in_house ? "skipped" : waiting ? "asked" : "pending";
+    if (!dryRun && status !== "skipped") {
+      followUps[po.id] = {
+        requested_by_role: role,
+        requested_by_role_display: ROLE_DISPLAY[role],
+        requested_at: now,
+        status: "asked",
+        asked_at: waiting ?? now,
+        answered_at: null,
+        answer_summary: null,
+      };
+    }
+    return { id: dryRun ? null : 900 + i, purchase_order: { id: po.id, code: po.code }, supplier_name: po.supplier.name, status, asked_at: waiting, already_asked: !!waiting, skip_reason: in_house ? "sin canal" : "", in_house };
+  });
+  const join = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(", ")} y ${names.at(-1)}` : names[0]);
+  const asking = [...new Set(rows.filter((r) => r.status === "pending").map((r) => r.supplier_name))].sort();
+  const parts: string[] = [];
+  if (asking.length) parts.push(`${dryRun ? "Le escribiría a " : "Le pedimos avance a "}${join(asking)}.`);
+  for (const r of rows.filter((r) => r.in_house)) parts.push(`A ${r.supplier_name} no se le escribe: es la planta propia.`);
+  for (const r of rows.filter((r) => r.already_asked)) {
+    const at = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(r.asked_at!));
+    parts.push(`A ${r.supplier_name} ya se le preguntó a las ${at} por ${r.purchase_order.code}; te avisamos en el asistente cuando conteste.`);
+  }
+  return { requests: rows.map(({ in_house: _, ...r }) => r), detail: parts.join(" ") || "No hay pedidos abiertos a los que pedirles avance." };
 }
 
 function purchaseOrderDetailFor(po: PurchaseOrderListItem, role: Role): PurchaseOrderDetail {
@@ -415,7 +449,7 @@ function orderDetailFor(order: OrderListItem, role: Role): OrderDetail {
     status_history: [],
     ...extra,
     ...order,
-    purchase_orders: purchaseOrders.filter((po) => po.orders.some((o) => o.id === order.id)).map((po) => ({ ...po, awaiting_reply: followUps[po.id]?.status === "asked" })),
+    purchase_orders: purchaseOrders.filter((po) => po.orders.some((o) => o.id === order.id)).map((po) => ({ ...po, awaiting_reply: followUps[po.id]?.status === "asked", pending_follow_up: followUps[po.id] ?? null })),
     alerts: monitor.alerts.filter((a) => a.order?.id === order.id),
   } as OrderDetail;
   if (role === "manager") detail.redistributions = monitor.redistributions.filter((d) => d.orders.some((o) => o.id === order.id));
@@ -864,7 +898,7 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
             (!params.get("q") || [po.code, ...po.orders.map((o) => o.code)].some((c) => c.toLowerCase().includes(params.get("q")!.toLowerCase()))) &&
             (!params.get("code") || po.code === params.get("code")),
         )
-        .map((po) => ({ ...po, awaiting_reply: followUps[po.id]?.status === "asked" }))
+        .map((po) => ({ ...po, awaiting_reply: followUps[po.id]?.status === "asked", pending_follow_up: followUps[po.id] ?? null }))
         .map((po) => (user.role === "manager" ? po : { ...po, total_amount: null })),
     );
   }
@@ -873,12 +907,14 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     if (user.role === "sales") return json(403, { detail: "Comercial pide avance desde la orden." });
     const po = purchaseOrders.find((p) => p.id === Number(poFollowUp[1]));
     if (!po) return json(404, { detail: "No existe." });
-    return json(202, { requests: [requestFollowUp(po, user.role)] });
+    const dryRun = !!(readBody(init.body) as { dry_run?: boolean }).dry_run;
+    return json(dryRun ? 200 : 202, requestFollowUp([po], user.role, dryRun));
   }
   const orderFollowUp = route.match(/^POST \/api\/orders\/(\d+)\/follow-up\/$/);
   if (orderFollowUp) {
     const open = purchaseOrders.filter((po) => po.orders.some((o) => o.id === Number(orderFollowUp[1])) && !CLOSED_PO.includes(po.status));
-    return json(202, { requests: open.map((po) => requestFollowUp(po, user.role)) });
+    const dryRun = !!(readBody(init.body) as { dry_run?: boolean }).dry_run;
+    return json(dryRun ? 200 : 202, requestFollowUp(open, user.role, dryRun));
   }
   const poMatch = route.match(/^GET \/api\/purchase-orders\/(\d+)\/$/);
   if (poMatch) {
