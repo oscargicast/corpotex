@@ -76,3 +76,12 @@ def test_loader_rejects_codes_outside_the_documented_format(tmp_path):
     (tmp_path / "orders.json").write_text(json.dumps([{"code": "OC-2026-0001", "customer": "x", "brand": "y", "promised_on": "T+5", "items": []}]))
     with pytest.raises(SeedError, match="CP-AAAA-NNNN"):
         Loader(data_dir=tmp_path).load_orders()
+
+
+@pytest.mark.django_db
+def test_scene_purchase_order_has_the_fixed_report_token():
+    from operations.models import PurchaseOrder
+    from seed.loader import SCENE_PURCHASE_ORDER, SCENE_REPORT_TOKEN
+
+    call_command("seed_demo", verbosity=0)
+    assert str(PurchaseOrder.objects.get(code=SCENE_PURCHASE_ORDER).report_token) == SCENE_REPORT_TOKEN

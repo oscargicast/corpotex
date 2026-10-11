@@ -441,6 +441,7 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
 @register(PurchaseOrder, detail=True)
 class PurchaseOrderDetailSerializer(StatusHistoryMixin, PurchaseOrderListSerializer):
     suggested_supplier = SupplierRefSerializer(read_only=True)
+    report_url = serializers.SerializerMethodField()
     changed_by_manager = serializers.SerializerMethodField()
     candidates = serializers.SerializerMethodField()
     delivered_on = serializers.SerializerMethodField()
@@ -469,8 +470,16 @@ class PurchaseOrderDetailSerializer(StatusHistoryMixin, PurchaseOrderListSeriali
             "redistributed_into",
             "pending_decision",
             "conversation_id",
+            "report_token",
+            "report_url",
             "status_history",
         ]
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_report_url(self, obj):
+        from .services import report_url
+
+        return report_url(obj)
 
     @extend_schema_field(OpenApiTypes.BOOL)
     def get_changed_by_manager(self, obj):

@@ -9,7 +9,7 @@ from celery.schedules import crontab
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
-    DEBUG=(bool, True),
+    DEBUG=(bool, False),  # True only for local development without the tunnel.
     SECRET_KEY=(str, "dev-only-insecure-key-change-in-env"),
     DATABASE_URL=(str, "postgres://corpotex:corpotex@localhost:5432/corpotex"),
     REDIS_URL=(str, "redis://localhost:6379/0"),

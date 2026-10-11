@@ -4184,6 +4184,15 @@
                         "description": "Chat where this purchase order is negotiated.",
                         "readOnly": true
                     },
+                    "report_token": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "report_url": {
+                        "type": "string",
+                        "readOnly": true
+                    },
                     "status_history": {
                         "type": "array",
                         "items": {
@@ -4220,6 +4229,8 @@
                     "progress_reports",
                     "redistributed_from",
                     "redistributed_into",
+                    "report_token",
+                    "report_url",
                     "status_display",
                     "status_history",
                     "suggested_supplier",
