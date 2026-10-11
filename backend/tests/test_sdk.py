@@ -162,3 +162,10 @@ def test_hung_cli_raises_turn_timeout_quickly(monkeypatch):
     monkeypatch.setattr(sdk, "query", hung_query)
     with pytest.raises(sdk.TurnTimeout):
         asyncio.run(sdk.run("hola", options(), timeout=0.05))
+
+
+def test_model_comes_from_django_settings(settings):
+    settings.AGENT_MODEL = "opus"
+    assert options().model == "opus"
+    settings.AGENT_MODEL = "sonnet"
+    assert options().model == "sonnet"

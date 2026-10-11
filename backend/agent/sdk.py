@@ -21,8 +21,9 @@ from claude_agent_sdk import (
     TextBlock,
     query,
 )
+from django.core.exceptions import ImproperlyConfigured
 
-DEFAULT_MODEL = "opus"
+DEFAULT_MODEL = "sonnet"  # same default as settings.AGENT_MODEL; the scenarios were validated on it
 API_KEY_FILE = "api_key"  # written by core.claude_account.set_api_key (ADR 0022, API key mode)
 
 # Credentials the host or .env may carry: the CLI must only use CLAUDE_CONFIG_DIR.
@@ -78,6 +79,16 @@ def config_dir() -> Path:
     return Path(os.environ.get("CLAUDE_CONFIG_DIR", "/app/.agent/config"))
 
 
+def default_model() -> str:
+    """settings.AGENT_MODEL is the single source of truth; the env var only outside Django."""
+    try:
+        from django.conf import settings
+
+        return settings.AGENT_MODEL
+    except (ImportError, ImproperlyConfigured, AttributeError):
+        return os.environ.get("AGENT_MODEL", DEFAULT_MODEL)
+
+
 def is_connected() -> bool:
     return (config_dir() / ".credentials.json").exists() or (config_dir() / API_KEY_FILE).exists()
 
@@ -105,7 +116,7 @@ def isolated_options(
     cwd = config_dir().parent / subdir
     cwd.mkdir(parents=True, exist_ok=True)
     return ClaudeAgentOptions(
-        model=model or os.environ.get("AGENT_MODEL", DEFAULT_MODEL),
+        model=model or default_model(),
         system_prompt=system_prompt,
         tools=list(builtin_tools),
         allowed_tools=[*builtin_tools, *allowed_tools],
