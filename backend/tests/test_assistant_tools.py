@@ -387,6 +387,7 @@ def test_generate_without_material_ids_previews_everything(monkeypatch):
     monkeypatch.setattr(assistant_tools, "api_get", api)
     _, text = call(conversation(), 1, "generate_purchase_orders", {"confirmed": False})
     assert "botones NX" in text and "algodón 20/1" in text and "sin proveedor sugerido" in text
+    assert "ids de insumo: 3 botones NX (BOT-NX), 4 algodón 20/1 (TEL-201)" in text
 
 
 def test_generate_confirmed_calls_the_service_with_actor_and_records_card(monkeypatch):
