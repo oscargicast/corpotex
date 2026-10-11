@@ -43,5 +43,5 @@ Nada de nombres reales, RUC ni cuentas.
 - **Sin wifi:** el simulador y todas las vistas siguen; el mapa queda gris con marcadores y líneas. El tethering del celular reemplaza al wifi.
 - **Si Valeria no puede o WhatsApp falla:** la cancelación se hace desde `/simulator?present=1` con el atajo del contacto "Confecciones del Norte" (el taller de PT-0038; con el seed actual es el `3`) y el mismo texto; la redistribución es la misma.
 - **Si el agente tarda:** el modo presentación muestra "Escribiendo…"; si no responde en 30 segundos, se sigue con el paso 8 (la decisión ya está en el seed).
-- **Si todo falla:** el video de respaldo de la corrida completa (D6, `CLAUDE.md`), guardado en la laptop y en el celular.
+- **Si todo falla:** el video de respaldo de la corrida completa (D6, `CLAUDE.md`), guardado en la laptop y en el celular. Oscar lo graba a mano; como guía de los clics y tiempos está `docs/demo/respaldo/record.mjs` (Playwright headless sobre el stack real, `node record.mjs` y luego `./compose.sh ~/Desktop/corpotex-demo-respaldo.mp4`; gasta turnos del agente y muta la data, así que `seed_demo` después).
 - No tocar `/settings/claude` ni "Desconectar" en vivo; no reseedear durante el pitch.
