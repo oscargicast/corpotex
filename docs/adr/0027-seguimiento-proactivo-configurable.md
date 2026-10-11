@@ -72,7 +72,7 @@ El turno `follow_up` le pasa al agente el contexto, y este decide si escribe:
 3. **Conexiones**: Claude y WhatsApp, las páginas actuales.
 4. **Proveedores**: el acceso a `/suppliers`. En la ficha del proveedor se suma "Seguimiento: usar el general / Mínimo / Balanceado / Alto".
 
-El stepper de 4 pasos pasa a ser un resumen compacto arriba del submenú, por ejemplo "Puesta en marcha 4/4", que solo se despliega si falta algún paso. Se mantienen las URLs actuales (`/settings/style`, `/settings/claude`, `/settings/whatsapp`), las redirecciones del PR #93 y `/settings/claude?reconnect=1`.
+El stepper pasa a ser un resumen compacto de 3 pasos (Claude, WhatsApp, Estilo; Proveedores salió el 11/10 01:55 porque tiene su pestaña) arriba del submenú, por ejemplo "Puesta en marcha 3/3", que solo se despliega si falta algún paso. Se mantienen las URLs actuales (`/settings/style`, `/settings/claude`, `/settings/whatsapp`), las redirecciones del PR #93 y `/settings/claude?reconnect=1`.
 
 ### 5. Seed y demo
 

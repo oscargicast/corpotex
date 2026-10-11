@@ -48,7 +48,7 @@ Por debajo: tres tipos de pedido (insumo, taller, terminado), fecha de la orden 
 
 ### Onboarding (ADR 0011)
 
-Vive en la pestaña "Configuración" del Gerente (`/settings`; desde el 10/10 23:45 no hay pestañas aparte de Onboarding ni de Estilo, pedido de Oscar). Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), conectar WhatsApp (QR y webhook de la instancia `corpotex`), cargar proveedores (celular opcional) y extraer el estilo del Gerente de sus chats con proveedores (el "BOSS.md": un texto que se guarda en `User.style_md`, con historial en `StyleVersion`, ADR 0019). Solo se leen los chats de celulares de proveedores registrados.
+Vive en la pestaña "Configuración" del Gerente (`/settings`; desde el 10/10 23:45 no hay pestañas aparte de Onboarding ni de Estilo, pedido de Oscar). Puesta en marcha de 3 pasos (Proveedores salió del resumen el 11/10 01:55: se cargan en su propia pestaña `/suppliers`, celular opcional): conectar la cuenta de Claude (ADR 0022), conectar WhatsApp (QR y webhook de la instancia `corpotex`) y extraer el estilo del Gerente de sus chats con proveedores (el "BOSS.md": un texto que se guarda en `User.style_md`, con historial en `StyleVersion`, ADR 0019). Solo se leen los chats de celulares de proveedores registrados.
 
 ## Demo
 
