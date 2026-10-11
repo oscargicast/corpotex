@@ -162,9 +162,12 @@ export interface Named {
   image?: string | null;
 }
 
+// Items are mostly made-to-measure garments (ADR 0025 C): a free-text
+// description, an optional base product from the catalog, an optional price.
 export interface OrderItem {
   id: number;
-  product: Named & { code: string };
+  description?: string | null;
+  product: (Named & { code: string; image?: string | null }) | null;
   quantity: number;
   sizes: Record<string, number>;
   color: string;
@@ -465,5 +468,29 @@ export interface OrderInput {
   promised_on: string;
   issued_on?: string;
   notes?: string;
-  items: { product: string; quantity: number; color?: string; customization?: string; sizes?: Record<string, number> }[];
+  items: { description: string; quantity: number; product?: string | null; unit_price?: string | null; color?: string; customization?: string; sizes?: Record<string, number> }[];
 }
+
+// POST /api/orders/<id>/classify/ → the AI's proposal per item (ADR 0025 C);
+// the same shape, edited, goes to POST /api/orders/<id>/apply-classification/.
+export interface ClassificationMaterial {
+  sku?: string | null; // an existing material…
+  new?: { sku: string; name: string; kind: string; unit: string } | null; // …or one to create
+  qty_per_unit: Decimal;
+  unit: string;
+  confidence?: number | null; // 0 to 1
+}
+
+export interface ClassificationItem {
+  item_id: number;
+  product: { existing_id?: number | null; new?: { code: string; name: string; brand: string } | null };
+  confidence?: number | null;
+  materials: ClassificationMaterial[];
+}
+
+export interface Classification {
+  items: ClassificationItem[];
+}
+
+export const MATERIAL_KIND: Record<string, string> = { fabric: "Tela", button: "Botón", zipper: "Cierre", collar_cuff: "Cuello y puño", other: "Otro" };
+export const MATERIAL_UNIT: Record<string, string> = { m: "m", kg: "kg", unit: "unidad" };
