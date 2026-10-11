@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatDay, formatMoney } from "@/lib/format";
+import { formatDay, formatMoney, num } from "@/lib/format";
 import type { PurchaseOrderListItem } from "@/lib/types";
 import { Pill, SEVERITY_TONE } from "./ui";
 
@@ -60,7 +60,7 @@ export function PurchaseOrderList({ items }: { items: PurchaseOrderListItem[] })
                   <Progress po={po} />
                 </td>
                 <td className="py-2.5 pr-3 text-xs">{dueLabel(po)}</td>
-                {showAmounts && <td className="py-2.5 text-right tabular-nums">{formatMoney(po.total_amount, po.currency)}</td>}
+                {showAmounts && <td className="py-2.5 text-right tabular-nums">{num(po.total_amount) ? formatMoney(po.total_amount, po.currency) : "—"}</td>}
               </tr>
             ))}
           </tbody>

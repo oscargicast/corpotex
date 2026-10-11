@@ -51,7 +51,7 @@ function Pending() {
         method: "POST",
         json: { ...(materialIds && { material_ids: materialIds }), ...(Object.keys(supplier_overrides).length && { supplier_overrides }) },
       });
-      setGenerated((current) => [...(result.created ?? result.purchase_orders ?? []), ...current]);
+      setGenerated((current) => [...result.created, ...current]);
       setDecisionId(result.decision_id ?? null);
       setSkipped(result.skipped ?? []);
       setConfirmAll(false);
@@ -121,7 +121,7 @@ function Pending() {
                 <Link href={`/purchase-orders/${po.id}`} className="font-medium underline">
                   {po.code}
                 </Link>{" "}
-                {po.material?.name || po.items?.[0]?.name ? ` · ${po.material?.name ?? po.items?.[0]?.name}` : ""} · {po.supplier.name}
+                {po.items[0]?.name ? ` · ${po.items[0].name}` : ""} · {po.supplier.name}
                 {po.orders.length > 0 && ` · para ${po.orders.map((o) => o.code).join(", ")}`}
               </li>
             ))}
@@ -131,16 +131,11 @@ function Pending() {
 
       {skipped.length > 0 && (
         <ul className="rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning" role="alert">
-          {skipped.map((s, i) => {
-            const id = typeof s === "number" ? s : s.material_id;
-            const name = rows.find((r) => r.material.id === id)?.material.name ?? (typeof s === "number" ? null : s.material) ?? `Material ${id ?? i + 1}`;
-            const reason = typeof s === "number" ? "sin requerimientos abiertos" : (s.reason ?? "sin requerimientos abiertos");
-            return (
-              <li key={`${id ?? i}`}>
-                {name}: {reason}
-              </li>
-            );
-          })}
+          {skipped.map((s) => (
+            <li key={s.material_id}>
+              {rows.find((r) => r.material.id === s.material_id)?.material.name ?? `Material ${s.material_id}`}: {s.reason || "sin requerimientos abiertos"}
+            </li>
+          ))}
         </ul>
       )}
 
