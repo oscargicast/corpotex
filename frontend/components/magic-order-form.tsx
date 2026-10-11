@@ -348,18 +348,21 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
   const atRisk = promisedDays !== null && neededDays > promisedDays;
 
   // ---- Save ----
+  // What still keeps "Crear orden" disabled, in the form's order (Oscar, 11/10
+  // 06:55). A line still being recognized does not: it is saved as it is.
+  const rows = drafts.filter((d) => d.line.text.trim());
+  const missing: string[] = [];
+  if (!brand) missing.push("marca");
+  if (!customer.trim()) missing.push("cliente");
+  if (!promisedOn) missing.push("fecha de entrega");
+  if (!rows.length) missing.push("un ítem");
+  else if (!rows.some((d) => d.description.length >= MIN_CHARS)) missing.push(`la prenda del ítem ${lines.indexOf(rows[0].line) + 1}`);
+  for (const d of rows) if (!(d.quantity > 0) || !Number.isInteger(d.quantity)) missing.push(`cantidad del ítem ${lines.indexOf(d.line) + 1}`);
+  const missingText = missing.length ? `Falta: ${missing.join(", ")}` : null;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const rows = drafts.filter((d) => d.line.text.trim());
-    if (!customer.trim()) return setError("Elige o escribe el cliente.");
-    if (!brand) return setError("Elige la marca.");
-    if (!promisedOn) return setError("Pon la fecha de entrega.");
-    if (!rows.length) return setError("Escribe al menos un ítem.");
-    const bad = rows.find((d) => !d.description || !(d.quantity > 0) || !Number.isInteger(d.quantity));
-    if (bad) {
-      setFocusKey(bad.line.key);
-      return setError("Cada ítem necesita la prenda y una cantidad entera mayor a 0 (al inicio de la línea o en Cantidad).");
-    }
+    if (missing.length || busy) return; // the button says what is missing; red is only for the server
     setBusy(true);
     setError(null);
     const classified = rows.filter((d) => recognized.includes(d));
@@ -644,9 +647,22 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                   {error}
                 </p>
               )}
-              <Button kind="primary" type="submit" busy={busy} className="h-12 w-full text-base">
+              <Button
+                kind="primary"
+                type="submit"
+                busy={busy}
+                aria-disabled={missingText ? true : undefined}
+                title={missingText ?? undefined}
+                aria-describedby={missingText ? "create-missing" : undefined}
+                className="h-12 w-full text-base aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-brand"
+              >
                 {busy ? "Creando…" : "Crear orden"}
               </Button>
+              {missingText && (
+                <p id="create-missing" className="text-xs text-muted">
+                  {missingText}
+                </p>
+              )}
               <Button type="button" onClick={onCancel} disabled={busy} className="min-h-11 w-full">
                 Cancelar
               </Button>
