@@ -3,25 +3,25 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { OrderForm } from "@/components/order-form";
+import { MagicOrderForm } from "@/components/magic-order-form";
 import { RoleGate } from "@/components/require-auth";
-import { Card } from "@/components/ui";
 
-// Comercial and the Gerente register orders by hand (ADR 0025 B); the sales
-// system's API and "Simular orden" keep working as before.
+// Orden mágica (ADR 0028): Comercial and the Gerente write each item as the
+// customer says it; the items are recognized while typing and the order is
+// born broken down. Editing keeps the plain form (orders/[id]/edit).
 export default function NewOrderPage() {
   const router = useRouter();
   return (
     <RoleGate roles={["manager", "sales"]}>
-      <div className="mx-auto max-w-4xl space-y-4">
-        <Link href="/orders" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
-          <ArrowLeft size={16} /> Órdenes
+      <div className="mx-auto max-w-6xl space-y-4">
+        <Link href="/orders" className="inline-flex min-h-11 items-center gap-1 text-sm text-muted hover:text-ink sm:min-h-0">
+          <ArrowLeft size={16} aria-hidden /> Órdenes
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Nueva orden</h1>
-        <p className="text-sm text-muted">Llega igual que por la API de Comercial: el sistema la desglosa contra inventario y Producción confirma.</p>
-        <Card>
-          <OrderForm onSaved={(order) => router.push(`/orders/${order.id}`)} onCancel={() => router.push("/orders")} />
-        </Card>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Nueva orden</h1>
+          <p className="mt-1 text-sm text-muted">Escribe lo que pide el cliente. Cada prenda se reconoce sola y la orden se guarda ya desglosada contra inventario.</p>
+        </div>
+        <MagicOrderForm onSaved={(order) => router.push(`/orders/${order.id}`)} onCancel={() => router.push("/orders")} />
       </div>
     </RoleGate>
   );

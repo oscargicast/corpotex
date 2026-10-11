@@ -483,5 +483,33 @@ export type Classification = S["ClassificationResult"];
 export type ClassificationItem = S["ClassificationItem"];
 export type ClassificationMaterial = S["ClassificationMaterial"];
 
+// ADR 0028: live classification while the order is typed. POST
+// /api/orders/classify-draft/ {brand, customer?, items: [{key, description,
+// quantity}]} (an unknown brand is a 400). "pending": the line is under 12
+// characters or has no quantity (no model call); "error": the model failed on
+// that line (it can be saved unclassified). With an existing product the
+// server uses the catalog recipe and ignores the materials sent.
+export interface DraftClassificationItem {
+  key: string;
+  status: "classified" | "pending" | "error";
+  description?: string;
+  product?: S["ClassificationProduct"];
+  confidence?: number | null;
+  materials?: ClassificationMaterial[];
+  detail?: string;
+  lead_time_days?: number | null; // the suggested supplier's, if a proposal ever brings it
+}
+
+// What the form keeps per recognized line: a classified proposal, maybe edited.
+export interface DraftProposal {
+  product: S["ClassificationProduct"];
+  confidence: number | null;
+  materials: ClassificationMaterial[];
+  lead_time_days?: number | null;
+}
+export interface DraftClassification {
+  items: DraftClassificationItem[];
+}
+
 export const MATERIAL_KIND: Record<string, string> = { fabric: "Tela", button: "Botón", zipper: "Cierre", collar_cuff: "Cuello y puño", other: "Otro" };
 export const MATERIAL_UNIT: Record<string, string> = { m: "m", kg: "kg", unit: "unidad" };
