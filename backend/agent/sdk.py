@@ -5,6 +5,7 @@ tool we did not grant (ADR 0010). Its only credential is the one the dashboard w
 into CLAUDE_CONFIG_DIR (ADR 0022). Verified in the A1.1 spike.
 """
 
+import asyncio
 import json
 import os
 import re
@@ -52,6 +53,17 @@ class ClaudeNotConnected(Exception):
 
 class SessionNotFound(Exception):
     """resume= pointed to a session file that no longer exists."""
+
+
+class TurnTimeout(ClaudeSDKError):
+    """The CLI gave no result in time (a hung API call). The process was killed."""
+
+
+# Under Celery's soft_time_limit (90 s), so a hung CLI ends as a clean "timeout" turn
+# error that gets retried, instead of a killed worker child and a turn stuck in running.
+RUN_TIMEOUT = 80
+STYLE_TIMEOUT = 240  # style extraction reads long chats
+SEARCH_TIMEOUT = 120  # WebSearch took ~21 s in the spike
 
 
 @dataclass
@@ -118,23 +130,32 @@ def _api_key_settings() -> str | None:
     return json.dumps({"apiKeyHelper": f"cat {shlex.quote(str(key_file))}"})
 
 
-async def run(prompt: str | list[dict], options: ClaudeAgentOptions) -> TurnResult:
+async def run(
+    prompt: str | list[dict], options: ClaudeAgentOptions, *, timeout: float = RUN_TIMEOUT
+) -> TurnResult:
     """One CLI run. `prompt` is text or a list of content blocks (text and images).
 
-    Raises ClaudeNotConnected and SessionNotFound; any other failure of the run comes
-    back in TurnResult.error with the session id, so the retry resumes the same thread.
+    Raises ClaudeNotConnected, SessionNotFound and TurnTimeout; any other failure of the
+    run comes back in TurnResult.error with the session id, so the retry resumes the thread.
     """
     result = None
     auth_error = None
     # Never raise inside the loop: breaking the SDK's generator mid-stream leaves it
     # half-closed. Let the CLI finish (it exits right after an auth error) and raise after.
+    # The timeout cancels at an await, which closes the generator and kills the CLI.
     try:
-        stream = prompt if isinstance(prompt, str) else _as_stream(prompt)
-        async for message in query(prompt=stream, options=options):
-            if isinstance(message, AssistantMessage) and message.error == "authentication_failed":
-                auth_error = _text(message)
-            elif isinstance(message, ResultMessage):
-                result = message
+        async with asyncio.timeout(timeout):
+            stream = prompt if isinstance(prompt, str) else _as_stream(prompt)
+            async for message in query(prompt=stream, options=options):
+                if (
+                    isinstance(message, AssistantMessage)
+                    and message.error == "authentication_failed"
+                ):
+                    auth_error = _text(message)
+                elif isinstance(message, ResultMessage):
+                    result = message
+    except TimeoutError as e:
+        raise TurnTimeout(f"the CLI gave no result in {timeout:g} s") from e
     except ClaudeSDKError as e:
         if auth_error:
             raise ClaudeNotConnected(auth_error) from e
@@ -168,7 +189,7 @@ async def complete(
         effort=effort,
         output_format={"type": "json_schema", "schema": schema} if schema else None,
     )
-    return _output(await run(prompt, options), schema)
+    return _output(await run(prompt, options, timeout=STYLE_TIMEOUT), schema)
 
 
 async def search(prompt: str, *, schema: dict, model: str | None = None) -> dict:
@@ -181,7 +202,7 @@ async def search(prompt: str, *, schema: dict, model: str | None = None) -> dict
         effort="low",
         output_format={"type": "json_schema", "schema": schema},
     )
-    return _output(await run(prompt, options), schema)
+    return _output(await run(prompt, options, timeout=SEARCH_TIMEOUT), schema)
 
 
 def _output(result: TurnResult, schema: dict | None):

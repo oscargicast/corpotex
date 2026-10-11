@@ -111,3 +111,15 @@ def test_dashboard_uses_the_assistant_prompt(monkeypatch):
     monkeypatch.setattr(sdk, "run", fake_run([sdk.TurnResult("s1", "")], []))
     worker.run_batch(make_batch(session="", channel="dashboard"))
     assert calls.prompts == [("dashboard", False)]
+
+
+def test_turn_timeout_finishes_the_turn_with_timeout(monkeypatch):
+    batch = make_batch()
+    calls = install(monkeypatch, claim_next_turn=lambda conversation_id: batch)
+
+    def hung(b):
+        raise sdk.TurnTimeout("the CLI gave no result in 80 s")
+
+    monkeypatch.setattr(worker, "run_batch", hung)
+    tasks.run_turn(7)
+    assert calls.finished == [(batch, None, "timeout")]
