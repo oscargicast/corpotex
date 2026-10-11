@@ -37,6 +37,7 @@ Siempre por clave natural: material por `sku`, producto/orden/pedido por `code`,
 - `units_done` de pedidos de insumos es 0 salvo que reporten avance (PI-0041 reporta cuellos).
 - Pedidos ya entregados o del pasado usan `internal_due_on`/`committed_on` negativos (`T-N`).
 - `estimated_on` siempre presente (en entregadas = fecha real de entrega).
+- Ítems a medida (ADR 0025 B): `product: null`, `description` con la prenda y `unit_price: null`. La orden queda `broken_down` con `needs_classification` y sin requerimientos hasta que Producción la clasifica. CP-2026-0161 (Colegio Los Algarrobos) es la de la escena de clasificación: un polo deportivo que corresponde a UNI-POD-01 y una casaca cortavientos nueva cuyos insumos (taslan, polar) no existen todavía.
 - La planta propia tiene `rates` (costo interno de costura) y pagos en `cash` para que el desglose sea uniforme.
 - `Decision.detail` de `approve_assignment` usa precio unitario promedio cuando el pedido tiene varios productos.
 - Valores monetarios como string con 2 decimales; `scores`/`rating_score` como número 0–1.

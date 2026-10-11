@@ -185,3 +185,30 @@ def test_seed_reset_chats_and_real_supplier_follow_ups(manager):
     # Open purchase orders of the real supplier are not due for a follow-up right after the seed.
     real = PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES, supplier__numbers__simulated=False, supplier__numbers__active=True).distinct()
     assert real.exists() and all(po.next_follow_up_at > timezone.now() for po in real)
+
+
+@pytest.mark.django_db
+def test_seed_has_one_order_waiting_for_classification(manager):
+    """CP-2026-0161 (orquestador, 10/10 22:45): two made-to-order items for the classification
+    scene (ADR 0025 B and C). It breaks down nothing, so alerts and purchase suggestions stay as
+    the script expects."""
+    from manager import services as manager_services
+    from manager.models import Alert
+    from operations import services
+    from operations.exceptions import UnknownReference
+    from operations.models import Order
+
+    call_command("seed_demo", verbosity=0)
+    order = Order.objects.get(code="CP-2026-0161")
+    assert order.customer.name == "Colegio Los Algarrobos" and order.brand.name == "UNICRACK"
+    assert order.status == "broken_down" and order.needs_classification is True and order.risk == "ok"
+    items = list(order.items.order_by("id"))
+    assert [(i.product_id, i.quantity, i.unit_price) for i in items] == [(None, 300, None), (None, 150, None)]
+    assert items[0].description.startswith("Polo deportivo") and items[1].description.startswith("Casaca cortavientos")
+    assert not order.requirements.exists()
+    with pytest.raises(UnknownReference):
+        services.confirm_order(order, actor=manager)
+    assert all(row["orders"] and "CP-2026-0161" not in {o["code"] for o in row["orders"]} for row in services.pending_purchases(with_prices=True))
+    manager_services.run_monitor()
+    assert not Alert.objects.filter(status="open", order=order).exists()
+    assert set(Alert.objects.filter(status="open", kind="purchase_suggested").values_list("material__sku", flat=True)) == {"RIB-CUE-01", "HIL-POL-40"}
