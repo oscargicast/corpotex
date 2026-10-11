@@ -7,6 +7,8 @@ import { useState } from "react";
 import useSWR from "swr";
 import { AlertList } from "@/components/alert-list";
 import { CriticalPath } from "@/components/critical-path";
+import { ReviseFicha } from "@/components/revise-ficha";
+import { ZoomableImage } from "@/components/zoomable-image";
 import { orderStatusLabel } from "@/lib/order-status";
 import { PurchaseOrderList } from "@/components/purchase-order-list";
 import { RedistributionCard } from "@/components/redistribution-card";
@@ -159,7 +161,12 @@ export default function OrderDetailPage() {
           <ul className="space-y-3">
             {order.items.map((item) => (
               <li key={item.id} className="flex gap-3">
-                <Thumb src={item.product?.image} alt={item.product?.name ?? "Producto nuevo"} size={56} />
+                {/* The customer's photo, when Comercial attached one (ADR 0029 §2); else the catalog's. */}
+                {item.photo_url ? (
+                  <ZoomableImage src={item.photo_url} alt={`Foto de la prenda: ${item.description || item.product?.name || "ítem"}`} className="size-14 shrink-0 rounded-md object-cover ring-1 ring-line" />
+                ) : (
+                  <Thumb src={item.product?.image} alt={item.product?.name ?? "Producto nuevo"} size={56} />
+                )}
                 <div className="min-w-0 text-sm">
                   <p className="font-semibold">
                     {item.quantity} × {item.description || item.product?.name || "Prenda"}
@@ -231,6 +238,11 @@ export default function OrderDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* Ficha técnica editable por instrucción (ADR 0029 §4): Gerente and Producción, open orders. */}
+      {(user.role === "manager" || user.role === "production") && !["delivered", "cancelled"].includes(order.status) && order.requirements.length > 0 && (
+        <ReviseFicha order={order} onApplied={() => mutate()} />
+      )}
 
       <Card>
         <SectionTitle count={order.purchase_orders.length}>Pedidos a proveedores y talleres</SectionTitle>

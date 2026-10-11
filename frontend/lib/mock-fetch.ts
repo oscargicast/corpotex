@@ -481,6 +481,10 @@ function itemsFrom(body: Record<string, unknown>): OrderItem[] {
       color: item.color ?? "",
       customization: item.customization ?? "",
       unit_price: item.unit_price ?? null,
+      // ADR 0029 §2: the photo comes back as a URL (a data URL in the mocks).
+      photo_url: (item as { photo?: { data?: string } }).photo?.data
+        ? `data:image/jpeg;base64,${(item as { photo?: { data?: string } }).photo!.data}`
+        : ((item as { photo_url?: string | null }).photo_url ?? null),
     } as OrderItem;
   });
 }
@@ -808,6 +812,40 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
         };
       }),
     });
+  }
+  // ADR 0029 §4: adjust an order's ficha técnica with an instruction (about 3 s).
+  const orderRevise = route.match(/^POST \/api\/orders\/(\d+)\/revise\/$/);
+  if (orderRevise) {
+    if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
+    const order = orders.find((o) => o.id === Number(orderRevise[1]));
+    if (!order) return json(404, { detail: "No existe." });
+    const body = readBody(init.body) as { instruction?: string; dry_run?: boolean };
+    if (!body.instruction?.trim()) return json(400, { detail: "Escribe qué cambiar." });
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    if (/falla/i.test(body.instruction)) return json(502, { detail: "No se pudo preparar la propuesta. Inténtalo de nuevo." });
+    const items = (orderDetails[order.id]?.items ?? []).slice(0, 2);
+    const current = [
+      { sku: "TEL-PIQ-01", name: "Piqué 24/1", qty_per_unit: "0.28", unit: "kg" },
+      { sku: "RIB-CUE-01", name: "Cuello y puño rib", qty_per_unit: "1", unit: "unit" },
+      { sku: "HIL-POL-40", name: "Hilo poliéster 40/2", qty_per_unit: "0.02", unit: "unit" },
+      { sku: "ETQ-TEJ-01", name: "Etiqueta tejida", qty_per_unit: "1", unit: "unit" },
+    ];
+    const proposal = {
+      summary: "Se agregan 2 botones por prenda, la tela sube a 0.30 kg, sale la etiqueta tejida y el corte pasa a 3 días.",
+      items: items.map((item) => ({
+        item_id: item.id,
+        current,
+        materials: [
+          { sku: "TEL-PIQ-01", name: "Piqué 24/1", qty_per_unit: "0.30", unit: "kg" },
+          { sku: "RIB-CUE-01", name: "Cuello y puño rib", qty_per_unit: "1", unit: "unit" },
+          { sku: "HIL-POL-40", name: "Hilo poliéster 40/2", qty_per_unit: "0.02", unit: "unit" },
+          { sku: "BOT-18L-NAC", name: "Botón 18L nácar", qty_per_unit: "2", unit: "unit" },
+        ],
+      })),
+      stage_overrides: { Corte: 3 },
+      stage_current: { Corte: 2 },
+    };
+    return json(200, body.dry_run ? proposal : { ...proposal, warnings: ["PI-0003 ya estaba pedido: su cantidad no cambia."] });
   }
   const orderApply = route.match(/^POST \/api\/orders\/(\d+)\/apply-classification\/$/);
   if (orderApply) {
