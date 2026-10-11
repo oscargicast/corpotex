@@ -1,4 +1,5 @@
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
@@ -47,10 +48,12 @@ class RoleSerializerMixin:
         return {**super().get_serializer_context(), "role": self.role}
 
     def filter_exact(self, qs, *names):
+        """`?status=a,b` accepts a comma list; the other names are exact matches."""
         params = self.request.query_params
         for name in names:
             if params.get(name):
-                qs = qs.filter(**{name: params[name]})
+                values = [v for v in params[name].split(",") if v] if name == "status" else [params[name]]
+                qs = qs.filter(**{f"{name}__in": values}) if len(values) > 1 else qs.filter(**{name: values[0]})
         return qs
 
     def detail_response(self, obj, http_status=status.HTTP_200_OK):
@@ -82,6 +85,10 @@ class OrderInSerializer(serializers.Serializer):
     items = OrderItemInSerializer(many=True)
 
 
+class BreakDownInSerializer(serializers.Serializer):
+    order_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
+
+
 class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
     model = Order
     queryset = Order.objects.select_related("customer", "brand", "owner").prefetch_related(
@@ -90,8 +97,11 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = self.filter_exact(super().get_queryset(), "status", "risk", "code")
-        if self.request.query_params.get("brand"):
-            qs = qs.filter(brand__name=self.request.query_params["brand"])
+        params = self.request.query_params
+        if params.get("brand"):
+            qs = qs.filter(brand__name=params["brand"])
+        if params.get("q"):
+            qs = qs.filter(code__icontains=params["q"].strip())
         return qs
 
     @extend_schema(request=OrderInSerializer, responses={201: OrderDetailSerializer, 200: OrderDetailSerializer})
@@ -106,6 +116,18 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
         except UnknownReference as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return self.detail_response(order, status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @extend_schema(request=BreakDownInSerializer, responses={200: dict})
+    @action(detail=False, methods=["post"], url_path="break-down", permission_classes=[IsManagerOrProduction])
+    def break_down(self, request):
+        """Breaks down every `registered` order (or `order_ids`) against the inventory."""
+        data = BreakDownInSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            result = services.break_down_orders(data.validated_data.get("order_ids") or None, actor=request.user)
+        except PermissionDenied as exc:
+            _forbidden(exc)
+        return Response(result)
 
     @extend_schema(request=None, responses={200: OrderDetailSerializer})
     @action(detail=True, methods=["post"])
@@ -167,6 +189,9 @@ class PurchaseOrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(items__requirement__order_id=params["order"]).distinct()
         if params.get("waiting_manager") == "1":
             qs = qs.filter(decisions__status="pending").distinct()
+        if params.get("q"):
+            text = params["q"].strip()
+            qs = qs.filter(Q(code__icontains=text) | Q(items__requirement__order__code__icontains=text)).distinct()
         return qs
 
     @extend_schema(request=GenerateInSerializer, responses={201: dict})
