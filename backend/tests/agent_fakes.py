@@ -141,6 +141,10 @@ def install(monkeypatch, **overrides):
             "mark_payment_paid": recorder("mark_payment_paid"),
             "confirm_order": recorder("confirm_order"),
             "record_delivery": recorder("record_delivery"),
+            "generate_purchase_orders": recorder(
+                "generate_purchase_orders",
+                returns={"created": [SimpleNamespace(pk=77, code="PI-0077")], "skipped": []},
+            ),
         },
         "operations.exceptions": {"ManagerApprovalRequired": ManagerApprovalRequired},
         "operations.models": {"Payment": Payment, "Order": Order, "PurchaseOrder": PurchaseOrder},
