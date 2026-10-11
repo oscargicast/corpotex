@@ -68,6 +68,14 @@ FOLLOW_UP_EVE = (
     "por agencia (Sullana Express), pregunta cuándo sale y pide el número de guía."
 )
 EVE_MARKERS = ("víspera", "entrega mañana", "entrega hoy")
+FOLLOW_UP_REQUESTED = (
+    "Alguien del equipo necesita saber cómo va: en una o dos líneas, en un solo mensaje, pregunta "
+    "por el avance (en unidades o en qué etapa va) y para cuándo sale, con la misma naturalidad que "
+    "un punto de control. Nunca digas que alguien te pidió preguntar ni nombres a Comercial o "
+    "Producción: preguntas tú. La única razón para no escribir es que algún pedido de <seguimiento> "
+    "ya esté esperando respuesta (esperando_respuesta_desde): entonces usa skip_follow_up con ese "
+    'motivo ("ya se le preguntó a las 10:05") y no envíes nada.'
+)
 FOLLOW_UP_REMINDER = (
     "Recordatorio: el proveedor no respondió tu último mensaje (el último tuyo en <seguimiento> o en "
     "el hilo). Escribe algo más corto que ese mensaje, sin reclamar y sin repetir la pregunta "
@@ -221,7 +229,11 @@ def _render_new_messages(messages: list[dict]) -> str:
     return "<mensajes_nuevos>\n" + "\n".join(lines) + "\n</mensajes_nuevos>"
 
 
-FOLLOW_UP_KINDS = {"checkpoint": "punto de control", "reminder": "recordatorio"}
+FOLLOW_UP_KINDS = {
+    "checkpoint": "punto de control",
+    "reminder": "recordatorio",
+    "requested": "a pedido",
+}
 FOLLOW_UP_MODES = {"minimal": "mínimo", "balanced": "balanceado", "high": "alto"}
 
 
@@ -271,13 +283,17 @@ def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]
         )
     follow_up = state.get("follow_up")
     if follow_up:
-        steps.append(FOLLOW_UP_SKIP)
-        if follow_up.get("kind") == "reminder":
-            steps.append(FOLLOW_UP_REMINDER)
-        elif _is_eve(follow_up, state.get("purchase_orders") or []):
-            steps.append(FOLLOW_UP_EVE)
+        kind = follow_up.get("kind")
+        if kind == "requested":
+            steps.append(FOLLOW_UP_REQUESTED)  # a person asked: only skip if already waiting
         else:
-            steps.append(FOLLOW_UP_CHECKPOINT)
+            steps.append(FOLLOW_UP_SKIP)
+            if kind == "reminder":
+                steps.append(FOLLOW_UP_REMINDER)
+            elif _is_eve(follow_up, state.get("purchase_orders") or []):
+                steps.append(FOLLOW_UP_EVE)
+            else:
+                steps.append(FOLLOW_UP_CHECKPOINT)
     elif follow_ups:
         steps.append(
             "Toca seguimiento de los pedidos de <seguimientos>: pregunta por el avance en "
