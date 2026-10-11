@@ -7,7 +7,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { AlertList } from "@/components/alert-list";
 import { CriticalPath } from "@/components/critical-path";
-import { ReviseFicha } from "@/components/revise-ficha";
+import { ReviseButton } from "@/components/revise-ficha";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { orderStatusLabel } from "@/lib/order-status";
 import { PurchaseOrderList } from "@/components/purchase-order-list";
@@ -20,7 +20,7 @@ import { apiFetch, fetcher } from "@/lib/api";
 import { formatDay, formatMoney, num } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
 import { CUSTOMIZATION, type OrderDetail } from "@/lib/types";
-import { SkeletonDetail } from "@/components/skeleton";
+import { SkeletonDetail, SkeletonLines } from "@/components/skeleton";
 import { canCancelOrder, canEditOrder } from "@/lib/orders";
 import { FollowUpPanel } from "@/components/follow-up-request";
 
@@ -34,6 +34,7 @@ export default function OrderDetailPage() {
   const [asking, setAsking] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [reloading, setReloading] = useState(false); // after "Aplicar": the ficha and the route show skeletons
 
   if (notFound) return <p className="text-muted">No existe la orden {decodeURIComponent(params.id)}.</p>;
   if (!order) return <SkeletonDetail />;
@@ -44,6 +45,17 @@ export default function OrderDetailPage() {
   // Purchase orders a supplier still has to deliver: the ones "Pedir avance a todos" covers.
   const openPurchaseOrders = order.purchase_orders.filter((po) => !["suggested", "delivered", "cancelled", "cancelled_by_supplier", "rejected_by_supplier", "declined_by_supplier"].includes(po.status));
   const canConfirm = order.status === "broken_down" && user.role !== "sales" && !needsClassification;
+  // Ficha técnica and ruta crítica adjustable by instruction (ADR 0029 §4).
+  const canRevise = (user.role === "manager" || user.role === "production") && !["delivered", "cancelled"].includes(order.status) && order.requirements.length > 0;
+
+  async function reload() {
+    setReloading(true);
+    try {
+      await mutate();
+    } finally {
+      setReloading(false);
+    }
+  }
 
   async function cancelOrder() {
     setCancelBusy(true);
@@ -140,16 +152,6 @@ export default function OrderDetailPage() {
         <StatusTimeline flow="order" status={order.status} statusDisplay={orderStatusLabel(order.status, order.status_display)} history={order.status_history} />
       </Card>
 
-      <Card>
-        <SectionTitle>Ruta crítica</SectionTitle>
-        <CriticalPath
-          steps={order.critical_path}
-          promisedOn={order.promised_on}
-          estimatedOn={order.estimated_on}
-          slackDays={order.slack_days}
-          purchaseOrders={order.purchase_orders}
-        />
-      </Card>
 
       {order.redistributions.map((decision) => (
         <RedistributionCard key={decision.id} decision={decision} />
@@ -205,13 +207,19 @@ export default function OrderDetailPage() {
 
         {order.requirements.length > 0 && (
           <Card>
-            <SectionTitle count={order.requirements.length}>Ficha técnica contra inventario</SectionTitle>
+            <div className="flex items-start justify-between gap-2">
+              <SectionTitle count={order.requirements.length}>Ficha técnica contra inventario</SectionTitle>
+              {canRevise && <ReviseButton order={order} placeholder="Ej.: agrega 2 botones por polo, el corte toma 3 días" onApply={reload} />}
+            </div>
+            {reloading ? (
+              <SkeletonLines lines={5} />
+            ) : (
             <ul className="divide-y divide-line">
               {order.requirements.map((req) => {
                 const thing = req.material ?? req.product;
                 return (
                   <li key={req.id} className="flex gap-3 py-2.5 first:pt-0 last:pb-0">
-                    <Thumb src={thing?.image} alt={thing?.name ?? ""} />
+                    <Thumb src={thing?.image} alt={thing?.name ?? ""} kind={req.kind} />
                     <div className="min-w-0 flex-1 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="font-medium">{thing?.name}</p>
@@ -235,14 +243,27 @@ export default function OrderDetailPage() {
                 );
               })}
             </ul>
+            )}
           </Card>
         )}
       </div>
 
-      {/* Ficha técnica editable por instrucción (ADR 0029 §4): Gerente and Producción, open orders. */}
-      {(user.role === "manager" || user.role === "production") && !["delivered", "cancelled"].includes(order.status) && order.requirements.length > 0 && (
-        <ReviseFicha order={order} onApplied={() => mutate()} />
-      )}
+      {/* At the end, compressed by default (Oscar, 11/10 06:35). */}
+      <Card>
+        <CriticalPath
+          steps={order.critical_path}
+          promisedOn={order.promised_on}
+          estimatedOn={order.estimated_on}
+          slackDays={order.slack_days}
+          purchaseOrders={order.purchase_orders}
+          loading={reloading}
+          actions={
+            canRevise ? (
+              <ReviseButton order={order} placeholder="Ej.: el corte toma 3 días, el bordado va antes del sublimado" onApply={reload} />
+            ) : undefined
+          }
+        />
+      </Card>
 
       <Card>
         <SectionTitle count={order.purchase_orders.length}>Pedidos a proveedores y talleres</SectionTitle>

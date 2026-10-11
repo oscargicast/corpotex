@@ -142,7 +142,7 @@ export default function PurchaseOrderDetailPage() {
           <ul className="space-y-3">
             {po.items.map((item) => (
               <li key={item.id} className="flex gap-3 text-sm">
-                <Thumb src={item.image} alt={item.name} />
+                <Thumb src={item.image} alt={item.name} kind={po.kind} />
                 <div>
                   <p className="font-medium">{item.name}</p>
                   <p className="text-xs text-muted tabular-nums">
