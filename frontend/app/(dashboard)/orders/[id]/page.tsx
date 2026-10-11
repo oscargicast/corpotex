@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -18,6 +18,7 @@ import { formatDay, formatMoney } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
 import { CUSTOMIZATION, type OrderDetail } from "@/lib/types";
 import { SkeletonDetail } from "@/components/skeleton";
+import { canCancelOrder, canEditOrder } from "@/lib/orders";
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -25,11 +26,28 @@ export default function OrderDetailPage() {
   const { id, notFound } = useResolvedId("orders", decodeURIComponent(params.id));
   const { data: order, mutate } = useSWR<OrderDetail>(id ? `/api/orders/${id}/` : null, fetcher, { refreshInterval: 3000 });
   const [confirming, setConfirming] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   if (notFound) return <p className="text-muted">No existe la orden {decodeURIComponent(params.id)}.</p>;
   if (!order) return <SkeletonDetail />;
 
   const canConfirm = order.status === "broken_down" && user.role !== "sales";
+
+  async function cancelOrder() {
+    setCancelBusy(true);
+    setCancelError(null);
+    try {
+      await apiFetch(`/api/orders/${order!.id}/cancel/`, { method: "POST" });
+      setCancelling(false);
+      mutate();
+    } catch {
+      setCancelError("No se pudo cancelar. Inténtalo de nuevo.");
+    } finally {
+      setCancelBusy(false);
+    }
+  }
 
   async function confirm() {
     setConfirming(true);
@@ -58,12 +76,37 @@ export default function OrderDetailPage() {
             {order.total_amount ? ` · ${formatMoney(order.total_amount)}` : ""}
           </p>
         </div>
-        {canConfirm && (
-          <Button kind="primary" onClick={confirm} busy={confirming}>
-            {confirming ? "Confirmando…" : "Confirmar desglose"}
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {canEditOrder(user, order) && (
+            <Link href={`/orders/${order.id}/edit`} className="inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold text-ink ring-1 ring-line hover:bg-canvas">
+              <Pencil size={16} /> Editar
+            </Link>
+          )}
+          {canCancelOrder(user, order) && !cancelling && (
+            <Button onClick={() => setCancelling(true)}>
+              <XCircle size={16} /> Cancelar orden
+            </Button>
+          )}
+          {canConfirm && (
+            <Button kind="primary" onClick={confirm} busy={confirming}>
+              {confirming ? "Confirmando…" : "Confirmar desglose"}
+            </Button>
+          )}
+        </div>
       </header>
+
+      {cancelling && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
+          Se cancela la orden {order.code} y sus pedidos pendientes. No se puede deshacer.
+          <Button kind="danger" className="py-1" busy={cancelBusy} onClick={cancelOrder}>
+            Cancelar orden
+          </Button>
+          <Button className="py-1" disabled={cancelBusy} onClick={() => setCancelling(false)}>
+            Volver
+          </Button>
+          {cancelError && <span className="w-full">{cancelError}</span>}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Fact label="Emitida" value={formatDay(order.issued_on)} />

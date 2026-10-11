@@ -10,6 +10,8 @@ import { fetcher } from "@/lib/api";
 import { formatDay } from "@/lib/format";
 import type { OrderListItem, Risk } from "@/lib/types";
 import { SkeletonTable } from "@/components/skeleton";
+import { canCreateOrder } from "@/lib/orders";
+import { Plus } from "lucide-react";
 
 const RISKS: (Risk | "")[] = ["", "in_danger", "at_risk", "ok"];
 
@@ -28,7 +30,14 @@ export default function OrdersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Órdenes</h1>
-        {user.role !== "production" && <SimulateOrder />}
+        {canCreateOrder(user) && (
+          <div className="flex flex-wrap gap-2">
+            <Link href="/orders/new" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90">
+              <Plus size={16} /> Nueva orden
+            </Link>
+            <SimulateOrder />
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

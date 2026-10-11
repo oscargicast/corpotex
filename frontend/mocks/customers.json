@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "name": "Caja Piura",
+    "ruc": "20100005700"
+  },
+  {
+    "id": 2,
+    "name": "Colegio San José",
+    "ruc": "20526540431"
+  },
+  {
+    "id": 3,
+    "name": "AIDER",
+    "ruc": "20164101061"
+  },
+  {
+    "id": 4,
+    "name": "PIQA",
+    "ruc": "20605817771"
+  },
+  {
+    "id": 5,
+    "name": "Colegio Los Algarrobos",
+    "ruc": "20484054030"
+  },
+  {
+    "id": 6,
+    "name": "Colegio San Miguel de Piura",
+    "ruc": "20529841115"
+  },
+  {
+    "id": 7,
+    "name": "Municipalidad de Castilla",
+    "ruc": "20172032321"
+  }
+]
