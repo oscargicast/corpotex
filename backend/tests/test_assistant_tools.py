@@ -488,8 +488,10 @@ def test_request_follow_up_confirmed_posts_for_real_and_records_card(monkeypatch
     assert not is_error
     assert posted == [("/api/purchase-orders/38/follow-up/", {"dry_run": False})]
     ((_, _, action), _) = services(calls, "record_assistant_action")[0]
-    assert action["title"] == "Avance pedido: PT-0038, PT-0040"
-    assert "Ya esperaban respuesta: PT-0040" in action["summary"]
+    assert action["title"] == "Avance pedido a Confecciones del Norte (PT-0038)"
+    assert (
+        "no se les escribió otra vez: PT-0040 (Textiles Lima) desde las 10:05" in action["summary"]
+    )
     assert action["links"] == [
         {"kind": "purchase_order", "id": 38},
         {"kind": "purchase_order", "id": 40},

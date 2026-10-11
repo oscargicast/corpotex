@@ -859,16 +859,19 @@ def _request_follow_up(conversation, turn, user):
     def run(args):
         requests = _follow_up_requests(user, args, dry_run=False)
         ask, waiting = _follow_up_text(requests)
-        codes = [(r.get("purchase_order") or {}).get("code") for r in requests]
         summary = f"Le pregunto a {ask}." if ask else ""
         if waiting:
-            summary += f" Ya esperaban respuesta: {waiting}."
+            summary += f" Ya esperaban respuesta, no se les escribió otra vez: {waiting}."
         summary += " Te aviso aquí cuando contesten."
         links = [
             {"kind": "purchase_order", "id": (r.get("purchase_order") or {}).get("id")}
             for r in requests
         ]
-        return _card(f"Avance pedido: {', '.join(codes)}", summary.strip(), links)
+        # The title is all the model reads back: only the orders asked now.
+        title = (
+            f"Avance pedido a {ask}" if ask else "Ya esperaban respuesta: no se escribió de nuevo"
+        )
+        return _card(title, summary.strip(), links)
 
     return confirmable(
         conversation,
