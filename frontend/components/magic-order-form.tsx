@@ -159,9 +159,13 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
     if (!line) return;
     const { description, quantity } = draftOf(line);
     const brand = brandRef.current;
-    // The API needs the brand (an unknown one is a 400) and does nothing with short lines.
-    if (!brand || description.length < MIN_CHARS || !(quantity > 0)) return;
     const signature = signatureOf(brand, description);
+    // The API needs the brand (an unknown one is a 400) and does nothing with short lines.
+    if (!brand || description.length < MIN_CHARS || !(quantity > 0)) {
+      // A result for another text would be stale: hide it until this one can be recognized.
+      if (line.state === "done" && signature !== line.signature) patch(key, { state: "idle", proposal: null });
+      return;
+    }
     if (!force && signature === line.signature && (line.state === "done" || line.state === "recognizing")) return;
     controllers.current.get(key)?.abort();
     const controller = new AbortController();
@@ -268,8 +272,14 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
   function answerReplace(key: string, replace: boolean) {
     const line = linesRef.current.find((l) => l.key === key);
     const sentence = line?.photo?.proposed;
-    if (replace && sentence) {
-      patch(key, (l) => ({ text: sentence, photo: l.photo ? { ...l.photo, proposed: undefined } : null }));
+    if (replace && sentence && line) {
+      // "50 chalecos de trabajo" → the photo's sentence: the 50 moves to Cantidad.
+      const kept = line.quantityTouched ? null : splitQuantity(line.text).quantity;
+      patch(key, (l) => ({
+        text: sentence,
+        ...(kept !== null && { quantity: String(kept), quantityTouched: true }),
+        photo: l.photo ? { ...l.photo, proposed: undefined } : null,
+      }));
       schedule(key);
     } else {
       patchPhoto(key, { proposed: undefined });
