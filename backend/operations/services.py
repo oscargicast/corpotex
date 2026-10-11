@@ -144,7 +144,8 @@ def break_down_order(order: Order) -> list[Requirement]:
             from_stock = min(available, qty)
             requirements.append(
                 Requirement.objects.create(
-                    order=order, kind="material", material=material, qty_needed=qty, qty_from_stock=from_stock
+                    order=order, kind="material", material=material, qty_needed=qty, qty_from_stock=from_stock,
+                    status=Requirement.Status.COVERED if qty - from_stock <= 0 else Requirement.Status.OPEN,
                 )
             )
         for item in order.items.all():
@@ -164,8 +165,99 @@ def confirm_order(order: Order, *, actor) -> Order:
         return order
     with transaction.atomic():
         set_status(order, Order.Status.CONFIRMED, actor=actor, note="Desglose confirmado")
-        match_requirements(list(order.requirements.all()))
+        # Materials stay open: Produccion (or the manager) generates one consolidated purchase
+        # order per material across orders (ADR 0025 A). Workshop and finished goods are per order.
+        match_requirements([r for r in order.requirements.all() if r.kind != "material"])
     return order
+
+
+# --- consolidated material purchase orders (ADR 0025 A) ---------------------------------------
+
+PURCHASING_ORDER_STATUSES = (Order.Status.CONFIRMED, Order.Status.SOURCING, Order.Status.IN_PRODUCTION)
+
+
+def open_material_requirements(material_ids=None):
+    """Material requirements still to order, of orders production already confirmed."""
+    qs = (
+        Requirement.objects.filter(kind="material", status=Requirement.Status.OPEN, order__status__in=PURCHASING_ORDER_STATUSES)
+        .select_related("material", "order__customer")
+        .order_by("material__kind", "material__name", "order__promised_on", "id")
+    )
+    if material_ids:
+        qs = qs.filter(material_id__in=material_ids)
+    return [r for r in qs if r.qty_to_order > 0]
+
+
+def pending_purchases(*, with_prices: bool, material_ids=None) -> list[dict]:
+    """The "Por pedir" view: open requirements grouped by material, with the matching's
+    suggestion. Prices (and currency) only for the manager."""
+    config = Config.load()
+    groups: dict[int, dict] = {}
+    for requirement in open_material_requirements(material_ids):
+        material = requirement.material
+        group = groups.setdefault(
+            material.id,
+            {
+                "material": {"id": material.id, "sku": material.sku, "name": material.name, "kind": material.kind, "unit": material.unit, "image": material.image.url if material.image else None},
+                "total_to_order": Decimal("0"),
+                "orders": [],
+                "due_on": None,
+                "suggested_supplier": None,
+                "reference_price": None,
+                "currency": None,
+                "lead_time_days": None,
+                "_first": requirement,
+            },
+        )
+        due = requirement.order.promised_on - timedelta(days=config.buffer_days)
+        group["total_to_order"] += requirement.qty_to_order
+        group["orders"].append({"id": requirement.order_id, "code": requirement.order.code, "customer_name": requirement.order.customer.name, "qty": str(requirement.qty_to_order), "due_on": due})
+        group["due_on"] = min(group["due_on"], due) if group["due_on"] else due
+    for group in groups.values():
+        candidates = rank_candidates(group.pop("_first"))
+        if candidates:
+            best = candidates[0]
+            supplier = Supplier.objects.get(pk=best["supplier_id"])
+            group["suggested_supplier"] = {"id": best["supplier_id"], "name": best["supplier_name"]}
+            group["currency"] = best["currency"] if with_prices else None
+            group["lead_time_days"] = supplier.lead_time_days
+            group["reference_price"] = best["unit_price"] if with_prices else None
+        group["total_to_order"] = str(group["total_to_order"].quantize(Decimal("0.01")))
+    return list(groups.values())
+
+
+def generate_purchase_orders(material_ids=None, *, actor) -> dict:
+    """One suggested purchase order per material for every open requirement of the confirmed
+    orders (all materials, or the ids given), with one item per requirement, and one
+    `approve_assignment` decision for the batch. Idempotent: a material with nothing open is
+    skipped. Returns `{"created": [PurchaseOrder], "decision": Decision | None, "skipped": [material_id]}`."""
+    require_role(actor, "manager", "production")
+    requirements = open_material_requirements(material_ids)
+    with transaction.atomic():
+        created, decision = match_requirements(requirements, consolidate=True)
+    ordered = {po.items.first().requirement.material_id for po in created if po.items.exists()}
+    with_requirements = {r.material_id for r in requirements}
+    skipped = [
+        {"material_id": material_id, "reason": "sin proveedor con tarifa vigente" if material_id in with_requirements else "sin requerimientos abiertos"}
+        for material_id in sorted(set(material_ids or []) | with_requirements)
+        if material_id not in ordered
+    ]
+    return {"created": created, "decision": decision, "skipped": skipped}
+
+
+def sync_requirement_status(requirement: Requirement) -> Requirement:
+    """open → ordered → covered from what its purchase orders bring (ADR 0025)."""
+    if requirement.qty_to_order <= 0:
+        status = Requirement.Status.COVERED
+    else:
+        items = list(requirement.purchase_order_items.select_related("purchase_order"))
+        delivered = sum((i.qty_delivered for i in items), Decimal("0"))
+        live = any(i.purchase_order.status in PurchaseOrder.OPEN_STATUSES + ("suggested",) for i in items)
+        status = Requirement.Status.COVERED if delivered >= requirement.qty_to_order else (Requirement.Status.ORDERED if live else Requirement.Status.OPEN)
+    if requirement.status != status:
+        requirement.status = status
+        requirement.save(update_fields=["status", "updated_at"])
+    return requirement
 
 
 def _order_purchase_orders(order: Order):
@@ -346,16 +438,63 @@ def _rationale(supplier: Supplier, scores: dict, cheapest: bool) -> str:
     return ", ".join(parts).capitalize() if parts else "Cumple los requisitos"
 
 
-def match_requirements(requirements: list[Requirement], *, exclude: Supplier | None = None, redistributed_from=None):
+def match_requirements(requirements: list[Requirement], *, exclude: Supplier | None = None, redistributed_from=None, consolidate: bool = False):
     """Step 3: one suggested purchase order per requirement and supplier; a large workshop
-    requirement is split across workshops when the first one lacks free capacity. Then one
-    `approve_assignment` decision for the whole batch."""
+    requirement is split across workshops when the first one lacks free capacity. With
+    `consolidate`, the requirements of the same material become ONE purchase order with an item
+    per requirement (ADR 0025 A). Then one `approve_assignment` decision for the whole batch."""
     from manager.services import create_decision
 
     config = Config.load()
     created: list[PurchaseOrder] = []
     proposal: list[dict] = []
+    all_requirements = list(requirements)
     with transaction.atomic():
+        if consolidate:
+            groups: dict[tuple, list[Requirement]] = {}
+            for requirement in requirements:
+                groups.setdefault((requirement.kind, requirement.material_id, requirement.product_id), []).append(requirement)
+            for group in groups.values():
+                pending = [(r, r.qty_to_order - _covered(r)) for r in group]
+                pending = [(r, remaining) for r, remaining in pending if remaining > 0]
+                if not pending:
+                    continue
+                candidates = rank_candidates(pending[0][0], exclude=exclude)
+                if not candidates:
+                    logger.warning("match: no supplier for material %s", pending[0][0].material_id)
+                    continue
+                candidate = candidates[0]
+                supplier = Supplier.objects.get(pk=candidate["supplier_id"])
+                due = min(r.order.promised_on for r, _ in pending) - timedelta(days=config.buffer_days)
+                po = PurchaseOrder.objects.create(
+                    code=_next_code(pending[0][0].kind), supplier=supplier, suggested_supplier=supplier,
+                    rationale=candidate["rationale"], scores=candidate["scores"], internal_due_on=due,
+                )
+                total = Decimal("0")
+                for requirement, remaining in pending:
+                    PurchaseOrderItem.objects.create(purchase_order=po, requirement=requirement, quantity=remaining, unit_price=Decimal(candidate["unit_price"]))
+                    total += remaining
+                    sync_requirement_status(requirement)
+                StatusChange.objects.create(purchase_order=po, status=po.status, at=clock.now(), actor="system", note=candidate["rationale"][:300])
+                created.append(po)
+                proposal.append(
+                    {
+                        "purchase_order": {"id": po.id, "code": po.code},
+                        "purchase_order_code": po.code,
+                        "supplier": {"id": supplier.id, "name": supplier.name},
+                        "quantity": str(total),
+                        "unit_price": candidate["unit_price"],
+                        "currency": supplier.currency,
+                        "committed_on": None,
+                        "rationale": candidate["rationale"],
+                        "orders": [{"id": r.order_id, "code": r.order.code, "qty": str(remaining)} for r, remaining in pending],
+                        "candidates": [
+                            {**{k: v for k, v in c.items() if k != "free_capacity"}, "supplier": {"id": c["supplier_id"], "name": c["supplier_name"]}}
+                            for c in candidates
+                        ],
+                    }
+                )
+            requirements = []  # The per-requirement loop below has nothing left to do.
         for requirement in requirements:
             remaining = requirement.qty_to_order - _covered(requirement)
             if remaining <= 0:
@@ -389,6 +528,7 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
                 )
                 StatusChange.objects.create(purchase_order=po, status=po.status, at=clock.now(), actor="system", note=candidate["rationale"][:300])
                 created.append(po)
+                sync_requirement_status(requirement)
                 proposal.append(
                     {
                         "purchase_order": {"id": po.id, "code": po.code},
@@ -408,7 +548,7 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
                 remaining -= take
         if not created:
             return created, None
-        orders = {req.order for req in requirements}
+        orders = {req.order for req in all_requirements}
         before = _snapshot(orders) if redistributed_from else None
         for order in orders:
             compute_critical_path(order)
@@ -583,6 +723,8 @@ def record_delivery(po: PurchaseOrder, *, qty_received, qty_defective=0, quality
                 item.qty_delivered += take
                 item.save(update_fields=["qty_delivered", "updated_at"])
                 remaining -= take
+        for item in po.items.select_related("requirement"):
+            sync_requirement_status(item.requirement)
         if all(i.qty_delivered >= i.quantity for i in po.items.all()):
             po.rating = _rate(po)
             po.save(update_fields=["rating", "updated_at"])
@@ -646,6 +788,8 @@ def cancel_by_supplier(po: PurchaseOrder, *, reason: str, units_done: int | None
         po.save(update_fields=["terms", "updated_at"])
         set_status(po, PurchaseOrder.Status.CANCELLED_BY_SUPPLIER, actor="agent", note=reason)
         created, decision = redistribute(po)
+        for item in po.items.select_related("requirement"):
+            sync_requirement_status(item.requirement)
     return po, created, decision
 
 

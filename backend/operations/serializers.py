@@ -73,14 +73,11 @@ class RequirementSerializer(DisplayMixin, serializers.ModelSerializer):
     material = MaterialRefSerializer(read_only=True)
     product = ProductRefSerializer(read_only=True)
     qty_to_order = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-    status = serializers.SerializerMethodField()
     purchase_orders = serializers.SerializerMethodField()
-
-    status_display = serializers.CharField(read_only=True, default="")
 
     class Meta:
         model = Requirement
-        display_fields = ["kind"]
+        display_fields = ["kind", "status"]
         fields = [
             "id",
             "kind",
@@ -90,30 +87,11 @@ class RequirementSerializer(DisplayMixin, serializers.ModelSerializer):
             "qty_from_stock",
             "qty_to_order",
             "status",
-            "status_display",
             "purchase_orders",
         ]
 
     def _items(self, obj):
         return obj.purchase_order_items.select_related("purchase_order__supplier")
-
-    REQUIREMENT_STATUS_DISPLAY = {"pending": "Pendiente", "ordered": "Pedido", "covered": "Cubierto"}
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data["status_display"] = self.REQUIREMENT_STATUS_DISPLAY[data["status"]]
-        return data
-
-    @extend_schema_field(OpenApiTypes.STR)
-    def get_status(self, obj):
-        """pending: nothing ordered; ordered: live purchase orders cover it; covered: delivered."""
-        if obj.qty_to_order <= 0:
-            return "covered"
-        delivered = sum((i.qty_delivered for i in self._items(obj)), Decimal("0"))
-        if delivered >= obj.qty_to_order:
-            return "covered"
-        live = sum((i.quantity for i in self._items(obj) if i.purchase_order.status in OPEN), Decimal("0"))
-        return "ordered" if live > 0 else "pending"
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_purchase_orders(self, obj):

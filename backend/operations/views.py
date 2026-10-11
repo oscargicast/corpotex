@@ -119,6 +119,23 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
         return self.detail_response(order)
 
 
+class GenerateInSerializer(serializers.Serializer):
+    material_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
+
+
+class PendingPurchasesView(APIView):
+    """`GET /api/requirements/pending/`: open material requirements grouped by material, the
+    "Por pedir" screen (ADR 0025 A). Manager and production; prices only for the manager."""
+
+    permission_classes = [IsManagerOrProduction]
+
+    @extend_schema(responses={200: serializers.ListField(child=serializers.DictField())})
+    def get(self, request):
+        raw = request.query_params.get("material_ids", "")
+        material_ids = [int(x) for x in raw.split(",") if x.strip().isdigit()] or None
+        return Response(services.pending_purchases(with_prices=request.user.role == "manager", material_ids=material_ids))
+
+
 class ProgressInSerializer(serializers.Serializer):
     units_done = serializers.IntegerField(min_value=0)
     note = serializers.CharField(required=False, allow_blank=True, default="")
@@ -150,6 +167,27 @@ class PurchaseOrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
         if params.get("waiting_manager") == "1":
             qs = qs.filter(decisions__status="pending").distinct()
         return qs
+
+    @extend_schema(request=GenerateInSerializer, responses={201: dict})
+    @action(detail=False, methods=["post"], permission_classes=[IsManagerOrProduction])
+    def generate(self, request):
+        """Consolidated material purchase orders for every open requirement (or `material_ids`):
+        one per material with an item per requirement, plus the assignment decision."""
+        data = GenerateInSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            result = services.generate_purchase_orders(data.validated_data.get("material_ids") or None, actor=request.user)
+        except PermissionDenied as exc:
+            _forbidden(exc)
+        cls = serializer_for(PurchaseOrder, self.role, detail=True)
+        return Response(
+            {
+                "purchase_orders": cls(result["created"], many=True, context=self.get_serializer_context()).data,
+                "decision_id": result["decision"].id if result["decision"] else None,
+                "skipped": result["skipped"],
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     @extend_schema(request=ProgressInSerializer, responses={201: PurchaseOrderDetailSerializer})
     @action(detail=True, methods=["post"])

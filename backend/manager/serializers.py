@@ -15,7 +15,7 @@ class AlertSerializer(DisplayMixin, serializers.ModelSerializer):
     class Meta:
         model = Alert
         display_fields = ["kind", "severity", "status"]
-        fields = ["id", "kind", "severity", "status", "text", "detected_at", "order", "purchase_order"]
+        fields = ["id", "kind", "severity", "status", "text", "detail", "detected_at", "order", "purchase_order"]
 
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_order(self, obj):
