@@ -161,7 +161,10 @@ SPECTACULAR_SETTINGS = {
 }
 
 # The WhatsApp agent never writes first at night (simulated Lima time): proactive-only turns wait.
-QUIET_HOURS = (21, 7)
+# Proactive supplier turns (first contact, follow-ups) wait between these hours (Lima). "21-7"
+# by default; empty disables the quiet hours (an evening rehearsal of the approval scene).
+_quiet = env("QUIET_HOURS", default="21-7").strip()
+QUIET_HOURS = tuple(int(h) for h in _quiet.split("-")) if _quiet else None
 
 # Celery (ADR 0018): one worker on three queues, beat with a static schedule.
 CELERY_BROKER_URL = env("REDIS_URL")
