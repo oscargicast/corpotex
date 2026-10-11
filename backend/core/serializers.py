@@ -23,6 +23,8 @@ MANAGER_ONLY_FIELDS = frozenset(
         "conversation_id",
         "conversation",
         "last_message",
+        "report_token",
+        "report_url",
         "paid_amount",
         "pending_amount",
         "payments_summary",

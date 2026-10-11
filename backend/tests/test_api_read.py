@@ -188,3 +188,25 @@ def test_sales_cannot_use_simulator(sales_client, production, scenario):
     for client in (sales_client, production_client):
         assert client.get("/api/simulator/contacts/").status_code == 403
         assert client.post("/api/simulator/messages/", {"allowed_number_id": scenario["number"].id, "text": "hola"}).status_code == 403
+
+
+@pytest.mark.django_db
+def test_report_token_is_manager_only(manager_client, sales_client, scenario, settings):
+    po = scenario["purchase_order"]
+    body = manager_client.get(f"/api/purchase-orders/{po.id}/").json()
+    assert body["report_token"] == str(po.report_token)
+    assert body["report_url"] == f"{settings.PUBLIC_BASE_URL}/report/{po.report_token}"
+    sales_body = sales_client.get(f"/api/purchase-orders/{po.id}/").json()
+    assert "report_token" not in sales_body and "report_url" not in sales_body
+
+
+@pytest.mark.django_db
+def test_media_is_served_and_unknown_routes_stay_quiet_without_debug(anonymous_client, settings, tmp_path):
+    settings.DEBUG = False
+    settings.MEDIA_ROOT = tmp_path
+    (tmp_path / "materials").mkdir()
+    (tmp_path / "materials" / "x.jpg").write_bytes(b"jpg")
+    assert anonymous_client.get("/media/materials/x.jpg").status_code == 200
+    missing = anonymous_client.get("/api/no-existe/")
+    assert missing.status_code == 404
+    assert b"api/orders" not in missing.content  # No route listing (the yellow page) outside DEBUG.

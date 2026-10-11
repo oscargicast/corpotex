@@ -40,7 +40,7 @@ Siempre por clave natural: material por `sku`, producto/orden/pedido por `code`,
 - La planta propia tiene `rates` (costo interno de costura) y pagos en `cash` para que el desglose sea uniforme.
 - `Decision.detail` de `approve_assignment` usa precio unitario promedio cuando el pedido tiene varios productos.
 - Valores monetarios como string con 2 decimales; `scores`/`rating_score` como número 0–1.
-- Escena de la demo: CP-2026-0142 + PT-0038 en `in_progress` con 400/1000; sin pedidos de redistribución, sin `approve_assignment` ni `order_in_danger` de esa orden (pasan en vivo).
+- Escena de la demo: CP-2026-0142 + PT-0038 en `in_progress` con 400/1000 (su `report_token` es fijo: `11111111-1111-4111-8111-000000000038`, así `/report/<token>` se puede ensayar; lo fija el loader, no el JSON); sin pedidos de redistribución, sin `approve_assignment` ni `order_in_danger` de esa orden (pasan en vivo).
 - Imágenes: todas generadas (ver `images/credits.md`); 1024 px, < 300 KB.
 
 ## Planta (`plant`)

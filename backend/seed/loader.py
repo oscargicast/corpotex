@@ -49,6 +49,9 @@ PO_PREFIX = {"workshop": "PT", "material": "PI", "finished": "PF"}
 REAL_SUPPLIER_KEY = "Confecciones del Norte"
 REAL_SUPPLIER_PHONE = "51906746241"
 MANAGER_PHONE = "51907898162"
+# The scene's purchase order gets a fixed report token so /report/<token> can be rehearsed.
+SCENE_PURCHASE_ORDER = "PT-0038"
+SCENE_REPORT_TOKEN = "11111111-1111-4111-8111-000000000038"
 
 
 class SeedError(Exception):
@@ -323,6 +326,8 @@ class Loader:
                 rating=self.rating(row),
             )
             self.purchase_orders[po.code] = po
+            if po.code == SCENE_PURCHASE_ORDER:
+                PurchaseOrder.objects.filter(pk=po.pk).update(report_token=SCENE_REPORT_TOKEN)
             for item in row.get("items") or []:
                 requirement = self.requirement_for(self.ref(self.orders, item["order"], "orden"), row.get("kind") or supplier.kind, item.get("material"), item.get("product"))
                 qty = self.dec(item["quantity"])
