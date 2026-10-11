@@ -59,6 +59,7 @@ def test_alert_data_is_rendered_with_spanish_names_and_dates():
     text = turn_text(scenario_state("aviso_comercial_sin_precios"))
     assert '<orden codigo="CP-2026-0012" cliente="Caja Piura"' in text
     assert 'fecha_estimada="martes 27 de octubre"' in text
+    assert "fecha_de_entrega=" in text and "prometida" not in text  # ADR 0029 §1
 
 
 def test_mixed_turn_answers_first_and_never_prepares_alert_actions():
@@ -177,3 +178,15 @@ def test_classification_failed_names_the_item_and_who_fixes_it():
         "<item>Casaca cortavientos impermeable con forro polar</item>\n</sin_reconocer>"
     ) in text
     assert "si hablas con Producción, que se lo pida a Comercial" in text
+
+
+def test_technical_sheet_names_and_revise_order_by_role():
+    state = scenario_state("asistente_confirmacion_dos_pasos")
+    for role in ("manager", "production", "sales"):
+        state["user"]["role"] = role
+        system = assistant.render_system(RULES, state)
+        assert '"ficha técnica", nunca "desglose"' in system
+        assert "desglose de" not in system and "fecha prometida" not in system
+        assert ("(revise_order)" in system) == (role != "sales"), role
+        if role != "sales":
+            assert '"¿Aplico? (sí/no)"' in system

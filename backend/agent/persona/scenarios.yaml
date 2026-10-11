@@ -334,7 +334,7 @@ scenarios:
           purchase_order: null
           decision: null
     must: ['600', 'CP-2026-0012|Caja Piura']
-    must_not: ['\(s[ií]/no\)', 'https?://', '/orders/']
+    must_not: ['prometid', 'desglos', '\(s[ií]/no\)', 'https?://', '/orders/']
     forbid_tools: [resolve_decision, acknowledge_alert, mark_payment_paid, set_clock]
 
   - name: aviso_comercial_sin_precios
@@ -351,7 +351,7 @@ scenarios:
           purchase_order: {code: PT-0001, supplier: Confecciones del Norte, status: cancelled_by_supplier}
           decision: null
     must: ['27', 'CP-2026-0012|Caja Piura']
-    must_not: ['S/', 'USD', '\b9\d{8}\b', '\(s[ií]/no\)']
+    must_not: ['prometid', 'desglos', 'S/', 'USD', '\b9\d{8}\b', '\(s[ií]/no\)']
 
   - name: aviso_produccion_taller
     agent: assistant
@@ -500,7 +500,7 @@ scenarios:
           reference_price: null
           currency: null
     must: ['CP-2026-0151', '1000', 'Tejidos Rib Lima', '¿Genero el pedido[^\n]*Tejidos Rib Lima\?\s*$']
-    must_not: ['¿Quieres que', '\(s[ií]/no\)', 'S/', '1000\.00']
+    must_not: ['prometid', 'desglos', '¿Quieres que', '\(s[ií]/no\)', 'S/', '1000\.00']
     forbid_tools: [generate_purchase_orders]
 
   - name: aviso_respuesta_de_avance
