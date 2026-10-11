@@ -898,7 +898,7 @@ def _request_follow_up(conversation, turn, user):
         name="request_follow_up",
         description=(
             "Pide avance al proveedor o taller de un pedido, o a todos los de una orden "
-            "abierta. El agente le pregunta por WhatsApp y la respuesta llega a este chat. Los "
+            "abierta. El agente le pregunta al proveedor y la respuesta llega a este chat. Los "
             "pedidos que ya esperan respuesta no se repiten."
         ),
         properties={
