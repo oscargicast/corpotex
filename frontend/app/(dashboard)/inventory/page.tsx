@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import useSWR from "swr";
+import { FilterChips } from "@/components/filter-chips";
 import { GenerateConfirm, GeneratedToast, useGenerate } from "@/components/generate-purchase-orders";
 import { RoleGate } from "@/components/require-auth";
 import { SkeletonLines, SkeletonTable } from "@/components/skeleton";
@@ -66,6 +67,8 @@ function StatusPill({ status }: { status: Status }) {
 }
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+type View = "" | "to_order" | "incoming";
+const inTransit = (m: Material) => (m.incoming ?? []).some((po) => po.status !== "suggested");
 
 export default function InventoryPage() {
   return (
@@ -85,8 +88,8 @@ function Inventory() {
   // and to_order while /api/materials/ does not send it.
   const { data: pending, mutate: mutatePending } = useSWR<PendingRequirement[]>("/api/requirements/pending/", fetcher, { refreshInterval: 5000 });
   const [kind, setKind] = useState("");
-  // ?to_order=1 (the old "Por pedir" tab redirects here) turns the filter on.
-  const [onlyToOrder, setOnlyToOrder] = useState(params.get("to_order") === "1");
+  // ?to_order=1 (the old "Por pedir" tab redirects here) opens the Por pedir chip.
+  const [view, setView] = useState<View>(params.get("to_order") === "1" ? "to_order" : "");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<number | null>(null);
   const [confirming, setConfirming] = useState<number | "all" | null>(null);
@@ -105,10 +108,10 @@ function Inventory() {
     setScrolled(true);
   }, [focusId, data, scrolled]);
 
-  function showOnlyToOrder(next: boolean) {
-    setOnlyToOrder(next);
+  function show(next: View) {
+    setView(next);
     setConfirming(null);
-    router.replace(next ? "/inventory?to_order=1" : "/inventory", { scroll: false });
+    router.replace(next === "to_order" ? "/inventory?to_order=1" : "/inventory", { scroll: false });
   }
 
   function ask(target: number | "all") {
@@ -129,18 +132,18 @@ function Inventory() {
 
   const q = query.trim().toLowerCase();
   const rows = all
-    .filter(({ m, status }) => (!kind || m.kind === kind) && (!onlyToOrder || status.key === "to_order") && (!q || m.sku.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)))
+    .filter(({ m, status }) => (!kind || m.kind === kind) && (!view || (view === "to_order" ? status.key === "to_order" : inTransit(m))) && (!q || m.sku.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)))
     // To order first, then awaiting/in transit, out of stock and low, OK last; least available first in each group.
     .sort((a, b) => a.status.rank - b.status.rank || (num(a.m.available) ?? 0) - (num(b.m.available) ?? 0));
   const toOrderCount = all.filter(({ status }) => status.key === "to_order").length;
-  const inTransitCount = all.filter(({ m }) => (m.incoming ?? []).some((po) => po.status !== "suggested")).length;
+  const inTransitCount = all.filter(({ m }) => inTransit(m)).length;
   const nameOf = (id: number) => all.find(({ m }) => m.id === id)?.m.name ?? pendingOf.get(id)?.material.name ?? `Insumo ${id}`;
 
   // "Pedir todo": one suggested purchase order per material with a supplier.
   const materialsToOrder = pending ? pendingRows.length : toOrderCount;
   const withSupplier = pending ? pendingRows.filter((row) => row.suggested_supplier).length : toOrderCount;
   const withoutSupplier = pendingRows.filter((row) => !row.suggested_supplier).map((row) => row.material.name);
-  const allText = `Se ${plural(withSupplier, "generará", "generarán")} ${withSupplier} ${plural(withSupplier, "pedido sugerido", "pedidos sugeridos")} para ${materialsToOrder} ${plural(materialsToOrder, "insumo", "insumos")}. ¿Confirmas?`;
+  const allText = `Se ${plural(withSupplier, "generará", "generarán")} ${withSupplier} ${plural(withSupplier, "pedido sugerido", "pedidos sugeridos")} para ${materialsToOrder} ${plural(materialsToOrder, "insumo", "insumos")}.`;
   const allNote = withoutSupplier.length
     ? `Sin proveedor con tarifa vigente, ${plural(withoutSupplier.length, "queda", "quedan")} por pedir: ${withoutSupplier.join(", ")}.`
     : "Uno por insumo, con el proveedor sugerido. El Gerente los aprueba en el Monitor.";
@@ -151,7 +154,8 @@ function Inventory() {
     const supplier = row?.suggested_supplier ? ` con ${row.suggested_supplier.name}` : "";
     return (
       <GenerateConfirm
-        text={`Se generará 1 pedido sugerido para ${m.name}${amount}${supplier}. ¿Confirmas?`}
+        title="Generar pedido"
+        text={`Se generará 1 pedido sugerido para ${m.name}${amount}${supplier}.`}
         note={row && !row.suggested_supplier ? "No tiene proveedor con tarifa vigente: el pedido no se va a generar." : "El Gerente lo aprueba en el Monitor."}
         busy={gen.busy}
         error={gen.error}
@@ -166,22 +170,11 @@ function Inventory() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-tight">Inventario</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          {toOrderCount > 0 && (
-            <button type="button" onClick={() => showOnlyToOrder(true)} className="rounded-full hover:opacity-80">
-              <Pill tone="danger">
-                <ShoppingCart size={13} className="mr-1" aria-hidden />
-                {toOrderCount} por pedir
-              </Pill>
-            </button>
-          )}
-          {inTransitCount > 0 && (
-            <Pill tone="info">
-              <Truck size={13} className="mr-1" aria-hidden />
-              {inTransitCount} en camino
-            </Pill>
-          )}
-        </div>
+        {view === "to_order" && toOrderCount > 0 && (
+          <Button kind="primary" disabled={gen.busy} onClick={() => ask("all")}>
+            <ShoppingCart size={16} aria-hidden /> Pedir todo
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -203,23 +196,22 @@ function Inventory() {
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          aria-pressed={onlyToOrder}
-          onClick={() => showOnlyToOrder(!onlyToOrder)}
-          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm ring-1 ${onlyToOrder ? "bg-ink text-white ring-ink" : "bg-surface ring-line hover:bg-canvas"}`}
-        >
-          <ShoppingCart size={14} aria-hidden /> Solo por pedir
-        </button>
-        {onlyToOrder && toOrderCount > 0 && confirming !== "all" && (
-          <Button kind="primary" className="ml-auto" disabled={gen.busy} onClick={() => ask("all")}>
-            <ShoppingCart size={16} aria-hidden /> Pedir todo
-          </Button>
-        )}
       </div>
+      <FilterChips
+        label="Estado"
+        value={view}
+        onChange={show}
+        options={[
+          { key: "", label: "Todos", count: all.length },
+          { key: "to_order", label: "Por pedir", count: toOrderCount },
+          { key: "incoming", label: "En camino", count: inTransitCount },
+        ]}
+      />
 
       {confirming === "all" && (
         <GenerateConfirm
+          title="Pedir todo"
+          kind="primary"
           text={allText}
           note={allNote}
           busy={gen.busy}
@@ -266,18 +258,15 @@ function Inventory() {
                   {/* Outside the row's button: a button cannot live inside another. */}
                   {toOrder && (
                     <div className="px-3 pb-3">
-                      {confirming === m.id ? (
-                        rowConfirm(m)
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => ask(m.id)}
-                          disabled={gen.busy}
-                          className={`${buttonClass("ghost")} w-full`}
-                        >
-                          <ShoppingCart size={16} aria-hidden /> Generar pedido
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => ask(m.id)}
+                        disabled={gen.busy}
+                        className={`${buttonClass()} w-full`}
+                      >
+                        <ShoppingCart size={16} aria-hidden /> Generar pedido
+                      </button>
+                      {confirming === m.id && rowConfirm(m)}
                     </div>
                   )}
                   {open === m.id && <Details material={m} />}
@@ -338,9 +327,9 @@ function Inventory() {
                                   ask(m.id);
                                 }}
                                 disabled={gen.busy}
-                                className={buttonClass("ghost", "sm")}
+                                className={buttonClass("secondary", "sm")}
                               >
-                                Generar pedido
+                                <ShoppingCart size={14} aria-hidden /> Generar pedido
                               </button>
                             )}
                           </span>

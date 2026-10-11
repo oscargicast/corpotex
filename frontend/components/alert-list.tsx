@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  ArrowRight,
   Bell,
   Bot,
+  Check,
   CalendarClock,
   ChevronDown,
   Hourglass,
@@ -113,13 +115,13 @@ export function AlertList({
                 <span className="sr-only">{expanded ? "Ocultar detalle" : "Ver detalle"}</span>
               </button>
               {target && (
-                <Link href={target.href} className={`${buttonClass("ghost", "sm")} ml-auto sm:ml-0`}>
-                  {target.label}
+                <Link href={target.href} className={`${buttonClass("secondary", "sm")} ml-auto sm:ml-0`}>
+                  <ArrowRight size={14} aria-hidden /> {target.label}
                 </Link>
               )}
               {canAcknowledge && (
                 <Button size="sm" onClick={() => acknowledge(alert.id)} busy={busy === alert.id}>
-                  Reconocer
+                  <Check size={14} aria-hidden /> Reconocer
                 </Button>
               )}
             </div>

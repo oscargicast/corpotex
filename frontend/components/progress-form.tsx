@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera } from "lucide-react";
+import { Camera, ClipboardCheck } from "lucide-react";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "./ui";
@@ -77,8 +77,8 @@ export function ProgressForm({
         </p>
       )}
       <div className="sm:col-span-2">
-        <Button kind="dark" type="submit" busy={busy}>
-          Registrar avance
+        <Button type="submit" busy={busy}>
+          <ClipboardCheck size={16} aria-hidden /> Registrar avance
         </Button>
       </div>
     </form>

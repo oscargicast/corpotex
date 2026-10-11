@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { ApiError, apiFetch } from "@/lib/api";
 import { num } from "@/lib/format";
 import { type CriticalStep, MATERIAL_UNIT, type OrderDetail } from "@/lib/types";
+import { ConfirmDialog } from "./confirm-dialog";
 import { Button } from "./ui";
 
 // Ficha técnica editable por instrucción (ADR 0029 §4), Gerente and Producción:
@@ -243,7 +244,7 @@ function ReviseDialog({
           <p className="mt-1 text-xs text-muted">Cambia solo esta orden; la receta del catálogo no se toca. Los insumos ya pedidos no cambian.</p>
           <div className="mt-3 flex justify-end">
             <Button kind={revision ? undefined : "primary"} type="submit" busy={busy === "propose"} disabled={!instruction.trim() || busy !== null} className="min-h-11 sm:min-h-0">
-              {revision ? "Proponer de nuevo" : "Proponer"}
+              <Wand2 size={16} aria-hidden /> {revision ? "Proponer de nuevo" : "Proponer"}
             </Button>
           </div>
         </form>
@@ -316,23 +317,23 @@ function ReviseDialog({
                 </ul>
               </div>
             )}
-            {confirmDiscard ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning" role="alert">
-                Hay una propuesta sin aplicar. ¿Descartarla?
-                <Button kind="dark" className="min-h-11 sm:min-h-0" onClick={onClose}>
-                  Descartar
-                </Button>
-                <Button className="min-h-11 sm:min-h-0" onClick={() => setConfirmDiscard(false)}>
-                  Seguir revisando
-                </Button>
-              </div>
-            ) : (
+            {confirmDiscard && (
+              <ConfirmDialog
+                title="Descartar la propuesta"
+                text="Hay una propuesta sin aplicar. Al cerrar se pierde."
+                confirm={{ label: "Descartar", icon: <X size={16} aria-hidden />, kind: "danger" }}
+                cancelLabel="Seguir revisando"
+                onConfirm={onClose}
+                onClose={() => setConfirmDiscard(false)}
+              />
+            )}
+            {(
               <div className="flex flex-wrap justify-end gap-2">
                 <Button disabled={busy !== null} onClick={requestClose} className="min-h-11 sm:min-h-0">
-                  Cancelar
+                  <X size={16} aria-hidden /> Cancelar
                 </Button>
                 <Button kind="primary" busy={busy === "apply"} disabled={busy !== null} onClick={apply} className="min-h-11 sm:min-h-0">
-                  Aplicar
+                  <CheckCircle2 size={16} aria-hidden /> Aplicar
                 </Button>
               </div>
             )}

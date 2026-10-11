@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, MessageCircleQuestion, Pencil, Sparkles, XCircle } from "lucide-react";
+import { ArrowLeft, CircleCheck, Pencil, Sparkles, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -15,7 +15,9 @@ import { RedistributionCard } from "@/components/redistribution-card";
 import { useUser } from "@/components/require-auth";
 import { StatusTimeline } from "@/components/status-timeline";
 import { Thumb } from "@/components/thumb";
-import { Button, Card, Pill, RISK_LABEL, RISK_TONE, SectionTitle } from "@/components/ui";
+import { Button, buttonClass, Card, Pill, RISK_LABEL, RISK_TONE, SectionTitle } from "@/components/ui";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { WhatsApp } from "@/components/icons";
 import { apiFetch, fetcher } from "@/lib/api";
 import { formatDay, formatMoney, num } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
@@ -30,6 +32,8 @@ export default function OrderDetailPage() {
   const { id, notFound } = useResolvedId("orders", decodeURIComponent(params.id));
   const { data: order, mutate } = useSWR<OrderDetail>(id ? `/api/orders/${id}/` : null, fetcher, { refreshInterval: 3000 });
   const [confirming, setConfirming] = useState(false);
+  const [approving, setApproving] = useState(false); // the Aprobar y abastecer dialog
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [asking, setAsking] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -45,6 +49,7 @@ export default function OrderDetailPage() {
   // Purchase orders a supplier still has to deliver: the ones "Pedir avance a todos" covers.
   const openPurchaseOrders = order.purchase_orders.filter((po) => !["suggested", "delivered", "cancelled", "cancelled_by_supplier", "rejected_by_supplier", "declined_by_supplier"].includes(po.status));
   const canConfirm = order.status === "broken_down" && user.role !== "sales" && !needsClassification;
+  const canAsk = openPurchaseOrders.length > 0;
   // Ficha técnica and ruta crítica adjustable by instruction (ADR 0029 §4).
   const canRevise = (user.role === "manager" || user.role === "production") && !["delivered", "cancelled"].includes(order.status) && order.requirements.length > 0;
 
@@ -73,8 +78,12 @@ export default function OrderDetailPage() {
 
   async function confirm() {
     setConfirming(true);
+    setConfirmError(null);
     try {
       await mutate(apiFetch<OrderDetail>(`/api/orders/${order!.id}/confirm/`, { method: "POST" }), { revalidate: true });
+      setApproving(false);
+    } catch {
+      setConfirmError("No se pudo aprobar. Inténtalo de nuevo.");
     } finally {
       setConfirming(false);
     }
@@ -98,50 +107,72 @@ export default function OrderDetailPage() {
             {num(order.total_amount) ? ` · ${formatMoney(order.total_amount)}` : ""} · emitida {formatDay(order.issued_on)}
           </p>
         </div>
+        {/* Secondaries, then danger, the primary on the right. With a ficha to
+            approve the primary is Aprobar y abastecer; while sourcing it is
+            Pedir avance a todos. */}
         <div className="flex flex-wrap gap-2">
-          {openPurchaseOrders.length > 0 && !asking && (
-            <Button onClick={() => setAsking(true)}>
-              <MessageCircleQuestion size={16} /> Pedir avance a todos
-            </Button>
-          )}
           {canEditOrder(user, order) && (
-            <Link href={`/orders/${order.id}/edit`} className="inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold text-ink ring-1 ring-line hover:bg-canvas">
-              <Pencil size={16} /> Editar
+            <Link href={`/orders/${order.id}/edit`} className={buttonClass()}>
+              <Pencil size={16} aria-hidden /> Editar
             </Link>
           )}
-          {canCancelOrder(user, order) && !cancelling && (
-            <Button onClick={() => setCancelling(true)}>
-              <XCircle size={16} /> Cancelar orden
+          {canAsk && canConfirm && (
+            <Button onClick={() => setAsking(true)}>
+              <WhatsApp size={16} aria-hidden /> Pedir avance a todos
+            </Button>
+          )}
+          {canCancelOrder(user, order) && (
+            <Button kind="danger" onClick={() => setCancelling(true)}>
+              <XCircle size={16} aria-hidden /> Cancelar orden
             </Button>
           )}
           {canConfirm && (
-            <Button kind="primary" onClick={confirm} busy={confirming}>
-              {confirming ? "Aprobando…" : "Aprobar y abastecer"}
+            <Button kind="primary" onClick={() => setApproving(true)} busy={confirming}>
+              <CircleCheck size={16} aria-hidden /> {confirming ? "Aprobando…" : "Aprobar y abastecer"}
+            </Button>
+          )}
+          {canAsk && !canConfirm && (
+            <Button kind="primary" onClick={() => setAsking(true)}>
+              <WhatsApp size={16} aria-hidden /> Pedir avance a todos
             </Button>
           )}
         </div>
       </header>
 
+      {approving && (
+        <ConfirmDialog
+          title="Aprobar y abastecer"
+          text={`Se confirma la ficha técnica de ${order.code}: los insumos pasan a «por pedir» en Inventario y los pedidos de taller quedan listos para que el Gerente los apruebe.`}
+          busy={confirming}
+          error={confirmError}
+          confirm={{ label: "Aprobar y abastecer", icon: <CircleCheck size={16} aria-hidden />, kind: "primary" }}
+          onConfirm={confirm}
+          onClose={() => setApproving(false)}
+        />
+      )}
+
       {asking && (
         <FollowUpPanel
           endpoint={`/api/orders/${order.id}/follow-up/`}
           targets={openPurchaseOrders.map((po) => ({ supplier: po.supplier.name, code: po.code, awaiting: !!po.awaiting_reply }))}
+          title="Pedir avance a todos"
+          kind={canConfirm ? "secondary" : "primary"}
           onClose={() => setAsking(false)}
           onDone={() => mutate()}
         />
       )}
 
       {cancelling && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
-          Se cancela la orden {order.code} y sus pedidos pendientes. No se puede deshacer.
-          <Button kind="danger" className="py-1" busy={cancelBusy} onClick={cancelOrder}>
-            Cancelar orden
-          </Button>
-          <Button className="py-1" disabled={cancelBusy} onClick={() => setCancelling(false)}>
-            Volver
-          </Button>
-          {cancelError && <span className="w-full">{cancelError}</span>}
-        </div>
+        <ConfirmDialog
+          title="Cancelar orden"
+          text={`Se cancela la orden ${order.code} y sus pedidos pendientes. No se puede deshacer.`}
+          busy={cancelBusy}
+          error={cancelError}
+          confirm={{ label: "Cancelar orden", icon: <XCircle size={16} aria-hidden />, kind: "danger" }}
+          cancelLabel="Volver"
+          onConfirm={cancelOrder}
+          onClose={() => setCancelling(false)}
+        />
       )}
 
       {/* Fecha de entrega, Estimada and Holgura live in the Ruta crítica card (ADR 0029 §3). */}

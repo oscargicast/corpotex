@@ -35,15 +35,20 @@ export const SEVERITY_TONE: Record<Severity, Tone> = { critical: "danger", warni
 export const RISK_TONE: Record<Risk, Tone> = { in_danger: "danger", at_risk: "warning", ok: "success" };
 export const RISK_LABEL: Record<Risk, string> = { in_danger: "En peligro", at_risk: "En riesgo", ok: "A tiempo" };
 
-type ButtonKind = "primary" | "dark" | "ghost" | "danger";
+export type ButtonKind = "primary" | "secondary" | "danger";
+// Old names still used under routes/ and in numbers.tsx (the rutas session owns
+// them): both render as the secondary, so no fourth look sneaks back in.
+type LegacyKind = "dark" | "ghost";
+const normalize = (kind: ButtonKind | LegacyKind): ButtonKind => (kind === "dark" || kind === "ghost" ? "secondary" : kind);
 type ButtonSize = "md" | "sm";
 const BUTTONS: Record<ButtonKind, string> = {
-  // One primary per view (the brand color, dark text on top); everything else
-  // is the outline secondary. Every kind darkens on hover.
+  // Three looks and nothing else (Oscar, 11/10): the primary is the brand
+  // color, one per view; the secondary is the neutral outline; danger is the
+  // red outline for Cancelar orden and Descartar. Same height, radius, weight
+  // and hover across the three; every button starts with its icon.
   primary: "bg-brand text-ink hover:bg-brand-hover",
-  dark: "bg-ink text-white hover:bg-ink/85",
-  ghost: "bg-surface text-ink ring-1 ring-line hover:bg-canvas hover:ring-ink/30",
-  danger: "bg-danger text-white hover:bg-danger/85",
+  secondary: "bg-surface text-ink ring-1 ring-line hover:bg-canvas hover:ring-ink/30",
+  danger: "bg-surface text-danger ring-1 ring-danger/40 hover:bg-danger-soft hover:ring-danger",
 };
 // Same height and radius everywhere: md for page actions, sm inside tables
 // and cards (44 px on the phone either way).
@@ -53,8 +58,8 @@ const SIZES: Record<ButtonSize, string> = {
 };
 
 // The button look, for <Link>s and custom buttons that must match <Button>.
-export function buttonClass(kind: ButtonKind = "ghost", size: ButtonSize = "md"): string {
-  return `inline-flex items-center justify-center gap-1.5 rounded-md font-semibold transition-colors duration-150 disabled:cursor-default disabled:opacity-50 ${SIZES[size]} ${BUTTONS[kind]}`;
+export function buttonClass(kind: ButtonKind | LegacyKind = "secondary", size: ButtonSize = "md"): string {
+  return `inline-flex items-center justify-center gap-1.5 rounded-md font-semibold transition-colors duration-150 disabled:cursor-default disabled:opacity-50 ${SIZES[size]} ${BUTTONS[normalize(kind)]}`;
 }
 
 // Rows and cards that open something: the same hover everywhere.
@@ -69,14 +74,14 @@ export function Spinner({ className = "" }: { className?: string }) {
 // `busy` disables the button and shows a spinner in front of the label, so
 // every POST/PATCH gives feedback until the response arrives.
 export function Button({
-  kind = "ghost",
+  kind = "secondary",
   className = "",
   busy = false,
   size = "md",
   disabled,
   children,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: ButtonKind; size?: ButtonSize; busy?: boolean }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: ButtonKind | LegacyKind; size?: ButtonSize; busy?: boolean }) {
   return (
     <button
       type="button"

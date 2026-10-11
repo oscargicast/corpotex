@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeftRight, Check, CircleCheck, X, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
@@ -8,6 +9,7 @@ import { DECISION_KIND, candidateSupplier, type DecisionAction, type DecisionLik
 import { ClampedText } from "./clamped-text";
 import { RedistributionBody } from "./redistribution-card";
 import { Radar } from "./radar";
+import { ConfirmDialog } from "./confirm-dialog";
 import { Button, Pill } from "./ui";
 
 interface ResolveBody {
@@ -20,6 +22,7 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
   const [busy, setBusy] = useState(false);
   const [action, setAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const proposal = decision.detail.proposal ?? [];
   const after = decision.detail.after;
@@ -31,6 +34,7 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
     try {
       await apiFetch(`/api/manager/decisions/${decision.id}/`, { method: "POST", json: body });
       dialog.current?.close();
+      setApproving(false);
       onResolved();
     } catch (err) {
       setError(err instanceof ApiError && err.status === 409 ? "Esta decisión ya se resolvió." : "No se pudo guardar. Inténtalo de nuevo.");
@@ -108,18 +112,30 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button kind="primary" disabled={busy} busy={busy && action === "approve"} onClick={() => resolve({ action: "approve" })}>
-          Aprobar
-        </Button>
         <Button disabled={busy} busy={busy && action === "reject"} onClick={() => resolve({ action: "reject" })}>
-          Rechazar
+          <XCircle size={16} aria-hidden /> Rechazar
         </Button>
         {proposal.some((item) => (item.candidates?.length ?? 0) > 1) && (
           <Button disabled={busy} onClick={() => dialog.current?.showModal()}>
-            Cambiar proveedor
+            <ArrowLeftRight size={16} aria-hidden /> Cambiar proveedor
           </Button>
         )}
+        <Button kind="primary" disabled={busy} busy={busy && action === "approve"} onClick={() => setApproving(true)}>
+          <CircleCheck size={16} aria-hidden /> Aprobar
+        </Button>
       </div>
+
+      {approving && (
+        <ConfirmDialog
+          title={decision.kind_display ?? DECISION_KIND[decision.kind] ?? "Aprobar"}
+          text={approveText(decision, proposal)}
+          busy={busy}
+          error={error}
+          confirm={{ label: "Aprobar", icon: <CircleCheck size={16} aria-hidden />, kind: "primary" }}
+          onConfirm={() => resolve({ action: "approve" })}
+          onClose={() => setApproving(false)}
+        />
+      )}
 
       <dialog
         ref={dialog}
@@ -141,6 +157,17 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
       </dialog>
     </article>
   );
+}
+
+// What approving does, in one line: who the agent writes to, or what it confirms.
+function approveText(decision: DecisionLike, proposal: ProposalItem[]): string {
+  const names = [...new Set(proposal.map((item) => item.supplier.name))];
+  const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} y ${names.at(-1)}` : names[0];
+  if (decision.detail.cancelled) return `Se aprueba la redistribución: el agente le escribe a ${list ?? "los talleres nuevos"} con el primer contacto por WhatsApp.`;
+  if (decision.kind === "price") return "Se acepta el precio propuesto y el agente se lo confirma al proveedor por WhatsApp.";
+  if (decision.kind === "terms") return "Se aceptan los términos y el agente se los confirma al proveedor por WhatsApp.";
+  if (list) return `Se aprueba la asignación a ${list}: el agente manda el primer contacto por WhatsApp a los proveedores externos.`;
+  return "Se aprueba la decisión y el agente sigue la conversación con el proveedor.";
 }
 
 function ChangeSupplier({
@@ -197,8 +224,8 @@ function ChangeSupplier({
                 {current ? (
                   <p className="mt-2 text-xs font-medium">Elegido ahora</p>
                 ) : (
-                  <Button kind="dark" className="mt-2" busy={busy} onClick={() => onPick(item, supplier.id)}>
-                    Elegir {supplier.name}
+                  <Button className="mt-2" busy={busy} onClick={() => onPick(item, supplier.id)}>
+                    <Check size={16} aria-hidden /> Elegir {supplier.name}
                   </Button>
                 )}
               </div>
@@ -207,7 +234,9 @@ function ChangeSupplier({
         })}
       </ul>
       <div className="mt-4 text-right">
-        <Button onClick={onClose}>Cerrar</Button>
+        <Button onClick={onClose}>
+          <X size={16} aria-hidden /> Cerrar
+        </Button>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, Save } from "lucide-react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useRef, useState } from "react";
@@ -293,8 +293,8 @@ function Notes({ supplier, onSaved }: { supplier: SupplierDetail; onSaved: () =>
         ).
       </p>
       {dirty && (
-        <Button kind="dark" className="mt-2" busy={busy} onClick={save}>
-          Guardar notas
+        <Button className="mt-2" busy={busy} onClick={save}>
+          <Save size={16} aria-hidden /> Guardar notas
         </Button>
       )}
     </Card>

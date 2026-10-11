@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, CheckCircle2, Flag } from "lucide-react";
+import { CalendarClock, CheckCircle2, Flag, Save } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
@@ -208,7 +208,7 @@ function FollowUpForm({ saved, unavailable, onSaved }: { saved: FollowUpSettings
 
       <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-4">
         <Button kind="primary" busy={busy} disabled={unavailable || !dirty || !!windowError || !!daysError} onClick={save}>
-          Guardar
+          <Save size={16} aria-hidden /> Guardar
         </Button>
         {confirmed && (
           <span className="flex items-center gap-1.5 text-sm text-success" role="status">

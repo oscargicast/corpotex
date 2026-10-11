@@ -1,12 +1,14 @@
 "use client";
 
-import { CheckCircle2, Clock, Info, MessageCircleReply } from "lucide-react";
+import { Bell, CheckCircle2, Clock, Info, MessageCircleReply, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
 import { isOpenRequest, requestedBy } from "@/lib/follow-up";
 import { formatDayTime } from "@/lib/format";
 import type { FollowUpResult, PurchaseOrderDetail } from "@/lib/types";
-import { Button } from "./ui";
+import { ConfirmDialog } from "./confirm-dialog";
+import { WhatsApp } from "./icons";
+import type { ButtonKind } from "./ui";
 
 // Reactive follow-up (ADR 0027 §6): Comercial, Producción or the Gerente ask
 // the agent to check in with a supplier now. The buttons live in the page
@@ -48,7 +50,23 @@ function outcomeOf(res: FollowUpResult | null): Outcome {
     : { tone, text: `Ya se le preguntó${at ? ` a las ${hhmm(at)}` : ""}; te avisamos en el asistente cuando conteste.` };
 }
 
-export function FollowUpPanel({ endpoint, targets, onClose, onDone }: { endpoint: string; targets: FollowUpTarget[]; onClose: () => void; onDone: () => void }) {
+// `title` is the label of the button that opened it ("Pedir avance" or
+// "Pedir avance a todos") and `kind` its look: the dialog repeats both.
+export function FollowUpPanel({
+  endpoint,
+  targets,
+  title = "Pedir avance",
+  kind = "primary",
+  onClose,
+  onDone,
+}: {
+  endpoint: string;
+  targets: FollowUpTarget[];
+  title?: string;
+  kind?: ButtonKind;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -88,8 +106,8 @@ export function FollowUpPanel({ endpoint, targets, onClose, onDone }: { endpoint
       <div className={`flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-sm ${outcome.tone === "info" ? "bg-accent/10 text-accent" : "bg-success-soft text-success"}`} role="status">
         <Icon size={16} className="shrink-0" aria-hidden />
         <span className="flex-1">{outcome.text}</span>
-        <button type="button" onClick={onClose} className="text-xs underline">
-          Cerrar
+        <button type="button" onClick={onClose} className="inline-flex min-h-11 items-center gap-1 text-xs underline sm:min-h-0">
+          <X size={12} aria-hidden /> Cerrar
         </button>
       </div>
     );
@@ -104,50 +122,46 @@ export function FollowUpPanel({ endpoint, targets, onClose, onDone }: { endpoint
     : targets.filter((t) => t.awaiting);
   // Only the plant or suppliers without a number: nothing to send.
   const nobody = !!rows && !toAsk.length && !waiting.length;
-  const notes = previewNotes(preview?.detail);
+  const loading = preview === undefined;
+  const asks = loading || toAsk.length > 0;
+  // The API's own words (the plant, the 07:00 queue, the earlier question),
+  // else what the page knows about who is already waiting.
+  const notes =
+    previewNotes(preview?.detail) ||
+    (!preview && waiting.length > 0 && toAsk.length > 0
+      ? `${waiting.map((t) => t.code).join(", ")} ya ${waiting.length > 1 ? "están" : "está"} esperando respuesta: no se ${waiting.length > 1 ? "les" : "le"} vuelve a escribir.`
+      : "");
 
   return (
-    <div className="rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning" aria-busy={preview === undefined}>
-      {preview === undefined ? (
-        <p>Revisando a quién escribirle…</p>
-      ) : (
-        <>
-          <p>
-            {toAsk.length ? (
-              <>
-                Se {toAsk.length > 1 ? "les" : "le"} escribirá a <strong>{listTargets(toAsk)}</strong>. ¿Confirmas?
-              </>
-            ) : nobody ? (
-              <>No hay a quién escribirle.</>
-            ) : (
-              <>Todos ya están esperando respuesta: no se les vuelve a escribir. ¿Quieres que te avisen cuando contesten?</>
-            )}
-          </p>
-          {/* The API's own words: the plant, the 07:00 queue, the earlier question. */}
-          {notes && <p className="mt-1 text-xs">{notes}</p>}
-          {!preview && waiting.length > 0 && toAsk.length > 0 && (
-            <p className="mt-1 text-xs">
-              {waiting.map((t) => t.code).join(", ")} ya {waiting.length > 1 ? "están" : "está"} esperando respuesta: no se {waiting.length > 1 ? "les" : "le"} vuelve a escribir.
-            </p>
-          )}
-        </>
-      )}
-      <div className="mt-2 flex flex-wrap gap-2">
-        {!nobody && (
-          <Button kind="dark" className="py-1" busy={busy} disabled={preview === undefined} onClick={send}>
-            {toAsk.length ? "Pedir avance" : "Avisarme"}
-          </Button>
-        )}
-        <Button className="py-1" disabled={busy} onClick={onClose}>
-          {nobody ? "Cerrar" : "Cancelar"}
-        </Button>
-      </div>
-      {error && (
-        <p className="mt-1 text-danger" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
+    <ConfirmDialog
+      title={asks ? title : nobody ? "Nadie a quien escribir" : "Avisarme cuando contesten"}
+      text={
+        loading ? (
+          "Revisando a quién escribirle…"
+        ) : toAsk.length ? (
+          <>
+            El agente {toAsk.length > 1 ? "les" : "le"} escribe ahora por WhatsApp a <strong>{listTargets(toAsk)}</strong> para pedir el avance.
+          </>
+        ) : nobody ? (
+          "No hay a quién escribirle: la planta no recibe mensajes y el resto no tiene número activo."
+        ) : (
+          "Todos ya están esperando respuesta: no se les vuelve a escribir. Te avisamos en el asistente cuando contesten."
+        )
+      }
+      note={notes || undefined}
+      busy={busy}
+      error={error}
+      confirm={
+        nobody
+          ? undefined
+          : asks
+            ? { label: title, icon: <WhatsApp size={16} aria-hidden />, kind, disabled: loading }
+            : { label: "Avisarme", icon: <Bell size={16} aria-hidden /> }
+      }
+      cancelLabel={nobody ? "Cerrar" : "Cancelar"}
+      onConfirm={send}
+      onClose={onClose}
+    />
   );
 }
 

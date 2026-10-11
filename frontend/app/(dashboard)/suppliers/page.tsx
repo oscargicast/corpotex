@@ -1,9 +1,11 @@
 "use client";
 
-import { ExternalLink, Pause, Play, Plus } from "lucide-react";
+import { CircleCheck, ExternalLink, Pause, Play, Plus, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import useSWR from "swr";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { FilterChips } from "@/components/filter-chips";
 import { WhatsApp } from "@/components/icons";
 import { RoleGate } from "@/components/require-auth";
 import { Button, CARD_HOVER, Pill } from "@/components/ui";
@@ -31,6 +33,7 @@ function Suppliers() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [confirmAgent, setConfirmAgent] = useState(false);
   const [agentBusy, setAgentBusy] = useState(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
   const [toggling, setToggling] = useState<number | null>(null);
   const globalPaused = !!agent?.paused;
 
@@ -40,9 +43,12 @@ function Suppliers() {
 
   async function setAgentPaused(paused: boolean) {
     setAgentBusy(true);
+    setAgentError(null);
     try {
       await mutateAgent(apiFetch<AgentSettings>("/api/settings/agent/", { method: "PATCH", json: { paused } }), { revalidate: false });
       setConfirmAgent(false);
+    } catch {
+      setAgentError("No se pudo cambiar el agente. Inténtalo de nuevo.");
     } finally {
       setAgentBusy(false);
     }
@@ -66,7 +72,7 @@ function Suppliers() {
         <h1 className="text-2xl font-bold tracking-tight">Proveedores y talleres</h1>
         <div className="flex flex-wrap gap-2">
           {agent && (
-            <Button onClick={() => setConfirmAgent(true)} disabled={confirmAgent}>
+            <Button onClick={() => setConfirmAgent(true)}>
               {globalPaused ? <Play size={16} aria-hidden /> : <Pause size={16} aria-hidden />}
               {globalPaused ? "Reanudar agente" : "Pausar agente"}
             </Button>
@@ -83,19 +89,21 @@ function Suppliers() {
         </div>
       </div>
       {confirmAgent && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning" role="alert">
-          {globalPaused
-            ? "El agente vuelve a escribir a los proveedores, salvo los que pausaste uno por uno, y manda el primer mensaje de los pedidos aprobados durante la pausa. ¿Reanudar?"
-            : "El agente deja de escribir a todos los proveedores hasta que lo reanudes. ¿Pausar?"}
-          <Button kind="dark" busy={agentBusy} onClick={() => setAgentPaused(!globalPaused)}>
-            {globalPaused ? "Reanudar agente" : "Pausar agente"}
-          </Button>
-          <Button disabled={agentBusy} onClick={() => setConfirmAgent(false)}>
-            Cancelar
-          </Button>
-        </div>
+        <ConfirmDialog
+          title={globalPaused ? "Reanudar agente" : "Pausar agente"}
+          text={
+            globalPaused
+              ? "El agente vuelve a escribir a los proveedores, salvo los que pausaste uno por uno, y manda el primer mensaje de los pedidos aprobados durante la pausa."
+              : "El agente deja de escribir a todos los proveedores hasta que lo reanudes. Los mensajes que lleguen se guardan igual."
+          }
+          busy={agentBusy}
+          error={agentError}
+          confirm={{ label: globalPaused ? "Reanudar agente" : "Pausar agente", icon: globalPaused ? <Play size={16} aria-hidden /> : <Pause size={16} aria-hidden /> }}
+          onConfirm={() => setAgentPaused(!globalPaused)}
+          onClose={() => setConfirmAgent(false)}
+        />
       )}
-      {globalPaused && !confirmAgent && (
+      {globalPaused && (
         <p className="flex items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm font-medium text-warning" role="status">
           <Pause size={16} aria-hidden /> Agente en pausa: no le escribe a ningún proveedor.
         </p>
@@ -134,29 +142,12 @@ function Suppliers() {
           <SkeletonCards count={4} lines={3} />
         ) : (
           <>
-            {/* Chips with their counts; a row that scrolls on the phone. */}
-            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
-              <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="group" aria-label="Filtrar proveedores">
-                {FILTERS.map((f) => {
-                  const count = list.filter(f.test(globalPaused)).length;
-                  const on = filter === f.key;
-                  return (
-                    <button
-                      key={f.key}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => setFilter(f.key)}
-                      className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-sm ring-1 transition-colors duration-150 sm:min-h-9 ${
-                        on ? "bg-ink text-white ring-ink" : "bg-surface ring-line hover:bg-canvas"
-                      }`}
-                    >
-                      {f.label}
-                      <span className={`rounded-full px-1.5 text-xs tabular-nums ${on ? "bg-white/20" : "bg-canvas text-muted"}`}>{count}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <FilterChips
+              label="Filtrar proveedores"
+              value={filter}
+              onChange={setFilter}
+              options={FILTERS.map((f) => ({ key: f.key, label: f.label, count: list.filter(f.test(globalPaused)).length }))}
+            />
             {shown.length ? (
               <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
                 {shown.map((supplier) => (
@@ -304,15 +295,21 @@ function Review({ items, onChange }: { items: SupplierListItem[]; onChange: () =
 
 function ReviewCard({ supplier, onChange }: { supplier: SupplierListItem; onChange: () => void }) {
   const { data: detail } = useSWR<SupplierDetail>(supplier.source === "external" ? `/api/suppliers/${supplier.id}/` : null, fetcher);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"active" | "inactive" | null>(null);
+  const [discarding, setDiscarding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function decide(status: "active" | "inactive") {
-    setBusy(true);
+    setBusy(status);
+    setError(null);
     try {
       await apiFetch(`/api/suppliers/${supplier.id}/`, { method: "PATCH", json: { status } });
+      setDiscarding(false);
       onChange();
+    } catch {
+      setError("No se pudo guardar. Inténtalo de nuevo.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -352,14 +349,30 @@ function ReviewCard({ supplier, onChange }: { supplier: SupplierListItem; onChan
           )}
         </blockquote>
       )}
+      {error && !discarding && (
+        <p className="mt-2 text-sm text-danger" role="alert">
+          {error}
+        </p>
+      )}
       <div className="mt-3 flex gap-2">
-        <Button busy={busy} onClick={() => decide("active")}>
-          Aprobar
+        <Button kind="danger" disabled={busy !== null} onClick={() => setDiscarding(true)}>
+          <XCircle size={16} aria-hidden /> Descartar
         </Button>
-        <Button disabled={busy} onClick={() => decide("inactive")}>
-          Descartar
+        <Button busy={busy === "active"} disabled={busy !== null} onClick={() => decide("active")}>
+          <CircleCheck size={16} aria-hidden /> Aprobar
         </Button>
       </div>
+      {discarding && (
+        <ConfirmDialog
+          title="Descartar proveedor"
+          text={`Se descarta ${supplier.name}: no entra a la lista y el agente no le escribe.`}
+          busy={busy === "inactive"}
+          error={error}
+          confirm={{ label: "Descartar", icon: <XCircle size={16} aria-hidden />, kind: "danger" }}
+          onConfirm={() => decide("inactive")}
+          onClose={() => setDiscarding(false)}
+        />
+      )}
     </article>
   );
 }

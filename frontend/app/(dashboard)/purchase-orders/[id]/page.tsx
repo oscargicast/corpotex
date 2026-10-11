@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeft, MessageCircleQuestion } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { WhatsApp } from "@/components/icons";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -54,9 +55,9 @@ export default function PurchaseOrderDetailPage() {
       <header>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight">{po.code}</h1>
-          {canAsk && !asking && (
-            <Button className="ml-auto" onClick={() => setAsking(true)}>
-              <MessageCircleQuestion size={16} /> Pedir avance
+          {canAsk && (
+            <Button kind="primary" className="ml-auto" onClick={() => setAsking(true)}>
+              <WhatsApp size={16} aria-hidden /> Pedir avance
             </Button>
           )}
           {po.waiting_manager ? <Pill tone="warning">Esperando al Gerente</Pill> : <Pill>{po.status_display}</Pill>}

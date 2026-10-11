@@ -1,12 +1,12 @@
 "use client";
 
-import { Check, ClipboardPaste, ExternalLink } from "lucide-react";
+import { Check, ClipboardPaste, ExternalLink, KeyRound, Unplug, X } from "lucide-react";
 import { useState } from "react";
 import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import type { ClaudeErrorCode, ClaudeStatus } from "@/lib/types";
 import { SkeletonCard } from "./skeleton";
-import { Spinner } from "./ui";
+import { Button, Spinner } from "./ui";
 
 const STATUS_URL = "/api/settings/claude/status/";
 
@@ -409,10 +409,9 @@ function ApiKeyForm({ onConnected }: { onConnected: (s: ClaudeStatus) => void })
           autoComplete="off"
           className="h-11 min-w-0 flex-1 rounded-md border border-line bg-surface px-3 font-mono text-sm"
         />
-        <button type="submit" disabled={busy || !key} aria-busy={busy || undefined} className="inline-flex h-11 items-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white disabled:opacity-40">
-          {busy && <Spinner />}
-          Guardar clave
-        </button>
+        <Button type="submit" disabled={!key} busy={busy}>
+          <KeyRound size={16} aria-hidden /> Guardar clave
+        </Button>
       </form>
       {error && (
         <p className="mt-2 text-sm text-danger" role="alert">
@@ -452,19 +451,12 @@ function Disconnect({ onDone, onCancel }: { onDone: (s: ClaudeStatus) => void; o
           autoComplete="off"
           className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm"
         />
-        <button
-          type="button"
-          onClick={disconnect}
-          disabled={busy || typed.trim().toLowerCase() !== CONFIRM_WORD}
-          aria-busy={busy || undefined}
-          className="inline-flex items-center gap-2 rounded-md bg-danger px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-        >
-          {busy && <Spinner />}
-          Desconectar
-        </button>
-        <button type="button" onClick={onCancel} className="rounded-md px-3 py-2 text-sm">
-          Cancelar
-        </button>
+        <Button onClick={onCancel} disabled={busy}>
+          <X size={16} aria-hidden /> Cancelar
+        </Button>
+        <Button kind="danger" onClick={disconnect} disabled={typed.trim().toLowerCase() !== CONFIRM_WORD} busy={busy}>
+          <Unplug size={16} aria-hidden /> Desconectar
+        </Button>
       </div>
     </section>
   );
