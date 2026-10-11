@@ -102,5 +102,29 @@
     "unit": "unit",
     "stock": "3000.00",
     "image": "images/materials/ETQ-TEJ-01.jpg"
+  },
+  {
+    "sku": "TEL-IMP-01",
+    "name": "Tela cortavientos impermeable (taslán)",
+    "kind": "fabric",
+    "unit": "m",
+    "stock": "0.00",
+    "image": null
+  },
+  {
+    "sku": "TEL-POL-01",
+    "name": "Tela polar (forro)",
+    "kind": "fabric",
+    "unit": "m",
+    "stock": "0.00",
+    "image": null
+  },
+  {
+    "sku": "CIE-SEP-55",
+    "name": "Cierre separable nylon 55 cm",
+    "kind": "zipper",
+    "unit": "unit",
+    "stock": "0.00",
+    "image": null
   }
 ]

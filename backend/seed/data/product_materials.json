@@ -208,5 +208,20 @@
     "product": "LMC-PAN-01",
     "material": "ETQ-TEJ-01",
     "qty_per_unit": "1"
+  },
+  {
+    "product": "UNI-CAS-01",
+    "material": "TEL-IMP-01",
+    "qty_per_unit": "1.6"
+  },
+  {
+    "product": "UNI-CAS-01",
+    "material": "TEL-POL-01",
+    "qty_per_unit": "1.3"
+  },
+  {
+    "product": "UNI-CAS-01",
+    "material": "CIE-SEP-55",
+    "qty_per_unit": "1"
   }
 ]

@@ -266,7 +266,7 @@
     "customer": "Colegio Los Algarrobos",
     "brand": "UNICRACK",
     "status": "broken_down",
-    "status_note": "Ítems a medida: falta clasificarlos contra el catálogo",
+    "status_note": "Clasificada sola al entrar: un producto del catálogo y uno nuevo (ADR 0028)",
     "production_stage": null,
     "issued_on": "T+0",
     "promised_on": "T+30",
@@ -277,7 +277,7 @@
     "source": "manual",
     "items": [
       {
-        "product": null,
+        "product": "UNI-POD-01",
         "description": "Polo deportivo manga corta azul marino con franja amarilla en hombros, escudo del colegio sublimado en el pecho, tallas 6 a 14",
         "quantity": 300,
         "sizes": {
@@ -292,7 +292,7 @@
         "unit_price": null
       },
       {
-        "product": null,
+        "product": "UNI-CAS-01",
         "description": "Casaca cortavientos impermeable azul marino con forro polar, capucha desmontable, escudo bordado en el pecho y nombre del colegio en la espalda, tallas 8 a 16",
         "quantity": 150,
         "sizes": {

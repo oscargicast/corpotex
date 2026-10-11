@@ -58,5 +58,11 @@
     "name": "Pantalón de uniforme médico Línea Médica Corpotex",
     "category": "pantalón",
     "image": "images/products/LMC-PAN-01.jpg"
+  },
+  {
+    "code": "UNI-CAS-01",
+    "name": "Casaca cortavientos escolar",
+    "category": "casaca",
+    "image": null
   }
 ]
