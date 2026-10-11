@@ -28,10 +28,12 @@ def _pickup_date(po: PurchaseOrder):
     return po.committed_on or po.internal_due_on
 
 
-def candidate_stops(date, *, exclude=()) -> list[dict]:
+def candidate_stops(date, *, exclude=(), include=()) -> list[dict]:
     """Points with coordinates for that day. `exclude` leaves purchase orders out (the "before"
-    picture of a redistribution)."""
+    picture of a redistribution); `include` forces purchase orders in whatever their day (the
+    "after" picture: the replacements ride the cancelled pickup's day)."""
     excluded = {po.id for po in exclude}
+    included = {po.id for po in include}
     stops = []
     pos = (
         PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES + ("suggested",), supplier__kind="workshop")
@@ -40,7 +42,9 @@ def candidate_stops(date, *, exclude=()) -> list[dict]:
     )
     for po in pos:
         supplier = po.supplier
-        if po.id in excluded or _pickup_date(po) != date or supplier.lat is None or supplier.lng is None:
+        if po.id in excluded or supplier.lat is None or supplier.lng is None:
+            continue
+        if _pickup_date(po) != date and po.id not in included:
             continue
         stops.append(
             {
@@ -95,16 +99,20 @@ def two_opt(plant, ordered: list[dict]) -> list[dict]:
 
 
 def current_route(date=None) -> Route | None:
-    """The route in force: `planned` or `in_progress`, for `date` or the nearest upcoming day."""
+    """The route in force: `planned` or `in_progress`. With `date`, that day's; without it, the
+    upcoming route touched most recently (a just-approved recalculation wins over an older plan),
+    else the latest one."""
     qs = Route.objects.filter(status__in=(Route.Status.PLANNED, Route.Status.IN_PROGRESS))
     if date is not None:
+        if isinstance(date, str):
+            date = date_type.fromisoformat(date)
         return qs.filter(date=date).order_by("-id").first()
     today = clock.today()
-    upcoming = qs.filter(date__gte=today).order_by("date", "-id").first()
+    upcoming = qs.filter(date__gte=today).order_by("-updated_at", "-id").first()
     return upcoming or qs.order_by("-date", "-id").first()
 
 
-def plan_route(date, *, actor=None, status: str = Route.Status.PLANNED, recalculated_from: Route | None = None, exclude=()) -> Route | None:
+def plan_route(date, *, actor=None, status: str = Route.Status.PLANNED, recalculated_from: Route | None = None, exclude=(), include=()) -> Route | None:
     """Plans the route of `date`. `planned` replaces the day's previous planned route (which
     becomes `replaced`, linked through `recalculated_from`); `proposed` leaves it untouched
     until the manager decides. None without plant coordinates."""
@@ -118,7 +126,7 @@ def plan_route(date, *, actor=None, status: str = Route.Status.PLANNED, recalcul
     if config.plant_lat is None or config.plant_lng is None:
         return None
     plant = (config.plant_lat, config.plant_lng)
-    ordered = order_stops(plant, candidate_stops(date, exclude=exclude))
+    ordered = order_stops(plant, candidate_stops(date, exclude=exclude, include=include))
     with transaction.atomic():
         previous = None
         if status == Route.Status.PLANNED:
@@ -187,16 +195,19 @@ def discard(route: Route) -> Route:
     return route
 
 
-def propose_for_redistribution(created: list[PurchaseOrder]) -> tuple[Route | None, Route | None]:
-    """The route picture of a redistribution: the day the new purchase orders are due, as it was
-    planned without them (`before`, created on the fly if nobody had planned it) and as it would
-    look with them (`after`, `proposed`)."""
-    dates = [_pickup_date(po) for po in created if _pickup_date(po)]
-    if not dates:
-        return None, None
-    date = min(dates)
+def propose_for_redistribution(created: list[PurchaseOrder], cancelled: PurchaseOrder | None = None) -> tuple[Route | None, Route | None]:
+    """The route picture of a redistribution, on the day the cancelled pickup was planned (else
+    the day the replacements are due): as it was planned (`before`, created on the fly without
+    the replacements if nobody had planned it) and as it looks with the replacements riding
+    that day (`after`, `proposed`)."""
+    date = _pickup_date(cancelled) if cancelled is not None else None
+    if date is None:
+        dates = [_pickup_date(po) for po in created if _pickup_date(po)]
+        if not dates:
+            return None, None
+        date = min(dates)
     before = current_route(date) or plan_route(date, exclude=created)
     if before is None:
         return None, None
-    after = plan_route(date, status=Route.Status.PROPOSED, recalculated_from=before)
+    after = plan_route(date, status=Route.Status.PROPOSED, recalculated_from=before, include=created)
     return before, after

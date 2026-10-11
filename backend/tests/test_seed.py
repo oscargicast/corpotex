@@ -101,3 +101,28 @@ def test_seed_exits_carry_their_reason():
     assert order.status_changes.last().note.startswith("Cliente canceló")
     for change in __import__("operations.models", fromlist=["StatusChange"]).StatusChange.objects.filter(status__in=("cancelled", "cancelled_by_supplier", "declined_by_supplier")):
         assert change.note, change
+
+
+@pytest.mark.django_db
+def test_scene_cancellation_leaves_current_and_replaced_routes(manager_client, manager):
+    """Step 8 of the script: PT-0038 cancels, the decision is approved and the map gets
+    {current: new, replaced: old} for the same day."""
+    from manager.services import resolve_decision
+    from operations import services
+    from operations.models import PurchaseOrder, Route
+
+    call_command("seed_demo", verbosity=0)
+    po = PurchaseOrder.objects.get(code="PT-0038")
+    old = Route.objects.get(date=po.committed_on, status="planned")
+    assert old.stops.filter(purchase_order=po).exists()
+    po, created, decision = services.cancel_by_supplier(po, reason="se me enfermó la gente")
+    assert len(created) >= 1 and all(p.redistributed_from == po for p in created)
+    before, after = decision.detail["before"]["route_id"], decision.detail["after"]["route_id"]
+    assert before == old.id and Route.objects.get(pk=after).status == "proposed"
+    resolve_decision(decision, action="approve", actor=manager)
+    body = manager_client.get("/api/routes/?current=1").json()
+    assert body["current"]["id"] == after and body["replaced"]["id"] == before
+    external = {p.code for p in created if not p.supplier.is_in_house}  # The plant's share needs no pickup.
+    assert {s["purchase_order"]["code"] for s in body["current"]["stops"] if s["purchase_order"]} == external and len(external) >= 2
+    assert {s["purchase_order"]["code"] for s in body["replaced"]["stops"] if s["purchase_order"]} == {"PT-0038"}
+    assert manager_client.get(f"/api/routes/{before}/").json()["status"] == "replaced"

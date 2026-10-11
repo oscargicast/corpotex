@@ -637,7 +637,7 @@ def redistribute(po: PurchaseOrder):
     if decision is not None:
         from .routes import propose_for_redistribution
 
-        before, after = propose_for_redistribution(created)
+        before, after = propose_for_redistribution(created, po)
         if after is not None:
             detail = dict(decision.detail)
             detail["before"] = {**(detail.get("before") or {}), "route_id": before.id}
