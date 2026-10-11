@@ -143,7 +143,11 @@ def install(monkeypatch, **overrides):
             "record_delivery": recorder("record_delivery"),
             "generate_purchase_orders": recorder(
                 "generate_purchase_orders",
-                returns={"created": [SimpleNamespace(pk=77, code="PI-0077")], "skipped": []},
+                returns={
+                    "created": [SimpleNamespace(pk=77, code="PI-0077")],
+                    "decision": SimpleNamespace(pk=91),
+                    "skipped": [{"material_id": 4, "reason": "algodón 20/1 sin proveedor"}],
+                },
             ),
         },
         "operations.exceptions": {"ManagerApprovalRequired": ManagerApprovalRequired},

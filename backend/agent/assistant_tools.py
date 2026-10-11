@@ -730,13 +730,17 @@ def _generate_purchase_orders(conversation, turn, user):
         except ImportError as e:  # until backend's B6.1 lands
             raise RuntimeError("generar pedidos consolidados aún no está disponible") from e
         result = generate_purchase_orders(args.get("material_ids") or None, actor=user)
-        created = result.get("created", []) if isinstance(result, dict) else list(result)
-        codes = [getattr(po, "code", str(po)) for po in created]
-        links = [
-            {"kind": "purchase_order", "id": po.pk} for po in created if getattr(po, "pk", None)
-        ]
+        created = result["created"]
+        codes = [po.code for po in created]
+        links = [{"kind": "purchase_order", "id": po.pk} for po in created]
+        if result.get("decision"):
+            links.append({"kind": "decision", "id": result["decision"].pk})
         title = f"{len(created)} pedido(s) generado(s)" + (f": {', '.join(codes)}" if codes else "")
-        return _card(title, "El Gerente aprueba la asignación en el Monitor.", links)
+        summary = "El Gerente aprueba la asignación en el Monitor." if created else ""
+        if result.get("skipped"):
+            reasons = "; ".join(s.get("reason", "") for s in result["skipped"])
+            summary += f" Sin pedido para {len(result['skipped'])} insumo(s): {reasons}"
+        return _card(title, summary.strip(), links)
 
     return confirmable(
         conversation,

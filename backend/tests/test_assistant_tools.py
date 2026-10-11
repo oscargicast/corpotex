@@ -400,7 +400,11 @@ def test_generate_confirmed_calls_the_service_with_actor_and_records_card(monkey
     ((ids,), kwargs) = services(calls, "generate_purchase_orders")[0]
     assert ids == [3] and kwargs == {"actor": conv.user}
     ((_, _, action), _) = services(calls, "record_assistant_action")[0]
-    assert action["links"] == [{"kind": "purchase_order", "id": 77}]
+    assert "Sin pedido para 1 insumo(s): algodón 20/1 sin proveedor" in action["summary"]
+    assert action["links"] == [
+        {"kind": "purchase_order", "id": 77},
+        {"kind": "decision", "id": 91},
+    ]
 
 
 def test_generate_before_backend_lands_fails_as_a_card(monkeypatch):
