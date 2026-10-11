@@ -120,7 +120,7 @@ export function SupplierForm({
         </p>
       )}
       <div className="sm:col-span-2">
-        <Button kind="primary" type="submit" disabled={busy} className="w-full sm:w-auto">
+        <Button kind="primary" type="submit" busy={busy} className="w-full sm:w-auto">
           {busy ? "Guardando…" : submitLabel}
         </Button>
       </div>

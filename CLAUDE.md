@@ -32,7 +32,7 @@ Flujo:
 0. Estilo del Gerente: perfil de cómo escribe, sacado de sus chats.
 1. Comercial registra la orden; llega por API y el agente la desglosa contra inventario.
 2. Producción revisa y confirma.
-3. El sistema asigna proveedor por histórico (cumplimiento, precio, carga). El Gerente confirma o cambia antes de aprobar; el cambio alimenta el histórico.
+3. Los requerimientos de insumos quedan "por pedir" y se acumulan entre órdenes; Producción o el Gerente generan el pedido consolidado cuando lo ven necesario (el asistente lo sugiere a tiempo). Los pedidos de taller y producto terminado salen por orden. El sistema asigna proveedor por histórico (cumplimiento, precio, carga). El Gerente confirma o cambia antes de aprobar; el cambio alimenta el histórico (ADR 0025).
 4. El agente conversa con el proveedor, responde dudas y acuerda fecha. Si se cumplen todos los términos, cierra el pedido solo y actualiza pedido y orden. Si es decisión de jefe (precio, términos), no decide: crea una decisión pendiente para el Gerente y espera.
 5. Seguimiento: cualquier retraso o riesgo al plazo crea una alerta para el Gerente y marca la orden en peligro.
 
@@ -58,7 +58,7 @@ Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), cone
 - Escena que pide el jurado: un taller cancela a mitad del pedido y el sistema redistribuye y recalcula fecha, costo y ruta (ADR 0024).
 - Clientes en la data: Caja Piura, colegios de Piura, AIDER, PIQA.
 - Por WhatsApp solo hay un proveedor real: Valeria (`51906746241`, constante en el seed, activo en la allowlist). El Gerente escribe desde el número de Oscar (`51907898162`). Los demás proveedores van por el simulador. Oscar no puede ser proveedor: es su propio número.
-- Plan B: simulador de chat si falla el wifi, y video de respaldo.
+- Plan B: simulador de chat si falla el wifi, y video de respaldo (lo graba Oscar a mano, decisión 10/10 21:00; el guion y el script de grabación están en `docs/demo/guion-visual.md`).
 - En vivo no se muestra el QR ni se corre la extracción de estilo: el onboarding se muestra ya hecho, con el estilo del Gerente ya extraído y aprobado (ADR 0011).
 - Orden del guion: el paso Estilo (mostrar el borrador y aprobar) va ANTES de la escena de WhatsApp. El bot usa el último estilo aprobado; si se aprueba después, el bot habla con el perfil base.
 - Dato de dolor para el pitch: al proveedor le dan 5 días cuando al cliente le prometieron 10, y aun así hay pedidos que nadie revisa hasta el día 9.
@@ -70,6 +70,7 @@ Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), cone
 - Registro de talleres: especialidad, capacidad, precios, calidad, cumplimiento, rating automático por entrega.
 - Matching multicriterio con justificación.
 - Dividir un pedido grande entre talleres.
+- CRUD de órdenes por rol: Comercial y Gerente crean y editan; Producción solo confirma desgloses, mueve estados de pedidos y genera pedidos consolidados (ADR 0025).
 - Seguimiento de pedidos y pagos (adelantos, saldos): P0 (ADR 0024).
 - Rutas multiparada en mapa de Piura: entregas de órdenes a clientes, salen de la planta principal; no hay recojos en proveedores (ADR 0024: `Route`, `plan_route`, Leaflet; corrección de Oscar 10/10 23:35).
 - Sugerir nuevos proveedores: autoregistro P0 y tool `suggest_suppliers` con búsqueda web P1 (ADR 0024).

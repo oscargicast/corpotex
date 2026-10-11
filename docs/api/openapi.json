@@ -4422,6 +4422,16 @@
                     "status": {
                         "$ref": "#/components/schemas/SupplierStatusEnum"
                     },
+                    "contact_name": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "rates": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RateInRequest"
+                        }
+                    },
                     "name": {
                         "type": "string",
                         "minLength": 1,
@@ -5186,6 +5196,14 @@
                         "type": "integer",
                         "readOnly": true
                     },
+                    "material_id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "product_id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
                     "item_name": {
                         "type": "string",
                         "readOnly": true
@@ -5208,8 +5226,37 @@
                     "id",
                     "image",
                     "item_name",
+                    "material_id",
+                    "product_id",
                     "unit_price",
                     "valid_from"
+                ]
+            },
+            "RateInRequest": {
+                "type": "object",
+                "description": "One reference price: the item by id (what the dashboard has), never both.",
+                "properties": {
+                    "material_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "product_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "unit_price": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                    },
+                    "valid_from": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "unit_price"
                 ]
             },
             "Requirement": {
@@ -6135,6 +6182,13 @@
                         "type": "string",
                         "default": "",
                         "maxLength": 80
+                    },
+                    "rates": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        }
                     }
                 },
                 "required": [
@@ -6330,6 +6384,11 @@
                     "first_name": {
                         "type": "string",
                         "title": "Nombre",
+                        "maxLength": 150
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "title": "Apellidos",
                         "maxLength": 150
                     },
                     "role": {

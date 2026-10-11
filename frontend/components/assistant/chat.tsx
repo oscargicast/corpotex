@@ -8,6 +8,9 @@ import { contextFor } from "@/lib/assistant-context";
 import { useBadges } from "@/lib/badges";
 import type { AssistantMessage, Role } from "@/lib/types";
 import { useUser } from "../require-auth";
+import { Skeleton } from "../skeleton";
+import { TypingDots } from "../typing-dots";
+import { Spinner } from "../ui";
 import { MessageBubble } from "./message";
 
 const SUGGESTIONS: Record<Role, string[]> = {
@@ -94,6 +97,13 @@ export function AssistantChat({ visible = true }: { visible?: boolean }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div ref={box} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
+        {!loaded && (
+          <div role="status" aria-label="Cargando" className="space-y-3">
+            <Skeleton className="h-10 w-3/4 rounded-2xl" />
+            <Skeleton className="ml-auto h-10 w-1/2 rounded-2xl" />
+            <Skeleton className="h-16 w-4/5 rounded-2xl" />
+          </div>
+        )}
         {loaded && !messages.length && (
           <div className="pt-6 text-center text-sm text-muted">
             <p>Pregúntame por órdenes, pedidos o alertas.</p>
@@ -115,7 +125,12 @@ export function AssistantChat({ visible = true }: { visible?: boolean }) {
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
-        {typing && <p className="w-fit rounded-2xl rounded-bl-sm bg-surface px-3 py-2 text-sm text-muted ring-1 ring-line">Pensando…</p>}
+        {typing && (
+          <div className="flex w-fit items-center gap-2 rounded-2xl rounded-bl-sm bg-surface px-3 py-2 text-sm text-muted ring-1 ring-line">
+            <TypingDots label="Pensando" />
+            <span>Pensando…</span>
+          </div>
+        )}
       </div>
 
       {awaitingConfirm && (
@@ -154,10 +169,11 @@ export function AssistantChat({ visible = true }: { visible?: boolean }) {
           <button
             type="submit"
             disabled={sending || !text.trim()}
-            aria-label="Enviar"
+            aria-label={sending ? "Enviando" : "Enviar"}
+            aria-busy={sending || undefined}
             className="rounded-md bg-ink p-2.5 text-white disabled:opacity-40"
           >
-            <Send size={16} />
+            {sending ? <Spinner /> : <Send size={16} />}
           </button>
         </form>
       ) : (

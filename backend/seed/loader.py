@@ -49,6 +49,8 @@ PO_PREFIX = {"workshop": "PT", "material": "PI", "finished": "PF"}
 REAL_SUPPLIER_KEY = "Confecciones del Norte"
 REAL_SUPPLIER_PHONE = "51906746241"
 MANAGER_PHONE = "51907898162"
+# Who plays each role in the demo (the team, CLAUDE.md): the profile shows a person, not "Gerente / Gerente".
+DEMO_USER_NAMES = {"gerente": ("Oscar", "Giraldo"), "comercial": ("Nesky", ""), "produccion": ("Freddy", "")}
 # The scene's purchase order gets a fixed report token so /report/<token> can be rehearsed.
 SCENE_PURCHASE_ORDER = "PT-0038"
 SCENE_REPORT_TOKEN = "11111111-1111-4111-8111-000000000038"
@@ -134,11 +136,14 @@ class Loader:
             self.out("aviso: SEED_USERS_PASSWORD no está en .env; contraseña = usuario")
         for role, group_name in ROLE_GROUPS.items():
             username = {"manager": "gerente", "sales": "comercial", "production": "produccion"}[role]
-            user, created = User.objects.get_or_create(username=username, defaults={"first_name": username.title()})
+            first_name, last_name = DEMO_USER_NAMES[username]
+            user, created = User.objects.get_or_create(username=username, defaults={"first_name": first_name, "last_name": last_name})
             if password:
                 user.set_password(password)
             elif created:
                 user.set_password(username)
+            if user.first_name in ("", username.title()):  # Still the placeholder: give the demo person's name.
+                user.first_name, user.last_name = first_name, last_name
             user.is_staff = False  # The admin is the superuser's only.
             user.save()
             user.groups.add(Group.objects.get(name=group_name))
@@ -481,11 +486,14 @@ class Loader:
 
     def load_style(self, *, reset: bool):
         manager = self.users["gerente"]
+        notes_snapshot = {str(s.id): s.notes for s in self.suppliers.values() if s.notes}
         if not reset and StyleVersion.objects.filter(user=manager).exists():
+            # The style is kept, but the Estilo step must still show as done.
+            if manager.style_md:
+                self.mark_style_approved({"style_md": manager.style_md}, notes_snapshot)
             return
         StyleVersion.objects.filter(user=manager).delete()
         template = self.template_style()
-        notes_snapshot = {str(s.id): s.notes for s in self.suppliers.values() if s.notes}
         versions = [{"source": "template", "style_md": template, "changelog": "Perfil base", "created_at": "T-30 11:00"}]
         for row in self.read("style_versions"):
             style_md = row.get("style_md")
@@ -570,15 +578,18 @@ class Loader:
     # --- orchestration ----------------------------------------------------------------------
 
     def wipe(self):
-        """Demo data only: never users, tokens, the WhatsApp onboarding state nor the style."""
+        """Demo data only: never users, tokens, the WhatsApp onboarding state, the style nor the
+        dashboard chats (a reseed during a demo must not swallow what someone just asked)."""
+        from messaging.models import Turn
         from operations.models import Route
 
         Route.objects.all().delete()
-        for model in (Message, Conversation, Alert, Decision, StatusChange, Payment, Delivery, ProgressReport, PurchaseOrderItem, PurchaseOrder, Requirement, OrderItem, Order, Rate, AllowedNumber, Supplier, ProductMaterial, Product, Material, Customer, Brand):
+        supplier_chats = Conversation.objects.exclude(channel=Conversation.Channel.DASHBOARD)
+        Turn.objects.filter(conversation__in=supplier_chats).delete()
+        Message.objects.filter(conversation__in=supplier_chats).delete()
+        supplier_chats.delete()
+        for model in (Alert, Decision, StatusChange, Payment, Delivery, ProgressReport, PurchaseOrderItem, PurchaseOrder, Requirement, OrderItem, Order, Rate, AllowedNumber, Supplier, ProductMaterial, Product, Material, Customer, Brand):
             model.objects.all().delete()
-        from messaging.models import Turn
-
-        Turn.objects.all().delete()
 
     EXIT_NOTES = {
         "cancelled": "Cancelado por el Gerente",

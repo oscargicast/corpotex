@@ -126,3 +126,43 @@ def test_other_events_are_acknowledged_without_storing(anonymous_client, scenari
     body = {"event": "connection.update", "data": {"state": "open"}}
     assert post(anonymous_client, body).status_code == 200
     assert Message.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_lid_resolves_through_sender_pn_and_previous_remote_jid(anonymous_client, scenario):
+    """WhatsApp addresses Valeria's chat by LID (seen on the real instance, 10/10 17:25); the
+    phone may travel in any of the alternate keys."""
+    body = payload(remote_jid="162509248041191@lid", extra_key={"senderPn": "51906746241@s.whatsapp.net", "addressingMode": "lid"})
+    assert post(anonymous_client, body).status_code == 200
+    assert Message.objects.filter(author="supplier").count() == 1
+    assert AllowedNumber.objects.get(phone="51906746241").lid == "162509248041191@lid"
+    body = payload(remote_jid="162509248041191@lid", message_id="MSG2", extra_key={"previousRemoteJid": "51906746241@s.whatsapp.net"})
+    post(anonymous_client, body)
+    assert Message.objects.filter(author="supplier").count() == 2
+
+
+@pytest.mark.django_db
+def test_unknown_lid_without_phone_is_resolved_through_evolution(anonymous_client, scenario):
+    from unittest import mock
+
+    with mock.patch("messaging.evolution.EvolutionClient.resolve_phone", return_value="51906746241") as resolve:
+        assert post(anonymous_client, payload(remote_jid="162509248041191@lid", message_id="MSG3")).status_code == 200
+    resolve.assert_called_once_with("162509248041191@lid")
+    message = Message.objects.get(author="supplier")
+    assert message.conversation.allowed_number.phone == "51906746241"
+    assert AllowedNumber.objects.get(phone="51906746241").lid == "162509248041191@lid"
+    # A LID nobody owns is dropped, even if Evolution knows its phone.
+    with mock.patch("messaging.evolution.EvolutionClient.resolve_phone", return_value="51999999999"):
+        post(anonymous_client, payload(remote_jid="99999999999999@lid", message_id="MSG4"))
+    assert Message.objects.filter(author="supplier").count() == 1
+
+
+@pytest.mark.django_db
+def test_unknown_lid_is_dropped_when_evolution_is_down(anonymous_client, scenario):
+    from unittest import mock
+
+    from messaging.evolution import EvolutionUnavailable
+
+    with mock.patch("messaging.evolution.EvolutionClient.resolve_phone", side_effect=EvolutionUnavailable("down")):
+        assert post(anonymous_client, payload(remote_jid="162509248041191@lid", message_id="MSG5")).status_code == 200
+    assert Message.objects.count() == 0

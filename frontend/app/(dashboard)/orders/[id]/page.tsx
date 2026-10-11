@@ -17,6 +17,7 @@ import { apiFetch, fetcher } from "@/lib/api";
 import { formatDay, formatMoney } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
 import { CUSTOMIZATION, type OrderDetail } from "@/lib/types";
+import { SkeletonDetail } from "@/components/skeleton";
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -26,7 +27,7 @@ export default function OrderDetailPage() {
   const [confirming, setConfirming] = useState(false);
 
   if (notFound) return <p className="text-muted">No existe la orden {decodeURIComponent(params.id)}.</p>;
-  if (!order) return <div className="h-40 animate-pulse rounded-xl bg-line" />;
+  if (!order) return <SkeletonDetail />;
 
   const canConfirm = order.status === "broken_down" && user.role !== "sales";
 
@@ -58,7 +59,7 @@ export default function OrderDetailPage() {
           </p>
         </div>
         {canConfirm && (
-          <Button kind="primary" onClick={confirm} disabled={confirming}>
+          <Button kind="primary" onClick={confirm} busy={confirming}>
             {confirming ? "Confirmando…" : "Confirmar desglose"}
           </Button>
         )}

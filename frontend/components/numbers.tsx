@@ -65,7 +65,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
                   {number.simulated && <Pill tone="info">Simulador</Pill>}
                   {number.active ? <Pill tone="success">Activo para WhatsApp</Pill> : <Pill>Inactivo</Pill>}
                   {number.active ? (
-                    <Button className="py-1" disabled={busy} onClick={() => setActive(number, false)}>
+                    <Button className="py-1" busy={busy} onClick={() => setActive(number, false)}>
                       Desactivar
                     </Button>
                   ) : (
@@ -80,7 +80,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
               {confirming === number.id && (
                 <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-warning-soft px-3 py-2 text-sm text-warning">
                   El agente podrá escribirle a este número.
-                  <Button kind="dark" className="py-1" disabled={busy} onClick={() => setActive(number, true)}>
+                  <Button kind="dark" className="py-1" busy={busy} onClick={() => setActive(number, true)}>
                     Activar
                   </Button>
                   <Button className="py-1" onClick={() => setConfirming(null)}>
@@ -110,7 +110,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
           <span className="block text-xs text-muted">Etiqueta</span>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="dueño, encargado" className="mt-1 w-36 rounded-md px-2 py-1.5 ring-1 ring-line" />
         </label>
-        <Button type="submit" disabled={busy || !phone}>
+        <Button type="submit" busy={busy} disabled={!phone}>
           Agregar número
         </Button>
       </form>

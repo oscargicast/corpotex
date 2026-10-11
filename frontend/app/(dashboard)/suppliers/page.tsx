@@ -9,6 +9,8 @@ import { RoleGate } from "@/components/require-auth";
 import { Button, Pill } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
 import type { SupplierDetail, SupplierListItem } from "@/lib/types";
+import { formatNum, formatScore, num } from "@/lib/format";
+import { SkeletonCards } from "@/components/skeleton";
 
 export default function SuppliersPage() {
   return (
@@ -39,7 +41,7 @@ function Suppliers() {
 
       {tab === "active" ? (
         !active ? (
-          <div className="h-40 animate-pulse rounded-xl bg-line" />
+          <SkeletonCards count={4} lines={3} />
         ) : (
           <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {list.map((supplier) => (
@@ -88,8 +90,8 @@ function SupplierCard({ supplier }: { supplier: SupplierListItem }) {
         ))}
       </p>
       <dl className="mt-3 grid grid-cols-3 gap-2 text-xs">
-        <Stat label="Cumplimiento" value={supplier.on_time_score === null ? "—" : `${Math.round(supplier.on_time_score * 100)} %`} />
-        <Stat label="Calidad" value={supplier.quality_score === null ? "—" : `${supplier.quality_score.toFixed(1)} / 5`} />
+        <Stat label="Cumplimiento" value={num(supplier.on_time_score) === null ? "—" : `${formatScore(supplier.on_time_score)} %`} />
+        <Stat label="Calidad" value={num(supplier.quality_score) === null ? "—" : `${formatNum(supplier.quality_score)} / 5`} />
         <Stat
           label="Carga"
           value={supplier.load_pct === null ? "—" : `${supplier.load_pct} %`}
@@ -177,7 +179,7 @@ function ReviewCard({ supplier, onChange }: { supplier: SupplierListItem; onChan
         </blockquote>
       )}
       <div className="mt-3 flex gap-2">
-        <Button kind="dark" disabled={busy} onClick={() => decide("active")}>
+        <Button kind="dark" busy={busy} onClick={() => decide("active")}>
           Aprobar
         </Button>
         <Button disabled={busy} onClick={() => decide("inactive")}>

@@ -9,6 +9,7 @@ import { Pill, RISK_LABEL, RISK_TONE } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import { formatDay } from "@/lib/format";
 import type { OrderListItem, Risk } from "@/lib/types";
+import { SkeletonTable } from "@/components/skeleton";
 
 const RISKS: (Risk | "")[] = ["", "in_danger", "at_risk", "ok"];
 
@@ -57,7 +58,7 @@ export default function OrdersPage() {
       </div>
 
       {error && !data && <p className="text-danger">No se pudieron cargar las órdenes.</p>}
-      {!data && !error && <div className="h-40 animate-pulse rounded-xl bg-line" />}
+      {!data && !error && <SkeletonTable rows={7} cols={7} />}
       {data && !data.length && <p className="text-sm text-muted">No hay órdenes con ese filtro.</p>}
 
       {data && data.length > 0 && (

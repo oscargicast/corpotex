@@ -1,4 +1,5 @@
 """Supplier registration, self-registration, approval, numbers and CSV import (B4.5, ADR 0016/0024)."""
+from decimal import Decimal
 
 from io import BytesIO
 
@@ -116,3 +117,49 @@ def test_import_matches_existing_by_phone_then_name(manager_client, scenario):
     assert castilla.specialties == ["buzos"] and castilla.weekly_capacity == 900  # Blank cells keep the value.
     assert AllowedNumber.objects.get(phone="51955555555").supplier == castilla and not AllowedNumber.objects.get(phone="51955555555").active
     assert Supplier.objects.count() == 2
+
+
+@pytest.mark.django_db
+def test_patch_edits_the_card_contact_and_replaces_the_rates(manager_client, scenario):
+    from core.models import Material
+
+    supplier = scenario["supplier"]
+    fabric = Material.objects.get(sku="TEL-ALG-20-1")
+    assert supplier.rates.count() == 1  # the polo at 6.50
+    body = {
+        "name": "Confecciones del Norte SAC", "city": "Castilla", "weekly_capacity": 900, "lead_time_days": 6, "currency": "PEN",
+        "notes": "De usted.", "contact_name": "Valeria", "specialties": ["polos"],
+        "rates": [{"product_id": scenario["product"].id, "unit_price": "7.10"}, {"material_id": fabric.id, "unit_price": "12.00", "valid_from": "2026-10-01"}],
+    }
+    response = manager_client.patch(f"/api/suppliers/{supplier.id}/", body, format="json")
+    assert response.status_code == 200, response.content
+    data = response.json()
+    assert data["name"] == "Confecciones del Norte SAC" and data["weekly_capacity"] == 900 and data["notes"] == "De usted."
+    assert {(r["product_id"], r["material_id"], r["unit_price"]) for r in data["rates"]} == {(scenario["product"].id, None, "7.10"), (None, fabric.id, "12.00")}
+    assert next(n for n in data["numbers"] if not n["simulated"])["name"] == "Valeria"
+    assert scenario["purchase_order"].items.get().unit_price == Decimal("6.50")  # History untouched.
+    # The list replaces: an empty list clears the prices.
+    assert manager_client.patch(f"/api/suppliers/{supplier.id}/", {"rates": []}, format="json").json()["rates"] == []
+
+
+@pytest.mark.django_db
+def test_rates_are_validated(manager_client, scenario):
+    supplier = scenario["supplier"]
+    product = scenario["product"].id
+    for rates, fragment in (
+        ([{"unit_price": "5.00"}], "material_id o product_id"),
+        ([{"product_id": product, "material_id": 1, "unit_price": "5.00"}], "no ambos"),
+        ([{"product_id": 999999, "unit_price": "5.00"}], "no existe"),
+        ([{"product_id": product, "unit_price": "0"}], "rates"),
+    ):
+        response = manager_client.patch(f"/api/suppliers/{supplier.id}/", {"rates": rates}, format="json")
+        assert response.status_code == 400 and fragment in str(response.json()), (rates, response.json())
+    assert supplier.rates.count() == 1  # Nothing replaced on a rejected list.
+
+
+@pytest.mark.django_db
+def test_post_accepts_rates(manager_client, scenario):
+    body = {**PAYLOAD, "name": "Taller con tarifas", "phone": "51977777777", "rates": [{"product_id": scenario["product"].id, "unit_price": "6.90"}]}
+    response = manager_client.post("/api/suppliers/", body, format="json")
+    assert response.status_code == 201, response.content
+    assert [(r["product_id"], r["unit_price"]) for r in response.json()["rates"]] == [(scenario["product"].id, "6.90")]

@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { StyleMarkdown } from "@/components/style-markdown";
-import { Button, Card, Pill, SectionTitle, type Tone } from "@/components/ui";
+import { Button, Card, Pill, SectionTitle, Spinner, type Tone } from "@/components/ui";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { formatDayTime } from "@/lib/format";
 import type { StyleState, StyleSupplierStatus, SupplierListItem } from "@/lib/types";
+import { SkeletonCard } from "@/components/skeleton";
 
 const SUPPLIER_STATUS: Record<StyleSupplierStatus, { label: string; tone: Tone }> = {
   pending: { label: "En cola", tone: "neutral" },
@@ -75,7 +76,7 @@ export default function OnboardingStyle() {
     }
   }
 
-  if (!state) return <div className="h-40 animate-pulse rounded-xl bg-line" />;
+  if (!state) return <SkeletonCard lines={3} />;
 
   return (
     <div className="space-y-4">
@@ -96,8 +97,8 @@ export default function OnboardingStyle() {
             <span className="block text-xs text-muted">Leer desde</span>
             <input type="date" value={since} max={daysAgo(0)} onChange={(e) => setSince(e.target.value)} className="mt-1 rounded-md px-2 py-1.5 ring-1 ring-line" />
           </label>
-          <Button kind="primary" disabled={busy || extracting || !since} onClick={() => setConfirm("extract")}>
-            Extraer estilo
+          <Button kind="primary" disabled={busy || !since} busy={extracting} onClick={() => setConfirm("extract")}>
+            {extracting ? "Extrayendo…" : "Extraer estilo"}
           </Button>
           <ImportTxt since={since} disabled={busy || extracting} onDone={() => mutate()} onError={setError} />
           <Button disabled={busy || extracting} onClick={() => setConfirm("template")}>
@@ -111,7 +112,7 @@ export default function OnboardingStyle() {
             <Button
               kind="dark"
               className="py-1"
-              disabled={busy}
+              busy={busy}
               onClick={() =>
                 confirm === "extract"
                   ? run("/api/onboarding/style/extract/", { method: "POST", json: { since } })
@@ -129,7 +130,7 @@ export default function OnboardingStyle() {
         {state.status === "error" && (
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
             {state.error || "La extracción falló."}
-            <Button className="py-1" disabled={busy} onClick={() => run("/api/onboarding/style/extract/", { method: "POST", json: { since } })}>
+            <Button className="py-1" busy={busy} onClick={() => run("/api/onboarding/style/extract/", { method: "POST", json: { since } })}>
               Reintentar
             </Button>
           </div>
@@ -148,10 +149,30 @@ export default function OnboardingStyle() {
   );
 }
 
+const FINISHED: StyleSupplierStatus[] = ["done", "no_phone", "no_chat", "not_allowed", "error"];
+
 function Progress({ state }: { state: StyleState }) {
+  const total = state.suppliers.length;
+  const finished = state.suppliers.filter((s) => FINISHED.includes(s.status)).length;
+  const pct = total ? Math.round((finished / total) * 100) : 0;
   return (
     <Card>
       <SectionTitle>Progreso por proveedor</SectionTitle>
+      {state.status === "extracting" && state.step !== "merging" && (
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 font-medium">
+              <Spinner /> Leyendo los chats…
+            </span>
+            <span className="text-muted tabular-nums">
+              {finished} de {total} · {pct} %
+            </span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-canvas" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+            <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${Math.max(4, pct)}%` }} />
+          </div>
+        </div>
+      )}
       {state.step === "merging" && (
         <div className="mb-3">
           <p className="text-sm font-medium">Armando el estilo con todos los chats…</p>
@@ -274,7 +295,7 @@ function ImportTxt({
           ))}
         </select>
       </label>
-      <Button kind="dark" disabled={busy || disabled} onClick={upload}>
+      <Button kind="dark" busy={busy} disabled={disabled} onClick={upload}>
         Agregar al borrador
       </Button>
       <Button onClick={() => setFile(null)}>Cancelar</Button>
@@ -287,6 +308,7 @@ function Editor({ state, onSaved }: { state: StyleState; onSaved: () => void }) 
   const [notes, setNotes] = useState(state.notes);
   const [tab, setTab] = useState<"edit" | "preview">("preview");
   const [busy, setBusy] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dirty = text !== state.style_md || notes.some((n, i) => n.notes !== state.notes[i]?.notes);
 
@@ -300,6 +322,7 @@ function Editor({ state, onSaved }: { state: StyleState; onSaved: () => void }) 
 
   async function save(approve: boolean) {
     setBusy(true);
+    setApproving(approve);
     setError(null);
     try {
       if (dirty) await apiFetch("/api/onboarding/style/", { method: "PUT", json: { style_md: text, notes } });
@@ -326,12 +349,12 @@ function Editor({ state, onSaved }: { state: StyleState; onSaved: () => void }) 
           </div>
           <div className="ml-auto flex gap-2">
             {dirty && (
-              <Button disabled={busy} onClick={() => save(false)}>
+              <Button busy={busy && !approving} onClick={() => save(false)}>
                 Guardar borrador
               </Button>
             )}
             {(dirty || state.status !== "approved") && (
-              <Button kind="primary" disabled={busy} onClick={() => save(true)}>
+              <Button kind="primary" disabled={busy} busy={busy && approving} onClick={() => save(true)}>
                 Aprobar
               </Button>
             )}

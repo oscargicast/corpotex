@@ -131,3 +131,34 @@ def test_scene_cancellation_leaves_current_and_replaced_routes(manager_client, m
     assert {s["order"]["code"] for s in body["replaced"]["stops"] if s["order"]} >= {order.code}
     assert all(s["kind"] in ("plant", "delivery") for s in body["current"]["stops"])
     assert manager_client.get(f"/api/routes/{before}/").json()["status"] == "replaced"
+
+
+@pytest.mark.django_db
+def test_seed_keeps_the_dashboard_chats(manager):
+    from django.utils import timezone
+
+    from messaging.models import Message, Turn
+    from messaging.services import dashboard_conversation, enqueue_turn
+
+    conversation = dashboard_conversation(manager)
+    Message.objects.create(conversation=conversation, author="user", text="hola", status="received", sent_at=timezone.now())
+    turn = enqueue_turn(conversation, "message")
+    call_command("seed_demo", verbosity=0)
+    assert Message.objects.filter(conversation=conversation, text="hola").exists()
+    assert Turn.objects.filter(pk=turn.pk, status="pending").exists()
+
+
+@pytest.mark.django_db
+def test_seed_users_carry_the_demo_names(manager_client):
+    from core.models import User
+
+    call_command("seed_demo", verbosity=0)
+    assert [(u.username, u.first_name, u.last_name) for u in User.objects.filter(username__in=["gerente", "comercial", "produccion"]).order_by("username")] == [
+        ("comercial", "Nesky", ""), ("gerente", "Oscar", "Giraldo"), ("produccion", "Freddy", ""),
+    ]
+    me = manager_client.get("/api/auth/me/").json()
+    assert me["first_name"] == "Oscar" and me["last_name"] == "Giraldo"
+    # A name the manager changed by hand is kept on the next seed.
+    User.objects.filter(username="gerente").update(first_name="Óscar", last_name="G.")
+    call_command("seed_demo", verbosity=0)
+    assert User.objects.get(username="gerente").first_name == "Óscar"

@@ -5,6 +5,8 @@ import { useState } from "react";
 import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import type { ClaudeErrorCode, ClaudeStatus } from "@/lib/types";
+import { SkeletonCard } from "./skeleton";
+import { Spinner } from "./ui";
 
 const STATUS_URL = "/api/settings/claude/status/";
 
@@ -40,7 +42,7 @@ export function ClaudeConnect({ reconnect = false }: { reconnect?: boolean }) {
   const { data: status, mutate } = useSWR<ClaudeStatus>(STATUS_URL, fetcher);
   const [flowOpen, setFlowOpen] = useState(reconnect);
 
-  if (!status) return <div className="h-32 animate-pulse rounded-xl bg-line" />;
+  if (!status) return <SkeletonCard lines={2} />;
 
   const broken = status.expired || !!status.last_error;
   const showFlow = flowOpen || !status.connected || broken;
@@ -181,8 +183,10 @@ function OAuthFlow({ isReconnect, onConnected }: { isReconnect: boolean; onConne
         type="button"
         onClick={start}
         disabled={busy}
-        className="mt-4 rounded-md bg-brand px-4 py-2.5 font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
+        aria-busy={(busy && !started) || undefined}
+        className="mt-4 inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2.5 font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
       >
+        {busy && !started && <Spinner />}
         {busy && !started ? "Abriendo Claude…" : isReconnect ? "Reconectar con Claude" : "Conectar con Claude"}
       </button>
       {authUrl && (
@@ -229,8 +233,10 @@ function OAuthFlow({ isReconnect, onConnected }: { isReconnect: boolean; onConne
         <button
           type="submit"
           disabled={!started || busy || !code.trim()}
-          className="mt-3 rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          aria-busy={(busy && started) || undefined}
+          className="mt-3 inline-flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
         >
+          {busy && started && <Spinner />}
           {busy && started ? "Conectando…" : "Conectar"}
         </button>
       </form>
@@ -276,7 +282,8 @@ function ApiKeyForm({ onConnected }: { onConnected: (s: ClaudeStatus) => void })
           autoComplete="off"
           className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 font-mono text-sm"
         />
-        <button type="submit" disabled={busy || !key} className="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
+        <button type="submit" disabled={busy || !key} aria-busy={busy || undefined} className="inline-flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
+          {busy && <Spinner />}
           Guardar key
         </button>
       </form>
@@ -331,8 +338,10 @@ function Disconnect({ onDone }: { onDone: (s: ClaudeStatus) => void }) {
           type="button"
           onClick={disconnect}
           disabled={busy || typed.trim().toLowerCase() !== CONFIRM_WORD}
-          className="rounded-md bg-danger px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          aria-busy={busy || undefined}
+          className="inline-flex items-center gap-2 rounded-md bg-danger px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
         >
+          {busy && <Spinner />}
           Desconectar
         </button>
         <button type="button" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm">

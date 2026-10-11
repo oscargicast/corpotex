@@ -16,7 +16,7 @@ from core.permissions import require_role
 from suppliers.models import Rate, Supplier
 from suppliers.services import supplier_load, supplier_scores
 
-from .exceptions import ManagerApprovalRequired
+from .exceptions import ManagerApprovalRequired, UnknownReference
 from .models import (
     Order,
     OrderItem,
@@ -69,11 +69,21 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
     existing = Order.objects.filter(code=payload["code"]).first()
     if existing:
         return existing, False
+    # Every reference must exist before anything is written: the sales system only sends
+    # customers, brands and products the catalogue already knows (400 otherwise).
+    customer = Customer.objects.filter(name__iexact=payload["customer"].strip()).first()
+    if customer is None:
+        raise UnknownReference(f"El cliente {payload['customer']} no existe")
+    brand = Brand.objects.filter(name__iexact=payload["brand"].strip()).first()
+    if brand is None:
+        raise UnknownReference(f"La marca {payload['brand']} no existe")
+    products = {}
+    for item in payload["items"]:
+        code = str(item["product"]).strip()
+        products[code] = products.get(code) or Product.objects.filter(code__iexact=code).first()
+        if products[code] is None:
+            raise UnknownReference(f"El producto {code} no existe")
     with transaction.atomic():
-        customer, _ = Customer.objects.get_or_create(
-            name=payload["customer"], defaults={"kind": payload.get("customer_kind", "company")}
-        )
-        brand, _ = Brand.objects.get_or_create(name=payload["brand"])
         order = Order.objects.create(
             code=payload["code"],
             customer=customer,
@@ -84,7 +94,7 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
         )
         StatusChange.objects.create(order=order, status=order.status, at=clock.now(), actor=actor_label(actor))
         for item in payload["items"]:
-            product = Product.objects.get(code=item["product"])
+            product = products[str(item["product"]).strip()]
             OrderItem.objects.create(
                 order=order,
                 product=product,
@@ -389,8 +399,9 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
                         "currency": supplier.currency,
                         "committed_on": None,
                         "rationale": candidate["rationale"],
-                        "candidates": [
-                            {k: v for k, v in c.items() if k != "free_capacity"} for c in candidates
+                        "candidates": [  # Nested `supplier` like the proposal entry; flat keys kept for older cards.
+                            {**{k: v for k, v in c.items() if k != "free_capacity"}, "supplier": {"id": c["supplier_id"], "name": c["supplier_name"]}}
+                            for c in candidates
                         ],
                     }
                 )

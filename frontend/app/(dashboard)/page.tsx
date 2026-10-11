@@ -11,6 +11,7 @@ import { Card, Pill, RISK_LABEL, RISK_TONE, SectionTitle } from "@/components/ui
 import { fetcher } from "@/lib/api";
 import { formatDay, formatMoney } from "@/lib/format";
 import type { Monitor, PaymentSummary } from "@/lib/types";
+import { SkeletonMonitor } from "@/components/skeleton";
 
 export default function MonitorPage() {
   const user = useUser();
@@ -18,7 +19,7 @@ export default function MonitorPage() {
   const { data, mutate, error } = useSWR<Monitor>("/api/monitor/", fetcher, { refreshInterval: 3000 });
 
   if (error && !data) return <p className="text-danger">No se pudo cargar el Monitor.</p>;
-  if (!data) return <div className="h-40 animate-pulse rounded-xl bg-line" />;
+  if (!data) return <SkeletonMonitor />;
 
   const refresh = () => mutate();
   const kpis = [
