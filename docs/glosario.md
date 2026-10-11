@@ -195,10 +195,10 @@ Cada ruta usa el nombre de su modelo.
 | Órdenes y detalle | `/orders`, `/orders/[id]` |
 | Pedidos y detalle (insumo, taller, terminado) | `/purchase-orders`, `/purchase-orders/[id]` |
 | Proveedores y talleres | `/suppliers`, `/suppliers/[id]` |
-| Inventario de insumos (Gerente y Producción) | `/inventory` |
+| Inventario de insumos (Gerente y Producción) | `/inventory` (con el filtro "Solo por pedir" y "Pedir todo"; `/purchase-orders/pending` redirige aquí desde el 11/10 01:30, pedido de Oscar) |
 | Simulador de chat | `/simulator` |
 | Mapa de rutas | `/routes` |
 | Reporte de avance público por pedido | `/report/[token]` |
 | Asistente (pantalla completa en móvil) | `/assistant` |
-| Configuración = onboarding (4 pasos, solo Gerente) | `/settings` → `/settings/claude`, `/settings/whatsapp`, `/settings/suppliers`, `/settings/style` (`/onboarding/*` y `/style` redirigen aquí) |
+| Configuración (solo Gerente): Seguimiento, Estilo y Conexiones; la puesta en marcha de 4 pasos queda como resumen arriba | `/settings` (Seguimiento), `/settings/style`, `/settings/claude`, `/settings/whatsapp` (`/onboarding/*`, `/style` y `/settings/suppliers` redirigen; Proveedores vive en `/suppliers`) |
 | Autoregistro público | `/supplier-signup` |

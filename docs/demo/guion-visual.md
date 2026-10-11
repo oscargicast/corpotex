@@ -40,7 +40,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 
 ## Creación mágica (paso 3b, opcional)
 
-Lo decide Oscar en el ensayo. Va después de que Comercial registra la orden y antes de "Por pedir".
+Lo decide Oscar en el ensayo. Va después de que Comercial registra la orden (paso 3) y antes de confirmar el desglose (paso 4).
 
 1. Como Producción, abrir `/orders/CP-2026-0161` (Colegio Los Algarrobos): dos prendas descritas en texto libre, "Producto nuevo, sin ficha todavía".
 2. Pulsar "Desglosar componentes". La propuesta tarda unos 10 s: Jev (TypeSafe AI) elige del catálogo y del inventario, y Claude propone solo lo que es nuevo. Mientras carga, Oscar habla. Si Jev falla, sigue Claude sola y tarda unos 20 s.
@@ -52,7 +52,7 @@ Frase de pitch sugerida: **"Fabrican a medida: la IA reconoce lo que ya saben ha
 
 ## Flota en vivo (paso 6b, opcional)
 
-Lo decide Oscar en el ensayo. Va entre el WhatsApp con Valeria (paso 6) y su cancelación (paso 7): mientras el taller produce, se muestran las entregas del día. La tabla no tiene una fila "Por pedir", y después del paso 5 el agente ya le está escribiendo a Valeria, así que este es el primer hueco que no corta una escena en vivo. Se hace en la tercera ventana, logueada como `produccion`.
+Lo decide Oscar en el ensayo. Va entre el WhatsApp con Valeria (paso 6) y su cancelación (paso 7): mientras el taller produce, se muestran las entregas del día. Después del paso 5 el agente ya le está escribiendo a Valeria, así que este es el primer hueco que no corta una escena en vivo. Se hace en la tercera ventana, logueada como `produccion`.
 
 1. **Planificar.** Abrir `/routes`; la pestaña Planificar abre por defecto. Arriba dice "8 órdenes listas · 2,750 prendas · flota de 2,450": no entra todo.
 2. Pulsar **"Volver a planificar el día"**. Dice "Volver" porque el seed ya dejó el día planificado, y el resultado es el mismo. Mostrar las tres columnas:
