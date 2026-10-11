@@ -11,6 +11,7 @@ from core.permissions import IsManager, IsManagerOrProduction
 from core.serializers import serializer_for
 
 from . import services
+from .exceptions import UnknownReference
 from .models import Order, Payment, PurchaseOrder
 from .serializers import OrderDetailSerializer, PaymentSerializer, PurchaseOrderDetailSerializer, RouteSerializer
 
@@ -102,6 +103,8 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             order, created = services.register_order(data.validated_data, actor=request.user)
         except PermissionDenied as exc:
             _forbidden(exc)
+        except UnknownReference as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return self.detail_response(order, status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
     @extend_schema(request=None, responses={200: OrderDetailSerializer})
