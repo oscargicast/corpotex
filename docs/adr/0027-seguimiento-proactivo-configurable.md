@@ -80,8 +80,20 @@ El stepper de 4 pasos pasa a ser un resumen compacto arriba del submenú, por ej
 - El pitch es el domingo 11/10, y el domingo queda fuera de los días hábiles. Así ningún seguimiento automático le escribe a Valeria durante la demo. Para el pedido del número real, el seed además deja `last_follow_up_on = hoy`, por si alguien activa el domingo.
 - Las escenas del guion no dependen de seguimientos programados. Si Oscar quiere mostrarlo en vivo, se agrega el domingo en Configuración y se usa un proveedor del simulador.
 
+### 6. Seguimiento reactivo: Comercial o Producción piden avance (Oscar, 11/10 01:20)
+
+Comercial y Producción pueden pedir avance a demanda de un pedido o de todos los pedidos abiertos de una orden, desde su asistente o desde el dashboard. El agente no repite lo que el seguimiento proactivo ya hizo, y la respuesta del proveedor vuelve al asistente de quien preguntó.
+
+- **Modelo.** `FollowUpRequest`: `purchase_order`, `requested_by` (User), `requested_at`, `status` (`pending`, `asked`, `answered`, `skipped`), `asked_at`, `answered_at`, `answer_summary` (texto en español), `skip_reason`. En el detalle del pedido, `pending_follow_up: {requested_by_role, requested_at, status, asked_at} | null` y `last_follow_up: {kind, at, awaiting_reply}`, para que se vea si ya se preguntó y se espera respuesta.
+- **API.** `POST /api/purchase-orders/<id>/follow-up/` y `POST /api/orders/<id>/follow-up/` (los tres roles; Comercial solo sobre órdenes). Crean una `FollowUpRequest` por pedido abierto y encolan un turno `follow_up` con `kind = "requested"`, `reason = "Comercial pide avance de CP-2026-0142"` y `requested_by`. Responden 202 con las solicitudes creadas. Si el pedido ya tiene `awaiting_reply_since` o una solicitud `asked` de hace menos de 2 h, no se escribe otra vez: la solicitud nueva se cuelga de la misma espera (`status = asked`, con la hora de la pregunta original) y la respuesta dice "ya se le preguntó a las 10:05; te aviso cuando conteste". Este freno no respeta ventana ni modo: es una pregunta de una persona.
+- **Tool del asistente** `request_follow_up(order_code | purchase_order_code)`, con confirmación en código (ADR 0017), para los tres roles. La vista previa dice a quién se escribiría y qué pedidos ya están esperando respuesta.
+- **El agente**, en el turno `requested`, pregunta por lo que pidió el rol: avance en unidades o etapa y fecha. Si el pedido ya está esperando respuesta, `skip_follow_up` con ese motivo y la solicitud queda `asked`. Al enviar, las solicitudes del lote pasan a `asked`.
+- **Respuesta.** Cuando llega un mensaje del proveedor, el turno de ese chat recibe las solicitudes `asked` abiertas de sus pedidos. Al registrar el avance o la respuesta, el agente llama a `answer_follow_up(request_ids, summary)` con un resumen sin texto literal del chat; las solicitudes pasan a `answered` y se abre un turno `alert` en el asistente de quien preguntó (como los avisos de ADR 0020), con el resumen y el link al pedido. Comercial nunca ve el texto de WhatsApp.
+- **Dashboard.** Botón "Pedir avance" en el detalle del pedido y "Pedir avance a todos" en el de la orden, con confirmación. En la línea de tiempo del pedido: "Avance pedido por Comercial a las 10:05 · esperando respuesta" y después "Respondió a las 11:30: 200 de 500". En la lista de pedidos, un icono de reloj cuando está esperando respuesta.
+- **Demo.** Comercial pide avance de CP-2026-0142 desde su asistente; en el simulador aparece la pregunta del agente al taller; Oscar contesta como el taller; a Comercial le llega el aviso con el resumen.
+
 ## Consecuencias
 
 - El tick deja de usar `follow_up_every_hours`. La alerta `stalled_purchase_order` pasa a salir cuando el proveedor no responde al recordatorio.
 - Hay un turno de Claude más por proveedor y por día, en los días con punto de control. Con pocos proveedores el costo es despreciable.
-- Tareas y responsables en `docs/planning.md` (S1 a S4). Congelamiento a las 04:30: si S1 y S2 no están en verde, el seguimiento sigue como hoy.
+- Tareas y responsables en `docs/planning.md` (S1 a S7). Congelamiento a las 04:30: si S1 y S2 no están en verde, el seguimiento sigue como hoy.
