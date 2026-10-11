@@ -16,6 +16,7 @@ import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
 import { formatDay, formatMoney, formatNum, formatScore, num } from "@/lib/format";
 import { candidateSupplier, type PurchaseOrderDetail, type SupplierDetail } from "@/lib/types";
+import { FOLLOW_UP_MODES } from "@/lib/follow-up";
 
 export default function SupplierDetailPage() {
   return (
@@ -283,7 +284,14 @@ function Notes({ supplier, onSaved }: { supplier: SupplierDetail; onSaved: () =>
         placeholder={"Trato: tú o usted\nTono:\nInsistencia:\nHorario:\nOjo:"}
         className="w-full rounded-md p-2 font-mono text-sm ring-1 ring-line"
       />
-      <p className="mt-1 text-xs text-muted">El agente las lee antes de escribirle. Seguimiento cada {supplier.follow_up_every_hours} h.</p>
+      <p className="mt-1 text-xs text-muted">
+        El agente las lee antes de escribirle. Seguimiento:{" "}
+        {supplier.follow_up_mode ? FOLLOW_UP_MODES[supplier.follow_up_mode].label : "el general"} (se cambia en Editar; el general, en{" "}
+        <Link href="/settings" className="text-accent hover:underline">
+          Configuración
+        </Link>
+        ).
+      </p>
       {dirty && (
         <Button kind="dark" className="mt-2" busy={busy} onClick={save}>
           Guardar notas

@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import type { Material, SupplierDetail } from "@/lib/types";
 import { Button } from "./ui";
+import { FOLLOW_UP_MODES } from "@/lib/follow-up";
 
 type Kind = "workshop" | "materials" | "finished";
 type Currency = "PEN" | "USD";
@@ -18,7 +19,7 @@ interface Values {
   address: string;
   weekly_capacity: string;
   lead_time_days: string;
-  follow_up_every_hours: string;
+  follow_up_mode: string; // "" = use the general mode
   currency: Currency;
   phone: string;
   contact_name: string;
@@ -43,7 +44,7 @@ const EMPTY: Values = {
   address: "",
   weekly_capacity: "",
   lead_time_days: "",
-  follow_up_every_hours: "",
+  follow_up_mode: "",
   currency: "PEN",
   phone: "",
   contact_name: "",
@@ -61,7 +62,7 @@ function fromSupplier(s: SupplierDetail): Values {
     address: s.address ?? "",
     weekly_capacity: s.weekly_capacity ? String(s.weekly_capacity) : "",
     lead_time_days: s.lead_time_days ? String(s.lead_time_days) : "",
-    follow_up_every_hours: s.follow_up_every_hours ? String(s.follow_up_every_hours) : "",
+    follow_up_mode: s.follow_up_mode ?? "",
     currency: s.currency,
     phone: "",
     contact_name: "",
@@ -147,7 +148,7 @@ export function SupplierForm({
       lead_time_days: form.lead_time_days ? Number(form.lead_time_days) : null,
       currency: form.currency,
     };
-    if (form.follow_up_every_hours) body.follow_up_every_hours = Number(form.follow_up_every_hours);
+    if (editing) body.follow_up_mode = form.follow_up_mode;
     if (editing) {
       body.notes = form.notes;
       body.rates = rates.map((r) => ({
@@ -219,8 +220,15 @@ export function SupplierForm({
       </label>
       {editing ? (
         <label className="text-sm">
-          Seguimiento cada <span className="text-muted">(horas)</span>
-          <input type="number" inputMode="numeric" min={1} value={form.follow_up_every_hours} onChange={set("follow_up_every_hours")} className={input} />
+          Seguimiento
+          <select value={form.follow_up_mode} onChange={set("follow_up_mode")} className={input}>
+            <option value="">Usar el general</option>
+            {Object.entries(FOLLOW_UP_MODES).map(([value, mode]) => (
+              <option key={value} value={value}>
+                {mode.label}
+              </option>
+            ))}
+          </select>
         </label>
       ) : (
         <>

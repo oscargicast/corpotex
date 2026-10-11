@@ -15,6 +15,7 @@ import simulatorContactsSeed from "@/mocks/simulator-contacts.json";
 import styleSeed from "@/mocks/style.json";
 import suppliersSeed from "@/mocks/suppliers.json";
 import users from "@/mocks/users.json";
+import { DEFAULT_FOLLOW_UP, type FollowUpSettings } from "./follow-up";
 import type {
   AssistantMessage,
   Badges,
@@ -501,6 +502,7 @@ const DISCONNECTED: ClaudeStatus = {
   last_error_at: null,
 };
 let claude: ClaudeStatus = { ...DISCONNECTED };
+let followUp: FollowUpSettings = { ...DEFAULT_FOLLOW_UP };
 
 function connectedStatus(method: ClaudeStatus["method"]): ClaudeStatus {
   // Epoch milliseconds, like the API.
@@ -928,6 +930,28 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     return json(200, { id: Number(alertMatch[1]), status: "acknowledged" });
   }
 
+  if (path.startsWith("/api/settings/follow-up/")) {
+    if (user.role !== "manager") return json(403, { detail: "Solo el Gerente." });
+    if (route === "GET /api/settings/follow-up/") return json(200, followUp);
+    if (route === "PATCH /api/settings/follow-up/") {
+      followUp = { ...followUp, ...(readBody(init.body) as Partial<FollowUpSettings>) };
+      return json(200, followUp);
+    }
+    if (route === "GET /api/settings/follow-up/preview/") {
+      const day = (new Date().getDay() + 6) % 7;
+      if (!followUp.follow_up_weekdays.includes(day)) return json(200, []);
+      const at = (hhmm: string) => {
+        const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" });
+        return `${today}T${hhmm}:00-05:00`;
+      };
+      const start = followUp.follow_up_window_start;
+      return json(200, [
+        { supplier: { id: 2, name: "Confecciones del Norte" }, purchase_orders: ["PT-0004"], at: at(start), kind: "checkpoint", reason: "Punto de control del 60 % del plazo." },
+        { supplier: { id: 3, name: "Taller Castilla" }, purchase_orders: ["PT-0005"], at: at(start.replace(/:(\d\d)$/, ":25")), kind: "checkpoint", reason: "Víspera de la entrega, sin confirmar." },
+        { supplier: { id: 1, name: "Taller Sullana" }, purchase_orders: ["PT-0001"], at: at("14:05"), kind: "reminder", reason: "Sin respuesta desde las 10:05." },
+      ]);
+    }
+  }
   if (path.startsWith("/api/settings/claude/") && user.role !== "manager") {
     return json(403, { detail: "Solo el Gerente." });
   }

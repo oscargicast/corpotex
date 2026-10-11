@@ -150,7 +150,8 @@ export type SupplierNumber = S["AllowedNumber"];
 export interface SupplierDetail extends SupplierListItem {
   notes: string;
   address?: string;
-  follow_up_every_hours: number;
+  follow_up_every_hours: number; // no longer used (ADR 0027)
+  follow_up_mode?: "minimal" | "balanced" | "high" | "" | null; // empty = the general mode
   source_detail: { url: string; excerpt: string } | null;
   numbers: SupplierNumber[];
   rates: { id: number; item_name: string; unit_price: string; currency: Currency; valid_from: string; material_id?: number | null; product_id?: number | null; image?: string | null }[];
