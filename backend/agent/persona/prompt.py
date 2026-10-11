@@ -76,7 +76,7 @@ def render_system(rules: str, state: dict) -> str:
 def render_turn_message(state: dict, images: list[tuple[str, dict]] = ()) -> list[dict]:
     currency = (state.get("supplier") or {}).get("currency") or "PEN"
     orders = state.get("purchase_orders") or []
-    parts = [f"<ahora>{ctx.fmt_datetime(state.get('now'))} (hora simulada)</ahora>"]
+    parts = [f"<ahora>{ctx.fmt_datetime(state.get('now'))}</ahora>"]
     parts.append(_render_orders(orders, currency))
 
     if state.get("history"):

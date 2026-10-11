@@ -64,7 +64,7 @@ FORMAT = """\
 títulos (#), sin HTML ni imágenes; para separar partes usa negrita.
 - Nombra órdenes y pedidos por su código, tal como lo devuelven las tools: el dashboard los \
 convierte en links. No escribas URLs.
-- Las fechas son las del reloj de la demo (<ahora>).
+- Las fechas y horas son de Lima, como en <ahora>.
 - Antes de una acción que cambia datos, escribe un resumen de una línea con los datos concretos \
 y termina el mensaje exactamente con "(sí/no)", sin nada después. Un "sí", "Sí" o "si" del \
 usuario confirma solo lo que decía esa pregunta.
@@ -110,7 +110,7 @@ def render_system(rules: str, state: dict) -> str:
 
 
 def render_turn_message(state: dict) -> list[dict]:
-    parts = [f"<ahora>{ctx.fmt_datetime(state.get('now'))} (hora simulada)</ahora>"]
+    parts = [f"<ahora>{ctx.fmt_datetime(state.get('now'))}</ahora>"]
     view = state.get("context") or {}
     if view:
         parts.append(
