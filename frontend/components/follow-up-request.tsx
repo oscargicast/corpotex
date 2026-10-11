@@ -8,6 +8,7 @@ import { formatDayTime } from "@/lib/format";
 import type { FollowUpResult, PurchaseOrderDetail } from "@/lib/types";
 import { ConfirmDialog } from "./confirm-dialog";
 import { WhatsApp } from "./icons";
+import { whatsappSending } from "./whatsapp-toast";
 import type { ButtonKind } from "./ui";
 
 // Reactive follow-up (ADR 0027 §6): Comercial, Producción or the Gerente ask
@@ -88,8 +89,12 @@ export function FollowUpPanel({
   async function send() {
     setBusy(true);
     setError(null);
+    const request = apiFetch<FollowUpResult>(endpoint, { method: "POST", json: {} });
+    // Someone gets a message now: show it leaving. "Avisarme" sends nothing.
+    const willAsk = preview ? preview.requests.some((r) => r.status === "pending") : targets.some((t) => !t.awaiting);
+    if (willAsk) whatsappSending(request.then((res) => (res.requests ?? []).filter((r) => r.status === "pending").map((r) => r.supplier_name)));
     try {
-      const res = await apiFetch<FollowUpResult>(endpoint, { method: "POST", json: {} });
+      const res = await request;
       setOutcome(outcomeOf(res));
       onDone();
     } catch (err) {

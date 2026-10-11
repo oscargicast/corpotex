@@ -10,6 +10,7 @@ import { ClampedText } from "./clamped-text";
 import { RedistributionBody } from "./redistribution-card";
 import { Radar } from "./radar";
 import { ConfirmDialog } from "./confirm-dialog";
+import { whatsappSending } from "./whatsapp-toast";
 import { Button, Pill } from "./ui";
 
 interface ResolveBody {
@@ -27,12 +28,14 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
   const proposal = decision.detail.proposal ?? [];
   const after = decision.detail.after;
 
-  async function resolve(body: ResolveBody) {
+  async function resolve(body: ResolveBody, recipients: string[] = []) {
     setBusy(true);
     setAction(body.action);
     setError(null);
+    const request = apiFetch(`/api/manager/decisions/${decision.id}/`, { method: "POST", json: body });
+    if (body.action !== "reject") whatsappSending(request.then(() => recipients));
     try {
-      await apiFetch(`/api/manager/decisions/${decision.id}/`, { method: "POST", json: body });
+      await request;
       dialog.current?.close();
       setApproving(false);
       onResolved();
@@ -132,7 +135,7 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
           busy={busy}
           error={error}
           confirm={{ label: "Aprobar", icon: <CircleCheck size={16} aria-hidden />, kind: "primary" }}
-          onConfirm={() => resolve({ action: "approve" })}
+          onConfirm={() => resolve({ action: "approve" }, recipientsOf(decision, proposal))}
           onClose={() => setApproving(false)}
         />
       )}
@@ -145,18 +148,27 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
         <ChangeSupplier
           proposal={proposal}
           busy={busy}
-          onPick={(item, supplierId) =>
-            resolve({
-              action: "change_supplier",
-              supplier_id: supplierId,
-              purchase_order_id: item.purchase_order?.id,
-            })
+          onPick={(item, supplierId, supplierName) =>
+            resolve(
+              {
+                action: "change_supplier",
+                supplier_id: supplierId,
+                purchase_order_id: item.purchase_order?.id,
+              },
+              [supplierName],
+            )
           }
           onClose={() => dialog.current?.close()}
         />
       </dialog>
     </article>
   );
+}
+
+// Who gets the agent's message after the approval.
+function recipientsOf(decision: DecisionLike, proposal: ProposalItem[]): string[] {
+  const names = proposal.map((item) => item.supplier.name);
+  return names.length ? names : (decision.purchase_orders ?? []).map((po) => po.supplier_name);
 }
 
 // What approving does, in one line: who the agent writes to, or what it confirms.
@@ -178,7 +190,7 @@ function ChangeSupplier({
 }: {
   proposal: ProposalItem[];
   busy: boolean;
-  onPick: (item: ProposalItem, supplierId: number) => void;
+  onPick: (item: ProposalItem, supplierId: number, supplierName: string) => void;
   onClose: () => void;
 }) {
   // With more than one purchase order, pick which one changes first.
@@ -224,7 +236,7 @@ function ChangeSupplier({
                 {current ? (
                   <p className="mt-2 text-xs font-medium">Elegido ahora</p>
                 ) : (
-                  <Button className="mt-2" busy={busy} onClick={() => onPick(item, supplier.id)}>
+                  <Button className="mt-2" busy={busy} onClick={() => onPick(item, supplier.id, supplier.name)}>
                     <Check size={16} aria-hidden /> Elegir {supplier.name}
                   </Button>
                 )}

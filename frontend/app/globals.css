@@ -179,3 +179,42 @@ select:not([multiple]):not([size]) {
   padding-right: 2.5rem;
   text-overflow: ellipsis;
 }
+
+/* "Enviando por WhatsApp…": the glyph ticks and a ring pulses behind it. */
+@keyframes wa-send {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  40% {
+    transform: translateY(-2px) rotate(-10deg);
+  }
+  70% {
+    transform: translateY(1px) rotate(6deg);
+  }
+}
+@keyframes wa-ring {
+  from {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+.wa-send {
+  animation: wa-send 600ms ease-in-out infinite;
+}
+.wa-ring {
+  animation: wa-ring 1200ms ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-send,
+  .wa-ring {
+    animation: none;
+  }
+  .wa-ring {
+    display: none;
+  }
+}
