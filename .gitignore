@@ -25,3 +25,4 @@ celerybeat-schedule*
 backend/.venv/
 .pytest_cache/
 .ruff_cache/
+.playwright-mcp/
