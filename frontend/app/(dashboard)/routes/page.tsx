@@ -1,15 +1,17 @@
 "use client";
 
+import { Factory } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import useSWR from "swr";
 import { RoleGate } from "@/components/require-auth";
+import { isPlant } from "@/components/route-map";
 import { Card, Pill, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import { formatDay, formatDayTime } from "@/lib/format";
-import type { Route } from "@/lib/types";
+import type { Route, RouteStop } from "@/lib/types";
 
 // Leaflet touches window on import: client only.
 const RouteMap = dynamic(() => import("@/components/route-map"), {
@@ -36,6 +38,8 @@ export default function RoutesPage() {
   );
 }
 
+// Delivery routes: the van leaves the plant, delivers the day's orders to the
+// customers and comes back (ADR 0024). Suppliers ship by agency, so no pickups.
 function Routes() {
   const params = useSearchParams();
   const before = params.get("before");
@@ -56,17 +60,19 @@ function Routes() {
   );
   const main = compare ? afterRoute : current?.current;
   const loading = compare ? !beforeRoute || !afterRoute : !current && !error;
+  const moved = compare && beforeRoute && afterRoute ? movedDeliveries(beforeRoute, afterRoute) : [];
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">Rutas de recojo y entrega</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Rutas de entrega</h1>
         {compare && (
           <Link href="/routes" className="text-sm font-medium text-accent hover:underline">
             Ver la ruta vigente
           </Link>
         )}
       </div>
+      <p className="-mt-2 text-sm text-muted">Entregas de órdenes a clientes desde la planta. Los proveedores envían por agencia.</p>
 
       <ul className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
         <Legend dash={false} color="#0062fa" label="Vigente" />
@@ -74,7 +80,19 @@ function Routes() {
         <Legend dash color="#8a8994" label="Reemplazada" />
       </ul>
 
-      {!loading && !routes.length && <p className="text-sm text-muted">No hay ruta planificada para hoy.</p>}
+      {moved.length > 0 && afterRoute && beforeRoute && (
+        <p className="rounded-lg bg-success-soft px-3 py-2 text-sm">
+          {moved.map((stop, i) => (
+            <span key={stop.position}>
+              {i > 0 && " · "}
+              La entrega a <strong>{stop.customer?.name}</strong>
+              {stop.order ? ` (${stop.order.code})` : ""} pasa del {formatDay(beforeRoute.date)} al <strong>{formatDay(afterRoute.date)}</strong>.
+            </span>
+          ))}
+        </p>
+      )}
+
+      {!loading && !routes.length && <p className="text-sm text-muted">No hay entregas planificadas para hoy.</p>}
 
       <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
         <div className="h-[60vh] min-h-[420px]">{loading ? <div className="h-full animate-pulse rounded-xl bg-line" /> : <RouteMap routes={routes} focus={main ?? undefined} />}</div>
@@ -82,11 +100,12 @@ function Routes() {
           {routes.map((route) => (
             <Card key={route.id}>
               <SectionTitle>
-                Ruta del {formatDay(route.date)}
+                Ruta de entregas del {formatDay(route.date)}
                 <Pill tone={route.status === "proposed" ? "success" : route.status === "replaced" ? "neutral" : "info"}>{STATUS_LABEL[route.status]}</Pill>
               </SectionTitle>
               <p className="-mt-1 mb-3 text-sm text-muted tabular-nums">
-                {Number(route.distance_km).toFixed(1)} km · {Math.round(route.duration_min / 6) / 10} h
+                {deliveries(route).length} {deliveries(route).length === 1 ? "entrega" : "entregas"} · {Number(route.distance_km).toFixed(1)} km ·{" "}
+                {Math.round(route.duration_min / 6) / 10} h
               </p>
               <ol className={`space-y-2 ${route.status === "replaced" ? "opacity-60" : ""}`}>
                 {[...route.stops]
@@ -94,28 +113,27 @@ function Routes() {
                   .map((stop) => (
                     <li key={stop.position} className="flex gap-2 text-sm">
                       <span className="w-16 shrink-0 whitespace-nowrap text-xs text-muted tabular-nums">{stop.eta ? formatDayTime(stop.eta).split(", ").pop() : ""}</span>
-                      <div className="min-w-0">
-                        <p className="font-medium">{stop.name}</p>
-                        <p className="text-xs text-muted">
-                          {stop.kind === "pickup" ? "Recojo" : "Entrega"}
-                          {stop.purchase_order && (
-                            <>
-                              {" · "}
-                              <Link href={`/purchase-orders/${stop.purchase_order.id}`} className="text-accent hover:underline">
-                                {stop.purchase_order.code}
-                              </Link>
-                            </>
-                          )}
-                          {stop.order && (
-                            <>
-                              {" · "}
-                              <Link href={`/orders/${stop.order.id}`} className="text-accent hover:underline">
-                                {stop.order.code}
-                              </Link>
-                            </>
-                          )}
-                        </p>
-                      </div>
+                      {isPlant(stop, route) ? (
+                        <div className="flex min-w-0 items-center gap-2 text-muted">
+                          <Factory size={16} className="shrink-0" aria-hidden />
+                          <p>{stop.position === 0 ? "Salida de la planta" : "Regreso a la planta"}</p>
+                        </div>
+                      ) : (
+                        <div className="min-w-0">
+                          <p className="font-medium">{stop.customer ? `Entrega a ${stop.customer.name}` : stop.name}</p>
+                          <p className="text-xs text-muted">
+                            {stop.customer && stop.name !== stop.customer.name ? stop.name : stop.address}
+                            {stop.order && (
+                              <>
+                                {" · orden "}
+                                <Link href={`/orders/${stop.order.id}`} className="text-accent hover:underline">
+                                  {stop.order.code}
+                                </Link>
+                              </>
+                            )}
+                          </p>
+                        </div>
+                      )}
                     </li>
                   ))}
               </ol>
@@ -130,6 +148,20 @@ function Routes() {
       </div>
     </div>
   );
+}
+
+function deliveries(route: Route): RouteStop[] {
+  return route.stops.filter((stop) => !isPlant(stop, route));
+}
+
+// The deliveries the redistribution moved to the new day: in the proposed route
+// and tied to an order the original day's route also carried (or, when the
+// backend already took them off that day, every delivery of the new route).
+function movedDeliveries(before: Route, after: Route): RouteStop[] {
+  const beforeOrders = new Set(deliveries(before).map((s) => s.order?.id).filter(Boolean));
+  const shared = deliveries(after).filter((s) => s.order && beforeOrders.has(s.order.id));
+  const moved = shared.length ? shared : deliveries(after);
+  return before.date === after.date ? [] : moved.filter((s) => s.customer);
 }
 
 function Legend({ color, dash, label }: { color: string; dash: boolean; label: string }) {

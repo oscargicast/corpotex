@@ -23,7 +23,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 | 5 | Gerente: `/` → tarjeta de decisión → "Cambiar proveedor" | El ranking del matching con barras por criterio (cumplimiento, precio, carga, calidad). Se aprueba. | Oscar |
 | 6 | Gerente: `/purchase-orders/<pedido de Valeria>` | El agente le escribe a Valeria por WhatsApp real, con el estilo del Gerente. Ella responde desde su celular y el chat se ve en "Chat con el proveedor". | Oscar y Valeria |
 | 7 | La misma vista, y el celular de Valeria | A la seña de Oscar, Valeria escribe que no puede terminar. El agente responde y escala. | Valeria |
-| 8 | Gerente: `/` → tarjeta "Redistribución" → "Ver la ruta nueva" | Barra 400 hechas / 600 repartidas entre dos talleres, fecha y costo antes → después, y en `/routes?before=&after=` la ruta propuesta punteada sobre la vigente. | Oscar |
+| 8 | Gerente: `/` → tarjeta "Redistribución" → "Ver la ruta nueva" | Barra 400 hechas / 600 repartidas entre dos talleres, fecha y costo antes → después. En `/routes?before=&after=`, dos rutas de entrega a clientes que salen y vuelven de la planta: la del día original (gris) y la del día nuevo (verde punteada), con el aviso "La entrega a Caja Piura (CP-2026-0142) pasa del <día> al <día nuevo>". Las rutas son entregas a clientes; nada de recojos en talleres. | Oscar |
 | 9 | Las dos ventanas a la vez | Avisos por rol: el Gerente recibe la decisión en el asistente y aprueba con el botón "Sí"; Comercial recibe solo "orden en peligro", sin precios ni proveedores. | Oscar |
 | 10 | `/simulator?present=1` (atajo `P`) | El agente ya les escribió a los talleres nuevos: los contactos se resaltan y se les responde como taller. | Oscar o Nesky |
 | 11 | Celular | `/report/<token fijo>`: 500 unidades con foto. Luego `/purchase-orders/PT-0038` muestra el avance y la foto en grande (lightbox). Cierre con "Marcar pagado" en los pagos. | Oscar |
@@ -41,7 +41,7 @@ Nada de nombres reales, RUC ni cuentas.
 ## Plan B
 
 - **Sin wifi:** el simulador y todas las vistas siguen; el mapa queda gris con marcadores y líneas. El tethering del celular reemplaza al wifi.
-- **Si Valeria no puede o WhatsApp falla:** la cancelación se hace desde `/simulator?present=1` con el atajo `2` (Taller Sullana) y el mismo texto; la redistribución es la misma.
+- **Si Valeria no puede o WhatsApp falla:** la cancelación se hace desde `/simulator?present=1` con el atajo del contacto "Confecciones del Norte" (el taller de PT-0038; con el seed actual es el `3`) y el mismo texto; la redistribución es la misma.
 - **Si el agente tarda:** el modo presentación muestra "Escribiendo…"; si no responde en 30 segundos, se sigue con el paso 8 (la decisión ya está en el seed).
 - **Si todo falla:** el video de respaldo de la corrida completa (D6, `CLAUDE.md`), guardado en la laptop y en el celular.
 - No tocar `/settings/claude` ni "Desconectar" en vivo; no reseedear durante el pitch.
