@@ -123,7 +123,7 @@ export function AlertList({
               {/* Icon only, the one exception to icon-and-text (Oscar, 11/10): a
                   square the height of "Ver orden", named for the tooltip and the reader. */}
               {canAcknowledge && (
-                <Button size="sm" className="w-11 px-0 sm:w-8" aria-label="Reconocer" title="Reconocer" onClick={() => acknowledge(alert.id)} busy={busy === alert.id}>
+                <Button size="sm" className={`w-11 px-0 sm:w-8 ${target ? "" : "ml-auto sm:ml-0"}`} aria-label="Reconocer" title="Reconocer" onClick={() => acknowledge(alert.id)} busy={busy === alert.id}>
                   {busy !== alert.id && <Check size={16} aria-hidden />}
                 </Button>
               )}
