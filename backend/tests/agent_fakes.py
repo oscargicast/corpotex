@@ -138,6 +138,7 @@ def install(monkeypatch, **overrides):
             "cancel_by_supplier": recorder("cancel_by_supplier"),
             "report_url": recorder("report_url", returns=REPORT_URL),
             "mark_report_link_sent": recorder("mark_report_link_sent"),
+            "answer_follow_up_requests": recorder("answer_follow_up_requests", returns=1),
             "mark_payment_paid": recorder("mark_payment_paid"),
             "confirm_order": recorder("confirm_order"),
             "record_delivery": recorder("record_delivery"),

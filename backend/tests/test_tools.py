@@ -178,3 +178,28 @@ def test_skip_follow_up_notes_the_reason_on_the_batch_orders_and_sends_nothing(m
     assert fields["follow_up_note"].startswith("reportó ayer y va a ritmo x")
     assert len(fields["follow_up_note"]) == 200
     assert calls.sent == []
+
+
+ANSWER = SimpleNamespace(turn="turno", message_ids=[50], follow_up_request_ids=[7, 8])
+
+
+def test_answer_follow_up_only_when_someone_waits_for_an_answer(monkeypatch):
+    install(monkeypatch)
+    assert "answer_follow_up" not in toolset()
+    assert "answer_follow_up" in {t.name for t in tools.whatsapp_tools(conversation(), ANSWER)}
+
+
+def test_answer_follow_up_passes_only_this_turns_requests_and_a_short_summary(monkeypatch):
+    calls = install(monkeypatch)
+    answer = {t.name: t for t in tools.whatsapp_tools(conversation(), ANSWER)}["answer_follow_up"]
+    out = asyncio.run(
+        answer.handler(
+            {"request_ids": [7, 99], "summary": " 200 de 500 polos,  entrega el jueves "}
+        )
+    )
+    assert not out.get("is_error")
+    assert services(calls, "answer_follow_up_requests") == [
+        (([7],), {"summary": "200 de 500 polos, entrega el jueves"})
+    ]
+    out = asyncio.run(answer.handler({"request_ids": [99], "summary": "x"}))
+    assert out["is_error"] and len(services(calls, "answer_follow_up_requests")) == 1

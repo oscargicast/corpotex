@@ -289,6 +289,40 @@ def whatsapp_tools(conversation, batch) -> list:
         read_history,
         send_report_link,
     ]
+    open_requests = set(getattr(batch, "follow_up_request_ids", None) or [])
+
+    @tool(
+        "answer_follow_up",
+        "Cuando el proveedor responde a lo que se le preguntó a pedido del equipo, avisa la "
+        "respuesta a quien la pidió. El resumen va en tus palabras (unidades, etapa, fecha), sin "
+        "citar el chat.",
+        {
+            "type": "object",
+            "properties": {
+                "request_ids": {"type": "array", "items": {"type": "integer"}, "minItems": 1},
+                "summary": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "p. ej. 200 de 500 polos listos, entrega el jueves",
+                },
+            },
+            "required": ["request_ids", "summary"],
+        },
+    )
+    async def answer_follow_up(args):
+        from operations.services import answer_follow_up_requests
+
+        ids = [i for i in args["request_ids"] if i in open_requests]
+        if not ids:
+            return refuse(
+                "Esas solicitudes no están abiertas en este turno. Usa los ids que te llegaron."
+            )
+        summary = " ".join(args["summary"].split())[:NOTE_MAX]
+        answered = await sync_to_async(answer_follow_up_requests)(ids, summary=summary)
+        return ok(f"Respuesta avisada ({answered} solicitud(es)).")
+
     if getattr(batch, "follow_up", None):  # only follow-up turns may skip (ADR 0027)
         toolset.append(skip_follow_up)
+    if open_requests:  # someone on the team is waiting for this supplier's answer (§6)
+        toolset.append(answer_follow_up)
     return toolset
