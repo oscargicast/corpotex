@@ -410,3 +410,21 @@ export const ROLE_LABELS: Record<Role, string> = {
 export function candidateSupplier(candidate: Candidate): { id: number; name: string } {
   return candidate.supplier ?? { id: candidate.supplier_id ?? 0, name: candidate.supplier_name ?? "—" };
 }
+
+// "Por pedir" (ADR 0025 A): open material requirements grouped by material.
+// GET /api/requirements/pending/; prices only reach the Gerente.
+export interface PendingRequirement {
+  material: { id: number; sku: string; name: string; unit: string; image?: string | null };
+  total_to_order: Decimal;
+  due_on: string | null; // the earliest of its orders
+  orders: { id: number; code: string; customer_name: string; qty: Decimal; due_on: string | null }[];
+  suggested_supplier: { id: number; name: string } | null;
+  candidates?: { supplier: { id: number; name: string }; unit_price?: Decimal | null; currency?: Currency; score?: Decimal | null }[];
+  reference_price?: { unit_price: Decimal; currency: Currency } | null;
+  alert_id?: number | null;
+}
+
+// POST /api/purchase-orders/generate/ {material_ids?, supplier_overrides?}
+export interface GeneratedPurchaseOrders {
+  purchase_orders: { id: number; code: string; supplier: { id: number; name: string }; material: { id: number; sku: string; name: string }; orders: Ref[] }[];
+}

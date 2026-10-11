@@ -203,7 +203,7 @@ function Evaluation({ supplier }: { supplier: SupplierDetail }) {
       {poId && !po ? (
         <SkeletonLines lines={5} />
       ) : (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-start">
           <Radar values={values} size={240} className="mx-auto shrink-0" title={fromRun ? `Matching para ${po?.code}` : "Datos del proveedor"} />
           <div className="min-w-0 flex-1 text-sm">
             {fromRun && po ? (

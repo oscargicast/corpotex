@@ -5,6 +5,7 @@ import conversationsSeed from "@/mocks/conversations.json";
 import materialsSeed from "@/mocks/materials.json";
 import monitorSeed from "@/mocks/monitor.json";
 import ordersSeed from "@/mocks/orders.json";
+import pendingSeed from "@/mocks/pending-requirements.json";
 import poDetailsSeed from "@/mocks/purchase-order-details.json";
 import purchaseOrdersSeed from "@/mocks/purchase-orders.json";
 import routesSeed from "@/mocks/routes.json";
@@ -15,13 +16,15 @@ import users from "@/mocks/users.json";
 import type {
   AssistantMessage,
   Badges,
-  MaterialDetail,
   ChatMessage,
   ClaudeStatus,
   Clock,
+  GeneratedPurchaseOrders,
+  MaterialDetail,
   Monitor,
   OrderDetail,
   OrderListItem,
+  PendingRequirement,
   PurchaseOrderDetail,
   PurchaseOrderListItem,
   Role,
@@ -360,6 +363,10 @@ function formValue(body: BodyInit | null | undefined, key: string): FormDataEntr
 const orders = structuredClone(ordersSeed.list) as OrderListItem[];
 const orderDetails = structuredClone(ordersSeed.detail) as Record<string, Partial<OrderDetail>>;
 const purchaseOrders = structuredClone(purchaseOrdersSeed) as PurchaseOrderListItem[];
+// "Por pedir" (ADR 0025 A): open material requirements by material; generating moves them to purchase orders.
+const pending = structuredClone(pendingSeed) as unknown as PendingRequirement[];
+let nextPurchaseOrderId = 100;
+let nextMaterialCode = 10;
 
 // Same rule as the API serializers: production sees no prices, sales no breakdown.
 function orderDetailFor(order: OrderListItem, role: Role): OrderDetail {
@@ -604,6 +611,59 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     }
     const handled = supplierRoutes(route, init.body);
     if (handled) return handled;
+  }
+  if (route === "GET /api/requirements/pending/") {
+    if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
+    // Prices are the Gerente's.
+    return json(
+      200,
+      pending.map((row) =>
+        user.role === "manager"
+          ? row
+          : { ...row, reference_price: null, candidates: row.candidates?.map((c) => ({ ...c, unit_price: null })) },
+      ),
+    );
+  }
+  if (route === "POST /api/purchase-orders/generate/") {
+    if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
+    const body = readBody(init.body) as { material_ids?: number[]; supplier_overrides?: Record<string, number> };
+    const ids = body.material_ids ?? pending.map((row) => row.material.id);
+    const created: GeneratedPurchaseOrders["purchase_orders"] = [];
+    for (const id of ids) {
+      const index = pending.findIndex((row) => row.material.id === id);
+      if (index < 0) continue;
+      const row = pending[index];
+      const override = body.supplier_overrides?.[String(id)];
+      const supplier = row.candidates?.find((c) => c.supplier.id === override)?.supplier ?? row.suggested_supplier;
+      if (!supplier) return json(400, { detail: `${row.material.name} no tiene proveedor sugerido.` });
+      const candidate = row.candidates?.find((c) => c.supplier.id === supplier.id);
+      const po: PurchaseOrderListItem = {
+        id: nextPurchaseOrderId++,
+        code: `PI-${String(nextMaterialCode++).padStart(4, "0")}`,
+        kind: "material",
+        kind_display: "Insumo",
+        status: "suggested",
+        status_display: "Sugerido",
+        waiting_manager: true,
+        supplier: { id: supplier.id, name: supplier.name, kind: "materials" },
+        orders: row.orders.map((o) => ({ id: o.id, code: o.code, customer_name: o.customer_name })),
+        total_units: Number(row.total_to_order),
+        units_done: 0,
+        progress_pct: 0,
+        internal_due_on: row.due_on,
+        committed_on: null,
+        last_progress_at: null,
+        next_follow_up_at: null,
+        total_amount: candidate?.unit_price ? String(Number(candidate.unit_price) * Number(row.total_to_order)) : null,
+        currency: candidate?.currency ?? "PEN",
+        redistributed_from: null,
+        alert_severity: null,
+      } as unknown as PurchaseOrderListItem;
+      purchaseOrders.unshift(po);
+      pending.splice(index, 1);
+      created.push({ id: po.id, code: po.code, supplier, material: row.material, orders: row.orders.map((o) => ({ id: o.id, code: o.code })) });
+    }
+    return json(201, { purchase_orders: created });
   }
   if (route === "GET /api/purchase-orders/") {
     const params = new URL(path, "http://mock").searchParams;
