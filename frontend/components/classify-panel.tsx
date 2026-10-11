@@ -286,7 +286,7 @@ export function ClassifyPanel({ order, onApplied }: { order: OrderDetail; onAppl
                 <Button
                   type="button"
                   className="mt-2 py-1"
-                  onClick={() => updateItem(index, { materials: [...proposal.materials, { sku: null, new: { sku: "", name: "", kind: "other", unit: "unit" }, qty_per_unit: "1", unit: "unit", confidence: null }] })}
+                  onClick={() => updateItem(index, { materials: [...proposal.materials, { sku: null, new: { sku: "", name: "", kind: "other", unit: "unit" }, qty_per_unit: "1", unit: "unit" }] })}
                 >
                   <Plus size={14} /> Agregar insumo
                 </Button>

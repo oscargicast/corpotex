@@ -14,7 +14,7 @@ import { StatusTimeline } from "@/components/status-timeline";
 import { Thumb } from "@/components/thumb";
 import { Button, Card, Pill, RISK_LABEL, RISK_TONE, SectionTitle } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
-import { formatDay, formatMoney } from "@/lib/format";
+import { formatDay, formatMoney, num } from "@/lib/format";
 import { useResolvedId } from "@/lib/resolve";
 import { CUSTOMIZATION, type OrderDetail } from "@/lib/types";
 import { SkeletonDetail } from "@/components/skeleton";
@@ -77,7 +77,7 @@ export default function OrderDetailPage() {
           </div>
           <p className="mt-1 text-sm text-muted">
             {order.customer.name} · {order.brand.name} · {Number(order.total_units)} unidades
-            {order.total_amount ? ` · ${formatMoney(order.total_amount)}` : ""}
+            {num(order.total_amount) ? ` · ${formatMoney(order.total_amount)}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -158,7 +158,7 @@ export default function OrderDetailPage() {
                       item.product ? `Producto base: ${item.product.name} (${item.product.code})` : "Producto nuevo, sin ficha todavía",
                       !item.description && item.color,
                       !item.description && (CUSTOMIZATION[item.customization] ?? item.customization),
-                      item.unit_price && `${formatMoney(item.unit_price)} c/u`,
+                      num(item.unit_price) && `${formatMoney(item.unit_price)} c/u`,
                     ]
                       .filter(Boolean)
                       .join(" · ")}

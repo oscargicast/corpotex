@@ -23,6 +23,7 @@ import type {
   ClaudeStatus,
   Clock,
   Customer,
+  GeneratedPurchaseOrder,
   GeneratedPurchaseOrders,
   MaterialDetail,
   Monitor,
@@ -367,7 +368,7 @@ function formValue(body: BodyInit | null | undefined, key: string): FormDataEntr
 }
 
 const orders = structuredClone(ordersSeed.list) as OrderListItem[];
-const orderDetails = structuredClone(ordersSeed.detail) as Record<string, Partial<OrderDetail>>;
+const orderDetails = structuredClone(ordersSeed.detail) as unknown as Record<string, Partial<OrderDetail>>;
 const purchaseOrders = structuredClone(purchaseOrdersSeed) as PurchaseOrderListItem[];
 // "Por pedir" (ADR 0025 A): open material requirements by material; generating moves them to purchase orders.
 const pending = structuredClone(pendingSeed) as unknown as PendingRequirement[];
@@ -818,7 +819,8 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
       } as unknown as PurchaseOrderListItem;
       purchaseOrders.unshift(po);
       pending.splice(index, 1);
-      created.push({ id: po.id, code: po.code, supplier: po.supplier, material: row.material, orders: po.orders });
+      // The API answers with the purchase-order detail; the banner reads its first item.
+      created.push({ ...po, items: [{ id: po.id, name: row.material.name, image: row.material.image, order_code: row.orders[0]?.code ?? "", quantity: String(row.total_to_order) }] } as unknown as GeneratedPurchaseOrder);
     }
     return json(201, { created, decision_id: 900, skipped });
   }

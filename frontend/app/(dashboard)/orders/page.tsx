@@ -12,14 +12,9 @@ import { Button, Pill, RISK_LABEL, RISK_TONE } from "@/components/ui";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { formatDay } from "@/lib/format";
 import { canCreateOrder } from "@/lib/orders";
-import type { OrderListItem, Risk } from "@/lib/types";
+import type { BreakDownResult, OrderListItem, Risk } from "@/lib/types";
 
 const RISKS: (Risk | "")[] = ["", "in_danger", "at_risk", "ok"];
-
-interface BreakDownResult {
-  broken_down: string[];
-  skipped: { code: string; reason: string }[];
-}
 
 export default function OrdersPage() {
   return (

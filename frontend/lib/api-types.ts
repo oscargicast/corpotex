@@ -176,6 +176,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/customers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["customers_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/manager/decisions/{id}/": {
         parameters: {
             query?: never;
@@ -441,6 +457,68 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * @description Edit an order (sales: own, up to broken_down; manager: any). `items` replaces the
+         *     list and re-breaks down; requirements already ordered stay and come back in `warnings`.
+         */
+        patch: operations["orders_partial_update"];
+        trace?: never;
+    };
+    "/api/orders/{id}/apply-classification/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description What production confirmed: creates products, materials and bills of materials, assigns
+         *     them to the items and breaks the order down again (`warnings` lists what was skipped).
+         */
+        post: operations["orders_apply_classification_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sales cancels own orders up to broken_down; the manager any order before production. */
+        post: operations["orders_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{id}/classify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Proposal for every item without a catalogue product (Jev + Claude, ADR 0025 C):
+         *     `{order_id, items: [{item_id, description, product: {existing_id, code, name} | {new: {code, name, brand}},
+         *     confidence, materials: [{sku, name, material_id} | {new: {sku, name, kind, unit}}, qty_per_unit, unit, confidence]}]}`.
+         */
+        post: operations["orders_classify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -455,6 +533,23 @@ export interface paths {
         put?: never;
         /** @description Production confirms the breakdown; the matching proposes suppliers. */
         post: operations["orders_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/break-down/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Breaks down every `registered` order (or `order_ids`) against the inventory. */
+        post: operations["orders_break_down_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -503,6 +598,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["payments_pay_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/products/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["products_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -573,6 +684,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/purchase-orders/generate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Consolidated material purchase orders for every open requirement (or `material_ids`):
+         *     one per material with an item per requirement, plus the assignment decision.
+         */
+        post: operations["purchase_orders_generate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/report/{token}/": {
         parameters: {
             query?: never;
@@ -591,6 +722,26 @@ export interface paths {
          *     Never prices nor the supplier (ADR 0024 C).
          */
         post: operations["report_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/requirements/pending/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description `GET /api/requirements/pending/`: open material requirements grouped by material, the
+         *     "Por pedir" screen (ADR 0025 A). Manager and production; prices only for the manager.
+         */
+        get: operations["requirements_pending_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1004,6 +1155,8 @@ export interface components {
             status?: components["schemas"]["AlertStatusEnum"];
             /** @description Template text without prices or phones. */
             text: string;
+            /** @description Structured payload for the assistant, e.g. the purchase suggestion (ADR 0025). */
+            detail?: unknown;
             /**
              * Format: date-time
              * @description Simulated time.
@@ -1013,6 +1166,9 @@ export interface components {
                 [key: string]: unknown;
             };
             readonly purchase_order: {
+                [key: string]: unknown;
+            };
+            readonly material: {
                 [key: string]: unknown;
             };
             /** @default  */
@@ -1034,9 +1190,10 @@ export interface components {
          *     * `style_refresh_failed` - Refresco de estilo fallido
          *     * `decision_pending` - Decisión pendiente
          *     * `claude_disconnected` - Claude desconectado
+         *     * `purchase_suggested` - Compra sugerida
          * @enum {string}
          */
-        AlertKindEnum: "stalled_purchase_order" | "delay" | "order_in_danger" | "no_response" | "payment_due" | "instance_down" | "no_channel" | "turn_failed" | "style_refresh_failed" | "decision_pending" | "claude_disconnected";
+        AlertKindEnum: "stalled_purchase_order" | "delay" | "order_in_danger" | "no_response" | "payment_due" | "instance_down" | "no_channel" | "turn_failed" | "style_refresh_failed" | "decision_pending" | "claude_disconnected" | "purchase_suggested";
         /**
          * @description * `info` - Info
          *     * `warning` - Advertencia
@@ -1060,6 +1217,9 @@ export interface components {
             active?: boolean;
             /** @description Simulator only, never WhatsApp. */
             simulated?: boolean;
+        };
+        ApplyClassificationInRequest: {
+            items: components["schemas"]["ClassificationItemInRequest"][];
         };
         AssistantMessage: {
             readonly id: number;
@@ -1108,12 +1268,111 @@ export interface components {
         };
         /** @enum {unknown} */
         BlankEnum: "";
+        BreakDownInRequest: {
+            order_ids?: number[];
+        };
+        BreakDownResult: {
+            /** @description Order codes. */
+            broken_down: string[];
+            skipped: components["schemas"]["BreakDownSkipped"][];
+        };
+        BreakDownSkipped: {
+            code: string;
+            reason: string;
+        };
+        CancelInRequest: {
+            /** @default  */
+            reason: string;
+        };
         /**
          * @description * `whatsapp` - whatsapp
          *     * `simulator` - simulator
          * @enum {string}
          */
         ChannelEnum: "whatsapp" | "simulator";
+        ClassificationItem: {
+            item_id: number;
+            description: string;
+            product: components["schemas"]["ClassificationProduct"];
+            /** Format: double */
+            confidence: number;
+            materials: components["schemas"]["ClassificationMaterial"][];
+        };
+        ClassificationItemInRequest: {
+            item_id: number;
+            /** @description {existing_id} or {new: {code, name, brand}} */
+            product: components["schemas"]["ClassificationProductRequest"];
+            /** @description [{sku} | {new: {sku, name, kind, unit}}, qty_per_unit, unit] */
+            materials?: components["schemas"]["ClassificationMaterialRequest"][];
+        };
+        ClassificationMaterial: {
+            /** @description A known material; otherwise `new`. */
+            sku?: string | null;
+            name?: string | null;
+            material_id?: number | null;
+            new?: components["schemas"]["ClassificationNewMaterial"] | null;
+            /** @description Per garment, in `unit`, as a decimal string. */
+            qty_per_unit: string;
+            unit: string;
+            /** Format: double */
+            confidence?: number;
+        };
+        ClassificationMaterialRequest: {
+            /** @description A known material; otherwise `new`. */
+            sku?: string | null;
+            name?: string | null;
+            material_id?: number | null;
+            new?: components["schemas"]["ClassificationNewMaterialRequest"] | null;
+            /** @description Per garment, in `unit`, as a decimal string. */
+            qty_per_unit: string;
+            unit: string;
+            /** Format: double */
+            confidence?: number;
+        };
+        ClassificationNewMaterial: {
+            sku?: string;
+            name: string;
+            /** @description A Material.Kind value. */
+            kind?: string;
+            /** @description A Material.Unit value. */
+            unit?: string;
+        };
+        ClassificationNewMaterialRequest: {
+            sku?: string;
+            name: string;
+            /** @description A Material.Kind value. */
+            kind?: string;
+            /** @description A Material.Unit value. */
+            unit?: string;
+        };
+        ClassificationNewProduct: {
+            code?: string;
+            name: string;
+            brand?: string;
+        };
+        ClassificationNewProductRequest: {
+            code?: string;
+            name: string;
+            brand?: string;
+        };
+        ClassificationProduct: {
+            /** @description A catalogue product that fits; otherwise `new`. */
+            existing_id?: number | null;
+            code?: string | null;
+            name?: string | null;
+            new?: components["schemas"]["ClassificationNewProduct"] | null;
+        };
+        ClassificationProductRequest: {
+            /** @description A catalogue product that fits; otherwise `new`. */
+            existing_id?: number | null;
+            code?: string | null;
+            name?: string | null;
+            new?: components["schemas"]["ClassificationNewProductRequest"] | null;
+        };
+        ClassificationResult: {
+            order_id: number;
+            items: components["schemas"]["ClassificationItem"][];
+        };
         ClaudeApiKeyRequest: {
             api_key: string;
         };
@@ -1168,6 +1427,26 @@ export interface components {
          * @enum {string}
          */
         CurrencyEnum: "PEN" | "USD";
+        Customer: {
+            readonly id: number;
+            name: string;
+            readonly ruc: string;
+            kind: components["schemas"]["CustomerKindEnum"];
+            readonly kind_display: string;
+            address?: string;
+            /** Format: double */
+            lat?: number | null;
+            /** Format: double */
+            lng?: number | null;
+        };
+        /**
+         * @description * `company` - Empresa
+         *     * `school` - Colegio
+         *     * `ngo` - ONG
+         *     * `individual` - Persona
+         * @enum {string}
+         */
+        CustomerKindEnum: "company" | "school" | "ngo" | "individual";
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
          *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
@@ -1236,6 +1515,21 @@ export interface components {
         };
         Detail: {
             detail: string;
+        };
+        GenerateInRequest: {
+            material_ids?: number[];
+            supplier_overrides?: {
+                [key: string]: number;
+            };
+        };
+        GenerateResult: {
+            created: components["schemas"]["PurchaseOrderDetail"][];
+            decision_id: number | null;
+            skipped: components["schemas"]["GenerateSkipped"][];
+        };
+        GenerateSkipped: {
+            material_id: number;
+            reason: string;
         };
         ImportInRequest: {
             /** Format: binary */
@@ -1453,24 +1747,23 @@ export interface components {
             readonly purchase_orders_summary: {
                 [key: string]: unknown;
             };
+            readonly owner_id: number | null;
             readonly owner: {
                 [key: string]: unknown;
             };
+            /** @description Free text from the order form (ADR 0025 B). */
+            notes?: string;
+            /** @description Some item has no catalogue product yet (ADR 0025 C). */
+            needs_classification?: boolean;
             critical_path?: unknown;
             readonly items: components["schemas"]["OrderItem"][];
             readonly requirements: components["schemas"]["Requirement"][];
-            readonly purchase_orders: {
-                [key: string]: unknown;
-            }[];
-            readonly alerts: {
-                [key: string]: unknown;
-            }[];
+            readonly purchase_orders: components["schemas"]["PurchaseOrderList"][];
+            readonly alerts: components["schemas"]["Alert"][];
             readonly redistributions: {
                 [key: string]: unknown;
             }[];
-            readonly status_history: {
-                [key: string]: unknown;
-            }[];
+            readonly status_history: components["schemas"]["StatusChange"][];
             /** @default  */
             readonly status_display: string;
             /** @default  */
@@ -1480,7 +1773,8 @@ export interface components {
         };
         /** @description The simulated sales system payload (`docs/api/examples/order-*.json`). */
         OrderInRequest: {
-            code: string;
+            /** @description Optional: CP-YYYY-NNNN is generated when missing. */
+            code?: string;
             /** @description Customer name. */
             customer: string;
             /** @description Brand name. */
@@ -1489,6 +1783,8 @@ export interface components {
             issued_on?: string;
             /** Format: date */
             promised_on: string;
+            /** @default  */
+            notes: string;
             items: components["schemas"]["OrderItemInRequest"][];
         };
         /**
@@ -1499,27 +1795,29 @@ export interface components {
          */
         OrderItem: {
             readonly id: number;
-            readonly product: components["schemas"]["ProductRef"];
+            readonly product: components["schemas"]["ProductRef"] | null;
+            /** @description What the customer asked for when no catalogue product fits (ADR 0025 C). */
+            description?: string;
             quantity: number;
             /** @description Quantity per size. */
             sizes?: unknown;
             color?: string;
-            customization?: components["schemas"]["OrderItemCustomizationEnum"] | components["schemas"]["BlankEnum"];
-            /** Format: decimal */
-            unit_price: string;
-            /** @default  */
-            readonly customization_display: string;
+            /** @description Free text: embroidery, sublimation, print, several at once. */
+            customization?: string;
+            /**
+             * Format: decimal
+             * @description Sale price; empty when the form does not know it yet.
+             */
+            unit_price?: string | null;
         };
-        /**
-         * @description * `embroidery` - Bordado
-         *     * `print` - Estampado
-         *     * `sublimation` - Sublimado
-         * @enum {string}
-         */
-        OrderItemCustomizationEnum: "embroidery" | "print" | "sublimation";
         OrderItemInRequest: {
-            /** @description Product code. */
-            product: string;
+            /** @description Product code; empty for a made-to-order item. */
+            product?: string | null;
+            /**
+             * @description Garment, colour, sizes, customizations when there is no product.
+             * @default
+             */
+            description: string;
             quantity: number;
             sizes?: {
                 [key: string]: unknown;
@@ -1527,7 +1825,7 @@ export interface components {
             color?: string;
             customization?: string;
             /** Format: decimal */
-            unit_price: string;
+            unit_price?: string | null;
         };
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
@@ -1567,12 +1865,18 @@ export interface components {
             readonly purchase_orders_summary: {
                 [key: string]: unknown;
             };
+            readonly owner_id: number | null;
             /** @default  */
             readonly status_display: string;
             /** @default  */
             readonly production_stage_display: string;
             /** @default  */
             readonly risk_display: string;
+        };
+        OrderRef: {
+            id: number;
+            code: string;
+            customer_name: string;
         };
         /**
          * @description * `ok` - OK
@@ -1606,6 +1910,17 @@ export interface components {
             active?: boolean;
             name?: string;
             phone?: string;
+        };
+        /** @description The order form (ADR 0025 B): header fields and, when present, the full list of items. */
+        PatchedOrderPatchRequest: {
+            customer?: string;
+            brand?: string;
+            /** Format: date */
+            issued_on?: string;
+            /** Format: date */
+            promised_on?: string;
+            notes?: string;
+            items?: components["schemas"]["OrderItemInRequest"][];
         };
         PatchedSupplierPatchRequest: {
             status?: components["schemas"]["SupplierStatusEnum"];
@@ -1671,6 +1986,56 @@ export interface components {
          * @enum {string}
          */
         PaymentMethodEnum: "yape" | "transfer" | "cash";
+        PendingPurchase: {
+            material: components["schemas"]["PendingPurchaseMaterial"];
+            /** @description Still to buy across the orders, as a decimal string. */
+            total_to_order: string;
+            orders: components["schemas"]["PendingPurchaseOrder"][];
+            /** Format: date */
+            due_on: string | null;
+            suggested_supplier: components["schemas"]["SupplierNameRef"] | null;
+            candidates: components["schemas"]["PendingPurchaseCandidate"][];
+            lead_time_days: number | null;
+            /** @description Manager only; null for production. */
+            reference_price: string | null;
+            currency: string | null;
+            alert_id: number | null;
+        };
+        PendingPurchaseCandidate: {
+            supplier: components["schemas"]["SupplierNameRef"];
+            unit_price: string;
+            currency: string;
+            /** Format: double */
+            score: number;
+        };
+        PendingPurchaseMaterial: {
+            id: number;
+            sku: string;
+            name: string;
+            kind: string;
+            unit: string;
+            image: string | null;
+        };
+        PendingPurchaseOrder: {
+            id: number;
+            code: string;
+            customer_name: string;
+            qty: string;
+            /** Format: date */
+            due_on: string;
+        };
+        Product: {
+            readonly id: number;
+            code: string;
+            name: string;
+            readonly brand: components["schemas"]["ProductBrand"] | null;
+            /** Format: uri */
+            readonly image: string | null;
+        };
+        ProductBrand: {
+            id: number;
+            name: string;
+        };
         ProductRef: {
             readonly id: number;
             code: string;
@@ -1727,9 +2092,11 @@ export interface components {
             status?: components["schemas"]["PurchaseOrderStatusEnum"];
             readonly waiting_manager: boolean;
             readonly supplier: components["schemas"]["SupplierRef"];
-            readonly orders: {
+            readonly orders: components["schemas"]["OrderRef"][];
+            /** @description The material of a consolidated purchase order (all its items share it); null for workshops. */
+            readonly material: {
                 [key: string]: unknown;
-            }[];
+            };
             readonly total_units: string;
             readonly units_done: number;
             /** Format: float */
@@ -1771,9 +2138,7 @@ export interface components {
             readonly payments: components["schemas"]["Payment"][];
             readonly paid_amount: string;
             readonly pending_amount: string;
-            readonly redistributed_into: {
-                [key: string]: unknown;
-            }[];
+            readonly redistributed_into: components["schemas"]["RedistributedInto"][];
             readonly pending_decision: {
                 [key: string]: unknown;
             };
@@ -1782,9 +2147,7 @@ export interface components {
             /** Format: uuid */
             readonly report_token: string;
             readonly report_url: string;
-            readonly status_history: {
-                [key: string]: unknown;
-            }[];
+            readonly status_history: components["schemas"]["StatusChange"][];
             /** @default  */
             readonly status_display: string;
         };
@@ -1817,9 +2180,11 @@ export interface components {
             status?: components["schemas"]["PurchaseOrderStatusEnum"];
             readonly waiting_manager: boolean;
             readonly supplier: components["schemas"]["SupplierRef"];
-            readonly orders: {
+            readonly orders: components["schemas"]["OrderRef"][];
+            /** @description The material of a consolidated purchase order (all its items share it); null for workshops. */
+            readonly material: {
                 [key: string]: unknown;
-            }[];
+            };
             readonly total_units: string;
             readonly units_done: number;
             /** Format: float */
@@ -1880,6 +2245,13 @@ export interface components {
             /** Format: date */
             valid_from?: string | null;
         };
+        RedistributedInto: {
+            id: number;
+            code: string;
+            supplier_name: string;
+            quantity: string;
+            status: string;
+        };
         /**
          * @description Adds `<field>_display` for every choice field listed in `Meta.display_fields` (declared
          *     as real fields so the OpenAPI schema carries them), and strips manager-only fields from
@@ -1897,16 +2269,34 @@ export interface components {
             qty_from_stock?: string;
             /** Format: decimal */
             readonly qty_to_order: string;
-            /** @description pending: nothing ordered; ordered: live purchase orders cover it; covered: delivered. */
-            readonly status: string;
-            /** @default  */
-            readonly status_display: string;
-            readonly purchase_orders: {
-                [key: string]: unknown;
-            }[];
+            /**
+             * @description Materials wait as open until Produccion generates the consolidated purchase order (ADR 0025).
+             *
+             *     * `open` - Por pedir
+             *     * `ordered` - Pedido
+             *     * `covered` - Cubierto
+             */
+            status?: components["schemas"]["RequirementStatusEnum"];
+            readonly purchase_orders: components["schemas"]["RequirementPurchaseOrder"][];
             /** @default  */
             readonly kind_display: string;
+            /** @default  */
+            readonly status_display: string;
         };
+        RequirementPurchaseOrder: {
+            id: number;
+            code: string;
+            supplier_name: string;
+            quantity: string;
+            status: string;
+        };
+        /**
+         * @description * `open` - Por pedir
+         *     * `ordered` - Pedido
+         *     * `covered` - Cubierto
+         * @enum {string}
+         */
+        RequirementStatusEnum: "open" | "ordered" | "covered";
         /** @description Routes carry no prices: every role reads them. */
         Route: {
             readonly id: number;
@@ -2010,6 +2400,14 @@ export interface components {
             text: string;
             /** Format: binary */
             photo?: string;
+        };
+        StatusChange: {
+            status: string;
+            status_display: string;
+            /** Format: date-time */
+            at: string;
+            actor: string;
+            note: string;
         };
         StyleDraftRequest: {
             style_md: string;
@@ -2234,6 +2632,10 @@ export interface components {
             /** @default  */
             readonly status_display: string;
         };
+        SupplierNameRef: {
+            id: number;
+            name: string;
+        };
         SupplierRef: {
             readonly id: number;
             name: string;
@@ -2262,6 +2664,8 @@ export interface components {
             username: string;
             /** Nombre */
             first_name?: string;
+            /** Apellidos */
+            last_name?: string;
             readonly role: string;
             /**
              * Es staff
@@ -2517,6 +2921,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConversationMessages"];
+                };
+            };
+        };
+    };
+    customers_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Customer"][];
                 };
             };
         };
@@ -3010,6 +3433,112 @@ export interface operations {
             };
         };
     };
+    orders_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este orden. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedOrderPatchRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedOrderPatchRequest"];
+                "multipart/form-data": components["schemas"]["PatchedOrderPatchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetail"];
+                };
+            };
+        };
+    };
+    orders_apply_classification_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este orden. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyClassificationInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ApplyClassificationInRequest"];
+                "multipart/form-data": components["schemas"]["ApplyClassificationInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetail"];
+                };
+            };
+        };
+    };
+    orders_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este orden. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CancelInRequest"];
+                "multipart/form-data": components["schemas"]["CancelInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetail"];
+                };
+            };
+        };
+    };
+    orders_classify_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este orden. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassificationResult"];
+                };
+            };
+        };
+    };
     orders_confirm_create: {
         parameters: {
             query?: never;
@@ -3028,6 +3557,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderDetail"];
+                };
+            };
+        };
+    };
+    orders_break_down_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BreakDownInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BreakDownInRequest"];
+                "multipart/form-data": components["schemas"]["BreakDownInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakDownResult"];
                 };
             };
         };
@@ -3097,6 +3651,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Payment"];
+                };
+            };
+        };
+    };
+    products_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"][];
                 };
             };
         };
@@ -3198,6 +3771,31 @@ export interface operations {
             };
         };
     };
+    purchase_orders_generate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GenerateInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GenerateInRequest"];
+                "multipart/form-data": components["schemas"]["GenerateInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateResult"];
+                };
+            };
+        };
+    };
     report_retrieve: {
         parameters: {
             query?: never;
@@ -3242,6 +3840,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicReportCreated"];
+                };
+            };
+        };
+    };
+    requirements_pending_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingPurchase"][];
                 };
             };
         };

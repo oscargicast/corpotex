@@ -45,6 +45,11 @@ const EXIT_FALLBACK: Record<string, string> = {
   cancelled_by_supplier: "in_progress",
 };
 
+// Spanish label of a purchase-order status, for refs that send only `status`.
+export function purchaseOrderStatusLabel(status: string): string {
+  return FLOWS.purchase_order.find((step) => step.status === status)?.label ?? EXIT_LABEL[status] ?? status;
+}
+
 const ACTOR: Record<string, string> = { system: "sistema", agent: "agente", user: "usuario", manager: "Gerente" };
 
 export function StatusTimeline({

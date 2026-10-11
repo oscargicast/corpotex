@@ -61,28 +61,31 @@ export interface OrderListItem {
   purchase_orders_summary?: { total: number; confirmed: number; waiting_manager: number };
 }
 
-export interface PurchaseOrderListItem {
-  id: number;
-  code: string;
+// The schema types these loosely (plain strings, untyped refs, never null);
+// the overrides say what the API actually sends.
+type PurchaseOrderLoose =
+  | "kind"
+  | "status"
+  | "supplier"
+  | "total_units"
+  | "last_progress_at"
+  | "total_amount"
+  | "currency"
+  | "redistributed_from"
+  | "alert_severity"
+  | "material";
+
+export type PurchaseOrderListItem = Omit<S["PurchaseOrderList"], PurchaseOrderLoose> & {
   kind: "material" | "workshop" | "finished";
-  kind_display: string;
   status: string;
-  status_display: string;
-  waiting_manager: boolean;
   supplier: { id: number; name: string; kind: string };
-  orders: (Ref & { customer_name: string })[];
   total_units: number | string; // Decimal in the API
-  units_done: number;
-  progress_pct: number;
-  internal_due_on: string | null;
-  committed_on: string | null;
   last_progress_at: string | null;
-  next_follow_up_at: string | null;
   total_amount?: string | null; // hidden for production
   currency: Currency;
   redistributed_from: Ref | null;
   alert_severity: Severity | null;
-}
+};
 
 export type Payment = Omit<S["Payment"], "purchase_order" | "due_on"> & { due_on: string | null };
 
@@ -115,7 +118,7 @@ export interface PurchaseOrderDetail extends PurchaseOrderListItem {
   // Reduced in the API: {id, kind, summary, detail}.
   pending_decision: DecisionLike | null;
   suggested_supplier: { id: number; name: string } | null;
-  redistributed_into: (Ref & { supplier_name: string; quantity: Decimal; status_display: string })[];
+  redistributed_into: S["RedistributedInto"][]; // status only; label it with purchaseOrderStatusLabel
   rating: Rating | null;
 }
 
@@ -186,7 +189,7 @@ export interface Requirement {
   qty_to_order: string;
   status: string;
   status_display: string;
-  purchase_orders: (Ref & { supplier_name: string; quantity: string; status_display: string })[];
+  purchase_orders: S["RequirementPurchaseOrder"][];
 }
 
 export interface CriticalStep {
@@ -200,14 +203,8 @@ export interface CriticalStep {
   purchase_order_id: number | null;
 }
 
-// One row per status change (system, agent or a user), oldest first.
-export interface StatusHistoryEntry {
-  status: string;
-  status_display: string;
-  at: string;
-  actor: string | null; // system | agent | user | a username
-  note?: string | null;
-}
+// One row per status change (actor: system | agent | user | a username), oldest first.
+export type StatusHistoryEntry = S["StatusChange"];
 
 export interface OrderDetail extends OrderListItem {
   status_history?: StatusHistoryEntry[];
@@ -224,17 +221,13 @@ export interface OrderDetail extends OrderListItem {
   redistributions: Decision[];
 }
 
-export interface Alert {
-  id: number;
-  kind: string;
-  kind_display: string;
+// The schema leaves the refs untyped and severity/status optional.
+export type Alert = Omit<S["Alert"], "order" | "purchase_order" | "material" | "severity" | "status" | "detail"> & {
   severity: Severity;
-  status: "open" | "acknowledged" | "resolved";
-  text: string;
-  detected_at: string;
+  status: S["AlertStatusEnum"];
   order: Ref | null;
   purchase_order: (Ref & { supplier_name: string }) | null;
-}
+};
 
 // The matching sends the supplier nested; the redistribution sends it flat
 // (supplier_id, supplier_name). Read it through candidateSupplier().
@@ -416,34 +409,19 @@ export function candidateSupplier(candidate: Candidate): { id: number; name: str
 }
 
 // "Por pedir" (ADR 0025 A): open material requirements grouped by material.
-// GET /api/requirements/pending/; prices only reach the Gerente.
-export interface PendingRequirement {
-  material: { id: number; sku: string; name: string; unit: string; kind?: string; image?: string | null };
-  total_to_order: Decimal;
-  due_on: string | null; // the earliest of its orders
-  lead_time_days?: number | null; // of the suggested supplier
-  orders: { id: number; code: string; customer_name: string; qty: Decimal; due_on: string | null }[];
-  suggested_supplier: { id: number; name: string } | null;
-  candidates?: { supplier: { id: number; name: string }; unit_price?: Decimal | null; currency?: Currency; score?: Decimal | null }[]; // [] for Producción
-  reference_price?: Decimal | null; // Gerente only; per unit, in `currency`
-  currency?: Currency;
-  alert_id?: number | null;
-}
-
-// POST /api/purchase-orders/generate/ {material_ids?, supplier_overrides?} → 201 (B6.1 #60)
-export type GeneratedPurchaseOrder = Pick<PurchaseOrderListItem, "id" | "code" | "supplier" | "orders"> & {
-  material?: { id: number; sku: string; name: string } | null;
-  items?: { name: string }[]; // the detail serializer: the first item names the material
+// GET /api/requirements/pending/. Prices and candidates only reach the Gerente
+// ([] and null for Producción).
+export type PendingRequirement = Omit<S["PendingPurchase"], "currency" | "candidates"> & {
+  currency: Currency | null;
+  candidates: (Omit<S["PendingPurchaseCandidate"], "currency"> & { currency: Currency })[];
 };
 
-export interface GeneratedPurchaseOrders {
-  // The contract settled on `created`; `purchase_orders` was the earlier key. Read either.
-  created?: GeneratedPurchaseOrder[];
-  purchase_orders?: GeneratedPurchaseOrder[];
-  decision_id?: number | null;
-  // Materials with nothing open: ids today, maybe {material_id, reason} later.
-  skipped: (number | { material_id?: number; material?: string; reason?: string })[];
-}
+// POST /api/purchase-orders/generate/ {material_ids?, supplier_overrides?} → 201
+export type GeneratedPurchaseOrder = S["PurchaseOrderDetail"];
+export type GeneratedPurchaseOrders = S["GenerateResult"];
+
+// POST /api/orders/break-down/ {order_ids?}
+export type BreakDownResult = S["BreakDownResult"];
 
 // Order form (ADR 0025 B): GET /api/customers/ and GET /api/products/.
 export interface Customer {
@@ -452,13 +430,7 @@ export interface Customer {
   ruc?: string | null;
 }
 
-export interface Product {
-  id: number;
-  code: string;
-  name: string;
-  brand?: { id: number; name: string } | null;
-  image?: string | null;
-}
+export type Product = S["Product"];
 
 // POST /api/orders/ and PATCH /api/orders/<id>/ (items replace the list).
 export interface OrderInput {
@@ -473,24 +445,9 @@ export interface OrderInput {
 
 // POST /api/orders/<id>/classify/ → the AI's proposal per item (ADR 0025 C);
 // the same shape, edited, goes to POST /api/orders/<id>/apply-classification/.
-export interface ClassificationMaterial {
-  sku?: string | null; // an existing material…
-  new?: { sku: string; name: string; kind: string; unit: string } | null; // …or one to create
-  qty_per_unit: Decimal;
-  unit: string;
-  confidence?: number | null; // 0 to 1
-}
-
-export interface ClassificationItem {
-  item_id: number;
-  product: { existing_id?: number | null; new?: { code: string; name: string; brand: string } | null };
-  confidence?: number | null;
-  materials: ClassificationMaterial[];
-}
-
-export interface Classification {
-  items: ClassificationItem[];
-}
+export type Classification = S["ClassificationResult"];
+export type ClassificationItem = S["ClassificationItem"];
+export type ClassificationMaterial = S["ClassificationMaterial"];
 
 export const MATERIAL_KIND: Record<string, string> = { fabric: "Tela", button: "Botón", zipper: "Cierre", collar_cuff: "Cuello y puño", other: "Otro" };
 export const MATERIAL_UNIT: Record<string, string> = { m: "m", kg: "kg", unit: "unidad" };

@@ -10,7 +10,7 @@ import { Payments } from "@/components/payments";
 import { ProgressForm } from "@/components/progress-form";
 import { ProgressTimeline } from "@/components/progress-timeline";
 import { useUser } from "@/components/require-auth";
-import { StatusTimeline } from "@/components/status-timeline";
+import { purchaseOrderStatusLabel, StatusTimeline } from "@/components/status-timeline";
 import { Thumb } from "@/components/thumb";
 import { Card, Pill, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
@@ -63,7 +63,7 @@ export default function PurchaseOrderDetailPage() {
               ({o.customer_name})
             </span>
           ))}
-          {po.total_amount ? ` · ${formatMoney(po.total_amount, po.currency)}` : ""}
+          {num(po.total_amount) ? ` · ${formatMoney(po.total_amount, po.currency)}` : ""}
         </p>
         {isManager && (
           <p className="mt-1 text-sm">
@@ -109,7 +109,7 @@ export default function PurchaseOrderDetailPage() {
                 <Link href={`/purchase-orders/${child.id}`} className="font-medium text-accent hover:underline">
                   {child.code}
                 </Link>{" "}
-                · {child.supplier_name} · {num(child.quantity)} u. · {child.status_display}
+                · {child.supplier_name} · {num(child.quantity)} u. · {purchaseOrderStatusLabel(child.status)}
               </li>
             ))}
           </ul>
