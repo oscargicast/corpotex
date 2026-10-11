@@ -115,7 +115,7 @@ class NumberConflict(Exception):
 
 SUPPLIER_FIELDS = (
     "name", "kind", "specialties", "city", "address", "lat", "lng", "weekly_capacity",
-    "lead_time_days", "follow_up_every_hours", "follow_up_mode", "currency", "notes", "is_in_house",
+    "lead_time_days", "follow_up_every_hours", "follow_up_mode", "currency", "notes", "is_in_house", "agent_paused",
 )
 
 
@@ -155,11 +155,16 @@ def update_supplier(supplier: Supplier, data: dict, *, actor) -> Supplier:
 
     require_role(actor, "manager")
     with transaction.atomic():
+        resumed = supplier.agent_paused and data.get("agent_paused") is False
         for field, value in _clean(data).items():
             setattr(supplier, field, value)
         if data.get("status") in dict(Supplier.Status.choices):
             supplier.status = data["status"]
         supplier.save()
+        if resumed:  # ADR 0030: the first contacts approved during the pause go out now
+            from messaging.services import resume_agent
+
+            resume_agent([supplier.id])
         if data.get("contact_name") is not None:
             set_contact_name(supplier, data["contact_name"])
         if data.get("rates") is not None:

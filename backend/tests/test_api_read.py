@@ -93,7 +93,8 @@ def test_code_filter_is_exact(manager_client, scenario):
 @pytest.mark.django_db
 def test_monitor_shape_by_role(manager_client, sales_client, scenario):
     body = manager_client.get("/api/monitor/").json()
-    assert set(body) == {"clock", "kpis", "alerts", "decisions", "redistributions", "orders_in_danger", "payments_by_supplier"}
+    assert set(body) == {"clock", "kpis", "alerts", "decisions", "redistributions", "orders_in_danger", "payments_by_supplier", "plant", "agent"}
+    assert body["plant"] is None and body["agent"] == {"paused": False, "paused_suppliers": 0}  # ADR 0030: no in-house supplier here
     assert body["kpis"] == {
         "orders_in_danger": 1,
         "orders_at_risk": 0,

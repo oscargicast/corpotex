@@ -80,6 +80,7 @@ class SupplierPatchSerializer(serializers.Serializer):
     )
     currency = serializers.ChoiceField(choices=Currency.choices, required=False)
     notes = serializers.CharField(required=False, allow_blank=True)
+    agent_paused = serializers.BooleanField(required=False, help_text="ADR 0030: the agent writes nothing to this supplier.")
 
 
 class NumberInSerializer(serializers.Serializer):

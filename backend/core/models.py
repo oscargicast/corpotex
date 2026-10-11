@@ -103,6 +103,7 @@ class Config(TimeStamped):
     follow_up_window_start = models.TimeField(default=time(9, 0), help_text="Lima time.")
     follow_up_window_end = models.TimeField(default=time(18, 0), help_text="Lima time.")
     follow_up_weekdays = models.JSONField(default=default_follow_up_weekdays, help_text="0 = Monday.")
+    agent_paused = models.BooleanField(default=False, help_text="ADR 0030: the agent writes to no supplier; the assistants keep working.")
 
     class Meta:
         verbose_name = "configuración"

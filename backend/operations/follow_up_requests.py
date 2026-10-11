@@ -74,6 +74,8 @@ def request_follow_up(purchase_orders, *, actor, subject: str, dry_run: bool = F
     """One request per open purchase order. Orders already waiting hang on that wait (`asked`,
     with the original time) and queue nothing; the rest go in one `requested` turn per supplier.
     `dry_run` (the assistant's preview) creates and queues nothing."""
+    from messaging.services import agent_paused_for
+
     now = clock.now()
     reason = f"{role_label(actor)} pide avance de {subject}"
     rows, to_ask = [], OrderedDict()
@@ -82,8 +84,13 @@ def request_follow_up(purchase_orders, *, actor, subject: str, dry_run: bool = F
             if po.status not in PurchaseOrder.OPEN_STATUSES:
                 continue
             conversation = channel_for(po)
+            paused = conversation is not None and agent_paused_for(conversation)
+            if paused:
+                conversation = None  # ADR 0030: nothing goes to a paused supplier
             original = waiting_since(po, now) if conversation else None
-            if conversation is None:
+            if paused:
+                status, skip_reason = FollowUpRequest.Status.SKIPPED, "agente en pausa"
+            elif conversation is None:
                 status, skip_reason = FollowUpRequest.Status.SKIPPED, "sin canal"
             else:
                 status, skip_reason = (FollowUpRequest.Status.ASKED if original else FollowUpRequest.Status.PENDING), ""
@@ -132,7 +139,10 @@ def _detail(rows: list[dict], dry_run: bool) -> str:
         parts.append(f"A {name} se le escribirá a las {at}: de noche no se le escribe a los proveedores.")  # never names the channel (#119)
     for name in sorted({r["supplier_name"] for r in rows if r["status"] == FollowUpRequest.Status.SKIPPED and r["in_house"]}):
         parts.append(f"A {name} no se le escribe: es la planta propia.")
-    for name in sorted({r["supplier_name"] for r in rows if r["status"] == FollowUpRequest.Status.SKIPPED and not r["in_house"]}):
+    skipped = [r for r in rows if r["status"] == FollowUpRequest.Status.SKIPPED and not r["in_house"]]
+    for name in sorted({r["supplier_name"] for r in skipped if r["skip_reason"] == "agente en pausa"}):
+        parts.append(f"A {name} no se le escribe: el agente está en pausa.")
+    for name in sorted({r["supplier_name"] for r in skipped if r["skip_reason"] != "agente en pausa"}):
         parts.append(f"A {name} no se le puede escribir: no tiene número.")
     for row in waiting:
         when = timezone.localtime(row["asked_at"])

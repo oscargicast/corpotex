@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from core import clock
 from core.models import Config
+from core.views_agent import agent_settings
 from core.permissions import IsManager
 from core.serializers import serializer_for
 from operations.models import Order, PurchaseOrder
@@ -43,6 +44,23 @@ MonitorSchema = inline_serializer(
         "redistributions": DecisionSerializer(many=True),
         "orders_in_danger": OrderListSerializer(many=True),
         "payments_by_supplier": serializers.ListField(child=serializers.DictField(), allow_null=True),
+        "plant": inline_serializer(
+            "MonitorPlant",
+            fields={
+                "name": serializers.CharField(),
+                "weekly_capacity": serializers.IntegerField(allow_null=True),
+                "units_in_progress": serializers.IntegerField(help_text="Units in the plant's open workshop purchase orders."),
+                "load_pct": serializers.FloatField(allow_null=True, help_text="units_in_progress over weekly_capacity, in %; null without a capacity."),
+                "open_purchase_orders": serializers.IntegerField(),
+            },
+            allow_null=True,
+            help_text="ADR 0030: the own plant's capacity KPI; null when there is no in-house supplier.",
+        ),
+        "agent": inline_serializer(
+            "MonitorAgent",
+            fields={"paused": serializers.BooleanField(), "paused_suppliers": serializers.IntegerField()},
+            help_text="ADR 0030: the agent's pause, for a notice on the Monitor.",
+        ),
     },
 )
 BadgesSchema = inline_serializer(
@@ -66,6 +84,24 @@ ManagerPendingSchema = inline_serializer(
     "ManagerPending",
     fields={"decisions": DecisionSerializer(many=True), "orders_in_danger": OrderListSerializer(many=True), "alerts": AlertSerializer(many=True)},
 )
+
+
+def plant_capacity() -> dict | None:
+    """ADR 0030: units in the open purchase orders of the own plant over its weekly capacity."""
+    from suppliers.models import Supplier
+    from suppliers.services import OPEN, supplier_load
+
+    plant = Supplier.objects.filter(is_in_house=True).order_by("id").first()
+    if plant is None:
+        return None
+    load = supplier_load(plant)
+    return {
+        "name": plant.name,
+        "weekly_capacity": plant.weekly_capacity,
+        "units_in_progress": int(load["units"]),
+        "load_pct": load["pct"],
+        "open_purchase_orders": plant.purchase_orders.filter(status__in=OPEN).count(),
+    }
 
 
 class MonitorView(APIView):
@@ -112,6 +148,8 @@ class MonitorView(APIView):
                 "redistributions": decision_cls(redistributions, many=True, context=context).data,
                 "orders_in_danger": serializer_for(Order, role)(in_danger, many=True, context=context).data,
                 "payments_by_supplier": payments_by_supplier() if is_manager else None,
+                "plant": plant_capacity(),
+                "agent": agent_settings(),
             }
         )
 

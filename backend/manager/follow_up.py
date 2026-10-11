@@ -225,15 +225,17 @@ def open_purchase_orders(supplier_ids=None):
 
 
 def plan_for_today(now: datetime | None = None, supplier_ids=None) -> list[PlannedFollowUp]:
-    """What each supplier gets today, with the time it may go. Empty on non-working days."""
+    """What each supplier gets today, with the time it may go. Empty on non-working days and
+    while the agent is paused; a paused supplier gets nothing (ADR 0030)."""
     config = Config.load()
     now = now or clock.now()
     today = timezone.localtime(now).date()
-    if today.weekday() not in config.follow_up_weekdays:
+    if today.weekday() not in config.follow_up_weekdays or config.agent_paused:
         return []
     by_supplier: dict[int, list] = {}
     for po in open_purchase_orders(supplier_ids):
-        by_supplier.setdefault(po.supplier_id, []).append(po)
+        if not po.supplier.agent_paused:
+            by_supplier.setdefault(po.supplier_id, []).append(po)
     plan = []
     for pos in by_supplier.values():
         supplier = pos[0].supplier

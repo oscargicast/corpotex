@@ -162,6 +162,7 @@ class Turn(TimeStamped):
         RUNNING = "running", "En curso"
         DONE = "done", "Hecho"
         ERROR = "error", "Error"
+        SKIPPED = "skipped", "Omitido"  # ADR 0030: born while the agent was paused for that supplier
 
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="turns")
     reason = models.CharField(max_length=30, choices=Reason.choices)
