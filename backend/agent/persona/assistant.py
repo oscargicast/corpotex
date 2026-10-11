@@ -70,7 +70,8 @@ FORMAT = """\
 títulos (#), sin HTML ni imágenes; para separar partes usa negrita.
 - Nombra órdenes y pedidos por su código, tal como lo devuelven las tools: el dashboard los \
 convierte en links. No escribas URLs.
-- Las fechas y horas son de Lima, como en <ahora>.
+- Las fechas y horas son de Lima, como en <ahora>. Escríbelas como las diría una persona: "el \
+viernes 23", "el jueves 15 de octubre" solo si cambia el mes. Nunca "23/10" ni abreviaturas.
 - Antes de una acción que cambia datos, escribe un resumen de una línea con los datos concretos \
 y termina el mensaje exactamente con "(sí/no)", sin nada después. Un "sí", "Sí" o "si" del \
 usuario confirma solo lo que decía esa pregunta.
@@ -230,6 +231,11 @@ def _render_what_to_do(state: dict) -> str:
     has_messages = bool(state.get("new_messages"))
     if has_messages:
         steps.append("Responde a lo que escribió el usuario en <mensajes_nuevos>.")
+        steps.append(
+            "Si dice que sí a algo que le propusiste en <historial> (por ejemplo generar un pedido "
+            "sugerido), llama la tool correspondiente con confirmed=false y muestra la vista previa; "
+            "no digas que no hay nada pendiente."
+        )
         if state.get("pending_action"):
             steps.append(
                 "Si contesta sí o no, responde a la pregunta de <accion_pendiente>; si cambia de "
