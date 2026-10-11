@@ -7,7 +7,7 @@ import { DecisionCard } from "@/components/decision-card";
 import { OnboardingBanner } from "@/components/onboarding-banner";
 import { RedistributionCard } from "@/components/redistribution-card";
 import { useUser } from "@/components/require-auth";
-import { Card, Pill, RISK_LABEL, RISK_TONE, SectionTitle } from "@/components/ui";
+import { Card, Pill, RISK_LABEL, RISK_TONE, ROW_HOVER, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import { formatDay, formatMoney } from "@/lib/format";
 import type { Monitor, PaymentSummary } from "@/lib/types";
@@ -61,7 +61,7 @@ export default function MonitorPage() {
           )}
           {data.redistributions.length > 0 && (
             <Card>
-              <SectionTitle>Redistribuciones recientes</SectionTitle>
+              <SectionTitle count={data.redistributions.length}>Redistribuciones recientes</SectionTitle>
               <div className="space-y-3">
                 {data.redistributions.map((decision) => (
                   <RedistributionCard key={decision.id} decision={decision} />
@@ -74,19 +74,20 @@ export default function MonitorPage() {
             {data.orders_in_danger.length ? (
               <ul className="divide-y divide-line">
                 {data.orders_in_danger.map((order) => (
-                  <li key={order.id} className="py-2.5 first:pt-0 last:pb-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Link href={`/orders/${order.id}`} className="font-semibold text-accent hover:underline">
-                        {order.code}
-                      </Link>
-                      <span className="text-sm">{order.customer.name}</span>
+                  <li key={order.id} className="py-2 first:pt-0 last:pb-0">
+                    {/* One line; the reason in full as the tooltip. */}
+                    <Link
+                      href={`/orders/${order.id}`}
+                      title={order.risk_reason || undefined}
+                      className={`-mx-2 flex min-h-11 flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md px-2 py-1 text-sm ${ROW_HOVER}`}
+                    >
+                      <span className="shrink-0 whitespace-nowrap font-semibold text-accent">{order.code}</span>
+                      <span className="min-w-0 flex-1 truncate sm:flex-none">{order.customer.name}</span>
                       <Pill tone={RISK_TONE[order.risk]}>{RISK_LABEL[order.risk]}</Pill>
-                    </div>
-                    <p className="mt-1 text-sm text-muted">
-                      Entrega {formatDay(order.promised_on)} · estimada{" "}
-                      <span className="font-medium text-danger">{formatDay(order.estimated_on)}</span>
-                      {order.risk_reason ? ` · ${order.risk_reason}` : ""}
-                    </p>
+                      <span className="w-full text-xs tabular-nums text-muted sm:ml-auto sm:w-auto sm:shrink-0">
+                        entrega {formatDay(order.promised_on)} · <span className="font-medium text-danger">est. {formatDay(order.estimated_on)}</span>
+                      </span>
+                    </Link>
                   </li>
                 ))}
               </ul>
