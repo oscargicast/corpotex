@@ -238,3 +238,12 @@ def test_open_requests_ask_to_answer_follow_up_only_when_present():
     assert '<consulta id="12" pedido="PT-0038" desde="miércoles 14 de octubre, 09:45"/>' in text
     assert "llama answer_follow_up con esos ids" in text
     assert "answer_follow_up" not in turn_text(follow_up_state("seguimiento_a_pedido"))
+
+
+def test_photos_come_by_chat_and_the_link_is_only_a_fallback():
+    assert "Las fotos de avance llegan por este mismo chat" in prompt.HOW_TO_WRITE
+    assert "nunca en el primer contacto" in prompt.HOW_TO_WRITE
+    first = turn_text(follow_up_state("pedido_aprobado_primer_contacto"))
+    assert "ni mandes el link de reporte" in first
+    photo = turn_text(follow_up_state("foto_sin_cantidad"))
+    assert 'media="imagen"' in photo
