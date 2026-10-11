@@ -90,3 +90,22 @@ def test_alert_payloads_by_role(urgent, catalogue, manager, production, sales, m
         assert payload["suggested_supplier"]["name"] == "Avíos Gamarra"
         assert (payload["reference_price"], payload["currency"]) == (("0.18", "PEN") if with_prices else (None, None))
         assert "detail" not in payload and "text" not in payload
+
+
+@pytest.mark.django_db
+def test_generating_the_purchase_order_closes_the_suggestion_at_once(urgent, catalogue, production, manager):
+    """Finding of 10/10 22:00: the thread's suggestion stayed open after PI-0010 and the
+    assistant announced a purchase already made."""
+    manager_services.suggest_purchases()
+    alert = Alert.objects.get(kind="purchase_suggested", status="open", material=catalogue["buttons"])
+    services.generate_purchase_orders([catalogue["buttons"].id], actor=production)
+    alert.refresh_from_db()
+    assert alert.status == "resolved"  # Closed inside generate, before any tick.
+    # A requirement that stops being open for any other reason also closes it on the next tick.
+    fabric_alert = Alert.objects.get(kind="purchase_suggested", status="open", material=catalogue["fabric"])
+    from operations.models import Requirement
+
+    Requirement.objects.filter(material=catalogue["fabric"]).update(status="ordered")
+    manager_services.suggest_purchases()
+    fabric_alert.refresh_from_db()
+    assert fabric_alert.status == "resolved"
