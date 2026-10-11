@@ -43,6 +43,7 @@ class Order(TimeStamped):
     production_stage = models.CharField(max_length=20, choices=Stage.choices, blank=True)
     issued_on = models.DateField()
     promised_on = models.DateField(help_text="Promised to the customer.")
+    notes = models.TextField(blank=True, help_text="Free text from the order form (ADR 0025 B).")
     estimated_on = models.DateField(null=True, blank=True, help_text="From the critical path.")
     critical_path = models.JSONField(default=list)
     risk = models.CharField(max_length=20, choices=Risk.choices, default=Risk.OK)

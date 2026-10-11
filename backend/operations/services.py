@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
 
@@ -91,6 +92,7 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
             owner=actor,
             issued_on=payload.get("issued_on") or clock.today(),
             promised_on=payload["promised_on"],
+            notes=payload.get("notes") or "",
         )
         StatusChange.objects.create(order=order, status=order.status, at=clock.now(), actor=actor_label(actor))
         for item in payload["items"]:
@@ -168,6 +170,135 @@ def confirm_order(order: Order, *, actor) -> Order:
         # Materials stay open: Produccion (or the manager) generates one consolidated purchase
         # order per material across orders (ADR 0025 A). Workshop and finished goods are per order.
         match_requirements([r for r in order.requirements.all() if r.kind != "material"])
+    return order
+
+
+EDITABLE_BY_SALES = (Order.Status.REGISTERED, Order.Status.BROKEN_DOWN)
+CANCELLABLE = (Order.Status.REGISTERED, Order.Status.BROKEN_DOWN, Order.Status.CONFIRMED, Order.Status.SOURCING)
+
+
+def check_order_edit(order: Order, *, actor, cancel: bool = False) -> None:
+    """ADR 0025 B: sales edits and cancels only their own orders up to `broken_down`; the
+    manager edits any order and cancels any before production; production touches no order."""
+    role = getattr(actor, "role", None)
+    if role == "manager":
+        if cancel and order.status not in CANCELLABLE:
+            raise UnknownReference(f"La orden {order.code} ya está en {order.get_status_display().lower()} y no se puede cancelar")
+        return
+    if role != "sales":
+        raise PermissionDenied("Solo Comercial y el Gerente editan órdenes")
+    if order.owner_id != getattr(actor, "id", None):
+        raise PermissionDenied("Comercial solo edita sus propias órdenes")
+    if order.status not in EDITABLE_BY_SALES:
+        raise PermissionDenied(f"La orden ya está en {order.get_status_display().lower()}: solo el Gerente la cambia")
+
+
+def _resolve_references(payload: dict) -> tuple:
+    customer = brand = None
+    if payload.get("customer") is not None:
+        customer = Customer.objects.filter(name__iexact=str(payload["customer"]).strip()).first()
+        if customer is None:
+            raise UnknownReference(f"El cliente {payload['customer']} no existe")
+    if payload.get("brand") is not None:
+        brand = Brand.objects.filter(name__iexact=str(payload["brand"]).strip()).first()
+        if brand is None:
+            raise UnknownReference(f"La marca {payload['brand']} no existe")
+    products = {}
+    for item in payload.get("items") or []:
+        code = str(item["product"]).strip()
+        products[code] = products.get(code) or Product.objects.filter(code__iexact=code).first()
+        if products[code] is None:
+            raise UnknownReference(f"El producto {code} no existe")
+    return customer, brand, products
+
+
+def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str]]:
+    """`PATCH /api/orders/<id>/`: header fields and, when `items` comes, the full list of items.
+    Orders already broken down are broken down again; requirements that a purchase order
+    already covers are left alone and reported in the warnings."""
+    check_order_edit(order, actor=actor)
+    customer, brand, products = _resolve_references(payload)
+    warnings: list[str] = []
+    with transaction.atomic():
+        if customer is not None:
+            order.customer = customer
+        if brand is not None:
+            order.brand = brand
+        for field in ("promised_on", "issued_on", "notes"):
+            if payload.get(field) is not None:
+                setattr(order, field, payload[field])
+        order.save()
+        if payload.get("items") is not None:
+            order.items.all().delete()
+            for item in payload["items"]:
+                OrderItem.objects.create(
+                    order=order,
+                    product=products[str(item["product"]).strip()],
+                    quantity=item["quantity"],
+                    sizes=item.get("sizes") or {},
+                    color=item.get("color", "") or "",
+                    customization=item.get("customization", "") or "",
+                    unit_price=Decimal(str(item["unit_price"])),
+                )
+            if order.status != Order.Status.REGISTERED:
+                warnings = rebreak_down_order(order)
+        compute_critical_path(order)
+    return order, warnings
+
+
+def rebreak_down_order(order: Order) -> list[str]:
+    """Recomputes the requirements of an edited order. A requirement a purchase order already
+    covers (ordered or covered with items) stays as it is; the rest is rebuilt."""
+    kept = [r for r in order.requirements.all() if r.purchase_order_items.exists()]
+    kept_keys = {(r.kind, r.material_id, r.product_id) for r in kept}
+    order.requirements.exclude(pk__in=[r.pk for r in kept]).delete()
+    needed: dict[int, Decimal] = {}
+    for item in order.items.select_related("product").prefetch_related("product__materials__material"):
+        for pm in item.product.materials.all():
+            needed[pm.material_id] = needed.get(pm.material_id, Decimal("0")) + item.quantity * pm.qty_per_unit
+    from core.models import Material
+
+    for material_id, qty in needed.items():
+        if ("material", material_id, None) in kept_keys:
+            continue
+        material = Material.objects.select_for_update().get(pk=material_id)
+        available = max(material.stock - committed_stock(material), Decimal("0"))
+        from_stock = min(available, qty)
+        Requirement.objects.create(
+            order=order, kind="material", material=material, qty_needed=qty, qty_from_stock=from_stock,
+            status=Requirement.Status.COVERED if qty - from_stock <= 0 else Requirement.Status.OPEN,
+        )
+    for item in order.items.all():
+        if ("workshop", None, item.product_id) not in kept_keys:
+            Requirement.objects.create(order=order, kind="workshop", product=item.product, qty_needed=item.quantity)
+    warnings = []
+    for requirement in kept:
+        what = (requirement.material or requirement.product).name
+        codes = ", ".join(sorted({i.purchase_order.code for i in requirement.purchase_order_items.select_related("purchase_order")}))
+        warnings.append(f"{what}: ya pedido en {codes}; el requerimiento no se tocó")
+    return warnings
+
+
+def cancel_order(order: Order, *, reason: str = "", actor) -> Order:
+    """`POST /api/orders/<id>/cancel/`: the order and its suggested purchase orders are
+    cancelled; purchase orders already approved stay for the manager to settle."""
+    check_order_edit(order, actor=actor, cancel=True)
+    with transaction.atomic():
+        for po in _order_purchase_orders(order).filter(status=PurchaseOrder.Status.SUGGESTED):
+            set_status(po, PurchaseOrder.Status.CANCELLED, actor=actor, note=f"Orden {order.code} cancelada")
+            for item in po.items.select_related("requirement"):
+                sync_requirement_status(item.requirement)
+        from manager.models import Decision
+
+        for decision in Decision.objects.filter(status="pending", kind="approve_assignment", purchase_orders__items__requirement__order=order).distinct():
+            if not decision.purchase_orders.exclude(status=PurchaseOrder.Status.CANCELLED).exists():
+                decision.status = "rejected"
+                decision.note = f"Orden {order.code} cancelada"
+                decision.resolved_at = clock.now()
+                decision.save(update_fields=["status", "note", "resolved_at", "updated_at"])
+        order.risk, order.risk_reason = Order.Risk.OK, ""
+        order.save(update_fields=["risk", "risk_reason", "updated_at"])
+        set_status(order, Order.Status.CANCELLED, actor=actor, note=reason or "Cancelada desde el dashboard")
     return order
 
 

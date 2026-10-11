@@ -162,3 +162,26 @@ def test_seed_users_carry_the_demo_names(manager_client):
     User.objects.filter(username="gerente").update(first_name="Óscar", last_name="G.")
     call_command("seed_demo", verbosity=0)
     assert User.objects.get(username="gerente").first_name == "Óscar"
+
+
+@pytest.mark.django_db
+def test_seed_reset_chats_and_real_supplier_follow_ups(manager):
+    from django.utils import timezone
+
+    from messaging.models import Conversation, Message, Turn
+    from messaging.services import dashboard_conversation, enqueue_turn
+    from operations.models import PurchaseOrder
+
+    conversation = dashboard_conversation(manager)
+    Message.objects.create(conversation=conversation, author="user", text="hola", status="received", sent_at=timezone.now())
+    enqueue_turn(conversation, "message")
+    Conversation.objects.filter(pk=conversation.pk).update(agent_session="sess-1", pending_action={"kind": "x"})
+    call_command("seed_demo", verbosity=0)  # keeps the chat
+    assert Message.objects.filter(conversation=conversation).exists() and Conversation.objects.get(pk=conversation.pk).agent_session == "sess-1"
+    call_command("seed_demo", reset_chats=True, verbosity=0)
+    conversation.refresh_from_db()
+    assert not Message.objects.filter(conversation=conversation).exists() and not Turn.objects.filter(conversation=conversation).exists()
+    assert conversation.agent_session == "" and conversation.pending_action is None
+    # Open purchase orders of the real supplier are not due for a follow-up right after the seed.
+    real = PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES, supplier__numbers__simulated=False, supplier__numbers__active=True).distinct()
+    assert real.exists() and all(po.next_follow_up_at > timezone.now() for po in real)

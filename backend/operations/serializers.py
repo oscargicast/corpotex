@@ -149,6 +149,7 @@ class OrderListSerializer(DisplayMixin, serializers.ModelSerializer):
             "total_units",
             "total_amount",
             "purchase_orders_summary",
+            "owner_id",
         ]
 
     @extend_schema_field(OpenApiTypes.OBJECT)
@@ -198,8 +199,10 @@ class OrderDetailSerializer(StatusHistoryMixin, OrderListSerializer):
     redistributions = serializers.SerializerMethodField()
 
     class Meta(OrderListSerializer.Meta):
+        role_visible = ("notes",)  # The order's own notes are for every role; supplier notes stay manager-only.
         fields = OrderListSerializer.Meta.fields + [
             "owner",
+            "notes",
             "critical_path",
             "items",
             "requirements",

@@ -200,7 +200,8 @@ class Loader:
             material.save()
             self.materials[material.sku] = material
         for row in self.read("products"):
-            product = Product(code=row["code"], name=row["name"])
+            brand = self.brands.get(row.get("brand") or "") or self.brand_for_code(row["code"])
+            product = Product(code=row["code"], name=row["name"], brand=brand)
             self.image(product, "image", row.get("image"), f"products/{row['code']}.jpg")
             product.save()
             self.products[product.code] = product
@@ -212,6 +213,12 @@ class Loader:
             )
 
     # --- suppliers --------------------------------------------------------------------------
+
+    BRAND_PREFIXES = {"UNI": "UNICRACK", "NEX": "NEXO", "LMC": "Línea Médica Corpotex"}
+
+    def brand_for_code(self, code: str):
+        """Kenji's product codes carry the brand: UNI-, NEX-, LMC-."""
+        return self.brands.get(self.BRAND_PREFIXES.get(code.split("-")[0].upper(), ""))
 
     def load_suppliers(self):
         for row in self.read("suppliers"):
@@ -577,9 +584,11 @@ class Loader:
 
     # --- orchestration ----------------------------------------------------------------------
 
-    def wipe(self):
+    def wipe(self, *, reset_chats: bool = False):
         """Demo data only: never users, tokens, the WhatsApp onboarding state, the style nor the
-        dashboard chats (a reseed during a demo must not swallow what someone just asked)."""
+        dashboard chats (a reseed during a demo must not swallow what someone just asked).
+        With `reset_chats` the assistant chats start over too: messages and turns gone, the
+        agent session and any pending action cleared, so the worker opens a fresh session."""
         from messaging.models import Turn
         from operations.models import Route
 
@@ -588,6 +597,11 @@ class Loader:
         Turn.objects.filter(conversation__in=supplier_chats).delete()
         Message.objects.filter(conversation__in=supplier_chats).delete()
         supplier_chats.delete()
+        if reset_chats:
+            dashboards = Conversation.objects.filter(channel=Conversation.Channel.DASHBOARD)
+            Turn.objects.filter(conversation__in=dashboards).delete()
+            Message.objects.filter(conversation__in=dashboards).delete()
+            dashboards.update(agent_session="", pending_action=None)
         for model in (Alert, Decision, StatusChange, Payment, Delivery, ProgressReport, PurchaseOrderItem, PurchaseOrder, Requirement, OrderItem, Order, Rate, AllowedNumber, Supplier, ProductMaterial, Product, Material, Customer, Brand):
             model.objects.all().delete()
 
@@ -650,6 +664,11 @@ class Loader:
             if conversation:
                 po.conversation = conversation
                 po.save(update_fields=["conversation"])
+        # A real supplier must not get a follow-up the second the tick runs after a reseed: the
+        # demo's first contact comes from an approval. Simulated suppliers keep the JSON's dates.
+        for po in PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES, supplier__numbers__active=True, supplier__numbers__simulated=False).distinct():
+            po.next_follow_up_at = self.t + timedelta(hours=po.supplier.follow_up_every_hours)
+            po.save(update_fields=["next_follow_up_at"])
         for order in Order.objects.all():
             fixed = (order.estimated_on, order.risk, order.risk_reason)
             compute_critical_path(order)

@@ -13,6 +13,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--reset-style", action="store_true", help="Recrea las StyleVersion y User.style_md desde los JSON.")
+        parser.add_argument("--reset-chats", action="store_true", help="Borra también los chats del asistente (mensajes, turnos y sesión) de cada usuario.")
         parser.add_argument("--data-dir", help="Otra carpeta de fixtures (por defecto backend/seed/data).")
 
     def handle(self, *args, **options):
@@ -22,7 +23,7 @@ class Command(BaseCommand):
         try:
             with transaction.atomic():
                 loader.load_users()
-                loader.wipe()
+                loader.wipe(reset_chats=options["reset_chats"])
                 loader.load_config()
                 loader.load_catalogue()
                 loader.load_suppliers()

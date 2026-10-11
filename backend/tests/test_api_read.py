@@ -210,3 +210,17 @@ def test_media_is_served_and_unknown_routes_stay_quiet_without_debug(anonymous_c
     missing = anonymous_client.get("/api/no-existe/")
     assert missing.status_code == 404
     assert b"api/orders" not in missing.content  # No route listing (the yellow page) outside DEBUG.
+
+
+@pytest.mark.django_db
+def test_order_notes_are_visible_to_sales_but_supplier_notes_stay_manager_only(sales_client, manager_client, scenario, sales):
+    from core.serializers import serializer_for
+    from suppliers.models import Supplier
+
+    scenario["order"].notes = "Entregar en la agencia"
+    scenario["order"].save()
+    assert sales_client.get(f"/api/orders/{scenario['order'].id}/").json()["notes"] == "Entregar en la agencia"
+    for role in ("sales", "production"):
+        payload = serializer_for(Supplier, role, detail=True)(scenario["supplier"], context={"role": role}).data
+        assert "notes" not in payload  # "Trato de usted." never leaves the manager's view
+    assert manager_client.get(f"/api/suppliers/{scenario['supplier'].id}/").json()["notes"] == "Trato de usted."

@@ -366,6 +366,37 @@
                 }
             }
         },
+        "/api/customers/": {
+            "get": {
+                "operationId": "customers_list",
+                "tags": [
+                    "customers"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Customer"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/manager/decisions/{id}/": {
             "post": {
                 "operationId": "manager_decisions_create",
@@ -1137,6 +1168,122 @@
                         "description": ""
                     }
                 }
+            },
+            "patch": {
+                "operationId": "orders_partial_update",
+                "description": "Edit an order (sales: own, up to broken_down; manager: any). `items` replaces the\nlist and re-breaks down; requirements already ordered stay and come back in `warnings`.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este orden.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedOrderPatchRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedOrderPatchRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedOrderPatchRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/orders/{id}/cancel/": {
+            "post": {
+                "operationId": "orders_cancel_create",
+                "description": "Sales cancels own orders up to broken_down; the manager any order before production.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Un valor de entero único que identifique este orden.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CancelInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CancelInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CancelInRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderDetail"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
             }
         },
         "/api/orders/{id}/confirm/": {
@@ -1349,6 +1496,37 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/products/": {
+            "get": {
+                "operationId": "products_list",
+                "tags": [
+                    "products"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Product"
+                                    }
                                 }
                             }
                         },
@@ -3170,6 +3348,15 @@
                     }
                 }
             },
+            "CancelInRequest": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "default": ""
+                    }
+                }
+            },
             "ChannelEnum": {
                 "enum": [
                     "whatsapp",
@@ -3345,6 +3532,61 @@
                 ],
                 "type": "string",
                 "description": "* `PEN` - PEN\n* `USD` - USD"
+            },
+            "Customer": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "ruc": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/CustomerKindEnum"
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "address": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "lat": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "kind",
+                    "kind_display",
+                    "name",
+                    "ruc"
+                ]
+            },
+            "CustomerKindEnum": {
+                "enum": [
+                    "company",
+                    "school",
+                    "ngo",
+                    "individual"
+                ],
+                "type": "string",
+                "description": "* `company` - Empresa\n* `school` - Colegio\n* `ngo` - ONG\n* `individual` - Persona"
             },
             "Decision": {
                 "type": "object",
@@ -4188,10 +4430,19 @@
                         "additionalProperties": {},
                         "readOnly": true
                     },
+                    "owner_id": {
+                        "type": "integer",
+                        "nullable": true,
+                        "readOnly": true
+                    },
                     "owner": {
                         "type": "object",
                         "additionalProperties": {},
                         "readOnly": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Free text from the order form (ADR 0025 B)."
                     },
                     "critical_path": {},
                     "items": {
@@ -4265,6 +4516,7 @@
                     "issued_on",
                     "items",
                     "owner",
+                    "owner_id",
                     "production_stage_display",
                     "promised_on",
                     "purchase_orders",
@@ -4304,6 +4556,10 @@
                     "promised_on": {
                         "type": "string",
                         "format": "date"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "default": ""
                     },
                     "items": {
                         "type": "array",
@@ -4495,6 +4751,11 @@
                         "additionalProperties": {},
                         "readOnly": true
                     },
+                    "owner_id": {
+                        "type": "integer",
+                        "nullable": true,
+                        "readOnly": true
+                    },
                     "status_display": {
                         "type": "string",
                         "readOnly": true,
@@ -4517,6 +4778,7 @@
                     "customer",
                     "id",
                     "issued_on",
+                    "owner_id",
                     "production_stage_display",
                     "promised_on",
                     "purchase_orders_summary",
@@ -4575,6 +4837,37 @@
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 40
+                    }
+                }
+            },
+            "PatchedOrderPatchRequest": {
+                "type": "object",
+                "description": "The order form (ADR 0025 B): header fields and, when present, the full list of items.",
+                "properties": {
+                    "customer": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "brand": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "issued_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "promised_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemInRequest"
+                        }
                     }
                 }
             },
@@ -4757,6 +5050,41 @@
                 ],
                 "type": "string",
                 "description": "* `yape` - Yape\n* `transfer` - Transferencia\n* `cash` - Efectivo"
+            },
+            "Product": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "code": {
+                        "type": "string",
+                        "maxLength": 40
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "brand": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "image": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true,
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "brand",
+                    "code",
+                    "id",
+                    "image",
+                    "name"
+                ]
             },
             "ProductRef": {
                 "type": "object",
