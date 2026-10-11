@@ -18,7 +18,13 @@ interface Props {
   onStart: (routeId: number) => void;
   onSimulate: (vehicleId: number, on: boolean) => void;
   onDeliver: (routeId: number, stopId: number) => void;
+  speed: number;
+  onSpeed: (vehicleId: number | null, speed: number) => void;
 }
+
+// Simulator speed-ups. x40 gets the Furgón 1 of the seed to its first delivery
+// in about 25 s (measured), which is what a pitch can wait.
+export const SPEEDS = [12, 40, 60] as const;
 
 const SIGNAL = {
   live: { label: "En vivo", className: "text-success" },
@@ -28,7 +34,7 @@ const SIGNAL = {
 
 // En vivo (ADR 0026 §6): the checkboxes drive both the map layers and the SSE
 // subscription. Each vehicle shows its stops against the clock.
-export default function LivePanel({ vehicles, routes, positions, visible, follow, now, busy, onToggle, onFollow, onStart, onSimulate, onDeliver }: Props) {
+export default function LivePanel({ vehicles, routes, positions, visible, follow, now, busy, onToggle, onFollow, onStart, onSimulate, onDeliver, speed, onSpeed }: Props) {
   return (
     <div className="space-y-3">
       {vehicles.map((vehicle) => {
@@ -80,10 +86,27 @@ export default function LivePanel({ vehicles, routes, positions, visible, follow
                     </Button>
                   )}
                   {route.status === "in_progress" && (
-                    <Button kind={simulating ? "ghost" : "primary"} className="min-h-11" busy={busy === `sim-${vehicle.id}`} onClick={() => onSimulate(vehicle.id, !simulating)}>
-                      {simulating ? <Square size={16} aria-hidden /> : <Play size={16} aria-hidden />}
-                      {simulating ? "Detener simulación" : "Simular"}
-                    </Button>
+                    <>
+                      <Button kind={simulating ? "ghost" : "primary"} className="min-h-11" busy={busy === `sim-${vehicle.id}`} onClick={() => onSimulate(vehicle.id, !simulating)}>
+                        {simulating ? <Square size={16} aria-hidden /> : <Play size={16} aria-hidden />}
+                        {simulating ? "Detener simulación" : "Simular"}
+                      </Button>
+                      <div role="radiogroup" aria-label="Velocidad de la simulación" className="inline-flex rounded-md ring-1 ring-line">
+                        {SPEEDS.map((x) => (
+                          <button
+                            key={x}
+                            type="button"
+                            role="radio"
+                            aria-checked={speed === x}
+                            disabled={busy === `sim-${vehicle.id}`}
+                            onClick={() => onSpeed(simulating ? vehicle.id : null, x)}
+                            className={`min-h-11 min-w-11 px-2 text-xs font-semibold tabular-nums first:rounded-l-md last:rounded-r-md ${speed === x ? "bg-ink text-white" : "text-muted hover:bg-canvas"}`}
+                          >
+                            x{x}
+                          </button>
+                        ))}
+                      </div>
+                    </>
                   )}
                   {checked && (
                     <Button className="min-h-11" onClick={() => onFollow(follow === vehicle.id ? null : vehicle.id)} aria-pressed={follow === vehicle.id}>

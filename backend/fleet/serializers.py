@@ -97,4 +97,4 @@ class LiveSerializer(serializers.Serializer):
 
 class SimulateInSerializer(serializers.Serializer):
     speed_factor = serializers.FloatField(min_value=1, max_value=120, default=12)
-    interval_s = serializers.IntegerField(min_value=1, max_value=30, default=3)
+    interval_s = serializers.IntegerField(min_value=2, max_value=30, default=3)  # Never below 2 s: the worker is shared.
