@@ -38,7 +38,9 @@ function firstError(err: unknown): string {
 // and quantity, promised date and notes (ADR 0025 B).
 export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetail; onSaved: (order: OrderListItem) => void; onCancel: () => void }) {
   const { data: customers } = useSWR<Customer[]>("/api/customers/", fetcher);
-  const { data: products } = useSWR<Product[]>("/api/products/", fetcher);
+  const { data: products, error: productsError } = useSWR<Product[]>("/api/products/", fetcher);
+  // Without the catalog (endpoint missing or down) the form still works by code.
+  const manual = !!productsError && !products;
   const [customer, setCustomer] = useState(initial?.customer.name ?? "");
   const [customerOpen, setCustomerOpen] = useState(false);
   const [brand, setBrand] = useState(initial?.brand.name ?? "");
@@ -152,14 +154,23 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
         </label>
         <label className="text-sm">
           Marca
-          <select value={brand} onChange={(e) => setBrand(e.target.value)} className={input}>
-            <option value="">{products ? "Elige la marca" : "Cargando…"}</option>
-            {brands.map((b) => (
-              <option key={b.name} value={b.name}>
-                {b.name}
-              </option>
+          {manual ? (
+            <input value={brand} onChange={(e) => setBrand(e.target.value)} list="order-brands" placeholder="UNICRACK, NEXO…" className={input} />
+          ) : (
+            <select value={brand} onChange={(e) => setBrand(e.target.value)} className={input}>
+              <option value="">{products ? "Elige la marca" : "Cargando…"}</option>
+              {brands.map((b) => (
+                <option key={b.name} value={b.name}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <datalist id="order-brands">
+            {["UNICRACK", "NEXO", "Línea Médica Corpotex"].map((b) => (
+              <option key={b} value={b} />
             ))}
-          </select>
+          </datalist>
         </label>
         <label className="text-sm">
           Prometida al cliente
@@ -173,6 +184,7 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
 
       <fieldset>
         <legend className="text-sm font-medium">Ítems</legend>
+        {manual && <p className="mt-1 text-xs text-warning">El catálogo de productos no está disponible: escribe el código del producto tal como figura en la ficha.</p>}
         <ul className="mt-2 space-y-2">
           {items.map((row, i) => {
             const chosen = (products ?? []).find((p) => p.code === row.product);
@@ -180,15 +192,25 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
               <li key={row.key} className="grid grid-cols-[1fr_auto] gap-2 rounded-lg p-3 ring-1 ring-line sm:grid-cols-[minmax(0,2fr)_6rem_minmax(0,1fr)_minmax(0,1fr)_2rem] sm:items-end">
                 <label className="text-xs text-muted sm:col-auto">
                   Producto
-                  <select value={row.product} onChange={(e) => update(row.key, { product: e.target.value })} className={input} aria-label={`Producto del ítem ${i + 1}`}>
-                    <option value="">{products ? "Elige el producto" : "Cargando…"}</option>
-                    {productOptions.map((p) => (
-                      <option key={p.id} value={p.code}>
-                        {p.name} · {p.code}
-                      </option>
-                    ))}
-                    {chosen === undefined && row.product && <option value={row.product}>{row.product}</option>}
-                  </select>
+                  {manual ? (
+                    <input
+                      value={row.product}
+                      onChange={(e) => update(row.key, { product: e.target.value.trim().toUpperCase() })}
+                      placeholder="Código, p. ej. UNI-POL-01"
+                      className={`${input} font-mono`}
+                      aria-label={`Código del producto del ítem ${i + 1}`}
+                    />
+                  ) : (
+                    <select value={row.product} onChange={(e) => update(row.key, { product: e.target.value })} className={input} aria-label={`Producto del ítem ${i + 1}`}>
+                      <option value="">{products ? "Elige el producto" : "Cargando…"}</option>
+                      {productOptions.map((p) => (
+                        <option key={p.id} value={p.code}>
+                          {p.name} · {p.code}
+                        </option>
+                      ))}
+                      {chosen === undefined && row.product && <option value={row.product}>{row.product}</option>}
+                    </select>
+                  )}
                 </label>
                 <label className="text-xs text-muted">
                   Cantidad
