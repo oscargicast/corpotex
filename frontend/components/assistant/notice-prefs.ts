@@ -1,23 +1,43 @@
-// Per-browser conveniences of the assistant's notices (P7): the chime, its
-// mute switch and the notices hidden from the chat. Storage may be blocked;
-// everything still works, it just is not remembered.
+// The assistant's notices (P7): a chime when one arrives while the chat is
+// open, always on (Oscar 11/10), and the notices hidden from the chat in this
+// browser. Storage may be blocked; everything still works, it just is not
+// remembered.
 
-const MUTED_KEY = "corpotex.assistant.muted";
 const HIDDEN_KEY = "corpotex.assistant.hiddenNotices";
 const HIDDEN_LIMIT = 300;
 
+// Browsers only let audio start from a user gesture. The context is created
+// (or resumed) inside the first click, touch or key press on the page, never
+// before, so no autoplay warning reaches the console. Until then a notice
+// simply does not sound.
 let audio: AudioContext | null = null;
 
-// Two short rising tones (~200 ms) made with Web Audio: no file to load. The
-// chat only plays it after the user opened it, so the page already has the
-// user activation browsers ask for.
-export function playChime(): void {
+function unlockAudio(): void {
   try {
-    const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Context) return;
-    audio ??= new Context();
-    const ctx = audio;
-    if (ctx.state === "suspended") void ctx.resume();
+    if (!audio) {
+      const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Context) return;
+      audio = new Context();
+    }
+    if (audio.state === "suspended") void audio.resume().catch(() => undefined);
+  } catch {
+    // No audio on this browser: the notice still shows.
+  }
+}
+
+// Armed when the app loads (this module comes with the shell), so the very
+// click that opens the chat already counts as the gesture.
+if (typeof window !== "undefined") {
+  for (const type of ["pointerdown", "keydown", "touchstart"] as const) {
+    window.addEventListener(type, unlockAudio, { capture: true, passive: true });
+  }
+}
+
+// Two short rising tones (~200 ms) made with Web Audio: no file to load.
+export function playChime(): void {
+  const ctx = audio;
+  if (!ctx || ctx.state !== "running") return; // No gesture yet (or audio blocked): silent.
+  try {
     const start = ctx.currentTime + 0.01;
     for (const [frequency, offset] of [
       [880, 0],
@@ -36,23 +56,7 @@ export function playChime(): void {
       tone.stop(start + offset + 0.11);
     }
   } catch {
-    // No audio (blocked or unsupported): the notice still shows.
-  }
-}
-
-export function readMuted(): boolean {
-  try {
-    return localStorage.getItem(MUTED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-export function writeMuted(muted: boolean): void {
-  try {
-    localStorage.setItem(MUTED_KEY, muted ? "1" : "0");
-  } catch {
-    // Not remembered.
+    // The notice still shows.
   }
 }
 
