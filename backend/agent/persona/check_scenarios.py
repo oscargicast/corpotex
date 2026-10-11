@@ -108,6 +108,10 @@ def check(scenario: dict, messages: list[str], tools: list[str]) -> list[str]:
     max_chars = scenario.get("max_chars")
     if max_chars and any(len(m) > max_chars for m in messages):
         failures.append(f"un mensaje pasa de {max_chars} caracteres")
+    max_words = scenario.get("max_words")
+    words = len(joined.split())
+    if max_words and words > max_words:
+        failures.append(f"{words} palabras (máximo {max_words})")
     suffix = scenario.get("ends_with")
     if suffix and not (messages and messages[-1].rstrip().endswith(suffix)):
         failures.append(f'no termina en "{suffix}"')
@@ -127,7 +131,25 @@ def build(scenario: dict) -> tuple[str, str] | None:
         return None
     system = assistant.render_system(_rules("ASSISTANT_RULES"), state)
     blocks = assistant.render_turn_message(state)
-    return system, blocks[0]["text"] + "\n\n" + ASSISTANT_TEST_PROTOCOL
+    return system, blocks[0]["text"] + _tool_results(scenario) + "\n\n" + ASSISTANT_TEST_PROTOCOL
+
+
+def _tool_results(scenario: dict) -> str:
+    """What the tools already returned in this turn, so the answer can be checked on real data."""
+    results = scenario.get("tool_results") or []
+    if not results:
+        return ""
+    fixtures = Path(__file__).parent / "fixtures"
+    rendered = "\n".join(
+        f'<resultado tool="{r["tool"]}">'
+        + (r.get("result") or (fixtures / r["file"]).read_text(encoding="utf-8")).strip()
+        + "</resultado>"
+        for r in results
+    )
+    return (
+        "\n\n<resultados_de_tools>\nYa llamaste estas tools en este turno y devolvieron esto; no "
+        "las vuelvas a llamar:\n" + rendered + "\n</resultados_de_tools>"
+    )
 
 
 def _rules(name: str) -> str:

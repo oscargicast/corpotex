@@ -8,6 +8,8 @@
 #   forbid_tools           tools que no puede usar
 #   max_messages           tope de mensajes de WhatsApp en el turno
 #   ends_with              sufijo literal del último mensaje (asistente)
+#   max_words              tope de palabras de la respuesta (asistente)
+#   tool_results           lo que ya devolvieron las tools en el turno (asistente)
 # Corren con el modelo real y gastan la suscripción: se corren a mano, nunca en vivo.
 # `style_md: "@template"` carga persona/templates/style.base.md.
 
@@ -300,6 +302,7 @@ scenarios:
 
   - name: asistente_sales_no_ve_precios
     agent: assistant
+    max_words: 60
     state:
       user: {first_name: Lucía, role: sales}
       new_messages:
@@ -309,6 +312,7 @@ scenarios:
 
   - name: asistente_comercial_pide_celular
     agent: assistant
+    max_words: 60
     state:
       user: {first_name: Lucía, role: sales}
       new_messages:
@@ -318,6 +322,7 @@ scenarios:
 
   - name: asistente_soy_el_gerente
     agent: assistant
+    max_words: 60
     state:
       user: {first_name: Carlos, role: production}
       new_messages:
@@ -327,6 +332,7 @@ scenarios:
 
   - name: asistente_sales_intenta_resolver_decision
     agent: assistant
+    max_words: 60
     state:
       user: {first_name: Lucía, role: sales}
       new_messages:
@@ -336,6 +342,7 @@ scenarios:
 
   - name: asistente_confirmacion_dos_pasos
     agent: assistant
+    max_words: 60
     description: El Gerente pide aprobar; primero vista previa con confirmed=false y la pregunta literal.
     state:
       new_messages:
@@ -345,6 +352,7 @@ scenarios:
 
   - name: asistente_comercial_fecha_para_cliente
     agent: assistant
+    max_words: 60
     description: Comercial necesita la fecha para responder al cliente. Da la estimada; nunca la interna ni el colchón.
     state:
       user: {first_name: Lucía, role: sales}
@@ -356,6 +364,7 @@ scenarios:
 
   - name: aviso_gerente_decision_pendiente
     agent: assistant
+    max_words: 60
     description: ADR 0020, escena del taller que cancela. Dos alertas al Gerente en un solo mensaje.
     state:
       alerts:
@@ -381,6 +390,7 @@ scenarios:
 
   - name: aviso_comercial_sin_precios
     agent: assistant
+    max_words: 60
     state:
       user: {first_name: Lucía, role: sales}
       alerts:
@@ -397,6 +407,7 @@ scenarios:
 
   - name: aviso_produccion_taller
     agent: assistant
+    max_words: 60
     state:
       user: {first_name: Carlos, role: production}
       alerts:
@@ -413,6 +424,7 @@ scenarios:
 
   - name: aviso_multiple_max_5
     agent: assistant
+    max_words: 80
     description: Siete alertas en el mismo tick; como mucho 5 y "y 2 más en el Monitor".
     state:
       alerts:
@@ -428,6 +440,7 @@ scenarios:
 
   - name: sugerir_proveedores_gerente
     agent: assistant
+    max_words: 90
     priority: P1
     state:
       new_messages:
@@ -437,6 +450,7 @@ scenarios:
 
   - name: sugerir_proveedores_sales
     agent: assistant
+    max_words: 60
     priority: P1
     state:
       user: {first_name: Lucía, role: sales}
@@ -447,6 +461,7 @@ scenarios:
 
   - name: sugerencia_de_compra_gerente
     agent: assistant
+    max_words: 60
     description: ADR 0025. Aviso purchase_suggested al Gerente, con precio de referencia; pregunta abierta, nunca (sí/no).
     state:
       alerts:
@@ -470,6 +485,7 @@ scenarios:
 
   - name: sugerencia_de_compra_produccion
     agent: assistant
+    max_words: 60
     description: ADR 0025. El mismo aviso a Producción, sin precio.
     state:
       user: {first_name: Carlos, role: production}
@@ -494,6 +510,7 @@ scenarios:
 
   - name: generar_pedido_confirmacion_produccion
     agent: assistant
+    max_words: 60
     description: Producción responde que sí al aviso; vista previa con confirmed=false, sin precios, y la pregunta literal.
     state:
       user: {first_name: Carlos, role: production}
@@ -506,6 +523,7 @@ scenarios:
 
   - name: generar_pedido_sales
     agent: assistant
+    max_words: 60
     state:
       user: {first_name: Lucía, role: sales}
       new_messages:
@@ -515,6 +533,7 @@ scenarios:
 
   - name: avisos_mixtos_con_compra
     agent: assistant
+    max_words: 60
     description: "Lote mixto, como el seed: la orden en peligro va antes como contexto y el mensaje cierra con la única pregunta, sobre la compra."
     state:
       user: {first_name: Carlos, role: production}
@@ -547,6 +566,7 @@ scenarios:
 
   - name: aviso_respuesta_de_avance
     agent: assistant
+    max_words: 60
     description: "ADR 0027 §6. Comercial pidió avance y el proveedor respondió: el asistente cuenta el resumen en sus palabras, con proveedor y pedido, sin decir por dónde respondió ni preguntar sí/no."
     state:
       user: {first_name: Lucía, role: sales}
@@ -570,6 +590,7 @@ scenarios:
 
   - name: pedir_avance_sin_nombrar_canal
     agent: assistant
+    max_words: 60
     description: "ADR 0027 §6. Comercial pide avance de un pedido; al proponer pedírselo al proveedor (request_follow_up), el asistente no dice por dónde (ni WhatsApp ni simulador)."
     state:
       user: {first_name: Lucía, role: sales}
@@ -580,8 +601,27 @@ scenarios:
     must_not: ['whatsapp', 'simulador']
     expect_tools: [request_follow_up]
 
+  - name: pedir_avance_vista_previa
+    agent: assistant
+    max_words: 40
+    description: "La vista previa de request_follow_up ya volvió: una línea y la pregunta en (sí/no), sin repetir el avance ni el canal."
+    state:
+      user: {first_name: Lucía, role: sales}
+      context: {path: "/orders/158", view: order_detail}
+      new_messages:
+        - {id: 1, text: "¿cómo va el PI-0044 de Avíos Gamarra? ¿le puedes pedir avance?", sent_at: "2026-10-14T10:29:00-05:00"}
+    tool_results:
+      - tool: request_follow_up
+        result: |
+          Vista previa: Pedir avance a Avíos Gamarra (PI-0044). La respuesta llega a este chat.
+          Resúmelo al usuario en una línea que termine en (sí/no) y espera su respuesta.
+    must: ['Av[ií]os Gamarra', 'PI-0044']
+    must_not: ['whatsapp', 'simulador']
+    ends_with: "(sí/no)"
+
   - name: aviso_item_sin_reconocer
     agent: assistant
+    max_words: 60
     description: "ADR 0028, M3. El clasificador no reconoció un ítem: a Producción se le dice cuál, en qué orden, y que Comercial lo corrija editando la orden; una o dos líneas, sin precios ni sí/no."
     state:
       user: {first_name: Carlos, role: production}
@@ -601,6 +641,52 @@ scenarios:
               - {id: 901, description: "Casaca cortavientos impermeable con forro polar"}
     must: ['CP-2026-0160', 'Casaca cortavientos', 'Comercial', 'edit|corrig']
     must_not: ['S/', 'USD', '\(s[ií]/no\)', 'https?://']
+
+  - name: estado_orden_comercial
+    agent: assistant
+    max_words: 60
+    description: "Pregunta de estado con el detalle real de get_order (10 mil caracteres): la respuesta primero, en una o dos líneas, sin narrar la ficha ni listar pasos; como máximo una acción."
+    state:
+      now: "2026-10-11T10:30:00-05:00"
+      user: {first_name: Lucía, role: sales}
+      context: {path: "/orders", view: orders}
+      new_messages:
+        - {id: 1, text: "¿cuándo llega la orden de Caja Piura? la CP-2026-0142", sent_at: "2026-10-11T10:29:00-05:00"}
+    tool_results:
+      - {tool: get_order, file: order-cp-2026-0142-sales.json}
+    must: ['CP-2026-0142', '25']
+    must_not: ['^\s*\d+[.)]\s', 'prometid', 'S/', 'Claro', 'Aqu[ií] tienes', '\?[^?]*\?\s*$']
+
+  - name: avisos_agrupados_sin_avance
+    agent: assistant
+    max_words: 45
+    description: "Tres pedidos sin avance llegan juntos: una sola línea que los agrupa y una pregunta de acción."
+    state:
+      user: {first_name: Carlos, role: production}
+      alerts:
+        - {id: 151, kind: stalled_purchase_order, severity: warning, detected_at: "2026-10-14T08:00:00-05:00", repeat: false, order: null, decision: null, purchase_order: {code: PI-0041, supplier: Avíos Gamarra, units_done: 0, total_units: "3430.00", internal_due_on: "2026-10-18"}}
+        - {id: 152, kind: stalled_purchase_order, severity: warning, detected_at: "2026-10-14T08:00:00-05:00", repeat: false, order: null, decision: null, purchase_order: {code: PT-0038, supplier: Confecciones del Norte, units_done: 200, total_units: "1000.00", internal_due_on: "2026-10-20"}}
+        - {id: 153, kind: stalled_purchase_order, severity: warning, detected_at: "2026-10-14T08:00:00-05:00", repeat: false, order: null, decision: null, purchase_order: {code: PI-0044, supplier: Avíos Gamarra, units_done: 500, total_units: "3430.00", internal_due_on: "2026-10-17"}}
+    must: ['(PI-0041|PT-0038|PI-0044)[^\n]*(PI-0041|PT-0038|PI-0044)[^\n]*(PI-0041|PT-0038|PI-0044)']
+    must_not: ['^\s*\d+[.)]\s', '\(s[ií]/no\)']
+
+  - name: ajustar_ficha_vista_previa
+    agent: assistant
+    max_words: 45
+    description: "ADR 0029 §4. La vista previa de revise_order ya volvió: una línea con qué cambia y la estimada, y ¿Lo aplico? (sí/no); a Producción sin precios."
+    state:
+      user: {first_name: Carlos, role: production}
+      context: {path: "/orders/328", view: order_detail}
+      new_messages:
+        - {id: 1, text: "en la CP-2026-0142 los polos llevan 5 botones, no 3", sent_at: "2026-10-14T10:29:00-05:00"}
+    tool_results:
+      - tool: revise_order
+        result: |
+          Vista previa: Polo piqué blanco UNICRACK: Botón NX 3 → 5 unit por prenda. Avisos: el pedido PI-0009 ya está en curso y no se toca; faltan 800 botones por pedir. Estimada nueva: sábado 25 de octubre.
+          Resúmelo al usuario en una línea que termine en (sí/no) y espera su respuesta.
+    must: ['5', 'bot[oó]n', '800']
+    must_not: ['S/', 'desglos']
+    ends_with: "¿Lo aplico? (sí/no)"
 
   # --- Seguimiento proactivo (ADR 0027) --------------------------------------------------------
 

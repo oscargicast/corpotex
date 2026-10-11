@@ -49,7 +49,7 @@ def test_alert_prompt_caps_at_five():
 
 def test_alerts_only_turn_never_asks_for_confirmation():
     text = turn_text(scenario_state("aviso_gerente_decision_pendiente"))
-    assert 'No termines en "(sí/no)"' in text
+    assert 'sin "(sí/no)"' in text
     assert "<mensajes_nuevos>" not in text
     assert 'tipo="decisión pendiente"' in text
     assert "Reasignar 600 polos" in text
@@ -147,8 +147,8 @@ def test_mixed_batch_asks_a_single_question_about_the_purchase():
     assert text.index('tipo="orden en peligro"') < text.index(
         'tipo="compra sugerida"'
     )  # critical first
-    assert "UNA sola pregunta, sobre esa compra" in text
-    assert "van antes, como contexto, sin preguntas" in text
+    assert "la pregunta final es sobre esa compra" in text
+    assert "van antes, en su línea y sin preguntas" in text
     assert 'total_por_pedir="1000"' in text
 
 
@@ -177,7 +177,7 @@ def test_classification_failed_names_the_item_and_who_fixes_it():
         '<sin_reconocer orden="CP-2026-0160">\n'
         "<item>Casaca cortavientos impermeable con forro polar</item>\n</sin_reconocer>"
     ) in text
-    assert "si hablas con Producción, que se lo pida a Comercial" in text
+    assert "a Producción, que se lo pida a Comercial" in text
 
 
 def test_technical_sheet_names_and_revise_order_by_role():
@@ -189,4 +189,4 @@ def test_technical_sheet_names_and_revise_order_by_role():
         assert "desglose de" not in system and "fecha prometida" not in system
         assert ("(revise_order)" in system) == (role != "sales"), role
         if role != "sales":
-            assert '"¿Aplico? (sí/no)"' in system
+            assert '"¿Lo aplico? (sí/no)"' in system
