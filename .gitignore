@@ -26,3 +26,6 @@ backend/.venv/
 .pytest_cache/
 .ruff_cache/
 .playwright-mcp/
+
+# Personal notes, never committed (added by mistake on 2026-10-11)
+docs/todo/
