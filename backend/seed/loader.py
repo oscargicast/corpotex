@@ -637,10 +637,13 @@ class Loader:
             StatusChange.objects.create(status=status, at=min(at, end), actor=self.ACTORS.get(status, "system"), note=reason[:300], **{target: obj})
 
     def finish(self):
-        """Wires what the JSON cannot: the conversation of each live purchase order and the
-        critical path of every order."""
+        """Wires what the JSON cannot: the conversation of each live purchase order, the
+        status of every requirement and the critical path of every order."""
         from messaging.services import conversation_for_supplier
-        from operations.services import compute_critical_path
+        from operations.services import compute_critical_path, sync_requirement_status
+
+        for requirement in Requirement.objects.all():
+            sync_requirement_status(requirement)
 
         for po in PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES, conversation__isnull=True).select_related("supplier"):
             conversation = conversation_for_supplier(po.supplier)

@@ -66,6 +66,7 @@ class Alert(TimeStamped):
         STYLE_REFRESH_FAILED = "style_refresh_failed", "Refresco de estilo fallido"
         DECISION_PENDING = "decision_pending", "Decisión pendiente"
         CLAUDE_DISCONNECTED = "claude_disconnected", "Claude desconectado"
+        PURCHASE_SUGGESTED = "purchase_suggested", "Compra sugerida"
 
     class Severity(models.TextChoices):
         INFO = "info", "Info"
@@ -88,6 +89,7 @@ class Alert(TimeStamped):
         Decision, null=True, blank=True, on_delete=models.CASCADE, related_name="alerts"
     )
     text = models.CharField(max_length=300, help_text="Template text without prices or phones.")
+    detail = models.JSONField(null=True, blank=True, help_text="Structured payload for the assistant, e.g. the purchase suggestion (ADR 0025).")
     detected_at = models.DateTimeField(help_text="Simulated time.")
     resolved_at = models.DateTimeField(null=True, blank=True)
 

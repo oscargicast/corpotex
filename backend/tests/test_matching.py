@@ -65,10 +65,13 @@ def test_production_cannot_register_but_can_confirm(catalogue, sales, production
         services.confirm_order(order, actor=sales)
     order = services.confirm_order(order, actor=production)
     assert order.status == "confirmed"
-    assert PurchaseOrder.objects.filter(status="suggested").count() >= 2
+    # Only the workshop is ordered at confirmation; the fabric waits as an open requirement (ADR 0025).
+    assert PurchaseOrder.objects.filter(status="suggested", supplier__kind="workshop").count() >= 1
+    assert not PurchaseOrder.objects.filter(supplier__kind="material").exists()
+    assert order.requirements.get(kind="material").status == "open"
     decision = Decision.objects.get(kind="approve_assignment", status="pending")
     assert decision.purchase_orders.count() == PurchaseOrder.objects.count()
-    assert {p["supplier"]["name"] for p in decision.detail["proposal"]} >= {"Textiles Lima"}
+    assert {p["supplier"]["name"] for p in decision.detail["proposal"]} <= {"Taller Barato", "Taller Grande"}
     assert decision.detail["after"]["estimated_on"]
 
 
@@ -125,9 +128,11 @@ def test_critical_path_flags_the_order_in_danger(catalogue, sales):
 def test_decision_detail_carries_the_currency(catalogue, sales, production):
     order, _ = services.register_order(order_payload(), actor=sales)
     services.confirm_order(order, actor=production)
-    decision = Decision.objects.get(kind="approve_assignment")
-    assert decision.detail["after"]["currency"] in ("PEN", "USD")
-    assert {p["currency"] for p in decision.detail["proposal"]} == {"PEN", "USD"}  # fabric in USD, workshops in PEN
+    workshop_decision = Decision.objects.get(kind="approve_assignment")
+    assert {p["currency"] for p in workshop_decision.detail["proposal"]} == {"PEN"}
+    materials = services.generate_purchase_orders(None, actor=production)  # the fabric, in USD
+    assert materials["decision"].detail["proposal"][0]["currency"] == "USD"
+    assert materials["decision"].detail["after"]["currency"] in ("PEN", "USD")
 
 
 @pytest.mark.django_db

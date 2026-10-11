@@ -42,7 +42,7 @@ def build(owner=None) -> dict:
         risk_reason="El taller se atrasó",
     )
     OrderItem.objects.create(order=order, product=polo, quantity=1000, sizes={"M": 1000}, unit_price=Decimal("18.00"))
-    requirement = Requirement.objects.create(order=order, kind="workshop", product=polo, qty_needed=1000)
+    requirement = Requirement.objects.create(order=order, kind="workshop", product=polo, qty_needed=1000, status="ordered")
 
     po = PurchaseOrder.objects.create(
         code="PT-0001",

@@ -77,6 +77,11 @@ class OrderItem(TimeStamped):
 
 
 class Requirement(TimeStamped):
+    class Status(models.TextChoices):
+        OPEN = "open", "Por pedir"
+        ORDERED = "ordered", "Pedido"
+        COVERED = "covered", "Cubierto"
+
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="requirements")
     kind = models.CharField(max_length=20, choices=SupplierKind.choices)
     material = models.ForeignKey(
@@ -87,6 +92,9 @@ class Requirement(TimeStamped):
     )
     qty_needed = models.DecimalField(max_digits=12, decimal_places=2)
     qty_from_stock = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.OPEN, help_text="Materials wait as open until Produccion generates the consolidated purchase order (ADR 0025)."
+    )
 
     class Meta:
         verbose_name = "requerimiento"
