@@ -397,6 +397,96 @@
                 }
             }
         },
+        "/api/dispatches/": {
+            "get": {
+                "operationId": "dispatches_list",
+                "description": "`GET /api/dispatches/?status=ready,delivered&from=&to=&vehicle_ids=&unassigned=1`.",
+                "tags": [
+                    "dispatches"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Dispatch"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/dispatches/{order_id}/": {
+            "patch": {
+                "operationId": "dispatches_partial_update",
+                "description": "`PATCH /api/dispatches/<order_id>/ {scheduled_on?, vehicle_id?}`: reschedule or move.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "order_id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "dispatches"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedDispatchPatchRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedDispatchPatchRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedDispatchPatchRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Dispatch"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/manager/decisions/{id}/": {
             "post": {
                 "operationId": "manager_decisions_create",
@@ -487,7 +577,7 @@
         "/api/materials/": {
             "get": {
                 "operationId": "materials_list",
-                "description": "`GET /api/materials/`: every material ordered by kind and name; `?kind=`, `?q=` (sku or name). `committed` is the sum of\n`Requirement.qty_from_stock` of open orders; `available = stock - committed`.",
+                "description": "`GET /api/materials/`: every material ordered by kind and name; `?kind=`, `?q=` (sku or name). `committed` is the sum of\n`Requirement.qty_from_stock` of open orders; `available = stock - committed`; `to_order` is what is still to buy\n(as in \"Por pedir\") and `incoming` the live purchase orders that will bring it.",
                 "tags": [
                     "materials"
                 ],
@@ -1993,7 +2083,7 @@
         "/api/routes/": {
             "get": {
                 "operationId": "routes_retrieve",
-                "description": "`GET /api/routes/`: all routes (`?date=`, `?status=`), or with `?current=1` the pair\n`{current, replaced}` the map shows (ADR 0024).",
+                "description": "`GET /api/routes/`: all routes (`?date=`, `?status=a,b`; `?fleet=1` only the vehicles'\ntrips, `?vehicle_ids=1,2`), or with `?current=1` the pair `{current, replaced}` the map shows\n(ADR 0024).",
                 "tags": [
                     "routes"
                 ],
@@ -2027,6 +2117,131 @@
                     {
                         "in": "path",
                         "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "routes"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Route"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/routes/{id}/complete/": {
+            "post": {
+                "operationId": "routes_complete_create",
+                "description": "`POST /api/routes/<id>/complete/`: in_progress → completed.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "routes"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Route"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/routes/{id}/start/": {
+            "post": {
+                "operationId": "routes_start_create",
+                "description": "`POST /api/routes/<id>/start/`: planned → in_progress.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "routes"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Route"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/routes/{id}/stops/{stop_id}/deliver/": {
+            "post": {
+                "operationId": "routes_stops_deliver_create",
+                "description": "`POST /api/routes/<id>/stops/<stop_id>/deliver/`: the order goes `delivered`.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "stop_id",
                         "schema": {
                             "type": "integer"
                         },
@@ -2099,6 +2314,55 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Route"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/routes/plan-day/": {
+            "post": {
+                "operationId": "routes_plan_day_create",
+                "description": "`POST /api/routes/plan-day/ {date, vehicle_ids?, order_ids?}` (ADR 0026 §2).",
+                "tags": [
+                    "routes"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlanDayInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlanDayInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlanDayInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlanDay"
                                 }
                             }
                         },
@@ -3118,6 +3382,306 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/SelfRegistered"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/vehicles/": {
+            "get": {
+                "operationId": "vehicles_list",
+                "description": "`GET /api/vehicles/`: the active fleet with its last position.",
+                "tags": [
+                    "vehicles"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Vehicle"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/vehicles/{id}/positions/": {
+            "get": {
+                "operationId": "vehicles_positions_list",
+                "description": "`POST /api/vehicles/<id>/positions/` (manager, production and the simulator) moves the\nvehicle and keeps one sample every `VEHICLE_SAMPLE_SECONDS`; `GET ?from=&to=` is the trail.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "vehicles"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Position"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "vehicles_positions_create",
+                "description": "`POST /api/vehicles/<id>/positions/` (manager, production and the simulator) moves the\nvehicle and keeps one sample every `VEHICLE_SAMPLE_SECONDS`; `GET ?from=&to=` is the trail.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "vehicles"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PositionInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PositionInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PositionInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PositionStored"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/vehicles/{id}/simulate/": {
+            "post": {
+                "operationId": "vehicles_simulate_create",
+                "description": "`POST /api/vehicles/<id>/simulate/ {speed_factor=12, interval_s=3}` starts the simulator on\nthe vehicle's route in progress; `DELETE` stops it.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "vehicles"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SimulateInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SimulateInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SimulateInRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vehicle"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "vehicles_simulate_destroy",
+                "description": "`POST /api/vehicles/<id>/simulate/ {speed_factor=12, interval_s=3}` starts the simulator on\nthe vehicle's route in progress; `DELETE` stops it.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "vehicles"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vehicle"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/vehicles/live/": {
+            "get": {
+                "operationId": "vehicles_live_list",
+                "description": "`GET /api/vehicles/live/?ids=1,2`: the current picture, for the polling fallback.",
+                "tags": [
+                    "vehicles"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Live"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/vehicles/stream/": {
+            "get": {
+                "operationId": "vehicles_stream_retrieve",
+                "description": "`GET /api/vehicles/stream/?ids=1,2`: server-sent events (ADR 0026 §4). The front reads it\nwith `fetch` (the token goes in a header, which `EventSource` cannot send).",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "format",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "event-stream",
+                                "json"
+                            ]
+                        }
+                    }
+                ],
+                "tags": [
+                    "vehicles"
+                ],
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "type": "string"
                                 }
                             }
                         },
@@ -4196,6 +4760,101 @@
                     "detail"
                 ]
             },
+            "Dispatch": {
+                "type": "object",
+                "description": "A customer order on its way out (ADR 0026 §3). `dispatch` is the delivery to the\ncustomer; `Delivery` is a supplier's delivery at the plant.",
+                "properties": {
+                    "order": {
+                        "$ref": "#/components/schemas/DispatchOrder"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "scheduled_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "delivered_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "address": {
+                        "type": "string"
+                    },
+                    "lat": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "route_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "vehicle": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "stop": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "on_time": {
+                        "type": "boolean",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "address",
+                    "delivered_at",
+                    "lat",
+                    "lng",
+                    "on_time",
+                    "order",
+                    "route_id",
+                    "scheduled_on",
+                    "status",
+                    "stop",
+                    "vehicle"
+                ]
+            },
+            "DispatchOrder": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "customer_name": {
+                        "type": "string"
+                    },
+                    "units": {
+                        "type": "integer"
+                    },
+                    "promised_on": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "code",
+                    "customer_name",
+                    "id",
+                    "promised_on",
+                    "units"
+                ]
+            },
             "GenerateInRequest": {
                 "type": "object",
                 "properties": {
@@ -4264,6 +4923,95 @@
                 },
                 "required": [
                     "file"
+                ]
+            },
+            "IncomingPurchaseOrder": {
+                "type": "object",
+                "description": "A live purchase order of the material (schema only: built by `incoming_by_material`).",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "status_display": {
+                        "type": "string"
+                    },
+                    "qty_pending": {
+                        "type": "string",
+                        "description": "What its items of this material still have to bring, as a decimal string."
+                    }
+                },
+                "required": [
+                    "code",
+                    "id",
+                    "qty_pending",
+                    "status",
+                    "status_display"
+                ]
+            },
+            "Live": {
+                "type": "object",
+                "description": "Also the payload of the SSE `position` event and of each `snapshot` item.",
+                "properties": {
+                    "vehicle_id": {
+                        "type": "integer"
+                    },
+                    "lat": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "heading": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "speed_kmh": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "route_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "next_stop": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/NextStop"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "simulating": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "at",
+                    "heading",
+                    "lat",
+                    "lng",
+                    "next_stop",
+                    "route_id",
+                    "simulating",
+                    "speed_kmh",
+                    "vehicle_id"
                 ]
             },
             "LoginRequest": {
@@ -4369,6 +5117,18 @@
                         "type": "string",
                         "readOnly": true
                     },
+                    "to_order": {
+                        "type": "string",
+                        "description": "Still to buy: the same number as `total_to_order` in \"Por pedir\" (#81).",
+                        "readOnly": true
+                    },
+                    "incoming": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/IncomingPurchaseOrder"
+                        },
+                        "readOnly": true
+                    },
                     "image": {
                         "type": "string",
                         "format": "uri",
@@ -4381,10 +5141,12 @@
                     "committed",
                     "id",
                     "image",
+                    "incoming",
                     "kind",
                     "kind_display",
                     "name",
                     "sku",
+                    "to_order",
                     "unit",
                     "unit_display"
                 ]
@@ -4433,6 +5195,18 @@
                         "type": "string",
                         "readOnly": true
                     },
+                    "to_order": {
+                        "type": "string",
+                        "description": "Still to buy: the same number as `total_to_order` in \"Por pedir\" (#81).",
+                        "readOnly": true
+                    },
+                    "incoming": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/IncomingPurchaseOrder"
+                        },
+                        "readOnly": true
+                    },
                     "image": {
                         "type": "string",
                         "format": "uri",
@@ -4452,11 +5226,13 @@
                     "committed",
                     "id",
                     "image",
+                    "incoming",
                     "kind",
                     "kind_display",
                     "name",
                     "requirements",
                     "sku",
+                    "to_order",
                     "unit",
                     "unit_display"
                 ]
@@ -4730,6 +5506,31 @@
                     "orders_in_danger",
                     "pending_decisions",
                     "stalled_purchase_orders"
+                ]
+            },
+            "NextStop": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "position": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "eta": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "eta",
+                    "id",
+                    "name",
+                    "position"
                 ]
             },
             "NullEnum": {
@@ -5327,6 +6128,18 @@
                 "type": "string",
                 "description": "* `registered` - Registrada\n* `broken_down` - Desglosada\n* `confirmed` - Confirmada\n* `sourcing` - En abastecimiento\n* `in_production` - En producción\n* `ready` - Lista\n* `delivered` - Entregada\n* `cancelled` - Cancelada"
             },
+            "PatchedDispatchPatchRequest": {
+                "type": "object",
+                "properties": {
+                    "scheduled_on": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "vehicle_id": {
+                        "type": "integer"
+                    }
+                }
+            },
             "PatchedNumberPatchRequest": {
                 "type": "object",
                 "properties": {
@@ -5703,6 +6516,174 @@
                     "due_on",
                     "id",
                     "qty"
+                ]
+            },
+            "PlanDay": {
+                "type": "object",
+                "properties": {
+                    "routes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Route"
+                        }
+                    },
+                    "unassigned": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlanDayUnassigned"
+                        }
+                    },
+                    "suggested_next_day": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "routes",
+                    "suggested_next_day",
+                    "unassigned"
+                ]
+            },
+            "PlanDayInRequest": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "vehicle_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "order_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "date"
+                ]
+            },
+            "PlanDayUnassigned": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "reason": {
+                        "type": "string"
+                    },
+                    "reason_display": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "order_id",
+                    "reason",
+                    "reason_display"
+                ]
+            },
+            "Position": {
+                "type": "object",
+                "properties": {
+                    "lat": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "heading": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "speed_kmh": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "recorded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "source": {
+                        "$ref": "#/components/schemas/Source884Enum"
+                    },
+                    "route": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "lat",
+                    "lng",
+                    "recorded_at"
+                ]
+            },
+            "PositionInRequest": {
+                "type": "object",
+                "properties": {
+                    "lat": {
+                        "type": "number",
+                        "format": "double",
+                        "maximum": 90,
+                        "minimum": -90
+                    },
+                    "lng": {
+                        "type": "number",
+                        "format": "double",
+                        "maximum": 180,
+                        "minimum": -180
+                    },
+                    "heading": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "speed_kmh": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "recorded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "source": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Source884Enum"
+                            }
+                        ],
+                        "default": "device"
+                    }
+                },
+                "required": [
+                    "lat",
+                    "lng"
+                ]
+            },
+            "PositionStored": {
+                "type": "object",
+                "properties": {
+                    "stored": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "stored"
                 ]
             },
             "Product": {
@@ -6628,6 +7609,27 @@
                         },
                         "readOnly": true
                     },
+                    "vehicle": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "readOnly": true
+                    },
+                    "started_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "completed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "summary": {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "description": "The route's justification (ADR 0026 §2): \"4 entregas · 1 450 prendas (73 % de capacidad)\n· 18 km · vuelve 12:40\".",
+                        "readOnly": true
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
@@ -6641,7 +7643,9 @@
                     "name",
                     "status_display",
                     "stops",
-                    "stops_count"
+                    "stops_count",
+                    "summary",
+                    "vehicle"
                 ]
             },
             "RoutePair": {
@@ -6696,6 +7700,10 @@
             "RouteStop": {
                 "type": "object",
                 "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
                     "position": {
                         "type": "integer",
                         "maximum": 32767,
@@ -6730,6 +7738,11 @@
                         "format": "date-time",
                         "nullable": true
                     },
+                    "delivered_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
                     "supplier": {
                         "type": "object",
                         "additionalProperties": {},
@@ -6749,19 +7762,31 @@
                         "type": "object",
                         "additionalProperties": {},
                         "readOnly": true
+                    },
+                    "units": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "on_time": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "readOnly": true
                     }
                 },
                 "required": [
                     "customer",
+                    "id",
                     "kind",
                     "kind_display",
                     "lat",
                     "lng",
                     "name",
+                    "on_time",
                     "order",
                     "position",
                     "purchase_order",
-                    "supplier"
+                    "supplier",
+                    "units"
                 ]
             },
             "RouteStopKindEnum": {
@@ -6795,6 +7820,24 @@
                     "source",
                     "status"
                 ]
+            },
+            "SimulateInRequest": {
+                "type": "object",
+                "properties": {
+                    "speed_factor": {
+                        "type": "number",
+                        "format": "double",
+                        "maximum": 120,
+                        "minimum": 1,
+                        "default": 12.0
+                    },
+                    "interval_s": {
+                        "type": "integer",
+                        "maximum": 30,
+                        "minimum": 1,
+                        "default": 3
+                    }
+                }
             },
             "SimulatorContact": {
                 "type": "object",
@@ -6899,6 +7942,15 @@
                 "required": [
                     "allowed_number_id"
                 ]
+            },
+            "Source884Enum": {
+                "enum": [
+                    "simulator",
+                    "device",
+                    "manual"
+                ],
+                "type": "string",
+                "description": "* `simulator` - Simulador\n* `device` - Dispositivo\n* `manual` - Manual"
             },
             "StatusChange": {
                 "type": "object",
@@ -7686,6 +8738,93 @@
                     "role",
                     "username"
                 ]
+            },
+            "Vehicle": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 60
+                    },
+                    "plate": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/VehicleKindEnum"
+                    },
+                    "kind_display": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "capacity_units": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": 0,
+                        "description": "Garments it carries in one trip."
+                    },
+                    "color": {
+                        "type": "string",
+                        "description": "Hex colour on the map (Okabe-Ito palette).",
+                        "maxLength": 7
+                    },
+                    "driver_name": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "last_lat": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "last_lng": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "last_heading": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true,
+                        "description": "Degrees from north, clockwise."
+                    },
+                    "last_speed_kmh": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "last_seen_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "sim_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "capacity_units",
+                    "id",
+                    "kind_display",
+                    "name"
+                ]
+            },
+            "VehicleKindEnum": {
+                "enum": [
+                    "van",
+                    "pickup",
+                    "motorcycle",
+                    "truck"
+                ],
+                "type": "string",
+                "description": "* `van` - Furgón\n* `pickup` - Camioneta\n* `motorcycle` - Moto\n* `truck` - Camión"
             },
             "WebhookSummary": {
                 "type": "object",

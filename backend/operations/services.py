@@ -373,6 +373,52 @@ def open_material_requirements(material_ids=None):
     return [r for r in qs if remaining_to_order(r) > 0]
 
 
+def to_order_by_material(material_ids=None) -> dict[int, Decimal]:
+    """What is still to buy per material id: the sum of `remaining_to_order` over
+    `open_material_requirements`, the same number as `total_to_order` in "Por pedir", in two
+    queries for every material (the inventory list)."""
+    qs = Requirement.objects.filter(kind="material", status=Requirement.Status.OPEN, order__status__in=PURCHASING_ORDER_STATUSES).prefetch_related(
+        "purchase_order_items__purchase_order"
+    )
+    if material_ids:
+        qs = qs.filter(material_id__in=material_ids)
+    totals: dict[int, Decimal] = {}
+    for requirement in qs:
+        remaining = max(requirement.qty_to_order - _covered_by(requirement.purchase_order_items.all()), Decimal("0"))
+        if remaining > 0:
+            totals[requirement.material_id] = totals.get(requirement.material_id, Decimal("0")) + remaining
+    return totals
+
+
+def incoming_by_material(material_ids=None) -> dict[int, list[dict]]:
+    """Live purchase orders per material id (`OPEN_STATUSES` or `suggested`):
+    `[{id, code, status, status_display, qty_pending}]` with `qty_pending` = what their items of
+    that material still have to bring, ordered by `internal_due_on`. One query for every material."""
+    from django.db.models import F, Sum
+
+    statuses = tuple(PurchaseOrder.OPEN_STATUSES) + (PurchaseOrder.Status.SUGGESTED,)
+    rows = PurchaseOrderItem.objects.filter(purchase_order__status__in=statuses, requirement__material__isnull=False)
+    if material_ids:
+        rows = rows.filter(requirement__material_id__in=material_ids)
+    rows = (
+        rows.values("requirement__material_id", "purchase_order_id", "purchase_order__code", "purchase_order__status", "purchase_order__internal_due_on")
+        .annotate(pending=Sum(F("quantity") - F("qty_delivered")))
+        .order_by("requirement__material_id", F("purchase_order__internal_due_on").asc(nulls_last=True), "purchase_order__code")
+    )
+    incoming: dict[int, list[dict]] = {}
+    for row in rows:
+        incoming.setdefault(row["requirement__material_id"], []).append(
+            {
+                "id": row["purchase_order_id"],
+                "code": row["purchase_order__code"],
+                "status": row["purchase_order__status"],
+                "status_display": PurchaseOrder.Status(row["purchase_order__status"]).label,
+                "qty_pending": str(max(row["pending"] or Decimal("0"), Decimal("0")).quantize(Decimal("0.01"))),
+            }
+        )
+    return incoming
+
+
 def remaining_to_order(requirement: Requirement) -> Decimal:
     """What is still to buy for a requirement: beyond stock, minus what its purchase orders
     bring or already delivered (finding of 10/10 22:10: a delivered partial purchase order
@@ -834,8 +880,13 @@ def _snapshot(orders) -> dict:
 
 def _covered(requirement: Requirement) -> Decimal:
     """What live purchase orders will bring plus what cancelled ones already delivered."""
+    return _covered_by(requirement.purchase_order_items.select_related("purchase_order"))
+
+
+def _covered_by(items) -> Decimal:
+    """`_covered` over items already loaded (with their purchase order), for the aggregates."""
     total = Decimal("0")
-    for item in requirement.purchase_order_items.select_related("purchase_order"):
+    for item in items:
         if item.purchase_order.status in PurchaseOrder.OPEN_STATUSES + ("suggested", "delivered"):
             total += item.quantity
         else:
