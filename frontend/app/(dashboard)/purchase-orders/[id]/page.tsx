@@ -11,6 +11,7 @@ import { ProgressForm } from "@/components/progress-form";
 import { useUser } from "@/components/require-auth";
 import { StatusTimeline } from "@/components/status-timeline";
 import { Thumb } from "@/components/thumb";
+import { ZoomableImage } from "@/components/zoomable-image";
 import { Card, CRITERIA_LABELS, Pill, ScoreBar, SectionTitle } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import { formatDay, formatDayTime, formatMoney } from "@/lib/format";
@@ -173,9 +174,7 @@ export default function PurchaseOrderDetailPage() {
               {po.progress_reports.map((report) => (
                 <li key={report.id} className="flex gap-3">
                   {report.photo ? (
-                    <a href={report.photo} target="_blank" rel="noreferrer">
-                      <img src={report.photo} alt={`Avance ${report.units_done}`} className="size-20 rounded-lg object-cover" loading="lazy" />
-                    </a>
+                    <ZoomableImage src={report.photo} alt={`Avance: ${report.units_done} de ${Number(po.total_units)}`} className="size-20 rounded-lg object-cover" />
                   ) : (
                     <Thumb alt="" size={80} />
                   )}
