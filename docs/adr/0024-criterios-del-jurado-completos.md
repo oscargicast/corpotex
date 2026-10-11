@@ -28,15 +28,15 @@ Modelo:
 
 Servicio `plan_route(date, *, actor=None) -> Route`:
 
-1. Puntos: el almacén como inicio y fin; un `pickup` por cada pedido de taller con entrega prevista ese día (`committed_on`) en talleres con coordenadas; un `delivery` por cada orden `ready` con cliente con coordenadas.
+1. Puntos: la planta principal como inicio y fin; un `delivery` por cada orden con entrega prometida ese día (`promised_on`) a un cliente con coordenadas. Sin `pickup`: las rutas son de entrega de órdenes a clientes y salen de la planta (corrección de Oscar, 10/10 23:35); los proveedores de Lima envían por Sullana Express y los talleres entregan en planta.
 2. Orden: vecino más cercano desde el almacén más una pasada 2-opt sobre distancias haversine. Sin servicio externo: la ruta se dibuja con líneas rectas. `duration_min` = distancia / 25 km/h + 10 min por parada.
 3. Devuelve la `Route` en `planned`; si ya había una `planned` para esa fecha, pasa a `replaced` y la nueva lleva `recalculated_from`.
 
-Redistribución (criterio 8): `redistribute` crea la nueva ruta en `proposed` con `recalculated_from` apuntando a la vigente; el `detail` de la `Decision` `approve_assignment` lleva `before.route_id` y `after.route_id`. Al aprobar, la propuesta pasa a `planned` y la anterior a `replaced`; al rechazar, a `discarded`.
+Redistribución (criterio 8): al mover la fecha de entrega de la orden afectada, `redistribute` crea en `proposed` la ruta del día nuevo con esa entrega (y deja la del día original sin ella), con `recalculated_from` apuntando a la vigente; el `detail` de la `Decision` `approve_assignment` lleva `before.route_id` y `after.route_id`. Al aprobar, la propuesta pasa a `planned` y la anterior a `replaced`; al rechazar, a `discarded`.
 
 API: `GET /api/routes/?current=1` (la vigente y la reemplazada, con paradas y `path`), `GET /api/routes/<id>/`, `POST /api/routes/plan/ {date}` (Gerente y Producción).
 
-Dashboard: `/routes` con Leaflet y OpenStreetMap (sin API key), centrado en Piura; marcadores de almacén, talleres y clientes; la ruta vigente en línea sólida y la reemplazada punteada; lista de paradas con `eta`. En la escena de la demo, la tarjeta "Redistribución" enlaza a `/routes` con las dos rutas.
+Dashboard: `/routes` con Leaflet y OpenStreetMap (sin API key), centrado en Piura; marcadores de la planta y los clientes; la ruta vigente en línea sólida y la reemplazada punteada; lista de paradas con `eta`. En la escena de la demo, la tarjeta "Redistribución" enlaza a `/routes` con las dos rutas.
 
 Seed: coordenadas reales aproximadas de Piura para el almacén, los 3 talleres y los 4 clientes (Kenji las agrega a su PR; si no llegan, `backend` las pone a mano).
 

@@ -71,7 +71,7 @@ Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), cone
 - Matching multicriterio con justificación.
 - Dividir un pedido grande entre talleres.
 - Seguimiento de pedidos y pagos (adelantos, saldos): P0 (ADR 0024).
-- Rutas multiparada en mapa de Piura (ADR 0024: `Route`, `plan_route`, Leaflet).
+- Rutas multiparada en mapa de Piura: entregas de órdenes a clientes, salen de la planta principal; no hay recojos en proveedores (ADR 0024: `Route`, `plan_route`, Leaflet; corrección de Oscar 10/10 23:35).
 - Sugerir nuevos proveedores: autoregistro P0 y tool `suggest_suppliers` con búsqueda web P1 (ADR 0024).
 
 ## Dominio (entrevista a Corpotex, 10/10)
