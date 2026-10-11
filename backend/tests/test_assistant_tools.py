@@ -72,15 +72,16 @@ READS = {"list_orders", "get_order", "list_purchase_orders", "get_purchase_order
             READS
             | {"list_materials", "list_pending", "list_suppliers", "get_supplier"}
             | {"resolve_decision", "acknowledge_alert", "mark_payment_paid", "set_clock"}
-            | {"suggest_suppliers", "generate_purchase_orders"},
+            | {"suggest_suppliers", "generate_purchase_orders", "request_follow_up"},
         ),
         (
             "production",
             READS
             | {"list_materials"}
-            | {"confirm_order", "record_delivery", "record_progress", "generate_purchase_orders"},
+            | {"confirm_order", "record_delivery", "record_progress", "generate_purchase_orders"}
+            | {"request_follow_up"},
         ),
-        ("sales", READS),
+        ("sales", READS | {"request_follow_up"}),
     ],
 )
 def test_toolset_depends_on_role(monkeypatch, role, expected):
@@ -419,3 +420,89 @@ def test_generate_before_backend_lands_fails_as_a_card(monkeypatch):
     assert is_error and "aún no está disponible" in text
     ((_, _, action), _) = services(calls, "record_assistant_action")[0]
     assert action["status"] == "failed"
+
+
+FOLLOW_UP_REQUESTS = [
+    {
+        "id": None,
+        "purchase_order": {"id": 38, "code": "PT-0038"},
+        "supplier_name": "Confecciones del Norte",
+        "status": "pending",
+        "asked_at": None,
+    },
+    {
+        "id": None,
+        "purchase_order": {"id": 40, "code": "PT-0040"},
+        "supplier_name": "Textiles Lima",
+        "status": "asked",
+        "asked_at": "2026-10-14T15:05:00+00:00",
+    },
+]
+
+
+def fake_follow_up(monkeypatch, status=200, requests=FOLLOW_UP_REQUESTS):
+    posted = []
+    monkeypatch.setattr(
+        assistant_tools,
+        "api_get",
+        fake_api(
+            {"/api/orders/": (200, [{"id": 42}]), "/api/purchase-orders/": (200, [{"id": 38}])}, []
+        ),
+    )
+
+    def api_post(user, path, data):
+        posted.append((path, data))
+        return status, {"requests": requests} if status < 400 else {}
+
+    monkeypatch.setattr(assistant_tools, "api_post", api_post)
+    return posted
+
+
+def test_request_follow_up_previews_who_gets_asked_and_who_is_already_waiting(monkeypatch):
+    install(monkeypatch)
+    posted = fake_follow_up(monkeypatch)
+    conv = conversation("sales")
+    is_error, text = call(
+        conv, 1, "request_follow_up", {"order_code": "CP-2026-0142", "confirmed": False}
+    )
+    assert not is_error
+    assert "Pedir avance a Confecciones del Norte (PT-0038)" in text
+    assert "PT-0040 (Textiles Lima) desde las 10:05" in text and "(sí/no)" in text
+    assert posted == [("/api/orders/42/follow-up/", {"dry_run": True})]
+    assert conv.pending_action["args"] == {"order_code": "CP-2026-0142"}
+
+
+def test_request_follow_up_confirmed_posts_for_real_and_records_card(monkeypatch):
+    calls = install(monkeypatch)
+    rows = [dict(r, id=i) for i, r in enumerate(FOLLOW_UP_REQUESTS, 1)]
+    posted = fake_follow_up(monkeypatch, status=202, requests=rows)
+    conv = conversation("production")
+    conv.pending_action = {
+        "tool": "request_follow_up",
+        "args": {"purchase_order_code": "PT-0038"},
+        "turn_id": 1,
+    }
+    is_error, _ = call(
+        conv, 2, "request_follow_up", {"purchase_order_code": "PT-0038", "confirmed": True}
+    )
+    assert not is_error
+    assert posted == [("/api/purchase-orders/38/follow-up/", {"dry_run": False})]
+    ((_, _, action), _) = services(calls, "record_assistant_action")[0]
+    assert action["title"] == "Avance pedido: PT-0038, PT-0040"
+    assert "Ya esperaban respuesta: PT-0040" in action["summary"]
+    assert action["links"] == [
+        {"kind": "purchase_order", "id": 38},
+        {"kind": "purchase_order", "id": 40},
+    ]
+
+
+def test_request_follow_up_forbidden_for_the_role_tells_the_model(monkeypatch):
+    install(monkeypatch)
+    fake_follow_up(monkeypatch, status=403)
+    is_error, text = call(
+        conversation("sales"),
+        1,
+        "request_follow_up",
+        {"purchase_order_code": "PT-0038", "confirmed": False},
+    )
+    assert is_error and "Tu rol no puede hacer eso" in text

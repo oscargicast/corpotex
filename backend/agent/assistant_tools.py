@@ -8,7 +8,9 @@ from the user, so the model cannot confirm itself. Services re-check the role.
 """
 
 import json
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from zoneinfo import ZoneInfo
 
 from asgiref.sync import sync_to_async
 from claude_agent_sdk import tool
@@ -17,6 +19,7 @@ from agent.tools import ok, refuse
 
 DECISION_ACTIONS = ("approve", "reject", "change_supplier")
 READ_LIMIT = 8000  # characters of JSON the model reads per call
+LIMA = ZoneInfo("America/Lima")
 
 
 def is_alert_only(batch) -> bool:
@@ -35,15 +38,18 @@ def assistant_tools(conversation, batch) -> list:
             _set_clock,
             _suggest_suppliers,
             _generate_purchase_orders,
+            _request_follow_up,
         ],
         "production": [
             _confirm_order,
             _record_delivery,
             _record_progress,
             _generate_purchase_orders,
+            _request_follow_up,
         ],
         # TODO(A3, after B4): sales gets find_client and register_order once their
-        # endpoints exist; until then sales only reads.
+        # endpoints exist; until then sales only reads and asks for progress.
+        "sales": [_request_follow_up],
     }.get(user.role, [])
     return _reads(user) + [build(conversation, batch.turn, user) for build in writes]
 
@@ -58,6 +64,18 @@ def api_get(user, path: str, params: dict | None = None):
 
     query = {k: v for k, v in (params or {}).items() if v not in (None, "")}
     request = APIRequestFactory().get(path, query)
+    force_authenticate(request, user=user)
+    match = resolve(path)
+    response = match.func(request, *match.args, **match.kwargs)
+    return response.status_code, response.data
+
+
+def api_post(user, path: str, data: dict):
+    """POST to one of our API views as `user`. Returns (status_code, data)."""
+    from django.urls import resolve
+    from rest_framework.test import APIRequestFactory, force_authenticate
+
+    request = APIRequestFactory().post(path, data, format="json")
     force_authenticate(request, user=user)
     match = resolve(path)
     response = match.func(request, *match.args, **match.kwargs)
@@ -765,6 +783,112 @@ def _generate_purchase_orders(conversation, turn, user):
                 "items": {"type": "integer"},
                 "description": "Ids de insumos; vacío para todos los pendientes",
             }
+        },
+        required=[],
+        preview=preview,
+        run=run,
+    )
+
+
+# --- progress asked by a role (ADR 0027 §6, all roles) ----------------------------------
+
+
+def _follow_up_path(user, args: dict) -> str:
+    """`/api/<orders|purchase-orders>/<id>/follow-up/` for the code the model passed."""
+    from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+
+    collection, code = (
+        ("purchase-orders", args.get("purchase_order_code"))
+        if args.get("purchase_order_code")
+        else ("orders", args.get("order_code"))
+    )
+    if not code:
+        raise ValueError("indica order_code o purchase_order_code")
+    status, rows = api_get(user, f"/api/{collection}/", {"code": code})
+    if status == 403:
+        raise PermissionDenied
+    if status >= 400 or not rows:
+        raise ObjectDoesNotExist(code)
+    return f"/api/{collection}/{rows[0]['id']}/follow-up/"
+
+
+def _follow_up_requests(user, args: dict, *, dry_run: bool) -> list[dict]:
+    from django.core.exceptions import PermissionDenied
+
+    status, data = api_post(user, _follow_up_path(user, args), {"dry_run": dry_run})
+    if status == 403:
+        raise PermissionDenied
+    if status >= 400:
+        raise RuntimeError(f"no se pudo pedir avance (HTTP {status})")
+    return data.get("requests") or []
+
+
+def _asked_at(value) -> str:
+    moment = datetime.fromisoformat(str(value)).astimezone(LIMA) if value else None
+    return f"las {moment:%H:%M}" if moment else "antes"
+
+
+def _follow_up_text(requests: list[dict]) -> tuple[str, str]:
+    """(who gets a message, who is already waiting), one phrase each."""
+    ask = ", ".join(
+        f"{r.get('supplier_name')} ({(r.get('purchase_order') or {}).get('code')})"
+        for r in requests
+        if r.get("status") != "asked"
+    )
+    waiting = ", ".join(
+        f"{(r.get('purchase_order') or {}).get('code')} ({r.get('supplier_name')}) desde {_asked_at(r.get('asked_at'))}"
+        for r in requests
+        if r.get("status") == "asked"
+    )
+    return ask, waiting
+
+
+def _request_follow_up(conversation, turn, user):
+    def preview(args):
+        requests = _follow_up_requests(user, args, dry_run=True)
+        if not requests:
+            raise RuntimeError("no tiene pedidos abiertos: no hay a quién pedirle avance")
+        ask, waiting = _follow_up_text(requests)
+        parts = []
+        if ask:
+            parts.append(f"Pedir avance a {ask}")
+        if waiting:
+            parts.append(f"ya esperan respuesta, no se les escribe otra vez: {waiting}")
+        return "; ".join(parts) + ". La respuesta llega a este chat."
+
+    def run(args):
+        requests = _follow_up_requests(user, args, dry_run=False)
+        ask, waiting = _follow_up_text(requests)
+        codes = [(r.get("purchase_order") or {}).get("code") for r in requests]
+        summary = f"Le pregunto a {ask}." if ask else ""
+        if waiting:
+            summary += f" Ya esperaban respuesta: {waiting}."
+        summary += " Te aviso aquí cuando contesten."
+        links = [
+            {"kind": "purchase_order", "id": (r.get("purchase_order") or {}).get("id")}
+            for r in requests
+        ]
+        return _card(f"Avance pedido: {', '.join(codes)}", summary.strip(), links)
+
+    return confirmable(
+        conversation,
+        turn,
+        user,
+        name="request_follow_up",
+        description=(
+            "Pide avance al proveedor o taller de un pedido, o a todos los de una orden "
+            "abierta. El agente le pregunta por WhatsApp y la respuesta llega a este chat. Los "
+            "pedidos que ya esperan respuesta no se repiten."
+        ),
+        properties={
+            "order_code": {
+                "type": "string",
+                "description": "Código de la orden, p. ej. CP-2026-0142",
+            },
+            "purchase_order_code": {
+                "type": "string",
+                "description": "Código del pedido, p. ej. PT-0038",
+            },
         },
         required=[],
         preview=preview,
