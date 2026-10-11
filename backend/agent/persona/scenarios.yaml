@@ -502,3 +502,163 @@ scenarios:
     must: ['CP-2026-0151', '1000', 'Tejidos Rib Lima', '¿Genero el pedido[^\\n]*Tejidos Rib Lima\\?\\s*$']
     must_not: ['¿Quieres que', '\\(s[ií]/no\\)', 'S/', '1000\\.00']
     forbid_tools: [generate_purchase_orders]
+
+  # --- Seguimiento proactivo (ADR 0027) --------------------------------------------------------
+
+  - name: seguimiento_punto_de_control_atrasado
+    agent: whatsapp
+    description: Punto de control del 60 % con el avance atrasado; una o dos líneas, avance concreto y foto.
+    state:
+      purchase_orders:
+        - code: PT-0038
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo escolar blanco, quantity: "1000.00", unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-20"
+          committed_on: "2026-10-20"
+          terms: "50 % de adelanto y 50 % a la entrega"
+          units_done: "200.00"
+          expected_units: "600.00"
+          total_units: "1000.00"
+          last_report_at: "2026-10-09T17:00:00-05:00"
+          report_link_sent_at: "2026-10-08T09:00:00-05:00"
+          is_follow_up: true
+          is_new: false
+      follow_up:
+        mode: balanced
+        kind: checkpoint
+        reason: "punto de control del 60 %"
+        pending_decisions: []
+        last_supplier_message: {text: "ya van 200, mañana seguimos", sent_at: "2026-10-09T17:00:00-05:00"}
+        last_agent_message: {text: "gracias, ¿para el martes 20 sale todo?", sent_at: "2026-10-09T17:05:00-05:00"}
+    must: ['cu[aá]nt|avance|van|etapa', 'foto']
+    must_not: ['urgente', '!!', 'cotiza', 'sigo esperando']
+    expect_tools: [send_message]
+    forbid_tools: [skip_follow_up]
+    max_messages: 1
+
+  - name: seguimiento_a_ritmo_salta
+    agent: whatsapp
+    description: Punto de control con avance reportado hace 2 horas y a ritmo; no escribe.
+    state:
+      purchase_orders:
+        - code: PT-0038
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo escolar blanco, quantity: "1000.00", unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-20"
+          committed_on: "2026-10-20"
+          terms: "50 % de adelanto y 50 % a la entrega"
+          units_done: "620.00"
+          expected_units: "600.00"
+          total_units: "1000.00"
+          last_report_at: "2026-10-14T08:30:00-05:00"
+          report_link_sent_at: "2026-10-08T09:00:00-05:00"
+          is_follow_up: true
+          is_new: false
+      follow_up:
+        mode: balanced
+        kind: checkpoint
+        reason: "punto de control del 60 %"
+        pending_decisions: []
+        last_supplier_message: {text: "buenos días, ya van 620 polos, todo bien", sent_at: "2026-10-14T08:30:00-05:00"}
+        last_agent_message: {text: "buenazo, gracias 👍", sent_at: "2026-10-14T08:32:00-05:00"}
+    expect_tools: [skip_follow_up]
+    forbid_tools: [send_message]
+
+  - name: seguimiento_decision_pendiente_salta
+    agent: whatsapp
+    description: El proveedor espera una decisión del Gerente sobre ese pedido; no le pregunta por el avance.
+    state:
+      purchase_orders:
+        - code: PT-0038
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo escolar blanco, quantity: "1000.00", unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-20"
+          committed_on: "2026-10-20"
+          terms: "50 % de adelanto y 50 % a la entrega"
+          units_done: "300.00"
+          expected_units: "600.00"
+          total_units: "1000.00"
+          last_report_at: "2026-10-12T11:00:00-05:00"
+          report_link_sent_at: "2026-10-08T09:00:00-05:00"
+          is_follow_up: true
+          is_new: false
+      follow_up:
+        mode: high
+        kind: checkpoint
+        reason: "punto de control diario"
+        pending_decisions: [{id: 77, kind: price, summary: "Confecciones del Norte pide 13.00 por polo en PT-0038 (tarifa 12.50)"}]
+        last_supplier_message: {text: "le comento que el hilo subió, ¿me puede reconocer 13 soles?", sent_at: "2026-10-13T16:00:00-05:00"}
+        last_agent_message: {text: "déjeme revisarlo y le confirmo", sent_at: "2026-10-13T16:02:00-05:00"}
+    expect_tools: [skip_follow_up]
+    forbid_tools: [send_message, confirm_purchase_order]
+
+  - name: seguimiento_vispera
+    agent: whatsapp
+    description: Víspera de entrega; confirma que sale mañana y a qué hora se recoge.
+    state:
+      purchase_orders:
+        - code: PT-0038
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo escolar blanco, quantity: "1000.00", unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-15"
+          committed_on: "2026-10-15"
+          terms: "50 % de adelanto y 50 % a la entrega"
+          units_done: "900.00"
+          expected_units: "950.00"
+          total_units: "1000.00"
+          last_report_at: "2026-10-13T18:00:00-05:00"
+          report_link_sent_at: "2026-10-08T09:00:00-05:00"
+          is_follow_up: true
+          is_new: false
+      follow_up:
+        mode: balanced
+        kind: checkpoint
+        reason: "entrega mañana"
+        pending_decisions: []
+        last_supplier_message: {text: "ya van 900, el jueves les entrego", sent_at: "2026-10-13T18:00:00-05:00"}
+        last_agent_message: {text: "excelente, gracias 👍", sent_at: "2026-10-13T18:05:00-05:00"}
+    must: ['mañana', 'hora|recog|pas']
+    must_not: ['urgente', '!!', 'foto']
+    expect_tools: [send_message]
+    max_messages: 1
+
+  - name: seguimiento_recordatorio_corto
+    agent: whatsapp
+    description: El proveedor no respondió el punto de control de las 10:05; recordatorio corto, sin reclamo ni la pregunta completa.
+    state:
+      purchase_orders:
+        - code: PT-0038
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo escolar blanco, quantity: "1000.00", unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-20"
+          committed_on: "2026-10-20"
+          terms: "50 % de adelanto y 50 % a la entrega"
+          units_done: "200.00"
+          expected_units: "600.00"
+          total_units: "1000.00"
+          last_report_at: "2026-10-09T17:00:00-05:00"
+          report_link_sent_at: "2026-10-08T09:00:00-05:00"
+          is_follow_up: true
+          is_new: false
+      follow_up:
+        mode: balanced
+        kind: reminder
+        reason: "sin respuesta desde las 10:05"
+        pending_decisions: []
+        last_supplier_message: {text: "ya van 200, mañana seguimos", sent_at: "2026-10-09T17:00:00-05:00"}
+        last_agent_message: {text: "buenos días, ¿cómo va lo del PT-0038? ¿cuántos polos van listos hasta hoy? si puede, mándeme una foto, sin apuro 🙏", sent_at: "2026-10-14T10:05:00-05:00"}
+    must_not: ['cu[aá]ntos polos van listos', 'sigo esperando', 'todav[ií]a no', 'urgente', '!!']
+    expect_tools: [send_message]
+    forbid_tools: [skip_follow_up]
+    max_messages: 1
+    max_chars: 80

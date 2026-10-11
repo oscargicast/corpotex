@@ -47,6 +47,35 @@ contacto o cuando pregunten cómo reportar.
 </como_escribir>"""
 
 
+# Proactive follow-up (ADR 0027 §3): the tick decides when; the agent decides whether and how.
+FOLLOW_UP_SKIP = (
+    "Antes de escribir, decide si hace falta. Usa skip_follow_up con un motivo corto, y no envíes "
+    "nada, si: el proveedor ya contó algo que responde esta pregunta (avance, un problema, una fecha) "
+    "después de tu último mensaje; hay una decisión del Gerente pendiente sobre ese pedido que el "
+    "proveedor está esperando; el proveedor escribió en las últimas horas sobre ese pedido; o el "
+    "avance reportado va a ritmo y es reciente. En la duda, escribe: un mensaje corto no molesta."
+)
+FOLLOW_UP_CHECKPOINT = (
+    "Punto de control: una o dos líneas, en un solo mensaje. Pregunta por el avance concreto, en "
+    "unidades o en qué etapa va (corte, costura, acabado), del pedido o los pedidos de "
+    "<seguimiento>. Pide foto solo si el motivo dice avance atrasado o sin reporte, o si el avance "
+    'va por debajo de lo esperado. Sin presión: "sin apuro, solo para organizarme" o lo que use '
+    "el estilo."
+)
+FOLLOW_UP_EVE = (
+    "Entrega cerca: en un solo mensaje corto, confirma que el pedido sale mañana (o hoy, si el "
+    "motivo dice entrega hoy) y pregunta a qué hora se puede recoger; si las notas dicen que envía "
+    "por agencia (Sullana Express), pregunta cuándo sale y pide el número de guía."
+)
+EVE_MARKERS = ("víspera", "entrega mañana", "entrega hoy")
+FOLLOW_UP_REMINDER = (
+    "Recordatorio: el proveedor no respondió tu último mensaje (el último tuyo en <seguimiento> o en "
+    "el hilo). Escribe algo más corto que ese mensaje, sin reclamar y sin repetir la pregunta "
+    'completa, en este estilo y con este trato. Por ejemplo: "¿pudo ver lo de hace un rato? 🙏" o '
+    '"¿pudo ver lo de ayer?". Nunca "sigo esperando", "todavía no me responde" ni "urgente".'
+)
+
+
 def build_prompt(conversation, batch, with_history: bool = False):
     """`(system, turn_message)` for one WhatsApp turn; `turn_message` is a list of blocks."""
     from agent.rules import RULES
@@ -90,7 +119,9 @@ def render_turn_message(state: dict, images: list[tuple[str, dict]] = ()) -> lis
     if state.get("decisions"):
         parts.append(_render_decisions(state["decisions"]))
     follow_ups = [o["code"] for o in orders if o.get("is_follow_up")]
-    if follow_ups:
+    if state.get("follow_up"):
+        parts.append(_render_follow_up(state["follow_up"], follow_ups))
+    elif follow_ups:
         parts.append(f"<seguimientos>{', '.join(follow_ups)}</seguimientos>")
     new_orders = [o["code"] for o in orders if o.get("is_new")]
     if new_orders:
@@ -119,6 +150,12 @@ def _render_orders(orders: list[dict], currency: str) -> str:
             fecha_limite=ctx.fmt_date(order.get("internal_due_on")),
             fecha_comprometida=ctx.fmt_date(order.get("committed_on")),
             avance=ctx.fmt_qty(order.get("units_done")),
+            de=ctx.fmt_qty(order.get("total_units")),
+            avance_esperado=ctx.fmt_qty(order.get("expected_units")),
+            ultimo_reporte=ctx.fmt_datetime(order.get("last_report_at")),
+            esperando_respuesta_desde=ctx.fmt_datetime(order.get("awaiting_reply_since")),
+            nota_seguimiento=order.get("follow_up_note") or None,
+            motivo_seguimiento=order.get("follow_up_reason") or None,
             link_de_reporte="enviado" if order.get("report_link_sent_at") else "no enviado",
         )
         lines = []
@@ -184,6 +221,38 @@ def _render_new_messages(messages: list[dict]) -> str:
     return "<mensajes_nuevos>\n" + "\n".join(lines) + "\n</mensajes_nuevos>"
 
 
+FOLLOW_UP_KINDS = {"checkpoint": "punto de control", "reminder": "recordatorio"}
+FOLLOW_UP_MODES = {"minimal": "mínimo", "balanced": "balanceado", "high": "alto"}
+
+
+def _render_follow_up(follow_up: dict, codes: list[str]) -> str:
+    tag = ctx.attrs(
+        tipo=FOLLOW_UP_KINDS.get(follow_up.get("kind"), follow_up.get("kind")),
+        modo=FOLLOW_UP_MODES.get(follow_up.get("mode"), follow_up.get("mode")),
+        motivo=follow_up.get("reason"),
+        pedidos=", ".join(codes) or None,
+        decision_pendiente="sí" if follow_up.get("pending_decisions") else None,
+    )
+    lines = []
+    for who, key in (("del proveedor", "supplier"), ("tuyo", "agent")):
+        last = follow_up.get(f"last_{key}_message") or {}
+        sent_at = last.get("sent_at") or follow_up.get(f"last_{key}_message_at")
+        if sent_at:
+            text = f": {ctx.text(last['text'])}" if last.get("text") else ""
+            lines.append(f"último mensaje {who} ({ctx.fmt_datetime(sent_at)}){text}")
+    for decision in follow_up.get("pending_decisions") or []:
+        summary = decision.get("summary") if isinstance(decision, dict) else decision
+        lines.append(f"decisión del Gerente pendiente: {ctx.text(summary)}")
+    body = ("\n" + "\n".join(lines) + "\n") if lines else ""
+    return f"<seguimiento{tag}>{body}</seguimiento>"
+
+
+def _is_eve(follow_up: dict, orders: list[dict]) -> bool:
+    """Delivery is tomorrow or today: from the batch reason or any order's own reason."""
+    reasons = [follow_up.get("reason")] + [o.get("follow_up_reason") for o in orders]
+    return any(marker in (r or "").lower() for r in reasons for marker in EVE_MARKERS)
+
+
 def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]) -> str:
     steps = []
     if state.get("new_messages"):
@@ -200,7 +269,16 @@ def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]
             "Primer contacto por los pedidos de <pedidos_nuevos>: propón el pedido con el precio "
             "de referencia y la fecha límite en un solo mensaje. No pidas cotización."
         )
-    if follow_ups:
+    follow_up = state.get("follow_up")
+    if follow_up:
+        steps.append(FOLLOW_UP_SKIP)
+        if follow_up.get("kind") == "reminder":
+            steps.append(FOLLOW_UP_REMINDER)
+        elif _is_eve(follow_up, state.get("purchase_orders") or []):
+            steps.append(FOLLOW_UP_EVE)
+        else:
+            steps.append(FOLLOW_UP_CHECKPOINT)
+    elif follow_ups:
         steps.append(
             "Toca seguimiento de los pedidos de <seguimientos>: pregunta por el avance en "
             "unidades, sin insistir y según las notas del proveedor."
