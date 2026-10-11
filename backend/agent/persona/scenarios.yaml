@@ -632,8 +632,9 @@ scenarios:
 
   - name: seguimiento_recordatorio_corto
     agent: whatsapp
-    description: El proveedor no respondió el punto de control de las 10:05; recordatorio corto, sin reclamo ni la pregunta completa.
+    description: "El proveedor no respondió el punto de control de las 10:05; en balanceado el recordatorio sale a las 4 h. Con las notas por defecto (un recordatorio al día, de 8 a 13 h) igual lo manda: corto, sin reclamo ni la pregunta completa."
     state:
+      now: "2026-10-14T14:06:00-05:00"
       purchase_orders:
         - code: PT-0038
           status: in_progress
@@ -728,3 +729,55 @@ scenarios:
         last_agent_message: {text: "buenos días, ¿cómo va el PT-0038? ¿cuántos polos van listos? sin apuro 🙏", sent_at: "2026-10-14T09:50:00-05:00"}
     expect_tools: [skip_follow_up]
     forbid_tools: [send_message]
+
+  - name: consulta_abierta_respondida
+    agent: whatsapp
+    description: "ADR 0027 §6. Hay una consulta de avance abierta y el proveedor la responde: answer_follow_up con un resumen en palabras del agente, y una respuesta corta al proveedor."
+    state:
+      purchase_orders:
+        - code: PT-0038
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo escolar blanco, quantity: "1000.00", unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-20"
+          committed_on: "2026-10-20"
+          terms: "50 % de adelanto y 50 % a la entrega"
+          units_done: "400.00"
+          total_units: "1000.00"
+          awaiting_reply_since: "2026-10-14T09:50:00-05:00"
+          report_link_sent_at: "2026-10-08T09:00:00-05:00"
+          is_follow_up: false
+          is_new: false
+      open_follow_up_requests:
+        - {id: 12, purchase_order_code: PT-0038, asked_at: "2026-10-14T09:45:00-05:00"}
+      new_messages:
+        - {id: 1, text: "buenas, ya vamos en 700, estamos en costura. el lunes 19 salen todos", media_url: null, sent_at: "2026-10-14T10:28:00-05:00"}
+    must_not: ['me pidieron', 'comercial', 'producci[oó]n', 'de parte']
+    expect_tools: [answer_follow_up, send_message]
+    max_messages: 2
+
+  - name: consulta_abierta_sin_responder
+    agent: whatsapp
+    description: "ADR 0027 §6. Hay una consulta de avance abierta, pero el proveedor escribe de otra cosa: no llama answer_follow_up."
+    state:
+      purchase_orders:
+        - code: PT-0038
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo escolar blanco, quantity: "1000.00", unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-20"
+          committed_on: "2026-10-20"
+          terms: "50 % de adelanto y 50 % a la entrega"
+          units_done: "400.00"
+          total_units: "1000.00"
+          awaiting_reply_since: "2026-10-14T09:50:00-05:00"
+          report_link_sent_at: "2026-10-08T09:00:00-05:00"
+          is_follow_up: false
+          is_new: false
+      open_follow_up_requests:
+        - {id: 12, purchase_order_code: PT-0038, asked_at: "2026-10-14T09:45:00-05:00"}
+      new_messages:
+        - {id: 1, text: "buenas, una consulta, ¿las etiquetas van cosidas al cuello o al costado?", media_url: null, sent_at: "2026-10-14T10:28:00-05:00"}
+    forbid_tools: [answer_follow_up]
