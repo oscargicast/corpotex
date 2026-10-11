@@ -14,6 +14,7 @@ KNOWN_KEYS = {
     "forbid_tools",
     "max_messages",
     "ends_with",
+    "max_chars",
 }
 
 
@@ -58,3 +59,10 @@ def test_parse_output_assistant_answer_is_multiline():
     messages, tools = parse_output(output, "assistant")
     assert tools == ["resolve_decision"]
     assert check({"ends_with": "(sí/no)"}, messages, tools) == []
+
+
+def test_max_chars_limit():
+    assert check({"max_chars": 10}, ["corto"], []) == []
+    assert check({"max_chars": 10}, ["esto es bastante largo"], []) == [
+        "un mensaje pasa de 10 caracteres"
+    ]

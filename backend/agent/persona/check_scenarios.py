@@ -105,6 +105,9 @@ def check(scenario: dict, messages: list[str], tools: list[str]) -> list[str]:
     limit = scenario.get("max_messages")
     if limit and len(messages) > limit:
         failures.append(f"{len(messages)} mensajes (máximo {limit})")
+    max_chars = scenario.get("max_chars")
+    if max_chars and any(len(m) > max_chars for m in messages):
+        failures.append(f"un mensaje pasa de {max_chars} caracteres")
     suffix = scenario.get("ends_with")
     if suffix and not (messages and messages[-1].rstrip().endswith(suffix)):
         failures.append(f'no termina en "{suffix}"')
