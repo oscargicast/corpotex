@@ -120,11 +120,13 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
       brand,
       promised_on: promisedOn,
       notes: notes.trim(),
+      // Optional fields travel only when set: the API rejects explicit nulls on
+      // the fields it still requires, and asks for them by name.
       items: rows.map((r) => ({
         description: r.description.trim(),
         quantity: Number(r.quantity),
-        product: r.product || null,
-        unit_price: r.unit_price !== "" ? r.unit_price : null,
+        ...(r.product && { product: r.product }),
+        ...(r.unit_price !== "" && { unit_price: r.unit_price }),
       })),
     };
     try {
