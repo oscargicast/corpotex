@@ -11,7 +11,7 @@ Oscar pide tres cosas sobre la orden: que la foto que sube Comercial se guarde y
 
 ### 1. Nombres
 
-- El desglose de una orden pasa a llamarse **ficha técnica**: es el término que usa el sistema de producción de Corpotex (entrevista del 10/10). "Insumos por prenda" es la **receta** del producto. El botón "Confirmar desglose" pasa a **"Aprobar ficha técnica"**; el estado `broken_down` se muestra como "Con ficha técnica".
+- El desglose de una orden pasa a llamarse **ficha técnica**: es el término que usa el sistema de producción de Corpotex (entrevista del 10/10). "Insumos por prenda" es la **receta** del producto. El botón "Confirmar desglose" pasa a **"Aprobar y abastecer"** (Oscar, 11/10 04:30: dice lo que pasa, la ficha se aprueba y los insumos entran a "por pedir"); el estado `broken_down` se muestra como "Con ficha técnica". La sección del detalle que compara insumos y talleres con el stock se titula **"Ficha técnica"** con el subtítulo "Insumos y tercerización con talleres".
 - "Prometida al cliente" pasa a **"Fecha de entrega"** en el formulario, el detalle, las listas, los avisos del asistente y los textos del agente. El campo de la API sigue siendo `promised_on`.
 
 ### 2. Foto del ítem
