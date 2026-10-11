@@ -51,7 +51,9 @@ def claim(conversation):
 
 
 def agent_says(batch, text="¿Cómo va el avance?"):
-    Message.objects.create(conversation=batch.turn.conversation, author="agent", text=text, status="sent", sent_at=timezone.now(), turn=batch.turn)
+    from core import clock
+
+    Message.objects.create(conversation=batch.turn.conversation, author="agent", text=text, status="sent", sent_at=clock.now(), turn=batch.turn)
 
 
 def test_checkpoints_of_a_ten_day_order_by_mode():

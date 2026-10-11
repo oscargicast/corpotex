@@ -105,6 +105,7 @@ def request_follow_up(purchase_orders, *, actor, subject: str, dry_run: bool = F
                     "asked_at": original,
                     "already_asked": bool(original),
                     "skip_reason": skip_reason,
+                    "channel": conversation.channel if conversation else None,
                     "in_house": po.supplier.is_in_house,
                     "goes_at": later,
                 }
@@ -175,12 +176,12 @@ def _enqueue_requested(conversation, pos: list[PurchaseOrder], *, actor, reason:
     turn.save(update_fields=fields)
 
 
-def mark_asked(purchase_order_ids, *, sent: bool) -> None:
-    """Closing a `requested` turn: the pending requests become `asked`, at the time of this
-    message when the agent wrote, else at the time of the wait they hang on."""
+def mark_asked(purchase_order_ids, *, sent_at=None) -> None:
+    """Closing a `requested` turn: the pending requests become `asked`, at the time of the agent's
+    message when it wrote, else at the time of the wait they hang on."""
     now = clock.now()
     for po in PurchaseOrder.objects.filter(id__in=purchase_order_ids):
-        asked_at = now if sent else (po.awaiting_reply_since or now)
+        asked_at = sent_at or po.awaiting_reply_since or now
         po.follow_up_requests.filter(status=FollowUpRequest.Status.PENDING).update(status=FollowUpRequest.Status.ASKED, asked_at=asked_at)
 
 
@@ -210,6 +211,9 @@ def answer_follow_up_requests(request_ids, *, summary: str) -> int:
             request.answered_at = now
             request.answer_summary = summary
             request.save(update_fields=["status", "answered_at", "answer_summary", "updated_at"])
+            # The supplier answered: nobody waits on this order any more, whatever the race between
+            # the question's closing and the reply (orquestador, 11/10 01:05).
+            PurchaseOrder.objects.filter(pk=request.purchase_order_id).update(awaiting_reply_since=None, reminded_at=None)
             answered += 1
             key = (request.requested_by_id, request.purchase_order_id)
             if request.requested_by_id and request.requested_by.is_active and key not in notified:

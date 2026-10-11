@@ -123,7 +123,7 @@ def test_the_answer_goes_back_to_whoever_asked(two_suppliers, sales, manager, pr
     with mock.patch("core.clock.now", return_value=sunday), mock.patch("core.clock.today", return_value=sunday.date()):
         batch = claim(conversation)
         assert batch is not None and batch.follow_up["kind"] == "requested"
-        Message.objects.create(conversation=conversation, author="agent", text="¿Cómo va el PT-0001?", status="sent", sent_at=timezone.now(), turn=batch.turn)
+        Message.objects.create(conversation=conversation, author="agent", text="¿Cómo va el PT-0001?", status="sent", sent_at=sunday, turn=batch.turn)
         services.finish_turn(batch, "sess")
     request = FollowUpRequest.objects.get(purchase_order=po)
     po.refresh_from_db()
@@ -213,3 +213,45 @@ def test_at_night_a_real_whatsapp_waits_until_7_and_the_simulator_goes_now(two_s
     whatsapp.available_at = timezone.now() - timedelta(seconds=1)
     whatsapp.save(update_fields=["available_at"])
     assert services.claim_next_turn(two_suppliers["conversation"].id) is None  # and even if dispatched early, the night holds it
+
+
+@pytest.mark.django_db
+def test_a_reply_before_the_turn_closes_leaves_nobody_waiting(two_suppliers, sales):
+    """agente, 11/10 06:05 (PI-0044): the supplier answered 3 s after the question, before the turn
+    closed; the order stayed "waiting" with the closing time and a reminder would have followed."""
+    conversation, po = two_suppliers["gamarra_conversation"], two_suppliers["buttons_po"]
+    client_for(sales).post(f"/api/orders/{two_suppliers['order'].id}/follow-up/", {}, format="json")
+    batch = claim(conversation)
+    question = timezone.now() - timedelta(seconds=3)
+    Message.objects.create(conversation=conversation, author="agent", text="¿Cómo van los botones?", status="sent", sent_at=question, turn=batch.turn)
+    Message.objects.create(conversation=conversation, author="supplier", text="Ya casi", status="received", sent_at=question + timedelta(seconds=2))
+    services.finish_turn(batch, "sess")
+    po.refresh_from_db()
+    request = FollowUpRequest.objects.get(purchase_order=po)
+    assert po.awaiting_reply_since is None and po.last_follow_up_at == question  # the agent's time, and nobody waits
+    assert request.status == "asked" and request.asked_at == question  # the answer turn closes it next
+
+
+@pytest.mark.django_db
+def test_without_a_reply_the_wait_starts_at_the_agents_message(two_suppliers, sales):
+    conversation, po = two_suppliers["gamarra_conversation"], two_suppliers["buttons_po"]
+    client_for(sales).post(f"/api/orders/{two_suppliers['order'].id}/follow-up/", {}, format="json")
+    batch = claim(conversation)
+    question = timezone.now() - timedelta(seconds=3)
+    Message.objects.create(conversation=conversation, author="agent", text="¿Cómo van los botones?", status="sent", sent_at=question, turn=batch.turn)
+    services.finish_turn(batch, "sess")
+    po.refresh_from_db()
+    assert po.awaiting_reply_since == question and FollowUpRequest.objects.get(purchase_order=po).asked_at == question
+
+
+@pytest.mark.django_db
+def test_answering_clears_the_wait_and_rows_say_their_channel(two_suppliers, sales):
+    body = client_for(sales).post(f"/api/orders/{two_suppliers['order'].id}/follow-up/", {}, format="json").json()
+    assert {r["purchase_order"]["code"]: r["channel"] for r in body["requests"]} == {"PT-0001": "whatsapp", "PI-0002": "simulator"}
+    po = two_suppliers["buttons_po"]
+    request = FollowUpRequest.objects.get(purchase_order=po)
+    PurchaseOrder.objects.filter(pk=po.pk).update(awaiting_reply_since=MONDAY, reminded_at=MONDAY)  # set after the reply, by a race
+    FollowUpRequest.objects.filter(pk=request.pk).update(status="asked", asked_at=MONDAY)
+    assert operations_services.answer_follow_up_requests([request.id], summary="Ya casi") == 1
+    po.refresh_from_db()
+    assert po.awaiting_reply_since is None and po.reminded_at is None
