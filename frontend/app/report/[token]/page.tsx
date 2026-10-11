@@ -11,6 +11,7 @@ import { formatDay } from "@/lib/format";
 import type { components } from "@/lib/api-types";
 import { SkeletonLines } from "@/components/skeleton";
 import { Spinner } from "@/components/ui";
+import { Lockup } from "@/components/brand";
 
 type Report = components["schemas"]["PublicReport"];
 
@@ -79,7 +80,7 @@ export default function ReportPage() {
 
   return (
     <main className="mx-auto max-w-md px-4 py-6">
-      <p className="text-xl font-black tracking-tight">CORPOTEX</p>
+      <Lockup height={28} priority />
       <section className="mt-5 flex items-center gap-3 rounded-xl bg-surface p-4 ring-1 ring-line">
         <Thumb src={data.product?.image} alt={data.product?.name ?? "Producto"} size={56} />
         <div className="text-sm">
@@ -135,7 +136,7 @@ export default function ReportPage() {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto max-w-md px-4 py-10 text-center">
-      <p className="text-xl font-black tracking-tight">CORPOTEX</p>
+      <Lockup height={28} priority />
       <div className="mt-6 rounded-xl bg-surface p-6 ring-1 ring-line">{children}</div>
     </main>
   );

@@ -9,6 +9,7 @@ import type { ChatMessage, SimulatorContact } from "@/lib/types";
 import { ChatThread } from "../chat-thread";
 import { SimulateOrder } from "../simulate-order";
 import { Pill, Spinner } from "../ui";
+import { Lockup } from "../brand";
 
 const SEEN_KEY = "corpotex.simulator.seen";
 const PHRASES_KEY = "corpotex.simulator.phrases";
@@ -164,7 +165,9 @@ export function Simulator() {
     return (
       <div className="fixed inset-0 z-50 flex flex-col gap-3 bg-canvas p-4">
         <div className="flex flex-wrap items-center gap-3 rounded-xl bg-surface px-4 py-2 ring-1 ring-line">
-          <span className="text-xl font-black tracking-tight">CORPOTEX · Simulador</span>
+          <span className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+            <Lockup height={26} /> <span className="text-muted">· Simulador</span>
+          </span>
           <div className="ml-auto flex flex-wrap items-center gap-3">
             <SimulateOrder />
             <button type="button" onClick={togglePresent} className="rounded-md p-2 hover:bg-canvas" title="Salir del modo presentación (P)">
