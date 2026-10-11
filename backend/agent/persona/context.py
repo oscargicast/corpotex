@@ -9,7 +9,21 @@ from zoneinfo import ZoneInfo
 
 # Times in the prompt are always Lima time: the services hand us UTC-aware datetimes.
 LIMA = ZoneInfo("America/Lima")
-WEEKDAYS = ("lun", "mar", "mié", "jue", "vie", "sáb", "dom")
+WEEKDAYS = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
+MONTHS = (
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+)
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 AUDIO_EXTENSIONS = {".ogg", ".oga", ".opus", ".mp3", ".m4a", ".aac", ".wav"}
 MAX_IMAGES_PER_TURN = 4
@@ -49,14 +63,14 @@ def as_date(value) -> date | None:
 
 
 def fmt_date(value) -> str:
-    """`sáb 17/10`: short and unambiguous for the model."""
+    """`sábado 17 de octubre`: as a person would say it, so the model copies that, not `17/10`."""
     day = as_date(value)
-    return f"{WEEKDAYS[day.weekday()]} {day:%d/%m}" if day else ""
+    return f"{WEEKDAYS[day.weekday()]} {day.day} de {MONTHS[day.month - 1]}" if day else ""
 
 
 def fmt_datetime(value) -> str:
     moment = as_datetime(value)
-    return f"{WEEKDAYS[moment.weekday()]} {moment:%d/%m %H:%M}" if moment else ""
+    return f"{fmt_date(moment)}, {moment:%H:%M}" if moment else ""
 
 
 def fmt_time(value) -> str:

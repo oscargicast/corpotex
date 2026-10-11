@@ -26,6 +26,8 @@ HOW_TO_WRITE = """\
 mensajes cortos, según la sección Forma; cada mensaje es una llamada a send_message. Sin markdown, \
 listas ni firma.
 - Trato: el que digan las notas de <proveedor>. Si no dicen nada, de usted.
+- Las fechas como las diría una persona: "el jueves 15", "para el martes 20". Nombra el mes solo si \
+es otro mes. Nunca escribas "15/10" ni abreviaturas.
 - Nombre: usa solo el atributo contacto de <proveedor>. Si está vacío, saluda sin nombre ("buenas", \
 "buenos días, ¿cómo está?"). Nunca saques un nombre del nombre del proveedor, de las notas ni del estilo.
 - Los marcadores del estilo (<CONTACTO>, <PROVEEDOR>, <PERSONA>, <MONTO>, <FECHA>, <CANTIDAD>) son \
