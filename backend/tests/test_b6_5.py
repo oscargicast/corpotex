@@ -31,7 +31,7 @@ def test_bulk_breakdown(catalogue, sales, production, sales_client):
     assert response.json() == {"broken_down": ["CP-2026-0301", "CP-2026-0302"], "skipped": []}
     assert set(Order.objects.filter(pk__in=[a.pk, b.pk]).values_list("status", flat=True)) == {"broken_down"}
     again = production_client.post("/api/orders/break-down/", {"order_ids": [a.id, 999999]}, format="json").json()
-    assert again["broken_down"] == [] and again["skipped"] == [{"code": "CP-2026-0301", "reason": "ya está en desglosada"}, {"code": "999999", "reason": "no existe"}]
+    assert again["broken_down"] == [] and again["skipped"] == [{"code": "CP-2026-0301", "reason": "ya está en estado «Con ficha técnica»"}, {"code": "999999", "reason": "no existe"}]
 
 
 @pytest.mark.django_db

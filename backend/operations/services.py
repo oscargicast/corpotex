@@ -194,6 +194,25 @@ def committed_stock(material) -> Decimal:
     return committed_stock_by_material().get(material.id, Decimal("0"))
 
 
+def effective_recipe(item: OrderItem) -> list[tuple]:
+    """ADR 0029: the item's recipe in this order, `[(material, qty_per_unit)]`: its `bom_override`
+    when the technical sheet was revised, else its product's. The catalogue never changes."""
+    from core.models import Material
+
+    if item.bom_override is not None:
+        by_id = Material.objects.in_bulk([int(e["material_id"]) for e in item.bom_override])
+        return [(by_id[int(e["material_id"])], Decimal(str(e["qty_per_unit"]))) for e in item.bom_override if int(e["material_id"]) in by_id]
+    if item.product_id is None:
+        return []
+    return [(pm.material, pm.qty_per_unit) for pm in item.product.materials.all()]
+
+
+def stage_durations(order: Order) -> dict:
+    """Days per in-plant stage for this order: `Config.stage_durations` under the order's own
+    `stage_overrides` (ADR 0029)."""
+    return {**(Config.load().stage_durations or {}), **(order.stage_overrides or {})}
+
+
 def break_down_order(order: Order) -> list[Requirement]:
     """Step 1: materials per item (quantity × qty_per_unit minus stock), one workshop requirement
     for the sewing and nothing else. `registered → broken_down`."""
@@ -203,8 +222,8 @@ def break_down_order(order: Order) -> list[Requirement]:
         order.needs_classification = order.items.filter(product__isnull=True).exists()
         order.save(update_fields=["needs_classification", "updated_at"])
         for item in order.items.filter(product__isnull=False).select_related("product").prefetch_related("product__materials__material"):
-            for pm in item.product.materials.all():
-                needed[pm.material_id] = needed.get(pm.material_id, Decimal("0")) + item.quantity * pm.qty_per_unit
+            for material, qty_per_unit in effective_recipe(item):
+                needed[material.id] = needed.get(material.id, Decimal("0")) + item.quantity * qty_per_unit
         requirements = []
         for material_id, qty in needed.items():
             from core.models import Material
@@ -224,7 +243,7 @@ def break_down_order(order: Order) -> list[Requirement]:
                 Requirement.objects.create(order=order, kind="workshop", product=item.product, qty_needed=item.quantity)
             )
         if order.status == Order.Status.REGISTERED:
-            set_status(order, Order.Status.BROKEN_DOWN, actor="system", note="Desglose contra inventario")
+            set_status(order, Order.Status.BROKEN_DOWN, actor="system", note="Ficha técnica contra inventario")
         compute_critical_path(order)
     return requirements
 
@@ -237,7 +256,7 @@ def confirm_order(order: Order, *, actor) -> Order:
     if order.needs_classification:
         raise UnknownReference(f"La orden {order.code} tiene ítems sin producto: clasifícalos antes de confirmar")
     with transaction.atomic():
-        set_status(order, Order.Status.CONFIRMED, actor=actor, note="Desglose confirmado")
+        set_status(order, Order.Status.CONFIRMED, actor=actor, note="Ficha técnica aprobada")
         # Materials stay open: Produccion (or the manager) generates one consolidated purchase
         # order per material across orders (ADR 0025 A). Workshop and finished goods are per order.
         match_requirements([r for r in order.requirements.all() if r.kind != "material"])
@@ -254,14 +273,14 @@ def check_order_edit(order: Order, *, actor, cancel: bool = False) -> None:
     role = getattr(actor, "role", None)
     if role == "manager":
         if cancel and order.status not in CANCELLABLE:
-            raise UnknownReference(f"La orden {order.code} ya está en {order.get_status_display().lower()} y no se puede cancelar")
+            raise UnknownReference(f"La orden {order.code} ya está en estado «{order.get_status_display()}» y no se puede cancelar")
         return
     if role != "sales":
         raise PermissionDenied("Solo Comercial y el Gerente editan órdenes")
     if order.owner_id != getattr(actor, "id", None):
         raise PermissionDenied("Comercial solo edita sus propias órdenes")
     if order.status not in EDITABLE_BY_SALES:
-        raise PermissionDenied(f"La orden ya está en {order.get_status_display().lower()}: solo el Gerente la cambia")
+        raise PermissionDenied(f"La orden ya está en estado «{order.get_status_display()}»: solo el Gerente la cambia")
 
 
 def _resolve_references(payload: dict) -> tuple:
@@ -341,8 +360,8 @@ def rebreak_down_order(order: Order) -> list[str]:
     order.needs_classification = order.items.filter(product__isnull=True).exists()
     order.save(update_fields=["needs_classification", "updated_at"])
     for item in order.items.filter(product__isnull=False).select_related("product").prefetch_related("product__materials__material"):
-        for pm in item.product.materials.all():
-            needed[pm.material_id] = needed.get(pm.material_id, Decimal("0")) + item.quantity * pm.qty_per_unit
+        for material, qty_per_unit in effective_recipe(item):
+            needed[material.id] = needed.get(material.id, Decimal("0")) + item.quantity * qty_per_unit
     from core.models import Material
 
     for material_id, qty in needed.items():
@@ -401,7 +420,7 @@ def break_down_orders(order_ids=None, *, actor) -> dict:
     done, skipped = [], []
     for order in qs:
         if order.status != Order.Status.REGISTERED:
-            skipped.append({"code": order.code, "reason": f"ya está en {order.get_status_display().lower()}"})
+            skipped.append({"code": order.code, "reason": f"ya está en estado «{order.get_status_display()}»"})
             continue
         break_down_order(order)
         done.append(order.code)
@@ -580,8 +599,7 @@ def _order_purchase_orders(order: Order):
 def compute_critical_path(order: Order) -> Order:
     """Materials arrive, then the in-plant stages, then sewing (plant or workshop), then
     finishing. Stores the path, `estimated_on` and the risk."""
-    config = Config.load()
-    durations = config.stage_durations or {}
+    durations = stage_durations(order)
     today = clock.today()
     if order.status in (Order.Status.READY, Order.Status.DELIVERED, Order.Status.CANCELLED):
         # Nothing left to produce: the estimate is the delivery itself, never a risk.
@@ -618,7 +636,7 @@ def compute_critical_path(order: Order) -> Order:
     stages += sorted(customization_stages(order))
     for stage in stages:
         end = cursor + timedelta(days=int(durations.get(stage, 1)))
-        path.append(_step(dict(Order.Stage.choices)[stage], "production", cursor, end, True))
+        path.append(_step(dict(Order.Stage.choices)[stage], "production", cursor, end, True, stage=stage))
         cursor = end
 
     workshops = [po for po in live if po.supplier.kind == "workshop"]
@@ -629,11 +647,11 @@ def compute_critical_path(order: Order) -> Order:
         cursor = max(sewing_end, cursor)
     else:
         end = cursor + timedelta(days=int(durations.get("sewing", 3)))
-        path.append(_step("Costura en planta", "production", cursor, end, True))
+        path.append(_step("Costura en planta", "production", cursor, end, True, stage="sewing"))
         cursor = end
 
     end = cursor + timedelta(days=int(durations.get("finishing", 1)))
-    path.append(_step("Acabado y entrega", "delivery", cursor, end, True))
+    path.append(_step("Acabado y entrega", "delivery", cursor, end, True, stage="finishing"))
 
     order.critical_path = path
     order.estimated_on = end
@@ -648,7 +666,12 @@ def compute_critical_path(order: Order) -> Order:
     return order
 
 
-def _step(name, kind, start, end, critical, po=None):
+def _step(name, kind, start, end, critical, po=None, *, stage=None):
+    """A supplier's date before the step's start (the plant hands the cut pieces after the
+    workshop's deadline, a committed date already past) never draws a step backwards: it ends
+    at its start and `late_by` says by how many days."""
+    late_by = max((start - end).days, 0)
+    end = max(start, end)
     today = clock.today()
     if end < today:
         status = "done"
@@ -667,6 +690,8 @@ def _step(name, kind, start, end, critical, po=None):
         "critical": critical,
         "status": status,
         "purchase_order_id": po.id if po else None,
+        "stage": stage,  # the key of `stage_overrides` / `Config.stage_durations`; null for supplier steps
+        "late_by": late_by or None,
     }
 
 
