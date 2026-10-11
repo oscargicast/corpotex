@@ -65,8 +65,12 @@ SYSTEM_PROMPT = (
     "Eres el jefe de producción de Corpotex, una fábrica de uniformes en Piura. Dada la descripción de una prenda "
     "pedida por un cliente, decides si corresponde a un producto del catálogo o es un producto nuevo, y propones su "
     "lista de insumos por prenda (tela, botones, cierres, cuellos y puños, hilo, etiquetas) usando los SKU existentes "
-    "cuando sirven. Responde solo con el JSON del esquema."
+    "cuando sirven. Si corresponde a un producto del catálogo, sus insumos son los del catálogo. El corte, la costura, "
+    "el bordado, el sublimado y el estampado se hacen en la planta: no son insumos y no van en la lista; solo van "
+    "materiales que se compran a proveedores. Responde solo con el JSON del esquema."
 )
+# Plant processes Claude may still list as materials: never something to buy (finding of 10/10 22:35).
+PROCESS = re.compile(r"^\s*(bordad|sublimad|estampad|serigraf|corte\b|costura\b|confecci)", re.IGNORECASE)
 
 
 def complete_sync(prompt: str, *, schema: dict) -> dict:
@@ -115,17 +119,7 @@ def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
     criteria[jev.NEW] = "Prenda nueva: ninguna del catálogo corresponde"
     picked = jev.choose(state, criteria, "Elige el producto del catálogo que corresponde a la prenda pedida, o 'nuevo'.")
     if picked and picked[0] in by_code and picked[1] >= MIN_CONFIDENCE:
-        product = by_code[picked[0]]
-        return {
-            "item_id": item.id,
-            "description": text,
-            "product": {"existing_id": product.id, "code": product.code, "name": product.name},
-            "confidence": round(picked[1], 2),
-            "materials": [
-                {"sku": pm.material.sku, "name": pm.material.name, "material_id": pm.material_id, "qty_per_unit": str(pm.qty_per_unit), "unit": pm.material.unit, "confidence": round(picked[1], 2)}
-                for pm in product.materials.all()
-            ],
-        }
+        return _catalogue_answer(item, text, by_code[picked[0]], picked[1])
 
     # 2. New (or unsure): Claude proposes the product and its bill of materials.
     prompt = (
@@ -134,20 +128,28 @@ def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
         + "\n\nInsumos existentes (SKU: nombre, tipo, unidad):\n"
         + "\n".join(f"- {m.sku}: {m.name}, {m.kind}, {m.unit}" for m in materials)
         + "\n\nPropón el producto (existing_code si uno del catálogo corresponde, si no un producto nuevo con código, nombre y marca) "
-        "y la lista de insumos por prenda (existing_sku cuando un insumo existente sirve, si no un insumo nuevo con sku, nombre, tipo y unidad)."
+        "y la lista de insumos por prenda (existing_sku cuando un insumo existente sirve, si no un insumo nuevo con sku, nombre, tipo y unidad). "
+        "El color y la talla no crean un insumo nuevo: van en la orden; reusa el SKU existente de la misma tela o avío. "
+        "Solo insumos que se compran, no procesos de planta (corte, costura, bordado, sublimado); el bordado puede pedir hilo de bordar."
     )
     proposal = complete_sync(prompt, schema=PROPOSAL_SCHEMA)
     base = float(proposal.get("confidence") or FALLBACK_CONFIDENCE)
     product_block = proposal.get("product") or {}
     existing = by_code.get(product_block.get("existing_code") or "")
     if existing:
-        product_out = {"existing_id": existing.id, "code": existing.code, "name": existing.name}
-    else:
-        product_out = {"new": {"code": _slug_code(product_block.get("code") or "", order.brand.name, product_block.get("name") or text), "name": product_block.get("name") or text[:160], "brand": product_block.get("brand") or order.brand.name}}
+        # A catalogue product brings its own bill of materials, which is what `apply_classification`
+        # uses: showing Claude's list instead would promise new materials that never get created.
+        return _catalogue_answer(item, text, existing, base)
+    product_out = {"new": {"code": _slug_code(product_block.get("code") or "", order.brand.name, product_block.get("name") or text), "name": product_block.get("name") or text[:160], "brand": product_block.get("brand") or order.brand.name}}
 
     materials_out = []
+    by_name = {x.name.strip().lower(): x for x in materials}
     for m in proposal.get("materials") or []:
+        if PROCESS.match(m.get("name") or "") and not (m.get("existing_sku") or "").strip():
+            continue  # embroidery, sublimation, sewing...: done in the plant, nothing to buy
         sku = (m.get("existing_sku") or "").strip()
+        if not sku:  # A "new" one that is a known material in another colour or size stays the known one.
+            sku = _known_sku((m.get("sku") or "").strip().upper(), (m.get("name") or "").strip().lower(), by_sku, by_name)
         unit = m.get("unit") if m.get("unit") in UNITS else "unit"
         confidence = base
         # 3. Jev confirms each material against the known SKUs (+ nuevo) when it is on.
@@ -157,11 +159,41 @@ def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
             sku = choice[0] if choice[0] in by_sku and choice[1] >= MIN_CONFIDENCE else ""
         if sku and sku in by_sku:
             known = by_sku[sku]
+            same = next((x for x in materials_out if x.get("sku") == known.sku), None)
+            if same:  # e.g. the body fabric and the stripe of the same jersey: one line, quantities added
+                same["qty_per_unit"] = str(Decimal(same["qty_per_unit"]) + Decimal(str(m.get("qty_per_unit") or 0)))
+                continue
             materials_out.append({"sku": known.sku, "name": known.name, "material_id": known.id, "qty_per_unit": str(m.get("qty_per_unit") or 0), "unit": known.unit, "confidence": confidence})
         else:
             new_sku = (m.get("sku") or "").strip().upper() or _slug_code("", "MAT", m.get("name") or "nuevo")
             materials_out.append({"new": {"sku": new_sku, "name": m.get("name") or new_sku, "kind": m.get("kind") if m.get("kind") in KINDS else "other", "unit": unit}, "qty_per_unit": str(m.get("qty_per_unit") or 0), "unit": unit, "confidence": confidence})
     return {"item_id": item.id, "description": text, "product": product_out, "confidence": round(base, 2), "materials": materials_out}
+
+
+def _known_sku(sku: str, name: str, by_sku: dict, by_name: dict) -> str:
+    """The existing SKU a proposed "new" material duplicates: its SKU extends a known one
+    (`TEL-ALG-30-AZM` → `TEL-ALG-30`) or its name is a known name. Empty when it is really new."""
+    if sku in by_sku:
+        return sku
+    prefixes = [known for known in by_sku if sku.startswith(known + "-")]
+    if prefixes:
+        return max(prefixes, key=len)
+    known = by_name.get(name)
+    return known.sku if known else ""
+
+
+def _catalogue_answer(item: OrderItem, text: str, product: Product, confidence: float) -> dict:
+    confidence = round(confidence, 2)
+    return {
+        "item_id": item.id,
+        "description": text,
+        "product": {"existing_id": product.id, "code": product.code, "name": product.name},
+        "confidence": confidence,
+        "materials": [
+            {"sku": pm.material.sku, "name": pm.material.name, "material_id": pm.material_id, "qty_per_unit": str(pm.qty_per_unit), "unit": pm.material.unit, "confidence": confidence}
+            for pm in product.materials.all()
+        ],
+    }
 
 
 def _slug_code(code: str, brand: str, name: str) -> str:
