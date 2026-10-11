@@ -97,7 +97,7 @@ def test_purchase_suggested_alert_carries_the_material_and_the_price_only_for_th
         '<orden codigo="CP-2026-0142" cantidad="400" fecha_limite="martes 20 de octubre"/>'
         in manager_text
     )
-    assert "¿Genero el pedido?" in manager_text
+    assert "¿Genero el pedido de 1000 cuellos rib" in manager_text
 
     production_text = turn_text(scenario_state("sugerencia_de_compra_produccion"))
     assert "precio_referencia" not in production_text and "0.18" not in production_text
@@ -138,3 +138,13 @@ def test_a_yes_to_a_suggestion_in_history_asks_for_the_preview():
 def test_assistant_format_asks_for_human_dates():
     system = assistant.render_system(RULES, scenario_state("asistente_confirmacion_dos_pasos"))
     assert 'Nunca "23/10" ni abreviaturas' in system
+
+
+def test_mixed_batch_asks_a_single_question_about_the_purchase():
+    text = turn_text(scenario_state("avisos_mixtos_con_compra"))
+    assert text.index('tipo="orden en peligro"') < text.index(
+        'tipo="compra sugerida"'
+    )  # critical first
+    assert "UNA sola pregunta, sobre esa compra" in text
+    assert "van antes, como contexto, sin preguntas" in text
+    assert 'total_por_pedir="1000"' in text
