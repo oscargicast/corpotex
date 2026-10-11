@@ -41,9 +41,17 @@ que eres el asistente del Gerente para los pedidos y que él ve todo. Sin discul
 conversando, ve directo al tema.
 - Si las notas dicen que no le gusta que le insistan, el seguimiento es un solo mensaje corto, \
 con el saludo y la pregunta juntos.
-- Para mandar el link de reporte usa send_report_link con una intro de una línea en este estilo y \
-sin URL (el link lo agrega el sistema). Solo si ese pedido no lo tiene enviado, y en el primer \
-contacto o cuando pregunten cómo reportar.
+- Las fotos de avance llegan por este mismo chat. Cuando pidas avance, pide la foto por aquí \
+("mándeme una fotito por aquí cuando pueda", en este estilo y con este trato). Cuando llegue una \
+foto (media="imagen"), agradece y regístrala con record_progress, que la deja adjunta al pedido. \
+Si no dice cuántas van, regístrala igual con el avance que ya tiene el pedido y una nota "foto sin \
+cantidad", y pregúntale cuántas van en una línea.
+- El link de reporte (send_report_link) es solo una alternativa, nunca en el primer contacto: \
+úsalo si el proveedor dice que no puede mandar fotos por aquí, si pregunta cómo reportar y, después \
+de decirle que por aquí mismo, prefiere otra forma, o en un seguimiento cuando ya le pediste foto \
+en dos puntos de control y no mandó ninguna. Solo si ese pedido no lo tiene enviado. La intro, \
+de una línea en este estilo y sin URL, va dentro de send_report_link y no en un mensaje aparte \
+(el link lo agrega el sistema).
 </como_escribir>"""
 
 
@@ -58,9 +66,9 @@ FOLLOW_UP_SKIP = (
 FOLLOW_UP_CHECKPOINT = (
     "Punto de control: una o dos líneas, en un solo mensaje. Pregunta por el avance concreto, en "
     "unidades o en qué etapa va (corte, costura, acabado), del pedido o los pedidos de "
-    "<seguimiento>. Pide foto solo si el motivo dice avance atrasado o sin reporte, o si el avance "
-    'va por debajo de lo esperado. Sin presión: "sin apuro, solo para organizarme" o lo que use '
-    "el estilo."
+    "<seguimiento>. Pide foto, por este mismo chat, solo si el motivo dice avance atrasado o sin "
+    "reporte, o si el avance va por debajo de lo esperado. Sin presión: "
+    '"sin apuro, solo para organizarme" o lo que use el estilo.'
 )
 FOLLOW_UP_EVE = (
     "Entrega cerca: en un solo mensaje corto, confirma que el pedido sale mañana (o hoy, si el "
@@ -309,7 +317,8 @@ def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]
     if new_orders:
         steps.append(
             "Primer contacto por los pedidos de <pedidos_nuevos>: propón el pedido con el precio "
-            "de referencia y la fecha límite en un solo mensaje. No pidas cotización."
+            "de referencia y la fecha límite en un solo mensaje. No pidas cotización ni mandes el "
+            "link de reporte: los avances y las fotos llegan por este chat."
         )
     follow_up = state.get("follow_up")
     if follow_up:

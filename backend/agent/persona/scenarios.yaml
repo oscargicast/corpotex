@@ -69,8 +69,9 @@ scenarios:
           is_follow_up: false
           is_new: true
     must: ['12[.,]50', '22']
-    must_not: ['a cu[aá]nto', 'cotiza', 'cu[aá]nto (me )?(lo )?(deja|cobra)', '<MONTO>', '<FECHA>', '<CONTACTO>']
+    must_not: ['a cu[aá]nto', 'cotiza', 'cu[aá]nto (me )?(lo )?(deja|cobra)', '<MONTO>', '<FECHA>', '<CONTACTO>', 'link', 'enlace']
     expect_tools: [send_message]
+    forbid_tools: [send_report_link]
     max_messages: 3
 
   - name: pregunta_si_es_bot
@@ -123,7 +124,20 @@ scenarios:
         - {id: 5, text: "así van, ya tenemos 600 listos", media_url: "/media/messages/avance.jpg", sent_at: "2026-10-14T10:27:00-05:00"}
     must: ['gracias|qué bien|bien']
     expect_tools: [record_progress, send_message]
+    forbid_tools: [send_report_link]
     max_messages: 3
+
+  - name: foto_sin_cantidad
+    agent: whatsapp
+    description: "Llega una foto por WhatsApp sin cantidad: agradece, la registra con record_progress (queda adjunta) y pregunta cuántas van en una línea, sin link."
+    state:
+      new_messages:
+        - {id: 15, text: "", media_url: "/media/messages/avance-costura.jpg", sent_at: "2026-10-14T10:27:00-05:00"}
+    must: ['gracias|qué bien|bien|buen', 'cu[aá]nt']
+    must_not: ['link', 'enlace', 'https?://']
+    expect_tools: [record_progress, send_message]
+    forbid_tools: [send_report_link]
+    max_messages: 2
 
   - name: seguimiento_sin_insistir
     agent: whatsapp
@@ -231,10 +245,10 @@ scenarios:
     expect_tools: [send_message]
     max_messages: 2
 
-  - name: link_de_reporte_con_estilo
+  - name: fotos_por_aqui_mismo
     agent: whatsapp
     priority: P1
-    description: ADR 0024. Pregunta cómo reportar; manda el link con una intro en su estilo y sin URL.
+    description: "Pregunta por dónde mandar las fotos: por aquí mismo, sin link (las fotos de WhatsApp quedan adjuntas al pedido)."
     state:
       purchase_orders:
         - code: PT-0001
@@ -250,7 +264,35 @@ scenarios:
           is_follow_up: false
           is_new: false
       new_messages:
-        - {id: 11, text: "¿cómo le mando el avance? ¿por acá nomás o hay otra forma?", media_url: null, sent_at: "2026-10-14T10:25:00-05:00"}
+        - {id: 11, text: "¿por dónde le mando las fotos del avance?", media_url: null, sent_at: "2026-10-14T10:25:00-05:00"}
+    must: ['aqu[ií]|ac[aá]|este (mismo )?(chat|n[uú]mero)']
+    must_not: ['https?://', 'www\.', 'link', 'enlace']
+    expect_tools: [send_message]
+    forbid_tools: [send_report_link]
+
+  - name: link_si_no_puede_por_whatsapp
+    agent: whatsapp
+    priority: P1
+    description: "ADR 0024. Ya se le dijo que por aquí mismo, pero no puede mandar fotos por WhatsApp: manda el link con una intro en su estilo y sin URL."
+    state:
+      purchase_orders:
+        - code: PT-0001
+          status: in_progress
+          status_display: En proceso
+          items: [{name: Polo piqué blanco UNICRACK, quantity: 1000, unit_price: "12.50"}]
+          rate_unit_price: "12.50"
+          internal_due_on: "2026-10-18"
+          committed_on: "2026-10-18"
+          terms: ""
+          units_done: 400
+          report_link_sent_at: null
+          is_follow_up: false
+          is_new: false
+      history:
+        - {sender: supplier, text: "¿por dónde le mando las fotos del avance?", sent_at: "2026-10-14T10:20:00-05:00"}
+        - {sender: agent, text: "por aquí mismo nomás, una fotito cuando pueda 🙏", sent_at: "2026-10-14T10:21:00-05:00"}
+      new_messages:
+        - {id: 12, text: "es que mi celular no manda fotos por whatsapp, se cuelga. ¿hay otra forma?", media_url: null, sent_at: "2026-10-14T10:25:00-05:00"}
     must_not: ['https?://', 'www\.']
     expect_tools: [send_report_link]
 
@@ -589,7 +631,7 @@ scenarios:
         pending_decisions: []
         last_supplier_message: {text: "ya van 200, mañana seguimos", sent_at: "2026-10-09T17:00:00-05:00"}
         last_agent_message: {text: "gracias, ¿para el martes 20 sale todo?", sent_at: "2026-10-09T17:05:00-05:00"}
-    must: ['cu[aá]nt|avance|van|etapa', 'foto']
+    must: ['cu[aá]nt|avance|van|etapa', 'fot(o|ito)']
     must_not: ['urgente', '!!', 'cotiza', 'sigo esperando']
     expect_tools: [send_message]
     forbid_tools: [skip_follow_up]
