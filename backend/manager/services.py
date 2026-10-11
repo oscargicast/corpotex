@@ -30,6 +30,7 @@ ALERT_ROLES = {
     "claude_disconnected": ("manager",),
     "purchase_suggested": ("manager", "production"),
     "follow_up_answered": (),  # only whoever asked, see follow_up_requests._notify_answer
+    "classification_failed": ("manager", "production"),  # ADR 0028, M3: the background classifier gave up
 }
 SEVERITY = {
     "order_in_danger": "critical",
@@ -53,7 +54,7 @@ def alert_concerns_role(alert: Alert, role: str | None) -> bool:
     if role == "sales":
         return alert.kind in ("order_in_danger", "delay", "no_response")
     if role == "production":
-        if alert.kind in ("order_in_danger", "purchase_suggested"):
+        if alert.kind in ("order_in_danger", "purchase_suggested", "classification_failed"):
             return True
         return bool(po and po.supplier.kind == "workshop" and alert.kind in ("stalled_purchase_order", "delay", "no_response"))
     return False
@@ -302,6 +303,10 @@ def run_monitor() -> dict:
     from operations.follow_up_requests import skip_closed
 
     skip_closed()  # requests of orders that closed before the answer (ADR 0027 §6)
+    # An order classified since (by hand or a later retry) no longer has a failed classification.
+    Alert.objects.filter(kind="classification_failed", status__in=("open", "acknowledged"), order__needs_classification=False).update(
+        status="resolved", resolved_at=now
+    )
     for po in PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES).select_related("supplier"):
         if po.id in stalled:
             open_alert("stalled_purchase_order", purchase_order=po, text=f"{po.supplier.name} no responde el seguimiento del pedido {po.code}")

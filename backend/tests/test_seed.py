@@ -193,27 +193,30 @@ def test_seed_reset_chats_and_real_supplier_follow_ups(manager):
 
 
 @pytest.mark.django_db
-def test_seed_has_one_order_waiting_for_classification(manager):
-    """CP-2026-0161 (orquestador, 10/10 22:45): two made-to-order items for the classification
-    scene (ADR 0025 B and C). It breaks down nothing, so alerts and purchase suggestions stay as
-    the script expects."""
+def test_seed_order_classified_on_arrival(manager):
+    """CP-2026-0161 (M3, 11/10 03:20): the made-to-order lines came in and classified themselves,
+    a catalogue polo and a new windbreaker with three new materials at stock 0. It is only broken
+    down, so alerts and purchase suggestions stay as the script expects."""
+    from core.models import Material
     from manager import services as manager_services
     from manager.models import Alert
     from operations import services
-    from operations.exceptions import UnknownReference
     from operations.models import Order
 
     call_command("seed_demo", verbosity=0)
     order = Order.objects.get(code="CP-2026-0161")
     assert order.customer.name == "Colegio Los Algarrobos" and order.brand.name == "UNICRACK"
-    assert order.status == "broken_down" and order.needs_classification is True and order.risk == "ok"
+    assert order.status == "broken_down" and order.needs_classification is False and order.risk == "ok"
     items = list(order.items.order_by("id"))
-    assert [(i.product_id, i.quantity, i.unit_price) for i in items] == [(None, 300, None), (None, 150, None)]
+    assert [(i.product.code, i.quantity) for i in items] == [("UNI-POD-01", 300), ("UNI-CAS-01", 150)]
     assert items[0].description.startswith("Polo deportivo") and items[1].description.startswith("Casaca cortavientos")
-    assert not order.requirements.exists()
-    with pytest.raises(UnknownReference):
-        services.confirm_order(order, actor=manager)
-    assert all(row["orders"] and "CP-2026-0161" not in {o["code"] for o in row["orders"]} for row in services.pending_purchases(with_prices=True))
+    assert items[1].product.name == "Casaca cortavientos escolar" and items[1].product.brand.name == "UNICRACK"
+    new = {m.sku: m.stock for m in Material.objects.filter(sku__in=["TEL-IMP-01", "TEL-POL-01", "CIE-SEP-55"])}
+    assert new == {"TEL-IMP-01": 0, "TEL-POL-01": 0, "CIE-SEP-55": 0}
+    needs = {r.material.sku: r.qty_needed for r in order.requirements.filter(kind="material")}
+    assert needs["TEL-IMP-01"] == 240 and needs["TEL-POL-01"] == 195 and needs["CIE-SEP-55"] == 150
+    assert order.requirements.filter(kind="workshop").count() == 2
+    assert all("CP-2026-0161" not in {o["code"] for o in row["orders"]} for row in services.pending_purchases(with_prices=True))  # not confirmed yet
     manager_services.run_monitor()
     assert not Alert.objects.filter(status="open", order=order).exists()
     assert set(Alert.objects.filter(status="open", kind="purchase_suggested").values_list("material__sku", flat=True)) == {"RIB-CUE-01", "HIL-POL-40"}

@@ -122,7 +122,26 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
 
             apply_by_key(order, keyed, payload["classification"], order.classification_warnings)
         break_down_order(order)
+        schedule_auto_classify(order)
     return order, True
+
+
+def schedule_auto_classify(order: Order) -> bool:
+    """M3: an order with items still without a product classifies itself in the background, once
+    this transaction commits (the sales system's API, or a form line the AI could not read)."""
+    if not order.items.filter(product__isnull=True).exists():
+        return False
+
+    def send():
+        try:
+            from .tasks import auto_classify
+
+            auto_classify.apply_async((order.id, 1), queue="periodic")
+        except Exception:  # The broker is down: the order stays "to classify", as before.
+            logger.exception("schedule_auto_classify: could not queue %s", order.code)
+
+    transaction.on_commit(send)
+    return True
 
 
 def next_order_code() -> str:
@@ -286,6 +305,7 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
                 apply_by_key(order, keyed, payload["classification"], warnings)
             if order.status != Order.Status.REGISTERED:
                 warnings = warnings + rebreak_down_order(order)
+            schedule_auto_classify(order)
         compute_critical_path(order)
     return order, warnings
 

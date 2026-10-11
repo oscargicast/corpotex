@@ -183,6 +183,7 @@ CELERY_TASK_ROUTES = {
     "core.tasks.run_style_extraction": {"queue": "style"},
     "core.tasks.refresh_style": {"queue": "style"},
     "fleet.tasks.simulate_tick": {"queue": "periodic"},
+    "operations.tasks.auto_classify": {"queue": "periodic"},  # ADR 0028, M3
 }
 CELERY_BEAT_SCHEDULE = {
     "tick": {"task": "manager.tasks.tick", "schedule": 10.0},

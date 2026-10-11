@@ -40,15 +40,15 @@ for x in d["customers"]:
     if x.get("tax_id") and not re.fullmatch(r"\d{11}", x["tax_id"]): err(f"{x['name']}: RUC inválido")
 for x in d["materials"]:
     enum(x["kind"], {"fabric","button","zipper","collar_cuff","other"}, x["sku"]); enum(x["unit"], {"m","kg","unit"}, x["sku"])
-    if x["image"] != f"images/materials/{x['sku']}.jpg": err(f"{x['sku']}: ruta de imagen")
+    if x["image"] is not None and x["image"] != f"images/materials/{x['sku']}.jpg": err(f"{x['sku']}: ruta de imagen")  # null: created by a classification (ADR 0028)
 for x in d["products"]:
-    if x["image"] != f"images/products/{x['code']}.jpg": err(f"{x['code']}: ruta de imagen")
+    if x["image"] is not None and x["image"] != f"images/products/{x['code']}.jpg": err(f"{x['code']}: ruta de imagen")
 for x in d["product_materials"]: ref(x["product"], P, "pm"); ref(x["material"], M, "pm")
 bom = {}
 for x in d["product_materials"]: bom.setdefault(x["product"], set()).add(x["material"])
 for p in P:
     if p not in bom: err(f"{p}: sin product_materials")
-for im in [x["image"] for x in d["materials"] + d["products"]]:
+for im in [x["image"] for x in d["materials"] + d["products"] if x["image"]]:
     f = f"{H}/{im}"
     if not os.path.exists(f): err(f"falta {im}"); continue
     if os.path.getsize(f) >= 300_000: err(f"{im}: >= 300 KB")

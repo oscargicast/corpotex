@@ -68,6 +68,7 @@ class Alert(TimeStamped):
         CLAUDE_DISCONNECTED = "claude_disconnected", "Claude desconectado"
         PURCHASE_SUGGESTED = "purchase_suggested", "Compra sugerida"
         FOLLOW_UP_ANSWERED = "follow_up_answered", "Avance respondido"
+        CLASSIFICATION_FAILED = "classification_failed", "Clasificación fallida"
 
     class Severity(models.TextChoices):
         INFO = "info", "Info"

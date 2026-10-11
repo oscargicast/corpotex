@@ -287,6 +287,37 @@ def apply_by_key(order: Order, keyed_items: list[tuple[str | None, OrderItem]], 
     return done
 
 
+def auto_classify_order(order: Order) -> tuple[int, list[OrderItem]]:
+    """M3 (Oscar, 11/10 03:20): no human confirmation any more. Every item without a product gets
+    the proposal as is (Jev, then Claude), and the order breaks down again. Returns (classified,
+    failed items); a failed item stays without a product."""
+    from .services import break_down_order, rebreak_down_order
+
+    pending = list(order.items.filter(product__isnull=True).order_by("id"))
+    if not pending:
+        return 0, []
+    products, materials = _catalogue()
+    warnings: list[str] = []
+    done, failed = 0, []
+    for item in pending:
+        try:
+            proposal = classify_item(item, order, products, materials)
+            with transaction.atomic():
+                item.product = product_for_entry(proposal, order, warnings)
+                item.save(update_fields=["product", "updated_at"])
+            done += 1
+        except Exception as exc:
+            logger.warning("auto_classify: %s item %s failed: %s", order.code, item.id, exc)
+            failed.append(item)
+    if done:
+        with transaction.atomic():
+            if order.status in (Order.Status.REGISTERED, Order.Status.BROKEN_DOWN):
+                break_down_order(order)
+            else:
+                rebreak_down_order(order)
+    return done, failed
+
+
 MIN_DRAFT_TEXT = 12
 
 

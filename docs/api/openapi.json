@@ -4085,10 +4085,11 @@
                     "decision_pending",
                     "claude_disconnected",
                     "purchase_suggested",
-                    "follow_up_answered"
+                    "follow_up_answered",
+                    "classification_failed"
                 ],
                 "type": "string",
-                "description": "* `stalled_purchase_order` - Pedido estancado\n* `delay` - Retraso\n* `order_in_danger` - Orden en peligro\n* `no_response` - Sin respuesta\n* `payment_due` - Pago vencido\n* `instance_down` - WhatsApp desconectado\n* `no_channel` - Proveedor sin canal\n* `turn_failed` - Turno fallido\n* `style_refresh_failed` - Refresco de estilo fallido\n* `decision_pending` - Decisión pendiente\n* `claude_disconnected` - Claude desconectado\n* `purchase_suggested` - Compra sugerida\n* `follow_up_answered` - Avance respondido"
+                "description": "* `stalled_purchase_order` - Pedido estancado\n* `delay` - Retraso\n* `order_in_danger` - Orden en peligro\n* `no_response` - Sin respuesta\n* `payment_due` - Pago vencido\n* `instance_down` - WhatsApp desconectado\n* `no_channel` - Proveedor sin canal\n* `turn_failed` - Turno fallido\n* `style_refresh_failed` - Refresco de estilo fallido\n* `decision_pending` - Decisión pendiente\n* `claude_disconnected` - Claude desconectado\n* `purchase_suggested` - Compra sugerida\n* `follow_up_answered` - Avance respondido\n* `classification_failed` - Clasificación fallida"
             },
             "AlertSeverityEnum": {
                 "enum": [
