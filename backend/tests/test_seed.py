@@ -238,3 +238,22 @@ def test_open_orders_keep_the_estimate_the_critical_path_computes():
         computed = compute_critical_path(Order.objects.get(pk=order.pk))
         assert (computed.estimated_on, computed.risk) == stored, order.code
     assert set(Order.objects.filter(risk="in_danger").values_list("code", flat=True)) >= {"CP-2026-0151", "CP-2026-0158"}
+
+
+@pytest.mark.django_db
+def test_the_script_alerts_survive_the_seed_and_a_tick():
+    """The five open alerts of the script, after the seed and a monitor tick (N2b: the
+    complementary requirement must not open a new purchase suggestion on its own)."""
+    from manager import services as manager_services
+    from manager.models import Alert
+
+    call_command("seed_demo", verbosity=0)
+    manager_services.run_monitor()
+    opened = sorted((a.kind, a.order.code if a.order_id else a.material.sku) for a in Alert.objects.filter(status="open"))
+    assert opened == [
+        ("order_in_danger", "CP-2026-0151"),
+        ("order_in_danger", "CP-2026-0158"),
+        ("payment_due", "CP-2026-0118"),
+        ("purchase_suggested", "HIL-POL-40"),
+        ("purchase_suggested", "RIB-CUE-01"),
+    ]

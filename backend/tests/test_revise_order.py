@@ -105,16 +105,55 @@ def test_a_new_fabric_enters_the_inventory_only_when_applied(order, production):
     assert need(order, "TEL-DRI-01") == Decimal("110") and not order.requirements.filter(material__sku="TEL-20").exists()
 
 
-@pytest.mark.django_db
-def test_an_ordered_requirement_is_untouched_and_reported(order, production):
+@pytest.fixture
+def ordered_buttons(order, production):
+    """The order confirmed (its workshop purchase order suggested) and its buttons ordered:
+    300 needed, 100 from stock, 200 in the purchase order."""
     services.confirm_order(order, actor=production)
     services.generate_purchase_orders([Material.objects.get(sku="BOT-NX").id], actor=production)
-    po = PurchaseOrder.objects.get(items__requirement__material__sku="BOT-NX")
+    return PurchaseOrder.objects.get(items__requirement__material__sku="BOT-NX")
+
+
+def button_requirements(order):
+    return sorted((r.qty_needed, r.status, r.purchase_order_items.exists()) for r in order.requirements.filter(kind="material", material__sku="BOT-NX"))
+
+
+@pytest.mark.django_db
+def test_more_buttons_than_ordered_leave_the_difference_to_order(order, production, ordered_buttons):
     response, _ = revise(client_for(production), order, {"instruction": "agrega 2 botones por polo"}, answer(order, buttons=5, fabric="0.3"))
     assert response.status_code == 200, response.content
-    warnings = response.json()["warnings"]
-    assert any(w.startswith("Botón NX: ya pedido en") and po.code in w for w in warnings)
-    assert need(order, "BOT-NX") == Decimal("300") and need(order, "TEL-20") == Decimal("30")  # buttons kept, fabric rebuilt
+    assert response.json()["warnings"] == [f"Botón NX: 300 ya pedidos en {ordered_buttons.code}; faltan 200 por pedir"]
+    # The ordered requirement stays; the complement is open (the stock went to the first one).
+    assert button_requirements(order) == [(Decimal("200"), "open", False), (Decimal("300"), "ordered", True)]
+    assert need(order, "TEL-20") == Decimal("30")  # not ordered: rebuilt
+    assert services.to_order_by_material()[Material.objects.get(sku="BOT-NX").id] == Decimal("200")  # in "Por pedir"
+    # A second revision recomputes the complement, never stacks it.
+    response, _ = revise(client_for(production), order, {"instruction": "mejor 4 botones"}, answer(order, buttons=4, fabric="0.3"))
+    assert response.json()["warnings"] == [f"Botón NX: 300 ya pedidos en {ordered_buttons.code}; faltan 100 por pedir"]
+    assert button_requirements(order) == [(Decimal("100"), "open", False), (Decimal("300"), "ordered", True)]
+
+
+@pytest.mark.django_db
+def test_fewer_buttons_warn_of_the_excess_and_no_change_warns_nothing(order, production, ordered_buttons):
+    client = client_for(production)
+    response, _ = revise(client, order, {"instruction": "un botón menos"}, answer(order, buttons=2))
+    assert response.json()["warnings"] == [f"Botón NX: 300 ya pedidos en {ordered_buttons.code}; con la ficha nueva bastan 200, quedan 100 de más"]
+    assert button_requirements(order) == [(Decimal("300"), "ordered", True)]
+    # A change that leaves every ordered need as it is: no warning at all.
+    response, _ = revise(client, order, {"instruction": "el corte toma 3 días"}, {"understood": True, "summary": "Corte a 3 días", "items": [], "stages": [{"stage": "cutting", "days": 3}]})
+    assert response.status_code == 200 and response.json()["warnings"] == []
+
+
+@pytest.mark.django_db
+def test_a_patch_beyond_what_is_ordered_leaves_the_complement_too(order, manager, ordered_buttons):
+    workshop_po = PurchaseOrder.objects.exclude(pk=ordered_buttons.pk).get()
+    response = client_for(manager).patch(f"/api/orders/{order.id}/", {"items": [{"product": "UNI-POL-01", "quantity": 150}]}, format="json")
+    assert response.status_code == 200, response.content
+    assert response.json()["warnings"] == [
+        f"Botón NX: 300 ya pedidos en {ordered_buttons.code}; faltan 150 por pedir",
+        f"Polo: 100 prendas ya pedidas al taller en {workshop_po.code}; la orden ahora pide 150",
+    ]
+    assert button_requirements(order) == [(Decimal("150"), "open", False), (Decimal("300"), "ordered", True)]
 
 
 @pytest.mark.django_db

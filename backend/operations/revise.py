@@ -18,7 +18,15 @@ from core.permissions import require_role
 from . import classify, jev
 from .exceptions import UnknownReference
 from .models import Order, OrderItem
-from .services import break_down_order, compute_critical_path, customization_stages, effective_recipe, rebreak_down_order, stage_durations
+from .services import (
+    break_down_order,
+    compute_critical_path,
+    customization_stages,
+    effective_recipe,
+    order_needs,
+    rebreak_down_order,
+    stage_durations,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -358,6 +366,7 @@ def describe_changes(proposal: dict) -> str:
 def apply(order: Order, proposal: dict) -> list[str]:
     """Saves the overrides (new materials enter the inventory with stock 0), breaks the order
     down again without touching what is already ordered, and recalculates the critical path."""
+    before = order_needs(order)
     for entry in proposal["items"]:
         item = OrderItem.objects.get(pk=entry["item_id"], order=order)
         bom = []
@@ -372,6 +381,6 @@ def apply(order: Order, proposal: dict) -> list[str]:
     if order.status == Order.Status.REGISTERED:
         break_down_order(order)  # it also computes the critical path
         return []
-    warnings = rebreak_down_order(order)
+    warnings = rebreak_down_order(order, before=before)
     compute_critical_path(order)
     return warnings
