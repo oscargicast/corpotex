@@ -1,3 +1,5 @@
+import logging
+
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema, extend_schema_field, inline_serializer
@@ -15,6 +17,8 @@ from . import services
 from .exceptions import UnknownReference
 from .models import Order, Payment, PurchaseOrder
 from .serializers import OrderDetailSerializer, PaymentSerializer, PurchaseOrderDetailSerializer, RouteSerializer
+
+logger = logging.getLogger(__name__)
 
 PublicReportSchema = inline_serializer(
     "PublicReport",
@@ -156,6 +160,21 @@ class DraftLineResultSerializer(serializers.Serializer):
 
 class ClassifyDraftResultSerializer(serializers.Serializer):
     items = DraftLineResultSerializer(many=True)
+
+
+class ImageInSerializer(serializers.Serializer):
+    media_type = serializers.CharField(help_text="image/jpeg, image/png or image/webp (or jpeg, png, webp).")
+    data = serializers.CharField(help_text="Base64, up to 5 MB; a data URL is accepted too.", trim_whitespace=True)
+
+
+class DescribeImageInSerializer(serializers.Serializer):
+    image = ImageInSerializer()
+    brand = serializers.CharField(required=False, allow_blank=True)
+    customer = serializers.CharField(required=False, allow_blank=True)
+
+
+class DescribeImageResultSerializer(serializers.Serializer):
+    description = serializers.CharField()
 
 
 class KeyedClassificationItemSerializer(serializers.Serializer):
@@ -388,6 +407,28 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
         name = (data.validated_data.get("customer") or "").strip()
         customer = Customer.objects.filter(name__iexact=name).first() if name else None
         return Response({"items": classifier.classify_draft(brand, data.validated_data["items"], customer=customer)})
+
+    @extend_schema(request=DescribeImageInSerializer, responses={200: DescribeImageResultSerializer})
+    @action(detail=False, methods=["post"], url_path="describe-image")
+    def describe_image(self, request):
+        """M4 (ADR 0028, photos), the three roles: a garment photo becomes the line's text, one
+        sentence without quantity or sizes. 400 for a bad image, 502 when the model fails."""
+        from . import describe
+
+        data = DescribeImageInSerializer(data=request.data)
+        if not data.is_valid():
+            return Response({"detail": "Falta la foto o viene incompleta.", "errors": data.errors}, status=status.HTTP_400_BAD_REQUEST)
+        image = data.validated_data["image"]
+        try:
+            raw, media_type = describe.decode(image["media_type"], image["data"])
+        except describe.BadImage as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            text = describe.describe(raw, media_type, brand=data.validated_data.get("brand"), customer=data.validated_data.get("customer"))
+        except Exception:  # model down, timeout (30 s), empty answer: the person types it
+            logger.exception("describe-image failed")
+            return Response({"detail": "No se pudo describir la foto. Escribe la prenda a mano."}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response({"description": text})
 
     @extend_schema(request=None, responses={200: OrderDetailSerializer})
     @action(detail=True, methods=["post"])

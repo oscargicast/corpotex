@@ -185,7 +185,7 @@ async def run(
 
 
 async def complete(
-    prompt: str,
+    prompt: str | list[dict],  # a list of content blocks carries images (M4, describe-image)
     *,
     system_prompt: str,
     model: str,
