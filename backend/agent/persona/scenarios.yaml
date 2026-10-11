@@ -526,6 +526,18 @@ scenarios:
     must_not: ['whatsapp', '\(s[ií]/no\)', 'https?://', 'desde las']
     forbid_tools: [request_follow_up]
 
+  - name: pedir_avance_sin_nombrar_canal
+    agent: assistant
+    description: "ADR 0027 §6. Comercial pide avance de un pedido; al proponer pedírselo al proveedor (request_follow_up), el asistente no dice por dónde (ni WhatsApp ni simulador)."
+    state:
+      user: {first_name: Lucía, role: sales}
+      context: {path: "/orders/158", view: order_detail}
+      new_messages:
+        - {id: 1, text: "¿cómo va el PI-0044 de Avíos Gamarra? ¿le puedes pedir avance?", sent_at: "2026-10-14T10:29:00-05:00"}
+    must: ['PI-0044']
+    must_not: ['whatsapp', 'simulador']
+    expect_tools: [request_follow_up]
+
   # --- Seguimiento proactivo (ADR 0027) --------------------------------------------------------
 
   - name: seguimiento_punto_de_control_atrasado

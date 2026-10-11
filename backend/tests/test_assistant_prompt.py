@@ -138,6 +138,7 @@ def test_a_yes_to_a_suggestion_in_history_asks_for_the_preview():
 def test_assistant_format_asks_for_human_dates():
     system = assistant.render_system(RULES, scenario_state("asistente_confirmacion_dos_pasos"))
     assert 'Nunca "23/10" ni abreviaturas' in system
+    assert "No digas por dónde se habla con un proveedor (WhatsApp, simulador)" in system
 
 
 def test_mixed_batch_asks_a_single_question_about_the_purchase():
@@ -159,3 +160,10 @@ def test_follow_up_answer_renders_the_summary_and_who_answered():
     )
     assert "<pedido " not in text  # the answer carries the code; no duplicate object
     assert 'nunca "por WhatsApp"' in text
+
+
+def test_every_role_knows_it_can_ask_for_progress():
+    for role in ("manager", "production", "sales"):
+        state = scenario_state("asistente_confirmacion_dos_pasos")
+        state["user"]["role"] = role
+        assert "(request_follow_up)" in assistant.render_system(RULES, state), role
