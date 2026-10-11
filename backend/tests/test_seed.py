@@ -146,3 +146,19 @@ def test_seed_keeps_the_dashboard_chats(manager):
     call_command("seed_demo", verbosity=0)
     assert Message.objects.filter(conversation=conversation, text="hola").exists()
     assert Turn.objects.filter(pk=turn.pk, status="pending").exists()
+
+
+@pytest.mark.django_db
+def test_seed_users_carry_the_demo_names(manager_client):
+    from core.models import User
+
+    call_command("seed_demo", verbosity=0)
+    assert [(u.username, u.first_name, u.last_name) for u in User.objects.filter(username__in=["gerente", "comercial", "produccion"]).order_by("username")] == [
+        ("comercial", "Nesky", ""), ("gerente", "Oscar", "Giraldo"), ("produccion", "Freddy", ""),
+    ]
+    me = manager_client.get("/api/auth/me/").json()
+    assert me["first_name"] == "Oscar" and me["last_name"] == "Giraldo"
+    # A name the manager changed by hand is kept on the next seed.
+    User.objects.filter(username="gerente").update(first_name="Óscar", last_name="G.")
+    call_command("seed_demo", verbosity=0)
+    assert User.objects.get(username="gerente").first_name == "Óscar"

@@ -6386,6 +6386,11 @@
                         "title": "Nombre",
                         "maxLength": 150
                     },
+                    "last_name": {
+                        "type": "string",
+                        "title": "Apellidos",
+                        "maxLength": 150
+                    },
                     "role": {
                         "type": "string",
                         "readOnly": true
