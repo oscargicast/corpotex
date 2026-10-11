@@ -626,7 +626,7 @@ class Loader:
         self.plan_routes()
 
     def plan_routes(self):
-        """A planned route for every day of the next month that has pickups or deliveries."""
+        """A planned delivery route for every day of the next month that has orders going out."""
         from operations.models import Route
         from operations.routes import candidate_stops, plan_route
 

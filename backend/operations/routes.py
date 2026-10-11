@@ -1,6 +1,7 @@
-"""Multi-stop routes over Piura (ADR 0024, B4.8): the plant first and last, one pickup per
-open workshop purchase order due that day, one delivery per `ready` order. Nearest neighbour
-plus a 2-opt pass over haversine distances; no external service, the path is straight lines."""
+"""Delivery routes over Piura (ADR 0024, B4.8; corrected 10/10 23:35): they leave the plant
+and deliver orders to customers. There are no supplier pickups: Lima ships through Sullana
+Express and the workshops deliver at the plant. Nearest neighbour plus a 2-opt pass over
+haversine distances; no external service, the path is straight lines."""
 
 import math
 from datetime import date as date_type, datetime, time, timedelta
@@ -11,11 +12,12 @@ from django.utils import timezone
 from core import clock
 from core.models import Config
 
-from .models import Order, PurchaseOrder, Route, RouteStop
+from .models import Order, Route, RouteStop
 
 SPEED_KMH = 25
 STOP_MINUTES = 10
 START_HOUR = 8
+CLOSED = (Order.Status.DELIVERED, Order.Status.CANCELLED)
 
 
 def haversine_km(a: tuple[float, float], b: tuple[float, float]) -> float:
@@ -24,39 +26,23 @@ def haversine_km(a: tuple[float, float], b: tuple[float, float]) -> float:
     return 2 * 6371.0 * math.asin(math.sqrt(h))
 
 
-def _pickup_date(po: PurchaseOrder):
-    return po.committed_on or po.internal_due_on
+def delivery_date(order: Order):
+    """The day the order goes out: the critical path's estimate, else the promised day."""
+    return order.estimated_on or order.promised_on
 
 
-def candidate_stops(date, *, exclude=(), include=()) -> list[dict]:
-    """Points with coordinates for that day. `exclude` leaves purchase orders out (the "before"
-    picture of a redistribution); `include` forces purchase orders in whatever their day (the
-    "after" picture: the replacements ride the cancelled pickup's day)."""
-    excluded = {po.id for po in exclude}
-    included = {po.id for po in include}
+def candidate_stops(date, *, exclude_orders=(), include_orders=()) -> list[dict]:
+    """One delivery per open order due that day whose customer has coordinates. `exclude_orders`
+    leaves orders out; `include_orders` forces orders in whatever their day (the "before" picture
+    of a redistribution, planned as it was)."""
+    excluded = {o.id for o in exclude_orders}
+    included = {o.id for o in include_orders}
     stops = []
-    pos = (
-        PurchaseOrder.objects.filter(status__in=PurchaseOrder.OPEN_STATUSES + ("suggested",), supplier__kind="workshop")
-        .exclude(supplier__is_in_house=True)
-        .select_related("supplier")
-    )
-    for po in pos:
-        supplier = po.supplier
-        if po.id in excluded or supplier.lat is None or supplier.lng is None:
-            continue
-        if _pickup_date(po) != date and po.id not in included:
-            continue
-        stops.append(
-            {
-                "kind": RouteStop.Kind.PICKUP, "name": supplier.name, "address": supplier.address, "lat": supplier.lat, "lng": supplier.lng,
-                "supplier": supplier, "purchase_order": po,
-            }
-        )
-    today = clock.today()
-    for order in Order.objects.filter(status=Order.Status.READY).select_related("customer"):
+    for order in Order.objects.exclude(status__in=CLOSED).select_related("customer").order_by("id"):
         customer = order.customer
-        # A ready order goes out on its promised day, or today when that day already passed.
-        if max(today, order.promised_on) != date or customer.lat is None or customer.lng is None:
+        if order.id in excluded or customer.lat is None or customer.lng is None:
+            continue
+        if delivery_date(order) != date and order.id not in included:
             continue
         stops.append(
             {
@@ -112,8 +98,10 @@ def current_route(date=None) -> Route | None:
     return upcoming or qs.order_by("-date", "-id").first()
 
 
-def plan_route(date, *, actor=None, status: str = Route.Status.PLANNED, recalculated_from: Route | None = None, exclude=(), include=()) -> Route | None:
-    """Plans the route of `date`. `planned` replaces the day's previous planned route (which
+def plan_route(
+    date, *, actor=None, status: str = Route.Status.PLANNED, recalculated_from: Route | None = None, exclude_orders=(), include_orders=()
+) -> Route | None:
+    """Plans the deliveries of `date`. `planned` replaces the day's previous planned route (which
     becomes `replaced`, linked through `recalculated_from`); `proposed` leaves it untouched
     until the manager decides. None without plant coordinates."""
     if actor is not None:
@@ -126,7 +114,8 @@ def plan_route(date, *, actor=None, status: str = Route.Status.PLANNED, recalcul
     if config.plant_lat is None or config.plant_lng is None:
         return None
     plant = (config.plant_lat, config.plant_lng)
-    ordered = order_stops(plant, candidate_stops(date, exclude=exclude, include=include))
+    plant_name = config.plant_name or "Planta"
+    ordered = order_stops(plant, candidate_stops(date, exclude_orders=exclude_orders, include_orders=include_orders))
     with transaction.atomic():
         previous = None
         if status == Route.Status.PLANNED:
@@ -137,9 +126,7 @@ def plan_route(date, *, actor=None, status: str = Route.Status.PLANNED, recalcul
         eta = datetime.combine(date, time(START_HOUR, 0), tzinfo=tz)
         points = [plant] + [(s["lat"], s["lng"]) for s in ordered] + [plant]
         distance = 0.0
-        RouteStop.objects.create(
-            route=route, position=0, kind=RouteStop.Kind.PICKUP, name=config.plant_name or "Planta", lat=plant[0], lng=plant[1], eta=eta
-        )
+        RouteStop.objects.create(route=route, position=0, kind=RouteStop.Kind.PLANT, name=plant_name, lat=plant[0], lng=plant[1], eta=eta)
         for index, stop in enumerate(ordered, start=1):
             leg = haversine_km(points[index - 1], points[index])
             distance += leg
@@ -153,17 +140,13 @@ def plan_route(date, *, actor=None, status: str = Route.Status.PLANNED, recalcul
                 lat=stop["lat"],
                 lng=stop["lng"],
                 eta=eta,
-                supplier=stop.get("supplier"),
                 customer=stop.get("customer"),
-                purchase_order=stop.get("purchase_order"),
                 order=stop.get("order"),
             )
         leg = haversine_km(points[-2], points[-1])
         distance += leg
         eta += timedelta(minutes=leg / SPEED_KMH * 60)
-        RouteStop.objects.create(
-            route=route, position=len(ordered) + 1, kind=RouteStop.Kind.DELIVERY, name=config.plant_name or "Planta", lat=plant[0], lng=plant[1], eta=eta
-        )
+        RouteStop.objects.create(route=route, position=len(ordered) + 1, kind=RouteStop.Kind.PLANT, name=plant_name, lat=plant[0], lng=plant[1], eta=eta)
         route.distance_km = round(distance, 2)
         route.duration_min = round(distance / SPEED_KMH * 60 + STOP_MINUTES * len(ordered))
         route.path = {"type": "LineString", "coordinates": [[lng, lat] for lat, lng in points]}
@@ -175,14 +158,21 @@ def plan_route(date, *, actor=None, status: str = Route.Status.PLANNED, recalcul
 
 
 def promote(route: Route) -> Route:
-    """The manager approved the redistribution: `proposed → planned`, the day's planned route
-    becomes `replaced`."""
+    """The manager approved the redistribution: `proposed → planned`. The route it recalculates
+    (and any planned route of its day) becomes `replaced`; when the delivery moved to another
+    day, the old day is re-planned without it if anything else goes out that day."""
     if route.status != Route.Status.PROPOSED:
         return route
     with transaction.atomic():
         for previous in Route.objects.filter(date=route.date, status__in=(Route.Status.PLANNED, Route.Status.IN_PROGRESS)).exclude(pk=route.pk):
             previous.status = Route.Status.REPLACED
             previous.save(update_fields=["status", "updated_at"])
+        before = route.recalculated_from
+        if before is not None and before.date != route.date and before.status in (Route.Status.PLANNED, Route.Status.IN_PROGRESS):
+            before.status = Route.Status.REPLACED
+            before.save(update_fields=["status", "updated_at"])
+            if candidate_stops(before.date):
+                plan_route(before.date, recalculated_from=before)
         route.status = Route.Status.PLANNED
         route.save(update_fields=["status", "updated_at"])
     return route
@@ -195,19 +185,20 @@ def discard(route: Route) -> Route:
     return route
 
 
-def propose_for_redistribution(created: list[PurchaseOrder], cancelled: PurchaseOrder | None = None) -> tuple[Route | None, Route | None]:
-    """The route picture of a redistribution, on the day the cancelled pickup was planned (else
-    the day the replacements are due): as it was planned (`before`, created on the fly without
-    the replacements if nobody had planned it) and as it looks with the replacements riding
-    that day (`after`, `proposed`)."""
-    date = _pickup_date(cancelled) if cancelled is not None else None
-    if date is None:
-        dates = [_pickup_date(po) for po in created if _pickup_date(po)]
-        if not dates:
-            return None, None
-        date = min(dates)
-    before = current_route(date) or plan_route(date, exclude=created)
+def propose_for_redistribution(orders, old_dates: dict) -> tuple[Route | None, Route | None]:
+    """The route picture of a redistribution for the affected order: `before`, the planned
+    route of the delivery day it had (planned on the fly, as it was, if nobody had planned it),
+    and `after`, a `proposed` route of its new delivery day carrying it, linked through
+    `recalculated_from`."""
+    orders = sorted(orders, key=lambda o: o.id)
+    if not orders:
+        return None, None
+    order = orders[0]
+    order.refresh_from_db()
+    old = old_dates.get(order.id) or delivery_date(order)
+    new = delivery_date(order)
+    before = current_route(old) or plan_route(old, include_orders=[order])
     if before is None:
         return None, None
-    after = plan_route(date, status=Route.Status.PROPOSED, recalculated_from=before, include=created)
+    after = plan_route(new, status=Route.Status.PROPOSED, recalculated_from=before, include_orders=[order])
     return before, after

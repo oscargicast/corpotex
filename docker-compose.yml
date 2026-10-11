@@ -57,7 +57,7 @@ services:
 
   celery-worker:
     <<: *backend
-    command: celery -A config worker -Q turns,periodic,style -c 5 --prefetch-multiplier 1 -l info
+    command: celery -A config worker -Q turns,periodic,style -c 3 --prefetch-multiplier 1 -l info
     depends_on:
       postgres:
         condition: service_healthy

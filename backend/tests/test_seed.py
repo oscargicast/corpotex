@@ -114,16 +114,20 @@ def test_scene_cancellation_leaves_current_and_replaced_routes(manager_client, m
 
     call_command("seed_demo", verbosity=0)
     po = PurchaseOrder.objects.get(code="PT-0038")
-    old = Route.objects.get(date=po.committed_on, status="planned")
-    assert old.stops.filter(purchase_order=po).exists()
+    order = po.items.first().requirement.order
+    old_day = order.estimated_on or order.promised_on
+    old = Route.objects.get(date=old_day, status="planned")
+    assert old.stops.filter(order=order).exists()
     po, created, decision = services.cancel_by_supplier(po, reason="se me enfermó la gente")
     assert len(created) >= 1 and all(p.redistributed_from == po for p in created)
     before, after = decision.detail["before"]["route_id"], decision.detail["after"]["route_id"]
-    assert before == old.id and Route.objects.get(pk=after).status == "proposed"
+    proposed = Route.objects.get(pk=after)
+    order.refresh_from_db()
+    assert before == old.id and proposed.status == "proposed" and proposed.date == order.estimated_on != old_day
     resolve_decision(decision, action="approve", actor=manager)
     body = manager_client.get("/api/routes/?current=1").json()
     assert body["current"]["id"] == after and body["replaced"]["id"] == before
-    external = {p.code for p in created if not p.supplier.is_in_house}  # The plant's share needs no pickup.
-    assert {s["purchase_order"]["code"] for s in body["current"]["stops"] if s["purchase_order"]} == external and len(external) >= 2
-    assert {s["purchase_order"]["code"] for s in body["replaced"]["stops"] if s["purchase_order"]} == {"PT-0038"}
+    assert {s["order"]["code"] for s in body["current"]["stops"] if s["order"]} >= {order.code}
+    assert {s["order"]["code"] for s in body["replaced"]["stops"] if s["order"]} >= {order.code}
+    assert all(s["kind"] in ("plant", "delivery") for s in body["current"]["stops"])
     assert manager_client.get(f"/api/routes/{before}/").json()["status"] == "replaced"

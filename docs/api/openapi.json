@@ -5300,6 +5300,11 @@
                         "type": "integer",
                         "readOnly": true
                     },
+                    "name": {
+                        "type": "string",
+                        "description": "What the map shows: the delivery day, and whether it recalculates an earlier plan.",
+                        "readOnly": true
+                    },
                     "date": {
                         "type": "string",
                         "format": "date"
@@ -5349,6 +5354,7 @@
                     "created_at",
                     "date",
                     "id",
+                    "name",
                     "status_display",
                     "stops",
                     "stops_count"
@@ -5410,7 +5416,7 @@
                         "type": "integer",
                         "maximum": 32767,
                         "minimum": 0,
-                        "description": "0 and the last one are the plant."
+                        "description": "0 and the last one are the plant (kind=plant)."
                     },
                     "kind": {
                         "$ref": "#/components/schemas/RouteStopKindEnum"
@@ -5476,11 +5482,12 @@
             },
             "RouteStopKindEnum": {
                 "enum": [
+                    "plant",
                     "pickup",
                     "delivery"
                 ],
                 "type": "string",
-                "description": "* `pickup` - Recojo\n* `delivery` - Entrega"
+                "description": "* `plant` - Planta\n* `pickup` - Recojo\n* `delivery` - Entrega"
             },
             "SelfRegistered": {
                 "type": "object",
