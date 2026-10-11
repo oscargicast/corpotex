@@ -9,6 +9,7 @@ import { Thumb } from "@/components/thumb";
 import { Pill, type Tone } from "@/components/ui";
 import { fetcher } from "@/lib/api";
 import type { Material, MaterialDetail } from "@/lib/types";
+import { SkeletonLines, SkeletonTable } from "@/components/skeleton";
 
 const KIND_LABEL: Record<Material["kind"], string> = {
   fabric: "Tela",
@@ -81,7 +82,7 @@ function Inventory() {
       </div>
 
       {error && !data && <p className="text-danger">No se pudo cargar el inventario.</p>}
-      {!data && !error && <div className="h-40 animate-pulse rounded-xl bg-line" />}
+      {!data && !error && <SkeletonTable rows={8} cols={6} />}
       {data && !rows.length && <p className="text-sm text-muted">Ningún insumo coincide.</p>}
 
       {rows.length > 0 && (
@@ -176,7 +177,7 @@ function RowGroup({ children }: { children: React.ReactNode }) {
 // Orders that reserve this material (and how much of it had to be ordered).
 function Reservations({ id }: { id: number }) {
   const { data } = useSWR<MaterialDetail>(`/api/materials/${id}/`, fetcher);
-  if (!data) return <p className="p-3 text-sm text-muted">Cargando…</p>;
+  if (!data) return <SkeletonLines lines={3} className="p-3" />;
   if (!data.requirements.length) return <p className="p-3 text-sm text-muted">Ninguna orden abierta lo reserva.</p>;
   return (
     <table className="w-full text-sm">

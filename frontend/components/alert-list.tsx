@@ -53,7 +53,7 @@ export function AlertList({
               </Link>
             )}
             {canAcknowledge && (
-              <Button className="ml-auto py-1" onClick={() => acknowledge(alert.id)} disabled={busy === alert.id}>
+              <Button className="ml-auto py-1" onClick={() => acknowledge(alert.id)} busy={busy === alert.id}>
                 Reconocer
               </Button>
             )}

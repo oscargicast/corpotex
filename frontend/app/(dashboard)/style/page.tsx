@@ -9,6 +9,7 @@ import { Button, Card, Pill, SectionTitle, type Tone } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
 import { formatDayTime } from "@/lib/format";
 import type { StyleVersion, StyleVersionDetail } from "@/lib/types";
+import { SkeletonCards, SkeletonLines } from "@/components/skeleton";
 
 const SOURCE_TONE: Record<StyleVersion["source"], Tone> = {
   onboarding: "info",
@@ -58,7 +59,7 @@ function StyleHistory() {
         </p>
       </div>
 
-      {!versions && <div className="h-40 animate-pulse rounded-xl bg-line" />}
+      {!versions && <SkeletonCards count={2} lines={4} />}
       {versions && !versions.length && (
         <p className="text-sm text-muted">Todavía no hay estilo. Créalo en el paso Estilo del onboarding.</p>
       )}
@@ -108,7 +109,7 @@ function StyleHistory() {
                 {confirming && (
                   <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning">
                     El agente vuelve a escribir como en esta versión desde su próximo mensaje.
-                    <Button kind="dark" className="py-1" disabled={busy} onClick={restore}>
+                    <Button kind="dark" className="py-1" busy={busy} onClick={restore}>
                       Volver
                     </Button>
                     <Button className="py-1" onClick={() => setConfirming(false)}>
@@ -119,7 +120,7 @@ function StyleHistory() {
                 <StyleMarkdown source={detail.style_md} />
               </>
             ) : (
-              <div className="h-40 animate-pulse rounded-lg bg-line" />
+              <SkeletonLines lines={8} />
             )}
           </Card>
         </div>

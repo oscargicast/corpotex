@@ -77,7 +77,7 @@ export function ProgressForm({
         </p>
       )}
       <div className="sm:col-span-2">
-        <Button kind="dark" type="submit" disabled={busy}>
+        <Button kind="dark" type="submit" busy={busy}>
           Registrar avance
         </Button>
       </div>

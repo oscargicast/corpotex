@@ -9,6 +9,8 @@ import { apiFetch, fetcher } from "@/lib/api";
 import { formatDay } from "@/lib/format";
 
 import type { components } from "@/lib/api-types";
+import { SkeletonLines } from "@/components/skeleton";
+import { Spinner } from "@/components/ui";
 
 type Report = components["schemas"]["PublicReport"];
 
@@ -26,7 +28,12 @@ export default function ReportPage() {
   const [problem, setProblem] = useState<string | null>(null);
 
   if (error) return <Shell>Este enlace no es válido o venció. Pídele uno nuevo a Corpotex.</Shell>;
-  if (!data) return <Shell>Cargando…</Shell>;
+  if (!data)
+    return (
+      <Shell>
+        <SkeletonLines lines={3} />
+      </Shell>
+    );
 
   const total = Number(data.quantity);
   const value = units ?? String(data.units_done);
@@ -111,7 +118,13 @@ export default function ReportPage() {
             {problem}
           </p>
         )}
-        <button type="submit" disabled={busy} className="w-full rounded-md bg-brand py-3 text-base font-semibold text-ink hover:bg-brand-hover disabled:opacity-60">
+        <button
+          type="submit"
+          disabled={busy}
+          aria-busy={busy || undefined}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand py-3 text-base font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
+        >
+          {busy && <Spinner />}
           {busy ? "Enviando…" : "Enviar avance"}
         </button>
       </form>

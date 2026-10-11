@@ -117,7 +117,7 @@ function PaymentRow({
             <span className="block text-xs text-muted">Comprobante (opcional)</span>
             <input type="file" accept="image/*,application/pdf" onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} className="mt-1 w-full text-xs" />
           </label>
-          <Button kind="primary" disabled={busy} onClick={pay}>
+          <Button kind="primary" busy={busy} onClick={pay}>
             Confirmar pago
           </Button>
           <Button onClick={() => setOpen(false)}>Cancelar</Button>

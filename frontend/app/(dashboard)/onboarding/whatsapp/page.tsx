@@ -6,6 +6,7 @@ import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
 import { formatDayTime } from "@/lib/format";
 import type { WhatsAppState } from "@/lib/types";
+import { SkeletonCard } from "@/components/skeleton";
 
 const STATE: Record<string, { label: string; tone: "success" | "warning" | "danger" }> = {
   open: { label: "Conectado", tone: "success" },
@@ -66,7 +67,7 @@ export default function OnboardingWhatsApp() {
     }
   }
 
-  if (!data) return <div className="h-40 animate-pulse rounded-xl bg-line" />;
+  if (!data) return <SkeletonCard lines={5} />;
   const state = STATE[data.state] ?? { label: data.state, tone: "warning" as const };
 
   return (
@@ -126,7 +127,7 @@ export default function OnboardingWhatsApp() {
             ))}
           </ul>
         )}
-        <Button kind="dark" className="mt-4" disabled={busy} onClick={configureWebhook}>
+        <Button kind="dark" className="mt-4" busy={busy} onClick={configureWebhook}>
           {data.webhook ? "Volver a configurar" : "Configurar webhook"}
         </Button>
         {error && (

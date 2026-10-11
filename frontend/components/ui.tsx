@@ -44,17 +44,32 @@ const BUTTONS: Record<ButtonKind, string> = {
   danger: "bg-danger text-white hover:bg-danger/90",
 };
 
+// Small ring that spins in the current text color (buttons, send icons).
+export function Spinner({ className = "" }: { className?: string }) {
+  return <span className={`inline-block size-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent ${className}`} aria-hidden />;
+}
+
+// `busy` disables the button and shows a spinner in front of the label, so
+// every POST/PATCH gives feedback until the response arrives.
 export function Button({
   kind = "ghost",
   className = "",
+  busy = false,
+  disabled,
+  children,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: ButtonKind }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: ButtonKind; busy?: boolean }) {
   return (
     <button
       type="button"
       {...props}
+      disabled={disabled || busy}
+      aria-busy={busy || undefined}
       className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50 ${BUTTONS[kind]} ${className}`}
-    />
+    >
+      {busy && <Spinner />}
+      {children}
+    </button>
   );
 }
 

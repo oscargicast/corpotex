@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import examples from "@/mocks/order-examples.json";
 import { apiFetch } from "@/lib/api";
 import type { OrderListItem } from "@/lib/types";
-import { Button } from "./ui";
+import { Button, Spinner } from "./ui";
 
 // Stand-in for Comercial's system: posts one of docs/api/examples/order-*.json to POST /api/orders/.
 // The code is generated once per click, so a retry stays idempotent.
@@ -14,10 +14,12 @@ export function SimulateOrder() {
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
+  const [chosen, setChosen] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function send(index: number) {
     setBusy(true);
+    setChosen(index);
     setError(null);
     const { payload, promised_in_days } = examples[index];
     const code = `CP-${Date.now()}`;
@@ -54,8 +56,10 @@ export function SimulateOrder() {
                   type="button"
                   disabled={busy}
                   onClick={() => send(i)}
-                  className="w-full rounded-lg p-3 text-left text-sm ring-1 ring-line hover:bg-canvas disabled:opacity-50"
+                  aria-busy={(busy && chosen === i) || undefined}
+                  className="flex w-full items-center gap-2 rounded-lg p-3 text-left text-sm ring-1 ring-line hover:bg-canvas disabled:opacity-50"
                 >
+                  {busy && chosen === i && <Spinner />}
                   {example.label}
                 </button>
               </li>

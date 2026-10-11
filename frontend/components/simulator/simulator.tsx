@@ -8,7 +8,7 @@ import { apiFetch, fetcher } from "@/lib/api";
 import type { ChatMessage, SimulatorContact } from "@/lib/types";
 import { ChatThread } from "../chat-thread";
 import { SimulateOrder } from "../simulate-order";
-import { Pill } from "../ui";
+import { Pill, Spinner } from "../ui";
 
 const SEEN_KEY = "corpotex.simulator.seen";
 const PHRASES_KEY = "corpotex.simulator.phrases";
@@ -327,8 +327,14 @@ function Conversation({ contact, large }: { contact: SimulatorContact; large: bo
               aria-label={`Mensaje de ${name}`}
               className="max-h-32 min-h-11 flex-1 resize-none rounded-md px-3 py-2.5 ring-1 ring-line"
             />
-            <button type="submit" disabled={sending || (!text.trim() && !photo)} className="rounded-md bg-ink p-3 text-white disabled:opacity-40" aria-label="Enviar">
-              <Send size={18} />
+            <button
+              type="submit"
+              disabled={sending || (!text.trim() && !photo)}
+              aria-busy={sending || undefined}
+              className="rounded-md bg-ink p-3 text-white disabled:opacity-40"
+              aria-label={sending ? "Enviando" : "Enviar"}
+            >
+              {sending ? <Spinner className="size-[18px]" /> : <Send size={18} />}
             </button>
           </div>
           <div className="mt-1.5 flex items-center justify-between text-xs text-muted">

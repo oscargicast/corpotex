@@ -10,6 +10,7 @@ import { Button, Pill } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
 import type { SupplierDetail, SupplierListItem } from "@/lib/types";
 import { formatNum, formatScore, num } from "@/lib/format";
+import { SkeletonCards } from "@/components/skeleton";
 
 export default function SuppliersPage() {
   return (
@@ -40,7 +41,7 @@ function Suppliers() {
 
       {tab === "active" ? (
         !active ? (
-          <div className="h-40 animate-pulse rounded-xl bg-line" />
+          <SkeletonCards count={4} lines={3} />
         ) : (
           <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {list.map((supplier) => (
@@ -178,7 +179,7 @@ function ReviewCard({ supplier, onChange }: { supplier: SupplierListItem; onChan
         </blockquote>
       )}
       <div className="mt-3 flex gap-2">
-        <Button kind="dark" disabled={busy} onClick={() => decide("active")}>
+        <Button kind="dark" busy={busy} onClick={() => decide("active")}>
           Aprobar
         </Button>
         <Button disabled={busy} onClick={() => decide("inactive")}>
