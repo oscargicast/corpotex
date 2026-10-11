@@ -11,7 +11,6 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 - Abrir `/routes` una vez con wifi para que los tiles de Piura queden en caché; después no mover el zoom.
 - Claude conectado (sin banner rojo en `/settings/claude`), instancia de WhatsApp `open` en `/settings/whatsapp`, tunnel arriba, laptop cargada, tethering probado.
 - Valeria con su celular a mano, como "Confecciones del Norte".
-- Si va el paso 3b: CP-2026-0161 (Colegio Los Algarrobos) sin clasificar, con "Desglosar componentes" visible para Producción. Si alguien aplicó la clasificación, solo un `seed_demo` la devuelve.
 - Si va el paso 9b: ninguna solicitud de avance abierta (el reseed de las 06:30 lo garantiza). Domingo: el seguimiento automático no escribe, así que no hay riesgo de mensajes a Valeria durante el pitch.
 - Si va el paso 6b: el reseed de las 06:30 deja la ruta de hoy planificada para los 3 vehículos y sin iniciar. Antes del pitch, como Producción en `/routes`, revisar:
   - En Planificar, los 3 vehículos tienen que estar "Planificada": Furgón 1 al 97 %, Camioneta 2 al 98 % y Moto 3 al 80 %. CP-2026-0177 tiene que estar en "Sin asignar".
@@ -25,8 +24,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 |---|---|---|---|
 | 1 | Gerente: `/` | Monitor: KPIs, la decisión pendiente, alertas y pagos por proveedor. Una frase: "esto es lo que hoy nadie ve hasta el día 9". | Oscar |
 | 2 | Gerente: `/settings` → Estilo (`/settings/style`) | Arriba "Puesta en marcha 3/3" en verde; en Estilo, el estilo del Gerente con los ejemplos como burbujas. 20 segundos, no más. | Oscar |
-| 3 | Comercial: `/orders/new` | Orden mágica (ADR 0028), unos 25 s: elige Caja Piura y la marca, escribe dos líneas como las pide el cliente ("300 polos deportivos azul marino con escudo sublimado, tallas 6 a 14") y, mientras Oscar habla, cada ítem se reconoce solo con su producto e insumos; el resumen de la derecha suma prendas e insumos y compara la fecha. "Crear orden" y la orden nace desglosada, con la ruta crítica. | Oscar |
-| 3b | **Opcional, lo decide Oscar en el ensayo.** Producción: `/orders/CP-2026-0161` → "Desglosar componentes" | Creación mágica: la IA reconoce el polo del catálogo con su receta y propone la casaca como producto nuevo con los insumos que faltan. No se aplica. Detalle abajo. | Oscar |
+| 3 | Comercial: `/orders/new` | Orden mágica (ADR 0028), unos 25 s: elige Caja Piura y la marca, escribe dos líneas como las pide el cliente ("300 polos deportivos azul marino con escudo sublimado, tallas 6 a 14") y, mientras Oscar habla, cada ítem se reconoce solo con su producto e insumos; el resumen de la derecha suma prendas e insumos y compara la fecha. "Crear orden" y la orden nace desglosada, con la ruta crítica. (opcional: en un ítem, "Foto" con la imagen de un polo del cliente: Claude la describe en 4 s y de ahí sigue el reconocimiento) | Oscar |
 | 4 | Gerente: `/orders/<nueva>` → "Confirmar desglose" (o Producción en la tercera ventana, si se quiere mostrar el rol) | Lo hace Producción; el Gerente también puede. La orden pasa a confirmada y el Monitor muestra la decisión de asignación. | Oscar |
 | 5 | Gerente: `/` → tarjeta de decisión → "Cambiar proveedor" | El ranking del matching con barras por criterio (cumplimiento, precio, carga, calidad). Se aprueba. | Oscar |
 | 6 | Gerente: `/purchase-orders/<pedido de Valeria>` | El agente le escribe a Valeria por WhatsApp real, con el estilo del Gerente. Ella responde desde su celular y el chat se ve en "Chat con el proveedor". | Oscar y Valeria |
@@ -37,18 +35,6 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 | 9b | **Opcional, la decide Oscar en el ensayo.** Comercial: asistente → "pídele avance a los pedidos de la CP-2026-0158" → "sí"; `/simulator` | Seguimiento a pedido: Comercial pide avance sin ver el chat; el agente le escribe al taller en el simulador (sin decir quién preguntó); Oscar contesta como el taller; a Comercial le llega el resumen en su asistente. Detalle abajo. | Oscar |
 | 10 | `/simulator?present=1` (atajo `P`) | El agente ya les escribió a los talleres nuevos: los contactos se resaltan y se les responde como taller. | Oscar o Nesky |
 | 11 | Celular | `/report/<token fijo>`: 500 unidades con foto. Luego `/purchase-orders/PT-0038` muestra el avance y la foto en grande (lightbox). Cierre con "Marcar pagado" en los pagos. | Oscar |
-
-## Creación mágica (paso 3b, opcional)
-
-Lo decide Oscar en el ensayo. Va después de que Comercial registra la orden (paso 3) y antes de confirmar el desglose (paso 4).
-
-1. Como Producción, abrir `/orders/CP-2026-0161` (Colegio Los Algarrobos): dos prendas descritas en texto libre, "Producto nuevo, sin ficha todavía".
-2. Pulsar "Desglosar componentes". La propuesta tarda unos 10 s: Jev (TypeSafe AI) elige del catálogo y del inventario, y Claude propone solo lo que es nuevo. Mientras carga, Oscar habla. Si Jev falla, sigue Claude sola y tarda unos 20 s.
-3. Mostrar que el polo se reconoce como un producto del catálogo (Polo deportivo UNICRACK, UNI-POD-01) con su receta: tela, cuello rib, hilo, etiqueta.
-4. Mostrar que la casaca es un producto nuevo, con los insumos que faltan en el inventario (taslán, polar, cierre separable), marcados como "Insumo nuevo". Los nombres y códigos que propone la IA cambian un poco entre corridas.
-5. **No pulsar "Confirmar desglose" en el ensayo ni en la demo.** Si se aplica, la orden ya no sirve para la demo hasta el próximo `seed_demo`. Para salir, "Cancelar".
-
-Frase de pitch sugerida: **"Fabrican a medida: la IA reconoce lo que ya saben hacer y propone lo que falta comprar."**
 
 ## Flota en vivo (paso 6b, opcional)
 
