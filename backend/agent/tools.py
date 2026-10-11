@@ -219,8 +219,9 @@ def whatsapp_tools(conversation, batch) -> list:
 
     @tool(
         "send_report_link",
-        "Envía al taller el link para reportar avance con fotos desde el celular, una sola vez "
-        "por pedido. Escribe solo la frase de introducción, sin URL: el link lo agrega el sistema.",
+        "Alternativa al chat: link para reportar avance con fotos, solo si el proveedor no puede "
+        "mandarlas por WhatsApp. Una sola vez por pedido y nunca en el primer contacto. Escribe "
+        "solo la frase de introducción, sin URL: el link lo agrega el sistema.",
         {
             "type": "object",
             "properties": {"code": {"type": "string"}, "intro": {"type": "string"}},
