@@ -3651,7 +3651,7 @@
         "/api/suppliers/{id}/numbers/": {
             "post": {
                 "operationId": "suppliers_numbers_create",
-                "description": "Adds a phone number, inactive until the manager switches it on.",
+                "description": "Adds a phone number, inactive until the manager switches it on; a `simulated` one is\nactive at once and takes the seed's `sim-<slug>` format (P6b).",
                 "parameters": [
                     {
                         "in": "path",
@@ -3683,8 +3683,7 @@
                                 "$ref": "#/components/schemas/NumberInRequest"
                             }
                         }
-                    },
-                    "required": true
+                    }
                 },
                 "security": [
                     {
@@ -6541,18 +6540,21 @@
                 "properties": {
                     "phone": {
                         "type": "string",
-                        "minLength": 1,
+                        "default": "",
+                        "description": "Required for a real number; optional for a simulated one.",
                         "maxLength": 40
                     },
                     "name": {
                         "type": "string",
                         "default": "",
                         "maxLength": 80
+                    },
+                    "simulated": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "P6b: a simulator number (`sim-<slug>`, like the seed's), active at once. Real numbers start inactive."
                     }
-                },
-                "required": [
-                    "phone"
-                ]
+                }
             },
             "OnboardingError": {
                 "type": "object",
@@ -6724,6 +6726,11 @@
                         "additionalProperties": {},
                         "readOnly": true
                     },
+                    "awaiting_reply": {
+                        "type": "boolean",
+                        "description": "P6b, the \"Avance pedido\" chip: some open purchase order of the order waits for the\nsupplier's answer (a follow-up sent, or a person's request already asked).",
+                        "readOnly": true
+                    },
                     "owner_id": {
                         "type": "integer",
                         "nullable": true,
@@ -6807,6 +6814,7 @@
                 },
                 "required": [
                     "alerts",
+                    "awaiting_reply",
                     "brand",
                     "code",
                     "customer",
@@ -7073,6 +7081,11 @@
                         "additionalProperties": {},
                         "readOnly": true
                     },
+                    "awaiting_reply": {
+                        "type": "boolean",
+                        "description": "P6b, the \"Avance pedido\" chip: some open purchase order of the order waits for the\nsupplier's answer (a follow-up sent, or a person's request already asked).",
+                        "readOnly": true
+                    },
                     "owner_id": {
                         "type": "integer",
                         "nullable": true,
@@ -7095,6 +7108,7 @@
                     }
                 },
                 "required": [
+                    "awaiting_reply",
                     "brand",
                     "code",
                     "customer",

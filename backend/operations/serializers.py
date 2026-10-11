@@ -157,6 +157,7 @@ class OrderListSerializer(DisplayMixin, serializers.ModelSerializer):
     total_units = serializers.SerializerMethodField()
     total_amount = serializers.SerializerMethodField()
     purchase_orders_summary = serializers.SerializerMethodField()
+    awaiting_reply = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -177,6 +178,7 @@ class OrderListSerializer(DisplayMixin, serializers.ModelSerializer):
             "total_units",
             "total_amount",
             "purchase_orders_summary",
+            "awaiting_reply",
             "owner_id",
         ]
 
@@ -211,6 +213,18 @@ class OrderListSerializer(DisplayMixin, serializers.ModelSerializer):
             "confirmed": sum(1 for po in pos if po.status in ("confirmed", "in_progress", "delivered")),
             "waiting_manager": sum(1 for po in pos if waiting_manager(po)),
         }
+
+
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_awaiting_reply(self, obj):
+        """P6b, the "Avance pedido" chip: some open purchase order of the order waits for the
+        supplier's answer (a follow-up sent, or a person's request already asked)."""
+        from .models import FollowUpRequest
+
+        open_pos = [po for po in self._purchase_orders(obj) if po.status in PurchaseOrder.OPEN_STATUSES]
+        if any(po.awaiting_reply_since for po in open_pos):
+            return True
+        return FollowUpRequest.objects.filter(purchase_order__in=open_pos, status=FollowUpRequest.Status.ASKED).exists()
 
 
 def waiting_manager(po: PurchaseOrder) -> bool:
