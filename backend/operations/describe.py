@@ -4,6 +4,8 @@ One structured Claude call with the image, its own system prompt, no tools."""
 import asyncio
 import base64
 import binascii
+import logging
+import time
 
 from django.conf import settings
 
@@ -16,6 +18,7 @@ SCHEMA = {"type": "object", "properties": {"description": {"type": "string"}}, "
 MEDIA_TYPES = {"jpeg": "image/jpeg", "jpg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
 MAX_BASE64 = 5 * 1024 * 1024  # the base64 text, as the contract says
 TIMEOUT_SECONDS = 30
+logger = logging.getLogger(__name__)
 
 
 class BadImage(ValueError):
@@ -53,10 +56,18 @@ def describe(raw: bytes, media_type: str, *, brand: str | None = None, customer:
         context.append(f"cliente {customer}")
     text = "Describe la prenda de esta foto." + (f" Contexto: {', '.join(context)}." if context else "")
     blocks = [image_block(raw, media_type), {"type": "text", "text": text}]
+    from .classify import classify_model
+
+    from .classify import COMPLETE_MAX_TURNS
+
     coro = asyncio.wait_for(
-        complete(blocks, system_prompt=SYSTEM_PROMPT, model=getattr(settings, "AGENT_MODEL", "sonnet"), schema=SCHEMA, effort="low"), TIMEOUT_SECONDS
+        complete(blocks, system_prompt=SYSTEM_PROMPT, model=classify_model(), schema=SCHEMA, effort="low", max_turns=COMPLETE_MAX_TURNS), TIMEOUT_SECONDS
     )
-    result = _run(coro)
+    started = time.monotonic()
+    try:
+        result = _run(coro)
+    finally:
+        logger.info("describe_image: claude=%.2fs (%d bytes, model %s)", time.monotonic() - started, len(raw), classify_model())
     description = (result.get("description") if isinstance(result, dict) else "") or ""
     if not description.strip():
         raise RuntimeError("empty description")

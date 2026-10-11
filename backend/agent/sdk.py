@@ -5,6 +5,7 @@ tool we did not grant (ADR 0010). Its only credential is the one the dashboard w
 into CLAUDE_CONFIG_DIR (ADR 0022). Verified in the A1.1 spike.
 """
 
+import logging
 import asyncio
 import json
 import os
@@ -22,6 +23,8 @@ from claude_agent_sdk import (
     query,
 )
 from django.core.exceptions import ImproperlyConfigured
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "sonnet"  # same default as settings.AGENT_MODEL; the scenarios were validated on it
 API_KEY_FILE = "api_key"  # written by core.claude_account.set_api_key (ADR 0022, API key mode)
@@ -177,6 +180,14 @@ async def run(
         raise ClaudeNotConnected(auth_error)
     if result is None:
         raise ClaudeSDKError("the CLI ended without a result")
+    # What the CLI took against what the API took: the gap is the process start (measured 11/10).
+    logger.info(
+        "sdk.run: cli=%sms api=%sms turns=%s model=%s",
+        getattr(result, "duration_ms", "?"),
+        getattr(result, "duration_api_ms", "?"),
+        getattr(result, "num_turns", "?"),
+        getattr(options, "model", "?"),
+    )
     if result.is_error:
         error = result.result or result.subtype
         _raise_known(error)
@@ -191,6 +202,7 @@ async def complete(
     model: str,
     schema: dict | None = None,
     effort: str | None = None,
+    max_turns: int | None = None,
 ) -> str | dict:
     """Single call without tools. With `schema`, returns the validated dict."""
     options = isolated_options(
@@ -198,6 +210,7 @@ async def complete(
         system_prompt=system_prompt,
         model=model,
         effort=effort,
+        max_turns=max_turns,
         output_format={"type": "json_schema", "schema": schema} if schema else None,
     )
     return _output(await run(prompt, options, timeout=STYLE_TIMEOUT), schema)
