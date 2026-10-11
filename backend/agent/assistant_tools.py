@@ -956,7 +956,8 @@ def _revise(user, code: str, body: dict) -> dict:
         raise RuntimeError(
             (data or {}).get("detail") or f"no se pudo ajustar la ficha técnica (HTTP {status})"
         )
-    return {**data, "current_estimated_on": order.get("estimated_on")}
+    # backend may send its own fresh `current_estimated_on`; the list row is the fallback
+    return {"current_estimated_on": order.get("estimated_on"), **data}
 
 
 def _revise_text(data: dict) -> str:

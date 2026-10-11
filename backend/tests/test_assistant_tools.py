@@ -621,3 +621,11 @@ def test_revise_order_says_why_the_instruction_was_refused(monkeypatch):
     fake_revise(monkeypatch, status=403, body={})
     is_error, text = call(conversation("production"), 1, "revise_order", args)
     assert is_error and "Tu rol no puede hacer eso" in text
+
+
+def test_revise_order_prefers_backends_fresh_current_estimate(monkeypatch):
+    install(monkeypatch)
+    fake_revise(monkeypatch, body={**REVISED, "current_estimated_on": "2026-10-17"})
+    args = {"order_code": "CP-2026-0142", "instruction": "agrega 2 botones por polo", "confirmed": False}
+    _, text = call(conversation("production"), 1, "revise_order", args)
+    assert "La fecha estimada no cambia (2026-10-17)." in text
