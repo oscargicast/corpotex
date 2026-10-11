@@ -1049,7 +1049,7 @@
     "code": "PT-0027",
     "supplier": "Confecciones Santa Julia",
     "kind": "workshop",
-    "status": "cancelled",
+    "status": "cancelled_by_supplier",
     "suggested_supplier": "Confecciones Santa Julia",
     "rationale": "Especialista en batas.",
     "scores": {
@@ -1076,7 +1076,7 @@
     "next_follow_up_at": null,
     "total_amount": "720.00",
     "currency": "PEN",
-    "terms": "Cancelado a mitad porque el cliente canceló la orden; se pagaron las 40 hechas.",
+    "terms": "Cancelado por el taller a mitad del pedido (se le malograron dos máquinas); se pagaron las 40 hechas.",
     "items": [
       {
         "order": "CP-2026-0109",
@@ -1126,6 +1126,7 @@
         "received_at": "T-19 11:00",
         "note": "Se recogieron las 40 terminadas al cancelar."
       }
-    ]
+    ],
+    "status_note": "se le malograron dos máquinas"
   }
 ]

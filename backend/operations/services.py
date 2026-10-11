@@ -98,6 +98,23 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
     return order, True
 
 
+OPEN_ORDER_STATUSES = [s for s, _ in Order.Status.choices if s not in ("delivered", "cancelled")]
+
+
+def committed_stock_by_material() -> dict[int, Decimal]:
+    """Stock already reserved by open orders (`Requirement.qty_from_stock`), per material id.
+    Shared by the breakdown and the inventory views, so both count the same thing."""
+    totals: dict[int, Decimal] = {}
+    rows = Requirement.objects.filter(kind="material", order__status__in=OPEN_ORDER_STATUSES).values_list("material_id", "qty_from_stock")
+    for material_id, qty in rows:
+        totals[material_id] = totals.get(material_id, Decimal("0")) + qty
+    return totals
+
+
+def committed_stock(material) -> Decimal:
+    return committed_stock_by_material().get(material.id, Decimal("0"))
+
+
 def break_down_order(order: Order) -> list[Requirement]:
     """Step 1: materials per item (quantity × qty_per_unit minus stock), one workshop requirement
     for the sewing and nothing else. `registered → broken_down`."""
@@ -111,8 +128,10 @@ def break_down_order(order: Order) -> list[Requirement]:
         for material_id, qty in needed.items():
             from core.models import Material
 
-            material = Material.objects.get(pk=material_id)
-            from_stock = min(material.stock, qty)
+            # Lock the material: what other open orders already reserved is not available.
+            material = Material.objects.select_for_update().get(pk=material_id)
+            available = max(material.stock - committed_stock(material), Decimal("0"))
+            from_stock = min(available, qty)
             requirements.append(
                 Requirement.objects.create(
                     order=order, kind="material", material=material, qty_needed=qty, qty_from_stock=from_stock

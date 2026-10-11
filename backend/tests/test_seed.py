@@ -85,3 +85,19 @@ def test_scene_purchase_order_has_the_fixed_report_token():
 
     call_command("seed_demo", verbosity=0)
     assert str(PurchaseOrder.objects.get(code=SCENE_PURCHASE_ORDER).report_token) == SCENE_REPORT_TOKEN
+
+
+@pytest.mark.django_db
+def test_seed_exits_carry_their_reason():
+    from operations.models import Order, PurchaseOrder
+
+    call_command("seed_demo", verbosity=0)
+    po = PurchaseOrder.objects.get(code="PT-0027")
+    assert po.status == "cancelled_by_supplier"
+    last = po.status_changes.last()
+    assert last.status == "cancelled_by_supplier" and last.actor == "agent" and last.note == "se le malograron dos máquinas"
+    assert [c.status for c in po.status_changes.all()][:2] == ["suggested", "approved"]
+    order = Order.objects.get(code="CP-2026-0109")
+    assert order.status_changes.last().note.startswith("Cliente canceló")
+    for change in __import__("operations.models", fromlist=["StatusChange"]).StatusChange.objects.filter(status__in=("cancelled", "cancelled_by_supplier", "declined_by_supplier")):
+        assert change.note, change
