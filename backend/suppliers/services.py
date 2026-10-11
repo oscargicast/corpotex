@@ -3,6 +3,7 @@
 from collections import defaultdict
 from decimal import Decimal
 
+from core import clock
 from operations.models import Payment, PurchaseOrder
 
 from .models import Supplier
@@ -140,20 +141,69 @@ def create_supplier(data: dict, *, actor, source: str = "registered", status: st
     supplier = Supplier.objects.create(source=source, status=status, **_clean(data))
     if phone:
         AllowedNumber.objects.create(phone=phone, name=(data.get("contact_name") or "").strip(), supplier=supplier, active=False)
+    if data.get("rates"):
+        replace_rates(supplier, data["rates"])
     return supplier
 
 
 def update_supplier(supplier: Supplier, data: dict, *, actor) -> Supplier:
-    """`PATCH /api/suppliers/<id>/`: approve or discard (`status`) and edit the card."""
+    """`PATCH /api/suppliers/<id>/`: approve or discard (`status`), edit the card, rename the
+    contact and replace the reference prices (`rates`, the full list)."""
+    from django.db import transaction
+
     from core.permissions import require_role
 
     require_role(actor, "manager")
-    for field, value in _clean(data).items():
-        setattr(supplier, field, value)
-    if data.get("status") in dict(Supplier.Status.choices):
-        supplier.status = data["status"]
-    supplier.save()
+    with transaction.atomic():
+        for field, value in _clean(data).items():
+            setattr(supplier, field, value)
+        if data.get("status") in dict(Supplier.Status.choices):
+            supplier.status = data["status"]
+        supplier.save()
+        if data.get("contact_name") is not None:
+            set_contact_name(supplier, data["contact_name"])
+        if data.get("rates") is not None:
+            replace_rates(supplier, data["rates"])
     return supplier
+
+
+def set_contact_name(supplier: Supplier, name: str) -> None:
+    """The contact is the name on the supplier's first real number (what the bot greets)."""
+    number = supplier.numbers.filter(simulated=False).order_by("-active", "id").first()
+    if number is not None:
+        number.name = name.strip()
+        number.save(update_fields=["name", "updated_at"])
+
+
+class RateError(Exception):
+    """A rate names a missing item, both or neither of material/product, or a bad price (400)."""
+
+
+def replace_rates(supplier: Supplier, rates: list[dict]) -> list:
+    """The full list of reference prices replaces the previous one. Each rate is
+    `{material_id | product_id, unit_price, valid_from?}` (today by default). Purchase orders keep
+    their own `unit_price`, so history does not move."""
+    from core.models import Material, Product
+
+    from .models import Rate
+
+    built = []
+    for index, raw in enumerate(rates):
+        material_id, product_id = raw.get("material_id"), raw.get("product_id")
+        if bool(material_id) == bool(product_id):
+            raise RateError(f"Tarifa {index + 1}: indica material_id o product_id, no ambos")
+        material = Material.objects.filter(pk=material_id).first() if material_id else None
+        product = Product.objects.filter(pk=product_id).first() if product_id else None
+        if material_id and material is None:
+            raise RateError(f"Tarifa {index + 1}: el insumo {material_id} no existe")
+        if product_id and product is None:
+            raise RateError(f"Tarifa {index + 1}: el producto {product_id} no existe")
+        price = Decimal(str(raw.get("unit_price", "0")))
+        if price <= 0:
+            raise RateError(f"Tarifa {index + 1}: el precio debe ser mayor que 0")
+        built.append(Rate(supplier=supplier, material=material, product=product, unit_price=price, valid_from=raw.get("valid_from") or clock.today()))
+    supplier.rates.all().delete()
+    return Rate.objects.bulk_create(built)
 
 
 def add_number(supplier: Supplier, *, phone: str, name: str = "", actor):
