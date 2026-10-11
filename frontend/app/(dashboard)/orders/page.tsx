@@ -4,7 +4,7 @@ import { CheckCircle2, Layers, Plus } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import useSWR from "swr";
-import { matchesCode, ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
+import { ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
 import { useUser } from "@/components/require-auth";
 import { SimulateOrder } from "@/components/simulate-order";
 import { SkeletonTable } from "@/components/skeleton";
@@ -35,13 +35,14 @@ function Orders() {
   const risk = params.get("risk") as Risk | "";
   const statuses = params.list("status");
   const q = params.get("q");
-  // One list, filtered here until the API takes ?status=a,b&q= (B6.5).
-  const { data, error, mutate } = useSWR<OrderListItem[]>("/api/orders/", fetcher, { refreshInterval: 3000 });
-  const options = statusOptions(data ?? [], ORDER_STATUSES);
-  const filtered = (data ?? []).filter(
-    (order) => (!risk || order.risk === risk) && (!statuses.length || statuses.includes(order.status)) && matchesCode(q, order.code),
-  );
-  const registered = (data ?? []).filter((order) => order.status === "registered");
+  // The API filters (B6.5): ?risk=&status=a,b&q=. The unfiltered list feeds the
+  // chip counts and the registered count.
+  const query = new URLSearchParams({ ...(risk && { risk }), ...(statuses.length && { status: statuses.join(",") }), ...(q && { q }) }).toString();
+  const { data, error, mutate } = useSWR<OrderListItem[]>(`/api/orders/${query ? `?${query}` : ""}`, fetcher, { refreshInterval: 3000, keepPreviousData: true });
+  const { data: all, mutate: mutateAll } = useSWR<OrderListItem[]>("/api/orders/", fetcher, { refreshInterval: 5000 });
+  const options = statusOptions(all ?? [], ORDER_STATUSES);
+  const filtered = data ?? [];
+  const registered = (all ?? []).filter((order) => order.status === "registered");
   const filtering = !!(risk || statuses.length || q);
   const [breakDownOpen, setBreakDownOpen] = useState(false);
   const canBreakDown = user.role !== "sales" && registered.length > 0;
@@ -68,7 +69,15 @@ function Orders() {
       </div>
 
       {/* Always mounted: it keeps the summary after the registered orders leave the list. */}
-      <BreakDownPanel orders={registered} open={breakDownOpen} onClose={() => setBreakDownOpen(false)} onDone={() => mutate()} />
+      <BreakDownPanel
+        orders={registered}
+        open={breakDownOpen}
+        onClose={() => setBreakDownOpen(false)}
+        onDone={() => {
+          mutate();
+          mutateAll();
+        }}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Riesgo">

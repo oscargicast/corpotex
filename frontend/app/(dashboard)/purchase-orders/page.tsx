@@ -4,7 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import useSWR from "swr";
-import { matchesCode, PURCHASE_ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
+import { PURCHASE_ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
 import { PurchaseOrderList } from "@/components/purchase-order-list";
 import { useUser } from "@/components/require-auth";
 import { SkeletonTable } from "@/components/skeleton";
@@ -34,15 +34,19 @@ function PurchaseOrders() {
   const waiting = params.get("waiting") === "1";
   const statuses = params.list("status");
   const q = params.get("q");
-  // Kind and "waiting" are server filters; status and code search run here until B6.5.
-  const query = new URLSearchParams({ ...(kind && { kind }), ...(waiting && { waiting_manager: "1" }) }).toString();
-  const { data, error } = useSWR<PurchaseOrderListItem[]>(`/api/purchase-orders/${query ? `?${query}` : ""}`, fetcher, {
+  // Every filter goes to the API (B6.5): ?kind=&waiting_manager=1&status=a,b&q= (q also
+  // matches the orders' codes). The list without status/q feeds the chip counts.
+  const base = new URLSearchParams({ ...(kind && { kind }), ...(waiting && { waiting_manager: "1" }) });
+  const query = new URLSearchParams(base);
+  if (statuses.length) query.set("status", statuses.join(","));
+  if (q) query.set("q", q);
+  const { data, error } = useSWR<PurchaseOrderListItem[]>(`/api/purchase-orders/${query.size ? `?${query}` : ""}`, fetcher, {
     refreshInterval: 3000,
+    keepPreviousData: true,
   });
-  const options = statusOptions(data ?? [], PURCHASE_ORDER_STATUSES);
-  const filtered = (data ?? []).filter(
-    (po) => (!statuses.length || statuses.includes(po.status)) && matchesCode(q, po.code, ...po.orders.map((o) => o.code)),
-  );
+  const { data: all } = useSWR<PurchaseOrderListItem[]>(`/api/purchase-orders/${base.size ? `?${base}` : ""}`, fetcher, { refreshInterval: 5000 });
+  const options = statusOptions(all ?? [], PURCHASE_ORDER_STATUSES);
+  const filtered = data ?? [];
   const filtering = !!(kind || waiting || statuses.length || q);
 
   return (
