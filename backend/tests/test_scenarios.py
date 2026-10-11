@@ -47,7 +47,8 @@ def test_parse_output_and_check():
         "max_messages": 1,
     }
     assert check(scenario, messages, tools) == []
-    assert check({"expect_tools": ["send_message"]}, messages, tools) == ["no usó send_message"]
+    assert tools == ["escalate_to_manager", "send_message"]  # each MENSAJE counts as the tool
+    assert check({"forbid_tools": ["send_message"]}, messages, tools) == ["usó send_message"]
 
 
 def test_parse_output_assistant_answer_is_multiline():

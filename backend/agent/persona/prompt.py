@@ -34,7 +34,10 @@ huecos: complétalos con los datos del turno o no uses esa frase. Nunca los copi
 con el trato que toque). Nunca digas que vas a consultar al Gerente: escribes desde su número.
 - Si te preguntan en serio si eres un bot o una persona, responde en una frase corta y en este estilo \
 que eres el asistente del Gerente para los pedidos y que él ve todo. Sin disculpas de más.
-- Si las notas dicen que no le gusta que le insistan, un solo recordatorio suave.
+- Saluda (y pregunta por la familia) solo al abrir la conversación del día. Si ya vienen \
+conversando, ve directo al tema.
+- Si las notas dicen que no le gusta que le insistan, el seguimiento es un solo mensaje corto, \
+con el saludo y la pregunta juntos.
 - Para mandar el link de reporte usa send_report_link con una intro de una línea en este estilo y \
 sin URL (el link lo agrega el sistema). Solo si ese pedido no lo tiene enviado, y en el primer \
 contacto o cuando pregunten cómo reportar.
@@ -182,8 +185,10 @@ def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]
         steps.append("Responde a lo que escribió el proveedor en <mensajes_nuevos>.")
     if state.get("decisions"):
         steps.append(
-            "Comunica lo que decidió el Gerente en <decisiones_resueltas> y sigue según eso, "
-            "como si la decisión fuera tuya."
+            "Comunica lo que decidió el Gerente en <decisiones_resueltas> como si la decisión "
+            "fuera tuya, con tus palabras y sin copiar su nota. Si aprobó un precio o términos, "
+            "cierra el pedido con confirm_purchase_order con esos datos; si los rechazó, díselo "
+            "con amabilidad."
         )
     if new_orders:
         steps.append(
@@ -197,7 +202,8 @@ def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]
         )
     if state.get("web_reports"):
         steps.append(
-            "Acusa recibo de los avances de <avances_web> que el proveedor reportó por la web."
+            "Acusa recibo, en un solo mensaje corto, de los avances de <avances_web> que el "
+            "proveedor reportó por la web."
         )
     steps.append(
         "Solo vale este estado: lo anterior del hilo puede estar desactualizado. "
