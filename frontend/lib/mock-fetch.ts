@@ -718,7 +718,8 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
         (!params.get("code") || o.code === params.get("code")) &&
         (!params.get("q") || o.code.toLowerCase().includes(params.get("q")!.toLowerCase())),
     );
-    return json(200, filtered);
+    // awaiting_reply (PR #176): an open purchase order of the order owes an answer.
+    return json(200, filtered.map((o) => ({ ...o, awaiting_reply: purchaseOrders.some((po) => po.orders.some((x) => x.id === o.id) && followUps[po.id]?.status === "asked") })));
   }
   if (route === "POST /api/orders/break-down/") {
     if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });

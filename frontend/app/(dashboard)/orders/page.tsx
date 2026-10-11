@@ -1,20 +1,53 @@
 "use client";
 
-import { CheckCircle2, FilterX, Plus, Sparkles, X } from "lucide-react";
+import { FilterX, Plus } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import useSWR from "swr";
-import { ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
+import { FilterBar } from "@/components/filter-bar";
+import { matchesCode, useListParams } from "@/components/list-filters";
 import { useUser } from "@/components/require-auth";
 import { SkeletonTable } from "@/components/skeleton";
 import { Button, buttonClass, CARD_HOVER, Pill, RISK_LABEL, RISK_TONE, ROW_HOVER } from "@/components/ui";
 import { orderStatusLabel } from "@/lib/order-status";
-import { ApiError, apiFetch, fetcher } from "@/lib/api";
+import { fetcher } from "@/lib/api";
 import { formatDay } from "@/lib/format";
 import { canCreateOrder } from "@/lib/orders";
-import type { BreakDownResult, OrderListItem, Risk } from "@/lib/types";
+import type { OrderListItem, Role } from "@/lib/types";
 
-const RISKS: (Risk | "")[] = ["", "in_danger", "at_risk", "ok"];
+// One list per role (Oscar, 11/10): Comercial follows its orders until
+// Producción confirms and then until the supplier answers; Producción opens on
+// what it has to review; the Gerente sees every cut. The chips and the search
+// filter the loaded list in the browser; the choice lives in the URL.
+type View = "all" | "to_confirm" | "confirmed" | "awaiting" | "danger";
+const BEFORE_CONFIRM = ["registered", "broken_down"];
+const VIEWS: Record<Role, { key: View; label: string }[]> = {
+  sales: [
+    { key: "all", label: "Todas" },
+    { key: "to_confirm", label: "Por confirmar" },
+    { key: "confirmed", label: "Confirmadas" },
+    { key: "awaiting", label: "Avance pedido" },
+  ],
+  production: [
+    { key: "to_confirm", label: "Por revisar" },
+    { key: "confirmed", label: "Confirmadas" },
+    { key: "all", label: "Todas" },
+  ],
+  manager: [
+    { key: "all", label: "Todas" },
+    { key: "to_confirm", label: "Por confirmar" },
+    { key: "confirmed", label: "Confirmadas" },
+    { key: "awaiting", label: "Avance pedido" },
+    { key: "danger", label: "En peligro" },
+  ],
+};
+const TESTS: Record<View, (order: OrderListItem) => boolean> = {
+  all: () => true,
+  to_confirm: (o) => BEFORE_CONFIRM.includes(o.status),
+  confirmed: (o) => !BEFORE_CONFIRM.includes(o.status) && o.status !== "cancelled",
+  awaiting: (o) => !!o.awaiting_reply, // undefined until the API sends it
+  danger: (o) => o.risk === "in_danger",
+};
 
 export default function OrdersPage() {
   return (
@@ -27,17 +60,14 @@ export default function OrdersPage() {
 function Orders() {
   const user = useUser();
   const params = useListParams();
-  const risk = params.get("risk") as Risk | "";
-  const statuses = params.list("status");
+  const views = VIEWS[user.role];
+  const view = (views.some((v) => v.key === params.get("view")) ? params.get("view") : views[0].key) as View;
   const q = params.get("q");
-  // The API filters (B6.5): ?risk=&status=a,b&q=. The unfiltered list feeds the
-  // chip counts and the registered count.
-  const query = new URLSearchParams({ ...(risk && { risk }), ...(statuses.length && { status: statuses.join(",") }), ...(q && { q }) }).toString();
-  const { data, error, mutate } = useSWR<OrderListItem[]>(`/api/orders/${query ? `?${query}` : ""}`, fetcher, { refreshInterval: 3000, keepPreviousData: true });
-  const { data: all } = useSWR<OrderListItem[]>("/api/orders/", fetcher, { refreshInterval: 5000 });
-  const options = statusOptions((all ?? []).map((o) => ({ ...o, status_display: orderStatusLabel(o.status, o.status_display) })), ORDER_STATUSES);
-  const filtered = data ?? [];
-  const filtering = !!(risk || statuses.length || q);
+  const { data, error } = useSWR<OrderListItem[]>("/api/orders/", fetcher, { refreshInterval: 3000 });
+  const all = data ?? [];
+  const filtered = all.filter((o) => TESTS[view](o) && matchesCode(q, o.code, o.customer.name));
+  const filtering = view !== views[0].key || !!q;
+  const statusLabel = (o: OrderListItem) => orderStatusLabel(o.status, o.status_display, user.role);
 
   return (
     <div className="space-y-4">
@@ -46,32 +76,21 @@ function Orders() {
         <div className="flex flex-wrap gap-2">
           {canCreateOrder(user) && (
             <Link href="/orders/new" className={buttonClass("primary")}>
-              <Plus size={16} /> Nueva orden
+              <Plus size={16} aria-hidden /> Nueva orden
             </Link>
           )}
         </div>
       </div>
 
-      {/* "Desglosar N registradas" (BreakDownPanel, below) is no longer mounted:
-          orders are born broken down (ADR 0028). */}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Riesgo">
-          {RISKS.map((value) => (
-            <button
-              key={value || "all"}
-              type="button"
-              aria-pressed={risk === value}
-              onClick={() => params.set({ risk: value })}
-              className={`rounded-full px-3 py-1 text-sm ring-1 ${risk === value ? "bg-ink text-white ring-ink" : "bg-surface ring-line hover:bg-canvas"}`}
-            >
-              {value ? RISK_LABEL[value] : "Todas"}
-            </button>
-          ))}
-        </div>
-        <SearchBox value={q} onChange={(value) => params.set({ q: value })} placeholder="Buscar por código (CP-2026-01…)" />
-      </div>
-      {options.length > 0 && <StatusChips options={options} selected={statuses} onChange={(next) => params.set({ status: next })} allLabel="Todos los estados" />}
+      <FilterBar
+        search={{ value: q, onChange: (value) => params.set({ q: value }), placeholder: "Buscar por código o cliente" }}
+        chips={{
+          label: "Órdenes",
+          value: view,
+          onChange: (next) => params.set({ view: next === views[0].key ? null : next }),
+          options: views.map((v) => ({ key: v.key, label: v.label, count: all.filter((o) => TESTS[v.key](o)).length })),
+        }}
+      />
 
       {error && !data && <p className="text-danger">No se pudieron cargar las órdenes.</p>}
       {!data && !error && <SkeletonTable rows={7} cols={7} />}
@@ -79,8 +98,8 @@ function Orders() {
         <div className="rounded-xl bg-surface p-6 text-center text-sm text-muted ring-1 ring-line">
           {filtering ? (
             <>
-              <p>Ninguna orden coincide con {q ? `“${q}”` : "esos filtros"}.</p>
-              <Button className="mt-3" onClick={() => params.set({ risk: null, status: null, q: null })}>
+              <p>Ninguna orden coincide con {q ? `“${q}”` : "ese filtro"}.</p>
+              <Button className="mt-3" onClick={() => params.set({ view: null, q: null })}>
                 <FilterX size={16} aria-hidden /> Limpiar filtros
               </Button>
             </>
@@ -104,7 +123,8 @@ function Orders() {
                     {order.customer.name} · {order.brand.name}
                   </p>
                   <p className="mt-1 text-xs text-muted">
-                    {orderStatusLabel(order.status, order.status_display)} · {Number(order.total_units)} u. · entrega {formatDay(order.promised_on)}, estimada{" "}
+                    {statusLabel(order)}
+                    {order.awaiting_reply && " · esperando respuesta del proveedor"} · {Number(order.total_units)} u. · entrega {formatDay(order.promised_on)}, estimada{" "}
                     {formatDay(order.estimated_on)}
                   </p>
                 </Link>
@@ -138,8 +158,10 @@ function Orders() {
                       <span className="block text-xs text-muted">{order.brand.name}</span>
                     </td>
                     <td className="px-4 py-3">
-                      {orderStatusLabel(order.status, order.status_display)}
-                      {order.purchase_orders_summary?.waiting_manager ? (
+                      {statusLabel(order)}
+                      {order.awaiting_reply ? (
+                        <span className="block text-xs text-warning">esperando respuesta del proveedor</span>
+                      ) : order.purchase_orders_summary?.waiting_manager ? (
                         <span className="block text-xs text-warning">{order.purchase_orders_summary.waiting_manager} esperando al Gerente</span>
                       ) : null}
                     </td>
@@ -158,68 +180,6 @@ function Orders() {
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-// Break down every registered order at once (ADR 0025 A.6), Gerente and
-// Producción: confirmation, then POST /api/orders/break-down/ and a summary
-// ({broken_down: [codes], skipped: [{code, reason}]}).
-function BreakDownPanel({ orders, open, onClose, onDone }: { orders: OrderListItem[]; open: boolean; onClose: () => void; onDone: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<BreakDownResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function run() {
-    setBusy(true);
-    setError(null);
-    try {
-      const data = await apiFetch<BreakDownResult>("/api/orders/break-down/", { method: "POST", json: { order_ids: orders.map((o) => o.id) } });
-      setResult(data);
-      onClose();
-      onDone();
-    } catch (err) {
-      setError(err instanceof ApiError ? ((err.body as { detail?: string } | null)?.detail ?? "No se pudo desglosar.") : "No se pudo desglosar.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (open) {
-    return (
-      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning">
-        Se desglosan contra el inventario {orders.length === 1 ? "la orden" : `las ${orders.length} órdenes`} {orders.map((o) => o.code).join(", ")}. Después
-        Producción confirma cada desglose.
-        <Button size="sm" busy={busy} onClick={run}>
-          <Sparkles size={14} aria-hidden /> Desglosar ahora
-        </Button>
-        <Button size="sm" disabled={busy} onClick={onClose}>
-          <X size={14} aria-hidden /> Cancelar
-        </Button>
-        {error && <span className="w-full text-danger">{error}</span>}
-      </div>
-    );
-  }
-  if (!result) return null;
-  return (
-    <div className="rounded-lg bg-success-soft px-3 py-2 text-sm text-success" role="status">
-      <p className="flex items-center gap-1.5 font-semibold">
-        <CheckCircle2 size={16} />
-        {result.broken_down.length === 1 ? "1 orden desglosada" : `${result.broken_down.length} órdenes desglosadas`}
-        {result.broken_down.length > 0 && `: ${result.broken_down.join(", ")}`}
-      </p>
-      {result.skipped.length > 0 && (
-        <ul className="mt-1 text-warning">
-          {result.skipped.map((s) => (
-            <li key={s.code}>
-              {s.code}: {s.reason}
-            </li>
-          ))}
-        </ul>
-      )}
-      <button type="button" onClick={() => setResult(null)} className="mt-1 text-xs underline">
-        Cerrar
-      </button>
     </div>
   );
 }
