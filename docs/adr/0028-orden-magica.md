@@ -35,6 +35,10 @@ Para que el formulario no espere a todos, el endpoint acepta un solo ítem a la 
 - **Movimiento:** la tarjeta del ítem crece con el resultado (altura animada con `grid-template-rows`, 250 ms), los insumos entran escalonados 30 ms, y `prefers-reduced-motion` desactiva todo. El indicador de "Reconociendo…" es un shimmer, no un spinner.
 - **Accesibilidad:** los chips llevan texto, no solo color; `aria-live="polite"` en el resumen; los botones de quitar insumo miden 44 px en móvil.
 
+### 3b. Foto de la prenda en vez de texto (Oscar, 11/10 03:45)
+
+Cada ítem acepta una foto (adjuntar, arrastrar o pegar) además del texto. `POST /api/orders/describe-image/` (los tres roles) recibe `{image: {media_type, data (base64)}, brand?, customer?}` y devuelve `{description}`: Claude describe la prenda en una frase de hasta 25 palabras en español (tipo de prenda, color, cuello, mangas, cierres, detalles), sin cantidad. Medido con el modelo real: 4 a 5 s. La frase cae en el campo de texto del ítem, editable, y dispara el reconocimiento de siempre; la cantidad es obligatoria y la escribe Comercial. Jev no ve imágenes: la foto siempre pasa por Claude primero. El front reduce la foto a 1 568 px de lado largo y JPEG antes de subirla (límite 5 MB). La foto no se guarda con la orden en esta versión.
+
 ### 4. Lo que se va
 
 - El botón "Simular orden de Comercial" de `/orders`. El componente queda en el repo solo si el guion lo necesita como atajo (`docs/demo/guion-visual.md` paso 3 pasa a usar `/orders/new`).
@@ -47,4 +51,4 @@ Paso 3 del guion: Comercial abre `/orders/new`, elige Caja Piura, escribe dos l�
 ## Consecuencias
 
 - `classify-draft` llama a Jev y a Claude sin guardar nada: una orden de 5 ítems son hasta 5 llamadas a Claude en paralelo. Para la demo es aceptable; en producción conviene un límite por usuario.
-- Tareas: M1 backend (`classify-draft` y `classification` en create y patch, con tests), M2 disenador (formulario, resumen vivo, quitar "Simular orden", guion), en `docs/planning.md`. Congelamiento a las 04:30: si M1 no está, el formulario actual sigue igual y solo se quita el botón.
+- Tareas: M1 backend, M2 disenador, M3 backend (clasificación automática en segundo plano para órdenes por API), M4 backend (`describe-image`) y M5 disenador (foto en el ítem), en `docs/planning.md`. Oscar movió el cierre a las 07:00 (11/10 03:45): lo que no esté en verde a esa hora no entra, y el formulario de texto sigue igual.
