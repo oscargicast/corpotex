@@ -51,7 +51,13 @@ export function ClassifyPanel({ order, onApplied }: { order: OrderDetail; onAppl
     setError(null);
     try {
       const result = await apiFetch<Classification>(`/api/orders/${order.id}/classify/`, { method: "POST", json: {} });
-      setItems(result.items);
+      // Catalog recipes come with four decimals ("0.2500"); show them as typed ("0.25").
+      setItems(
+        result.items.map((item) => ({
+          ...item,
+          materials: item.materials.map((m) => ({ ...m, qty_per_unit: String(num(m.qty_per_unit) ?? m.qty_per_unit) })),
+        })),
+      );
       setPhase("review");
     } catch (err) {
       setError(err instanceof ApiError ? ((err.body as { detail?: string } | null)?.detail ?? "No se pudo clasificar.") : "No se pudo clasificar.");
