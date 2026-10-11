@@ -291,14 +291,19 @@ class Loader:
                 risk_reason=row.get("risk_reason") or "",
             )
             for item in row.get("items") or []:
+                # A made-to-order item (ADR 0025 B) has no product, only its description, and no
+                # price yet: the order waits in `broken_down` with `needs_classification`.
+                if not item.get("product") and not (item.get("description") or "").strip():
+                    raise SeedError(f"orders.json: {row['code']} tiene un ítem sin producto ni descripción")
                 OrderItem.objects.create(
                     order=order,
-                    product=self.ref(self.products, item["product"], "producto"),
+                    product=self.ref(self.products, item["product"], "producto") if item.get("product") else None,
+                    description=item.get("description") or "",
                     quantity=int(item["quantity"]),
                     sizes=item.get("sizes") or {},
                     color=item.get("color", "") or "",
                     customization=item.get("customization") or "",
-                    unit_price=self.dec(item["unit_price"]),
+                    unit_price=self.dec(item["unit_price"]) if item.get("unit_price") not in (None, "") else None,
                 )
             self.orders[order.code] = order
             if row.get("status_note"):

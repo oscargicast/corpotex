@@ -81,9 +81,11 @@ for o in d["orders"]:
     elif o["production_stage"] is not None: err(f"{w}: production_stage fuera de in_production")
     tot = 0
     for i in o["items"]:
-        ref(i["product"], P, w); enum(i["customization"], {"embroidery","print","sublimation",None}, w)
+        made_to_order = i["product"] is None  # ADR 0025 B: description, no product, no price yet
+        if made_to_order and not (i.get("description") or "").strip(): err(f"{w}: ítem sin producto ni descripción")
+        ref(i["product"], P, w, made_to_order); enum(i["customization"], {"embroidery","print","sublimation",None}, w)
         if sum(i["sizes"].values()) != i["quantity"]: err(f"{w}: tallas no suman {i['quantity']}")
-        tot += i["quantity"] * float(i["unit_price"])
+        tot += i["quantity"] * float(i["unit_price"] or 0)
     money(o["total_amount"], tot, f"{w} total")
 if not {"registered","broken_down","confirmed","sourcing","in_production","ready","delivered","cancelled"} <= {o["status"] for o in d["orders"]}: err("faltan estados de orden")
 omap = {o["code"]: o for o in d["orders"]}
