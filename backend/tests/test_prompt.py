@@ -186,7 +186,7 @@ def test_checkpoint_renders_context_and_asks_to_decide_first():
 
 def test_eve_and_reminder_pick_their_own_text():
     eve = turn_text(follow_up_state("seguimiento_vispera"))
-    assert "Víspera de entrega" in eve and "Punto de control" not in eve
+    assert "Entrega cerca" in eve and "Punto de control" not in eve
     reminder = turn_text(follow_up_state("seguimiento_recordatorio_corto"))
     assert "Recordatorio" in reminder and "sin repetir la pregunta completa" in reminder
     assert 'tipo="recordatorio"' in reminder
@@ -203,3 +203,12 @@ def test_follow_up_accepts_timestamps_without_texts():
     state["follow_up"].pop("last_agent_message")
     state["follow_up"]["last_agent_message_at"] = "2026-10-14T10:05:00-05:00"
     assert "último mensaje tuyo (miércoles 14 de octubre, 10:05)" in turn_text(state)
+
+
+def test_eve_is_detected_from_any_order_reason():
+    state = follow_up_state("seguimiento_punto_de_control_atrasado")
+    state["follow_up"]["reason"] = "2 pedidos con seguimiento hoy"
+    state["purchase_orders"][0]["follow_up_reason"] = "víspera de la entrega"
+    text = turn_text(state)
+    assert 'motivo_seguimiento="víspera de la entrega"' in text
+    assert "Entrega cerca" in text

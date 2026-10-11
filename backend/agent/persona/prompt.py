@@ -58,20 +58,21 @@ FOLLOW_UP_SKIP = (
 FOLLOW_UP_CHECKPOINT = (
     "Punto de control: una o dos líneas, en un solo mensaje. Pregunta por el avance concreto, en "
     "unidades o en qué etapa va (corte, costura, acabado), del pedido o los pedidos de "
-    "<seguimiento>. Pide foto solo si el avance va atrasado contra lo esperado o si no hay ningún "
-    'reporte desde que se confirmó. Sin presión: "sin apuro, solo para organizarme" o lo que use '
+    "<seguimiento>. Pide foto solo si el motivo dice avance atrasado o sin reporte, o si el avance "
+    'va por debajo de lo esperado. Sin presión: "sin apuro, solo para organizarme" o lo que use '
     "el estilo."
 )
 FOLLOW_UP_EVE = (
-    "Víspera de entrega: en un solo mensaje corto, confirma que el pedido sale mañana y pregunta a "
-    "qué hora se puede recoger; si las notas dicen que envía por agencia (Sullana Express), pregunta "
-    "cuándo sale y pide el número de guía."
+    "Entrega cerca: en un solo mensaje corto, confirma que el pedido sale mañana (o hoy, si el "
+    "motivo dice entrega hoy) y pregunta a qué hora se puede recoger; si las notas dicen que envía "
+    "por agencia (Sullana Express), pregunta cuándo sale y pide el número de guía."
 )
+EVE_MARKERS = ("víspera", "entrega mañana", "entrega hoy")
 FOLLOW_UP_REMINDER = (
-    "Recordatorio: el proveedor no respondió tu último mensaje (el último tuyo en <seguimiento> o en el hilo). Escribe algo más "
-    "corto que ese mensaje, sin reclamar y sin repetir la pregunta completa, en este estilo y con "
-    'este trato. Por ejemplo: "¿pudo ver lo de hace un rato? 🙏" o "¿pudo ver lo de ayer?". '
-    'Nunca "sigo esperando", "todavía no me responde" ni "urgente".'
+    "Recordatorio: el proveedor no respondió tu último mensaje (el último tuyo en <seguimiento> o en "
+    "el hilo). Escribe algo más corto que ese mensaje, sin reclamar y sin repetir la pregunta "
+    'completa, en este estilo y con este trato. Por ejemplo: "¿pudo ver lo de hace un rato? 🙏" o '
+    '"¿pudo ver lo de ayer?". Nunca "sigo esperando", "todavía no me responde" ni "urgente".'
 )
 
 
@@ -154,6 +155,7 @@ def _render_orders(orders: list[dict], currency: str) -> str:
             ultimo_reporte=ctx.fmt_datetime(order.get("last_report_at")),
             esperando_respuesta_desde=ctx.fmt_datetime(order.get("awaiting_reply_since")),
             nota_seguimiento=order.get("follow_up_note") or None,
+            motivo_seguimiento=order.get("follow_up_reason") or None,
             link_de_reporte="enviado" if order.get("report_link_sent_at") else "no enviado",
         )
         lines = []
@@ -245,8 +247,10 @@ def _render_follow_up(follow_up: dict, codes: list[str]) -> str:
     return f"<seguimiento{tag}>{body}</seguimiento>"
 
 
-def _is_eve(follow_up: dict) -> bool:
-    return "víspera" in (follow_up.get("reason") or "").lower()
+def _is_eve(follow_up: dict, orders: list[dict]) -> bool:
+    """Delivery is tomorrow or today: from the batch reason or any order's own reason."""
+    reasons = [follow_up.get("reason")] + [o.get("follow_up_reason") for o in orders]
+    return any(marker in (r or "").lower() for r in reasons for marker in EVE_MARKERS)
 
 
 def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]) -> str:
@@ -270,7 +274,7 @@ def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]
         steps.append(FOLLOW_UP_SKIP)
         if follow_up.get("kind") == "reminder":
             steps.append(FOLLOW_UP_REMINDER)
-        elif _is_eve(follow_up):
+        elif _is_eve(follow_up, state.get("purchase_orders") or []):
             steps.append(FOLLOW_UP_EVE)
         else:
             steps.append(FOLLOW_UP_CHECKPOINT)

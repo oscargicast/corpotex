@@ -621,7 +621,7 @@ scenarios:
       follow_up:
         mode: balanced
         kind: checkpoint
-        reason: "víspera de entrega"
+        reason: "entrega mañana"
         pending_decisions: []
         last_supplier_message: {text: "ya van 900, el jueves les entrego", sent_at: "2026-10-13T18:00:00-05:00"}
         last_agent_message: {text: "excelente, gracias 👍", sent_at: "2026-10-13T18:05:00-05:00"}
