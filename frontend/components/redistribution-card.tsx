@@ -1,6 +1,6 @@
 import { ArrowRight, Map } from "lucide-react";
 import Link from "next/link";
-import { daysBetween, formatDay, formatMoney } from "@/lib/format";
+import { daysBetween, formatDay, formatMoney, num } from "@/lib/format";
 import type { Decision, DecisionLike } from "@/lib/types";
 
 // Scene for the jury: a workshop cancels and the rest is split (ADR 0024).
@@ -19,7 +19,7 @@ export function RedistributionCard({ decision }: { decision: Decision }) {
 // Split bar, before and after, and the route link. Also used inside the pending decision.
 export function RedistributionBody({ decision, withCancelLine = true }: { decision: DecisionLike; withCancelLine?: boolean }) {
   const { before, after, proposal = [], cancelled } = decision.detail;
-  const total = cancelled?.quantity ?? proposal.reduce((sum, p) => sum + Number(p.quantity), 0);
+  const total = num(cancelled?.quantity) ?? proposal.reduce((sum, p) => sum + (num(p.quantity) ?? 0), 0);
   const shift = before?.estimated_on && after?.estimated_on ? daysBetween(before.estimated_on, after.estimated_on) : null;
   const costDelta = before && after ? Number(after.total_amount) - Number(before.total_amount) : null;
   const routeHref =
@@ -29,7 +29,7 @@ export function RedistributionBody({ decision, withCancelLine = true }: { decisi
     <div>
       {cancelled && withCancelLine && (
         <p className="mt-1 text-sm text-muted">
-          {cancelled.supplier_name} canceló {cancelled.code} con {cancelled.units_done} de {cancelled.quantity} hechas.
+          {cancelled.supplier_name} canceló {cancelled.code} con {cancelled.units_done} de {num(cancelled.quantity)} hechas.
         </p>
       )}
 

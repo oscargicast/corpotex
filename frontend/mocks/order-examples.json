@@ -8,7 +8,7 @@
       "brand": "UNICRACK",
       "items": [
         {
-          "product": "POLO-ESC-01",
+          "product": "UNI-POL-01",
           "quantity": 1000,
           "sizes": {
             "S": 300,
@@ -31,7 +31,7 @@
       "brand": "UNICRACK",
       "items": [
         {
-          "product": "POLO-ESC-01",
+          "product": "UNI-POL-01",
           "quantity": 450,
           "sizes": {
             "8": 100,
@@ -44,7 +44,7 @@
           "unit_price": "16.50"
         },
         {
-          "product": "BUZO-ESC-01",
+          "product": "UNI-BUZ-01",
           "quantity": 450,
           "sizes": {
             "8": 100,
@@ -68,7 +68,7 @@
       "brand": "NEXO",
       "items": [
         {
-          "product": "CAMISA-TRAB-01",
+          "product": "NEX-CAM-01",
           "quantity": 200,
           "sizes": {
             "S": 40,

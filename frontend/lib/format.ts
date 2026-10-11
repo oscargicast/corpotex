@@ -47,6 +47,26 @@ export function formatMoney(value: string | number | null | undefined, currency:
   return money[currency][Number.isInteger(amount) ? 0 : 1].format(amount);
 }
 
+// Decimals arrive from the API as strings (DRF), and scores can be null until
+// the first delivery: never call .toFixed or multiply an API field directly.
+export function num(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+// "4.5", or "—" when there is no value yet.
+export function formatNum(value: string | number | null | undefined, digits = 1): string {
+  const n = num(value);
+  return n === null ? "—" : n.toFixed(digits);
+}
+
+// A 0 to 1 score as a whole number ("82"), or "—".
+export function formatScore(value: string | number | null | undefined): string {
+  const n = num(value);
+  return n === null ? "—" : String(Math.round(n * 100));
+}
+
 export function daysBetween(from: string, to: string): number {
   return Math.round((parse(to).getTime() - parse(from).getTime()) / 86_400_000);
 }

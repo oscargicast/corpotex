@@ -9,6 +9,7 @@ import { RoleGate } from "@/components/require-auth";
 import { Button, Pill } from "@/components/ui";
 import { apiFetch, fetcher } from "@/lib/api";
 import type { SupplierDetail, SupplierListItem } from "@/lib/types";
+import { formatNum, formatScore, num } from "@/lib/format";
 
 export default function SuppliersPage() {
   return (
@@ -88,8 +89,8 @@ function SupplierCard({ supplier }: { supplier: SupplierListItem }) {
         ))}
       </p>
       <dl className="mt-3 grid grid-cols-3 gap-2 text-xs">
-        <Stat label="Cumplimiento" value={supplier.on_time_score === null ? "—" : `${Math.round(supplier.on_time_score * 100)} %`} />
-        <Stat label="Calidad" value={supplier.quality_score === null ? "—" : `${supplier.quality_score.toFixed(1)} / 5`} />
+        <Stat label="Cumplimiento" value={num(supplier.on_time_score) === null ? "—" : `${formatScore(supplier.on_time_score)} %`} />
+        <Stat label="Calidad" value={num(supplier.quality_score) === null ? "—" : `${formatNum(supplier.quality_score)} / 5`} />
         <Stat
           label="Carga"
           value={supplier.load_pct === null ? "—" : `${supplier.load_pct} %`}

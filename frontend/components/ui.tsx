@@ -1,5 +1,6 @@
 // Small shared pieces. Tailwind only; swap the tokens, not these.
 import type { Risk, Severity } from "@/lib/types";
+import { num } from "@/lib/format";
 
 export function Card({ className = "", children }: { className?: string; children: React.ReactNode }) {
   return <section className={`rounded-xl bg-surface p-4 ring-1 ring-line sm:p-5 ${className}`}>{children}</section>;
@@ -57,9 +58,9 @@ export function Button({
   );
 }
 
-// Score bar for the matching criteria (0 to 1).
-export function ScoreBar({ label, value }: { label: string; value: number }) {
-  const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
+// Score bar for the matching criteria (0 to 1; the API may send it as a string).
+export function ScoreBar({ label, value }: { label: string; value: string | number | null | undefined }) {
+  const pct = Math.round(Math.max(0, Math.min(1, num(value) ?? 0)) * 100);
   return (
     <div className="grid grid-cols-[6.5rem_1fr_2.5rem] items-center gap-2 text-xs">
       <span className="text-muted">{label}</span>
