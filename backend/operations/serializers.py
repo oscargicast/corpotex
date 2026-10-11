@@ -199,6 +199,7 @@ class OrderDetailSerializer(StatusHistoryMixin, OrderListSerializer):
     redistributions = serializers.SerializerMethodField()
 
     class Meta(OrderListSerializer.Meta):
+        role_visible = ("notes",)  # The order's own notes are for every role; supplier notes stay manager-only.
         fields = OrderListSerializer.Meta.fields + [
             "owner",
             "notes",

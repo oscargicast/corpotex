@@ -28,6 +28,7 @@ MANAGER_ONLY_FIELDS = frozenset(
         "paid_amount",
         "pending_amount",
         "payments_summary",
+        "notes",  # Supplier notes feed the WhatsApp prompt; a serializer may exempt its own key via Meta.role_visible.
         "payments_by_supplier",
         "numbers",
         "source_detail",
@@ -67,9 +68,12 @@ class DisplayMixin:
             if name in data:
                 getter = getattr(instance, f"get_{name}_display", None)
                 data[f"{name}_display"] = getter() if getter else data[name]
-        # Fail closed: only an explicit manager role keeps the manager-only keys.
+        # Fail closed: only an explicit manager role keeps the manager-only keys. A serializer
+        # can exempt its OWN top-level keys (`Meta.role_visible`, e.g. the order's notes).
         if self.context.get("role") != "manager":
+            visible = {k: data[k] for k in getattr(self.Meta, "role_visible", ()) if k in data}
             data = strip_manager_only(data)
+            data.update(visible)
         return data
 
 
@@ -112,7 +116,8 @@ def serializer_for(model, role: str | None, *, detail: bool = False):
         return base
     key = (base, role)
     if key not in _ROLE_CACHE:
-        allowed = [f for f in base.Meta.fields if f not in MANAGER_ONLY_FIELDS]
+        visible = set(getattr(base.Meta, "role_visible", ()))
+        allowed = [f for f in base.Meta.fields if f not in MANAGER_ONLY_FIELDS or f in visible]
         meta = type("Meta", (base.Meta,), {"fields": allowed})
         _ROLE_CACHE[key] = type(f"{base.__name__}For{(role or 'anonymous').title()}", (base,), {"Meta": meta})
     return _ROLE_CACHE[key]
