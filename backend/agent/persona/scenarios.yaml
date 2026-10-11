@@ -538,6 +538,28 @@ scenarios:
     must_not: ['whatsapp', 'simulador']
     expect_tools: [request_follow_up]
 
+  - name: aviso_item_sin_reconocer
+    agent: assistant
+    description: "ADR 0028, M3. El clasificador no reconoció un ítem: a Producción se le dice cuál, en qué orden, y que Comercial lo corrija editando la orden; una o dos líneas, sin precios ni sí/no."
+    state:
+      user: {first_name: Carlos, role: production}
+      alerts:
+        - id: 140
+          kind: classification_failed
+          severity: warning
+          detected_at: "2026-10-14T10:10:00-05:00"
+          repeat: false
+          order: {id: 160, code: CP-2026-0160}
+          purchase_order: null
+          decision: null
+          material: null
+          detail:
+            order_code: CP-2026-0160
+            items:
+              - {id: 901, description: "Casaca cortavientos impermeable con forro polar"}
+    must: ['CP-2026-0160', 'Casaca cortavientos', 'Comercial', 'edit|corrig']
+    must_not: ['S/', 'USD', '\(s[ií]/no\)', 'https?://']
+
   # --- Seguimiento proactivo (ADR 0027) --------------------------------------------------------
 
   - name: seguimiento_punto_de_control_atrasado

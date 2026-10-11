@@ -167,3 +167,13 @@ def test_every_role_knows_it_can_ask_for_progress():
         state = scenario_state("asistente_confirmacion_dos_pasos")
         state["user"]["role"] = role
         assert "(request_follow_up)" in assistant.render_system(RULES, state), role
+
+
+def test_classification_failed_names_the_item_and_who_fixes_it():
+    text = turn_text(scenario_state("aviso_item_sin_reconocer"))
+    assert '<alerta tipo="ítem sin reconocer" severidad="advertencia"' in text
+    assert (
+        '<sin_reconocer orden="CP-2026-0160">\n'
+        "<item>Casaca cortavientos impermeable con forro polar</item>\n</sin_reconocer>"
+    ) in text
+    assert "si hablas con Producción, que se lo pida a Comercial" in text

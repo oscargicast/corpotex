@@ -24,6 +24,7 @@ ALERT_KINDS = {
     "payment_due": "pago vencido",
     "purchase_suggested": "compra sugerida",
     "follow_up_answered": "respuesta de avance",
+    "classification_failed": "ítem sin reconocer",
     "style_refresh_failed": "falló el refresco del estilo",
     "turn_failed": "falló un turno del agente",
 }
@@ -104,6 +105,14 @@ FOLLOW_UP_ANSWERED = (
     "otra línea el resumen en tus palabras: unidades, etapa y fecha. Es una respuesta, no un "
     'problema: sin "desde cuándo" ni qué hacer. No digas por dónde respondió el proveedor (nunca '
     '"por WhatsApp") ni lo cites entre comillas.'
+)
+
+CLASSIFICATION_FAILED = (
+    "Hay un <sin_reconocer>: el sistema no reconoció esos ítems de la orden contra el catálogo, "
+    "así que la orden no se puede desglosar. En una o dos líneas: en negrita la orden y el ítem tal "
+    'como está escrito (si son varios, el primero y "y N más"), y que se arregla corrigiendo la '
+    "descripción al editar la orden. El Gerente puede editarla; si hablas con Producción, que se lo "
+    "pida a Comercial. Sin precios ni preguntas al final."
 )
 
 
@@ -197,6 +206,8 @@ def _render_alerts(alerts: list[dict]) -> str:
         ]
         if alert.get("kind") == "follow_up_answered":
             body = [_render_follow_up_answer(alert)]  # carries the order code itself
+        if alert.get("kind") == "classification_failed":
+            body = [_render_unrecognized(alert)]  # carries the order code itself
         if alert.get("material"):
             body.append(_render_purchase_suggestion(alert))
         rendered.append(f"<alerta{tag}>\n" + "\n".join(body) + "\n</alerta>")
@@ -215,6 +226,17 @@ def _render_follow_up_answer(alert: dict) -> str:
     )
     summary = ctx.text(alert.get("answer_summary") or "")
     return f"<respuesta_de_avance{head}>{summary}</respuesta_de_avance>"
+
+
+def _render_unrecognized(alert: dict) -> str:
+    """`<sin_reconocer>` (ADR 0028, M3): the order items the background classifier gave up on."""
+    detail = alert.get("detail") or {}
+    code = (alert.get("order") or {}).get("code") or detail.get("order_code")
+    items = [
+        f"<item>{ctx.text(i.get('description') or '')}</item>" for i in detail.get("items") or []
+    ]
+    inner = ("\n" + "\n".join(items) + "\n") if items else ""
+    return f"<sin_reconocer{ctx.attrs(orden=code)}>{inner}</sin_reconocer>"
 
 
 def _render_purchase_suggestion(alert: dict) -> str:
@@ -277,6 +299,8 @@ def _render_what_to_do(state: dict) -> str:
         steps.append(ALERTS_ONLY)
         if any(a.get("kind") == "follow_up_answered" for a in state["alerts"]):
             steps.append(FOLLOW_UP_ANSWERED)
+        if any(a.get("kind") == "classification_failed" for a in state["alerts"]):
+            steps.append(CLASSIFICATION_FAILED)
         if any(a.get("kind") == "purchase_suggested" for a in state["alerts"]):
             steps.append(PURCHASE_SUGGESTED)
     return "<que_hacer>\n" + "\n".join(f"- {step}" for step in steps) + "\n</que_hacer>"
