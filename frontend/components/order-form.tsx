@@ -4,43 +4,75 @@ import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
-import { CUSTOMIZATION, type Customer, type OrderDetail, type OrderInput, type OrderListItem, type Product } from "@/lib/types";
+import type { Customer, OrderDetail, OrderInput, OrderListItem, Product } from "@/lib/types";
 import { Button } from "./ui";
 
+// One garment line: what the customer wants, in their words; the catalog
+// product is optional because most orders are made to measure (ADR 0025 C).
 interface ItemRow {
   key: string;
-  product: string; // product code
+  description: string;
   quantity: string;
-  color: string;
-  customization: string;
+  product: string; // catalog code, "" = new product
+  unit_price: string; // optional sale price per garment
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
 const input = "mt-1 w-full rounded-md bg-surface px-3 py-2.5 text-base ring-1 ring-line sm:text-sm";
-const newRow = (): ItemRow => ({ key: `i${Date.now()}${Math.random().toString(36).slice(2, 6)}`, product: "", quantity: "", color: "", customization: "" });
+const newRow = (): ItemRow => ({ key: `i${Date.now()}${Math.random().toString(36).slice(2, 6)}`, description: "", quantity: "", product: "", unit_price: "" });
+const BRANDS = ["UNICRACK", "NEXO", "Línea Médica Corpotex"];
+
+const FIELD_LABEL: Record<string, string> = {
+  customer: "cliente",
+  brand: "marca",
+  promised_on: "fecha prometida",
+  items: "ítem",
+  description: "descripción",
+  product: "producto",
+  quantity: "cantidad",
+  unit_price: "precio unitario",
+  notes: "notas",
+};
+
+// DRF nests item errors: {"items": {"0": {"unit_price": ["Este campo es requerido."]}}}.
+function flattenError(value: unknown, path: string[] = []): string | null {
+  if (typeof value === "string") {
+    const labels = path.map((p) => (/^\d+$/.test(p) ? `${Number(p) + 1}` : (FIELD_LABEL[p] ?? p)));
+    return labels.length ? `${labels.join(" ")}: ${value}` : value;
+  }
+  if (Array.isArray(value)) return value.length ? flattenError(value[0], path) : null;
+  if (value && typeof value === "object") {
+    for (const [key, inner] of Object.entries(value as Record<string, unknown>)) {
+      const found = flattenError(inner, key === "non_field_errors" || key === "detail" ? path : [...path, key]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 
 function firstError(err: unknown): string {
   if (err instanceof ApiError) {
-    const body = err.body as Record<string, unknown> | null;
-    if (body) {
-      if (typeof body.detail === "string") return body.detail;
-      for (const [field, value] of Object.entries(body)) {
-        const text = Array.isArray(value) ? value[0] : value;
-        if (typeof text === "string") return field === "non_field_errors" ? text : `${field}: ${text}`;
-      }
-    }
+    const found = flattenError(err.body);
+    if (found) return found;
   }
   return "No se pudo guardar la orden. Revisa los datos.";
 }
 
+// What an existing item says, for the edit form: its description, or the
+// legacy product + color + customization joined.
+function describe(item: OrderDetail["items"][number]): string {
+  if (item.description) return item.description;
+  return [item.product?.name, item.color, item.customization].filter(Boolean).join(", ");
+}
+
 // Create (POST /api/orders/) or edit (PATCH /api/orders/<id>/, items replace
-// the list) a customer order: customer with search, brand, items by product
-// and quantity, promised date and notes (ADR 0025 B).
+// the list) a customer order: customer with search, brand, items by
+// description with quantity, optional base product and price, promised date
+// and notes. The server numbers the order.
 export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetail; onSaved: (order: OrderListItem) => void; onCancel: () => void }) {
   const { data: customers } = useSWR<Customer[]>("/api/customers/", fetcher);
   const { data: products, error: productsError } = useSWR<Product[]>("/api/products/", fetcher);
-  // Without the catalog (endpoint missing or down) the form still works by code.
-  const manual = !!productsError && !products;
+  const catalogDown = !!productsError && !products;
   const [customer, setCustomer] = useState(initial?.customer.name ?? "");
   const [customerOpen, setCustomerOpen] = useState(false);
   const [brand, setBrand] = useState(initial?.brand.name ?? "");
@@ -50,10 +82,10 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
     initial?.items.length
       ? initial.items.map((item) => ({
           key: `e${item.id}`,
-          product: item.product.code,
+          description: describe(item),
           quantity: String(item.quantity),
-          color: item.color ?? "",
-          customization: item.customization ?? "",
+          product: item.product?.code ?? "",
+          unit_price: item.unit_price != null ? String(item.unit_price) : "",
         }))
       : [newRow()],
   );
@@ -61,6 +93,7 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
   const [error, setError] = useState<string | null>(null);
 
   const brands = [...new Map((products ?? []).filter((p) => p.brand).map((p) => [p.brand!.name, p.brand!])).values()];
+  for (const name of BRANDS) if (!brands.some((b) => b.name === name)) brands.push({ id: 0, name });
   if (brand && !brands.some((b) => b.name === brand)) brands.push({ id: 0, name: brand });
   const productOptions = (products ?? []).filter((p) => !brand || !p.brand || p.brand.name === brand);
   const query = customer.trim().toLowerCase();
@@ -73,13 +106,13 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const rows = items.filter((r) => r.product || r.quantity);
+    const rows = items.filter((r) => r.description.trim() || r.quantity || r.product);
     if (!customer.trim()) return setError("Elige o escribe el cliente.");
     if (!brand) return setError("Elige la marca.");
     if (!promisedOn) return setError("Pon la fecha prometida al cliente.");
     if (!rows.length) return setError("Agrega al menos un ítem.");
-    const bad = rows.find((r) => !r.product || !(Number(r.quantity) > 0));
-    if (bad) return setError("Cada ítem necesita un producto y una cantidad mayor a 0.");
+    const bad = rows.find((r) => !r.description.trim() || !(Number(r.quantity) > 0) || (r.unit_price !== "" && !(Number(r.unit_price) > 0)));
+    if (bad) return setError("Cada ítem necesita una descripción y una cantidad mayor a 0 (el precio, si lo pones, mayor a 0).");
     setBusy(true);
     setError(null);
     const body: OrderInput = {
@@ -87,16 +120,19 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
       brand,
       promised_on: promisedOn,
       notes: notes.trim(),
-      items: rows.map((r) => ({ product: r.product, quantity: Number(r.quantity), color: r.color.trim(), customization: r.customization })),
+      // Optional fields travel only when set: the API rejects explicit nulls on
+      // the fields it still requires, and asks for them by name.
+      items: rows.map((r) => ({
+        description: r.description.trim(),
+        quantity: Number(r.quantity),
+        ...(r.product && { product: r.product }),
+        ...(r.unit_price !== "" && { unit_price: r.unit_price }),
+      })),
     };
     try {
       const order = initial
         ? await apiFetch<OrderListItem>(`/api/orders/${initial.id}/`, { method: "PATCH", json: body })
-        : await apiFetch<OrderListItem>("/api/orders/", {
-            method: "POST",
-            // The sales system numbers its orders; until it does, one code per form.
-            json: { ...body, code: `CP-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`, issued_on: today() },
-          });
+        : await apiFetch<OrderListItem>("/api/orders/", { method: "POST", json: { ...body, issued_on: today() } });
       onSaved(order);
     } catch (err) {
       setError(firstError(err));
@@ -154,23 +190,14 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
         </label>
         <label className="text-sm">
           Marca
-          {manual ? (
-            <input value={brand} onChange={(e) => setBrand(e.target.value)} list="order-brands" placeholder="UNICRACK, NEXO…" className={input} />
-          ) : (
-            <select value={brand} onChange={(e) => setBrand(e.target.value)} className={input}>
-              <option value="">{products ? "Elige la marca" : "Cargando…"}</option>
-              {brands.map((b) => (
-                <option key={b.name} value={b.name}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          )}
-          <datalist id="order-brands">
-            {["UNICRACK", "NEXO", "Línea Médica Corpotex"].map((b) => (
-              <option key={b} value={b} />
+          <select value={brand} onChange={(e) => setBrand(e.target.value)} className={input}>
+            <option value="">Elige la marca</option>
+            {brands.map((b) => (
+              <option key={b.name} value={b.name}>
+                {b.name}
+              </option>
             ))}
-          </datalist>
+          </select>
         </label>
         <label className="text-sm">
           Prometida al cliente
@@ -184,64 +211,73 @@ export function OrderForm({ initial, onSaved, onCancel }: { initial?: OrderDetai
 
       <fieldset>
         <legend className="text-sm font-medium">Ítems</legend>
-        {manual && <p className="mt-1 text-xs text-warning">El catálogo de productos no está disponible: escribe el código del producto tal como figura en la ficha.</p>}
+        <p className="mt-1 text-xs text-muted">
+          Describe cada prenda como la pide el cliente: modelo, color, cuello, logo y dónde va, tallas. Si existe en el catálogo, elige el producto base; si no,
+          Producción desglosa los componentes después.
+        </p>
+        {catalogDown && <p className="mt-1 text-xs text-warning">El catálogo de productos no está disponible: los ítems entran como producto nuevo.</p>}
         <ul className="mt-2 space-y-2">
-          {items.map((row, i) => {
-            const chosen = (products ?? []).find((p) => p.code === row.product);
-            return (
-              <li key={row.key} className="grid grid-cols-[1fr_auto] gap-2 rounded-lg p-3 ring-1 ring-line sm:grid-cols-[minmax(0,2fr)_6rem_minmax(0,1fr)_minmax(0,1fr)_2rem] sm:items-end">
-                <label className="text-xs text-muted sm:col-auto">
-                  Producto
-                  {manual ? (
-                    <input
-                      value={row.product}
-                      onChange={(e) => update(row.key, { product: e.target.value.trim().toUpperCase() })}
-                      placeholder="Código, p. ej. UNI-POL-01"
-                      className={`${input} font-mono`}
-                      aria-label={`Código del producto del ítem ${i + 1}`}
-                    />
-                  ) : (
-                    <select value={row.product} onChange={(e) => update(row.key, { product: e.target.value })} className={input} aria-label={`Producto del ítem ${i + 1}`}>
-                      <option value="">{products ? "Elige el producto" : "Cargando…"}</option>
-                      {productOptions.map((p) => (
-                        <option key={p.id} value={p.code}>
-                          {p.name} · {p.code}
-                        </option>
-                      ))}
-                      {chosen === undefined && row.product && <option value={row.product}>{row.product}</option>}
-                    </select>
-                  )}
-                </label>
+          {items.map((row, i) => (
+            <li key={row.key} className="space-y-2 rounded-lg p-3 ring-1 ring-line">
+              <label className="block text-xs text-muted">
+                Descripción
+                <textarea
+                  value={row.description}
+                  onChange={(e) => update(row.key, { description: e.target.value })}
+                  rows={2}
+                  placeholder="Buzo deportivo rojo, cuello redondo, logo sublimado al pecho y espalda, tallas S-XL"
+                  className={`${input} resize-y`}
+                  aria-label={`Descripción del ítem ${i + 1}`}
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-[6rem_7rem_minmax(0,1fr)_2rem] sm:items-end">
                 <label className="text-xs text-muted">
                   Cantidad
                   <input type="number" inputMode="numeric" min={1} value={row.quantity} onChange={(e) => update(row.key, { quantity: e.target.value })} className={input} aria-label={`Cantidad del ítem ${i + 1}`} />
                 </label>
                 <label className="text-xs text-muted">
-                  Color
-                  <input value={row.color} onChange={(e) => update(row.key, { color: e.target.value })} placeholder="azul marino" className={input} />
+                  Precio unit. <span className="font-normal">(opcional)</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
+                    value={row.unit_price}
+                    onChange={(e) => update(row.key, { unit_price: e.target.value })}
+                    placeholder="S/"
+                    className={`${input} tabular-nums`}
+                    aria-label={`Precio unitario del ítem ${i + 1}`}
+                  />
                 </label>
-                <label className="text-xs text-muted">
-                  Personalización
-                  <select value={row.customization} onChange={(e) => update(row.key, { customization: e.target.value })} className={input}>
-                    <option value="">Ninguna</option>
-                    {Object.entries(CUSTOMIZATION).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
+                <label className="col-span-2 text-xs text-muted sm:col-span-1">
+                  Producto base <span className="font-normal">(opcional)</span>
+                  <select
+                    value={row.product}
+                    onChange={(e) => update(row.key, { product: e.target.value })}
+                    disabled={catalogDown}
+                    className={input}
+                    aria-label={`Producto base del ítem ${i + 1}`}
+                  >
+                    <option value="">{catalogDown ? "Catálogo no disponible" : "Nuevo producto"}</option>
+                    {productOptions.map((p) => (
+                      <option key={p.id} value={p.code}>
+                        {p.name} · {p.code}
                       </option>
                     ))}
+                    {row.product && !productOptions.some((p) => p.code === row.product) && <option value={row.product}>{row.product}</option>}
                   </select>
                 </label>
                 <button
                   type="button"
                   onClick={() => setItems((rows) => (rows.length > 1 ? rows.filter((r) => r.key !== row.key) : [newRow()]))}
-                  className="justify-self-end rounded-md p-2 text-muted hover:bg-canvas hover:text-danger"
+                  className="col-start-2 justify-self-end rounded-md p-2 text-muted hover:bg-canvas hover:text-danger sm:col-start-auto"
                   aria-label={`Quitar ítem ${i + 1}`}
                 >
                   <Trash2 size={16} />
                 </button>
-              </li>
-            );
-          })}
+              </div>
+            </li>
+          ))}
         </ul>
         <Button type="button" className="mt-2" onClick={() => setItems((rows) => [...rows, newRow()])}>
           <Plus size={16} /> Agregar ítem

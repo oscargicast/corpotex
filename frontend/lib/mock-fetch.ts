@@ -19,6 +19,7 @@ import type {
   AssistantMessage,
   Badges,
   ChatMessage,
+  ClassificationMaterial,
   ClaudeStatus,
   Clock,
   Customer,
@@ -403,25 +404,28 @@ function orderDetailFor(order: OrderListItem, role: Role): OrderDetail {
 const customers = structuredClone(customersSeed) as Customer[];
 const products = structuredClone(productsSeed) as Product[];
 
-type ItemInput = { product: string; quantity: number; color?: string; customization?: string; sizes?: Record<string, number> };
+type ItemInput = { description?: string; product?: string | null; quantity: number; unit_price?: string | null; color?: string; customization?: string; sizes?: Record<string, number> };
 
+let nextItemId = 500;
 function itemsFrom(body: Record<string, unknown>): OrderItem[] {
-  return ((body.items as ItemInput[]) ?? []).map((item, i) => {
-    const product = products.find((p) => p.code === item.product);
+  return ((body.items as ItemInput[]) ?? []).map((item) => {
+    const product = item.product ? products.find((p) => p.code === item.product) : undefined;
     return {
-      id: i + 1,
-      product: { id: product?.id ?? 0, code: item.product, name: product?.name ?? item.product, image: product?.image ?? null },
+      id: nextItemId++,
+      description: item.description ?? "",
+      product: product ? { id: product.id, code: product.code, name: product.name, image: product.image ?? null } : item.product ? { id: 0, code: item.product, name: item.product, image: null } : null,
       quantity: Number(item.quantity),
       sizes: item.sizes ?? {},
       color: item.color ?? "",
       customization: item.customization ?? "",
-      unit_price: null,
+      unit_price: item.unit_price ?? null,
     } as OrderItem;
   });
 }
 
+let nextOrderNumber = 200;
 function createOrder(body: Record<string, unknown>, user: User): Response {
-  const code = String(body.code);
+  const code = typeof body.code === "string" && body.code ? body.code : `CP-${new Date().getFullYear()}-${String(nextOrderNumber++).padStart(4, "0")}`;
   const existing = orders.find((o) => o.code === code);
   if (existing) return json(200, existing); // idempotent by code, like the API
   const items = (body.items as { quantity: number }[]) ?? [];
@@ -633,6 +637,70 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
       orderDetails[order.id] = { ...detail, items };
     }
     if (typeof body.notes === "string") orderDetails[order.id] = { ...orderDetails[order.id], notes: body.notes };
+    return json(200, orderDetailFor(order, user.role));
+  }
+  // ADR 0025 C: the AI proposes product and materials for items without a catalog product.
+  const orderClassify = route.match(/^POST \/api\/orders\/(\d+)\/classify\/$/);
+  if (orderClassify) {
+    if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
+    const order = orders.find((o) => o.id === Number(orderClassify[1]));
+    if (!order) return json(404, { detail: "No existe." });
+    await new Promise((resolve) => setTimeout(resolve, 1800));
+    const items = (orderDetails[order.id]?.items ?? []).filter((item) => !item.product);
+    const guess = (text: string) => {
+      const t = text.toLowerCase();
+      if (t.includes("buzo")) return { code: "UNI-BUZ-01", materials: [["TEL-ALG-30-1", "0.45", "kg"], ["RIB-CUE-01", "1", "unit"], ["HIL-POL-40", "0.02", "unit"]] };
+      if (t.includes("polo")) return { code: "UNI-POL-01", materials: [["TEL-PIQ-01", "0.30", "kg"], ["RIB-CUE-01", "1", "unit"], ["HIL-POL-40", "0.02", "unit"]] };
+      if (t.includes("camisa")) return { code: "UNI-CAM-01", materials: [["TEL-ALG-20-1", "0.35", "kg"], ["BOT-18L-NAC", "7", "unit"], ["HIL-POL-40", "0.02", "unit"]] };
+      return null;
+    };
+    return json(200, {
+      items: items.map((item) => {
+        const g = guess(item.description ?? "");
+        const existing = g ? products.find((p) => p.code === g.code) : undefined;
+        const words = (item.description ?? "Prenda nueva").split(/[,.;]/)[0].trim();
+        return {
+          item_id: item.id,
+          product: existing
+            ? { existing_id: existing.id, new: null }
+            : { existing_id: null, new: { code: `${order.brand.name.slice(0, 3).toUpperCase()}-NUE-${String(item.id).slice(-2)}`, name: words.charAt(0).toUpperCase() + words.slice(1), brand: order.brand.name } },
+          confidence: existing ? 0.91 : 0.62,
+          materials: [
+            ...(g?.materials ?? [["TEL-ALG-20-1", "0.40", "kg"], ["HIL-POL-40", "0.02", "unit"]]).map(
+              ([sku, qty, unit]): ClassificationMaterial => ({ sku, new: null, qty_per_unit: qty, unit, confidence: existing ? 0.88 : 0.57 }),
+            ),
+            ...(existing
+              ? []
+              : [{ sku: null, new: { sku: "ETQ-TEJ-01", name: "Etiqueta tejida", kind: "other", unit: "unit" }, qty_per_unit: "1", unit: "unit", confidence: 0.5 } satisfies ClassificationMaterial]),
+          ],
+        };
+      }),
+    });
+  }
+  const orderApply = route.match(/^POST \/api\/orders\/(\d+)\/apply-classification\/$/);
+  if (orderApply) {
+    if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
+    const order = orders.find((o) => o.id === Number(orderApply[1]));
+    if (!order) return json(404, { detail: "No existe." });
+    const body = readBody(init.body) as { items?: { item_id: number; product: { existing_id?: number | null; new?: { code: string; name: string } | null } }[] };
+    const detail = orderDetails[order.id] ?? {};
+    const items = (detail.items ?? []).map((item) => {
+      const choice = body.items?.find((c) => c.item_id === item.id);
+      if (!choice) return item;
+      const existing = choice.product.existing_id ? products.find((p) => p.id === choice.product.existing_id) : undefined;
+      if (existing) return { ...item, product: { id: existing.id, code: existing.code, name: existing.name, image: existing.image ?? null } };
+      if (choice.product.new?.code) {
+        const created = { id: 900 + products.length, code: choice.product.new.code, name: choice.product.new.name || choice.product.new.code, brand: order.brand, image: null };
+        products.push(created);
+        return { ...item, product: { id: created.id, code: created.code, name: created.name, image: null } };
+      }
+      return item;
+    });
+    orderDetails[order.id] = { ...detail, items };
+    if (order.status === "registered") {
+      order.status = "broken_down";
+      order.status_display = "Desglosada";
+    }
     return json(200, orderDetailFor(order, user.role));
   }
   const orderCancel = route.match(/^POST \/api\/orders\/(\d+)\/cancel\/$/);

@@ -19,6 +19,7 @@ import { useResolvedId } from "@/lib/resolve";
 import { CUSTOMIZATION, type OrderDetail } from "@/lib/types";
 import { SkeletonDetail } from "@/components/skeleton";
 import { canCancelOrder, canEditOrder } from "@/lib/orders";
+import { ClassifyPanel } from "@/components/classify-panel";
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -33,7 +34,10 @@ export default function OrderDetailPage() {
   if (notFound) return <p className="text-muted">No existe la orden {decodeURIComponent(params.id)}.</p>;
   if (!order) return <SkeletonDetail />;
 
-  const canConfirm = order.status === "broken_down" && user.role !== "sales";
+  // Items without a catalog product get classified first (ADR 0025 C); until then
+  // there is nothing complete to confirm.
+  const needsClassification = order.items.some((item) => !item.product);
+  const canConfirm = order.status === "broken_down" && user.role !== "sales" && !needsClassification;
 
   async function cancelOrder() {
     setCancelBusy(true);
@@ -144,18 +148,23 @@ export default function OrderDetailPage() {
           <ul className="space-y-3">
             {order.items.map((item) => (
               <li key={item.id} className="flex gap-3">
-                <Thumb src={item.product.image} alt={item.product.name} size={56} />
+                <Thumb src={item.product?.image} alt={item.product?.name ?? "Producto nuevo"} size={56} />
                 <div className="min-w-0 text-sm">
                   <p className="font-semibold">
-                    {item.quantity} × {item.product.name}
+                    {item.quantity} × {item.description || item.product?.name || "Prenda"}
                   </p>
                   <p className="text-muted">
-                    {[item.color, CUSTOMIZATION[item.customization] ?? item.customization, item.unit_price && `${formatMoney(item.unit_price)} c/u`]
+                    {[
+                      item.product ? `Producto base: ${item.product.name} (${item.product.code})` : "Producto nuevo, sin ficha todavía",
+                      !item.description && item.color,
+                      !item.description && (CUSTOMIZATION[item.customization] ?? item.customization),
+                      item.unit_price && `${formatMoney(item.unit_price)} c/u`,
+                    ]
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
                   <p className="mt-1 flex flex-wrap gap-1">
-                    {Object.entries(item.sizes).map(([size, qty]) => (
+                    {Object.entries(item.sizes ?? {}).map(([size, qty]) => (
                       <span key={size} className="rounded bg-canvas px-1.5 text-xs tabular-nums">
                         {size}: {qty}
                       </span>
@@ -166,6 +175,8 @@ export default function OrderDetailPage() {
             ))}
           </ul>
         </Card>
+
+        {user.role !== "sales" && order.items.some((item) => !item.product) && <ClassifyPanel order={order} onApplied={() => mutate()} />}
 
         {order.requirements.length > 0 && (
           <Card>
