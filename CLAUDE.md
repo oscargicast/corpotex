@@ -30,7 +30,7 @@ Usuarios: uno sembrado por rol. Usuarios, roles y contraseñas se gestionan desd
 Flujo:
 
 0. Estilo del Gerente: perfil de cómo escribe, sacado de sus chats.
-1. Comercial registra la orden; llega por API y el agente la desglosa contra inventario.
+1. Comercial registra la orden en `/orders/new` (o llega por API): cada línea en texto libre se reconoce mientras escribe (Jev contra catálogo e inventario, Claude para lo nuevo) y la orden nace desglosada contra inventario (ADR 0028, 11/10 02:05). "Simular orden de Comercial" salió de la lista de órdenes; el componente sigue en el simulador.
 2. Producción revisa y confirma.
 3. Los requerimientos de insumos quedan "por pedir" y se acumulan entre órdenes; Producción o el Gerente generan el pedido consolidado cuando lo ven necesario (el asistente lo sugiere a tiempo). Los pedidos de taller y producto terminado salen por orden. El sistema asigna proveedor por histórico (cumplimiento, precio, carga). El Gerente confirma o cambia antes de aprobar; el cambio alimenta el histórico (ADR 0025).
 4. El agente conversa con el proveedor, responde dudas y acuerda fecha. Si se cumplen todos los términos, cierra el pedido solo y actualiza pedido y orden. Si es decisión de jefe (precio, términos), no decide: crea una decisión pendiente para el Gerente y espera.
@@ -52,7 +52,7 @@ Vive en la pestaña "Configuración" del Gerente (`/settings`; desde el 10/10 23
 
 ## Demo
 
-- API simulada del sistema de Comercial, envío real por Evolution API con el número de Oscar.
+- Comercial crea la orden en vivo en `/orders/new` (paso 3 del guion); la API del sistema de Comercial sigue existiendo. Envío real por Evolution API con el número de Oscar.
 - Sin reloj simulado (decisión de Oscar, 10/10 21:40): `core.clock` queda con factor 1 (hora real) y el dashboard no muestra reloj; las escenas con retraso salen del seed (fechas relativas a hoy).
 - Usuarios de rol del seed con contraseña `SEED_USERS_PASSWORD` del `.env`; ninguno es staff del admin (solo el superuser `admin`).
 - Escena que pide el jurado: un taller cancela a mitad del pedido y el sistema redistribuye y recalcula fecha, costo y ruta (ADR 0024).
