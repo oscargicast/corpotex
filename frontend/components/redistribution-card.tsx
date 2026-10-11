@@ -2,6 +2,7 @@ import { ArrowRight, Map } from "lucide-react";
 import Link from "next/link";
 import { daysBetween, formatDay, formatMoney, num } from "@/lib/format";
 import type { Decision, DecisionLike } from "@/lib/types";
+import { buttonClass } from "./ui";
 
 // Scene for the jury: a workshop cancels and the rest is split (ADR 0024).
 // Orange stays reserved for the primary action.
@@ -10,7 +11,7 @@ const SPLIT_COLORS = ["bg-accent", "bg-success", "bg-warning", "bg-ink"];
 export function RedistributionCard({ decision }: { decision: Decision }) {
   return (
     <article className="rounded-lg bg-surface p-4 ring-1 ring-line">
-      <h3 className="font-semibold">Redistribución{decision.orders[0] ? ` · ${decision.orders[0].code}` : ""}</h3>
+      <h3 className="truncate font-semibold">Redistribución{decision.orders[0] ? ` · ${decision.orders[0].code}` : ""}</h3>
       <RedistributionBody decision={decision} />
     </article>
   );
@@ -28,8 +29,8 @@ export function RedistributionBody({ decision, withCancelLine = true }: { decisi
   return (
     <div>
       {cancelled && withCancelLine && (
-        <p className="mt-1 text-sm text-muted">
-          {cancelled.supplier_name} canceló {cancelled.code} con {cancelled.units_done} de {num(cancelled.quantity)} hechas.
+        <p className="mt-1 truncate text-sm text-muted" title={`${cancelled.supplier_name} canceló ${cancelled.code} con ${cancelled.units_done} de ${num(cancelled.quantity)} hechas.`}>
+          {cancelled.supplier_name} canceló {cancelled.code} · {cancelled.units_done} de {num(cancelled.quantity)} hechas
         </p>
       )}
 
@@ -82,8 +83,8 @@ export function RedistributionBody({ decision, withCancelLine = true }: { decisi
         </dl>
       )}
 
-      <Link href={routeHref} className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
-        <Map size={16} /> Ver la ruta nueva
+      <Link href={routeHref} className={`mt-4 ${buttonClass("ghost", "sm")}`}>
+        <Map size={16} aria-hidden /> Ver la ruta nueva
       </Link>
     </div>
   );
@@ -105,10 +106,10 @@ function Delta({
   return (
     <div>
       <dt className="text-xs text-muted">{label}</dt>
-      <dd className="mt-0.5 flex flex-wrap items-center gap-1.5 font-semibold tabular-nums">
+      <dd className="mt-0.5 flex flex-wrap items-center gap-1.5 text-lg font-bold tabular-nums sm:text-xl">
         {from && (
           <>
-            <span className="font-normal text-muted line-through">{from}</span>
+            <span className="text-sm font-normal text-muted line-through">{from}</span>
             <ArrowRight size={14} className="text-muted" />
           </>
         )}

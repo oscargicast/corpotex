@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
-import { formatDay, formatMoney, formatScore } from "@/lib/format";
+import { formatDay, formatMoney, formatScore, num } from "@/lib/format";
 import { DECISION_KIND, candidateSupplier, type DecisionAction, type DecisionLike, type ProposalItem } from "@/lib/types";
+import { ClampedText } from "./clamped-text";
 import { RedistributionBody } from "./redistribution-card";
 import { Radar } from "./radar";
 import { Button, Pill } from "./ui";
@@ -38,41 +39,67 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
     }
   }
 
+  // Less text (Oscar, 11/10): one line of context, the agent's summary in two
+  // lines, the figures big, the proposal folded.
+  const units = proposal.reduce((sum, item) => sum + (num(item.quantity) ?? 0), 0);
+  const figures = decision.detail.cancelled
+    ? []
+    : [
+        units > 0 && { label: "Unidades", value: `${units.toLocaleString("es-PE")} u.` },
+        after?.total_amount && { label: "Total", value: formatMoney(after.total_amount, after.currency ?? proposal[0]?.currency) },
+        after?.estimated_on && { label: "Fecha estimada", value: formatDay(after.estimated_on) },
+      ].filter((f): f is { label: string; value: string } => !!f);
+
   return (
     <article className="rounded-lg bg-surface p-4 ring-1 ring-line">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <Pill tone="warning">{decision.kind_display ?? DECISION_KIND[decision.kind] ?? decision.kind}</Pill>
-        {(decision.orders ?? []).map((order) => (
-          <Link key={order.id} href={`/orders/${order.id}`} className="text-xs font-medium text-accent hover:underline">
-            {order.code} · {order.customer_name}
-          </Link>
-        ))}
+        <span className="min-w-0 truncate text-sm">
+          {(decision.orders ?? []).map((order, i) => (
+            <span key={order.id}>
+              {i > 0 && " · "}
+              <Link href={`/orders/${order.id}`} className="font-medium text-accent hover:underline">
+                {order.code}
+              </Link>{" "}
+              <span className="text-muted">{order.customer_name}</span>
+            </span>
+          ))}
+        </span>
       </div>
-      <p className="mt-2 text-sm">{decision.summary}</p>
+      {decision.summary && <ClampedText text={decision.summary} className="mt-2 text-sm" />}
 
       {decision.detail.cancelled ? (
         <RedistributionBody decision={decision} withCancelLine={false} />
       ) : (
-        proposal.length > 0 && (
-        <ul className="mt-3 space-y-1 text-sm">
-          {proposal.map((item, i) => (
-            <li key={i} className="flex flex-wrap justify-between gap-x-3 rounded-md bg-canvas px-3 py-1.5">
-              <span>
-                <strong>{item.supplier.name}</strong> · {Number(item.quantity)} u.
-              </span>
-              <span className="tabular-nums text-muted">{formatMoney(item.unit_price, item.currency)} c/u</span>
-            </li>
-          ))}
-        </ul>
-        )
-      )}
-      {after && !decision.detail.cancelled && (
-        <p className="mt-2 text-xs text-muted">
-          {/* A price decision carries only the new total; assignments also move the date. */}
-          {[after.estimated_on && `Nueva fecha estimada ${formatDay(after.estimated_on)}`, after.total_amount && `total ${formatMoney(after.total_amount, after.currency ?? proposal[0]?.currency)}`]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
+        <>
+          {figures.length > 0 && (
+            <dl className={`mt-3 grid gap-2 ${figures.length === 3 ? "grid-cols-3" : figures.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+              {figures.map((f) => (
+                <div key={f.label} className="rounded-lg bg-canvas px-3 py-2">
+                  <dt className="text-xs text-muted">{f.label}</dt>
+                  <dd className="text-lg font-bold tabular-nums sm:text-xl">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {proposal.length > 0 && (
+            <details className="mt-2 text-sm">
+              <summary className="inline-flex min-h-11 items-center text-xs font-medium text-accent sm:min-h-0">
+                Ver propuesta ({proposal.length} {proposal.length === 1 ? "proveedor" : "proveedores"})
+              </summary>
+              <ul className="mt-1 space-y-1">
+                {proposal.map((item, i) => (
+                  <li key={i} className="flex flex-wrap justify-between gap-x-3 rounded-md bg-canvas px-3 py-1.5">
+                    <span>
+                      <strong>{item.supplier.name}</strong> · {Number(item.quantity)} u.
+                    </span>
+                    <span className="tabular-nums text-muted">{formatMoney(item.unit_price, item.currency)} c/u</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
       )}
 
       {error && (
