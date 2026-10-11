@@ -243,7 +243,7 @@ def break_down_order(order: Order) -> list[Requirement]:
                 Requirement.objects.create(order=order, kind="workshop", product=item.product, qty_needed=item.quantity)
             )
         if order.status == Order.Status.REGISTERED:
-            set_status(order, Order.Status.BROKEN_DOWN, actor="system", note="Ficha técnica contra inventario")
+            set_status(order, Order.Status.BROKEN_DOWN, actor="system", note="Ficha técnica lista")
         compute_critical_path(order)
     return requirements
 
@@ -256,7 +256,7 @@ def confirm_order(order: Order, *, actor) -> Order:
     if order.needs_classification:
         raise UnknownReference(f"La orden {order.code} tiene ítems sin producto: clasifícalos antes de confirmar")
     with transaction.atomic():
-        set_status(order, Order.Status.CONFIRMED, actor=actor, note="Ficha técnica aprobada")
+        set_status(order, Order.Status.CONFIRMED, actor=actor, note="Ficha técnica aprobada: insumos por pedir")
         # Materials stay open: Produccion (or the manager) generates one consolidated purchase
         # order per material across orders (ADR 0025 A). Workshop and finished goods are per order.
         match_requirements([r for r in order.requirements.all() if r.kind != "material"])
