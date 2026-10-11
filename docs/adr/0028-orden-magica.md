@@ -39,6 +39,10 @@ Para que el formulario no espere a todos, el endpoint acepta un solo ítem a la 
 
 Cada ítem acepta una foto (adjuntar, arrastrar o pegar) además del texto. `POST /api/orders/describe-image/` (los tres roles) recibe `{image: {media_type, data (base64)}, brand?, customer?}` y devuelve `{description}`: Claude describe la prenda en una frase de hasta 25 palabras en español (tipo de prenda, color, cuello, mangas, cierres, detalles), sin cantidad. Medido con el modelo real: 4 a 5 s. La frase cae en el campo de texto del ítem, editable, y dispara el reconocimiento de siempre; la cantidad es obligatoria y la escribe Comercial. Jev no ve imágenes: la foto siempre pasa por Claude primero. El front reduce la foto a 1 568 px de lado largo y JPEG antes de subirla (límite 5 MB). La foto no se guarda con la orden en esta versión.
 
+### 3c. Reconocimiento por fases (Oscar, 11/10 06:10)
+
+`classify-draft` acepta `phase`: `product` (solo Jev: del catálogo → línea completa en menos de 1 s; nuevo → `new_pending`), `recipe` (Claude y Jev insumos para el producto nuevo) o `full` (como antes). El formulario llama primero a `product` y muestra el resultado al instante; si es nuevo, pinta el chip "Producto nuevo" y pide `recipe` mientras muestra "Armando la receta…". Es progreso real, no simulado.
+
 ### 4. Lo que se va
 
 - El botón "Simular orden de Comercial" de `/orders`. El componente queda en el repo solo si el guion lo necesita como atajo (`docs/demo/guion-visual.md` paso 3 pasa a usar `/orders/new`).
