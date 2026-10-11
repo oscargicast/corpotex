@@ -100,7 +100,6 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
   const [brand, setBrand] = useState("");
   const [brandTouched, setBrandTouched] = useState(false);
   const [promisedOn, setPromisedOn] = useState("");
-  const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<Line[]>(() => [newLine()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -359,7 +358,6 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
           brand,
           promised_on: promisedOn,
           issued_on: today(),
-          notes: notes.trim(),
           items: rows.map((d) => ({ key: d.line.key, description: d.description, quantity: d.quantity })),
           ...(classification.length && { classification: { items: classification } }),
         },
@@ -400,7 +398,33 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
     <form onSubmit={submit} className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
       <div className="min-w-0 space-y-4">
         <Card>
-          <div className="grid gap-3 sm:grid-cols-2">
+          {/* Brand first (Oscar, 11/10 05:15): recognition depends on it. */}
+          <div className="grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)_minmax(0,0.9fr)]">
+            <label className="text-sm">
+              Marca <span className="text-danger" aria-hidden>*</span>
+              <select
+                value={brand}
+                required
+                onChange={(e) => {
+                  setBrand(e.target.value);
+                  setBrandTouched(true);
+                }}
+                aria-describedby={brand ? undefined : "brand-hint"}
+                className={`${input} ${brand ? "" : "ring-warning"}`}
+              >
+                {!brand && <option value="">Elige la marca</option>}
+                {brands.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+              {!brand && (
+                <span id="brand-hint" className="mt-1 flex items-center gap-1 text-xs text-warning">
+                  <TriangleAlert size={12} aria-hidden /> Requerida: sin marca no se reconocen las prendas
+                </span>
+              )}
+            </label>
             <label className="relative text-sm">
               Cliente
               <input
@@ -450,36 +474,8 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
               )}
             </label>
             <label className="text-sm">
-              Marca
-              <select
-                value={brand}
-                onChange={(e) => {
-                  setBrand(e.target.value);
-                  setBrandTouched(true);
-                }}
-                aria-describedby={brand ? undefined : "brand-hint"}
-                className={`${input} ${brand ? "" : "ring-warning"}`}
-              >
-                {!brand && <option value="">Elige la marca</option>}
-                {brands.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
-              {!brand && (
-                <span id="brand-hint" className="mt-1 flex items-center gap-1 text-xs text-warning">
-                  <TriangleAlert size={12} aria-hidden /> Elige la marca para reconocer
-                </span>
-              )}
-            </label>
-            <label className="text-sm">
               Prometida al cliente
               <input type="date" value={promisedOn} min={today()} onChange={(e) => setPromisedOn(e.target.value)} className={input} />
-            </label>
-            <label className="text-sm">
-              Notas <span className="text-muted">(opcional)</span>
-              <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Entrega por partes, logo nuevo…" className={input} />
             </label>
           </div>
         </Card>
@@ -491,12 +487,9 @@ export function MagicOrderForm({ onSaved, onCancel }: { onSaved: (order: OrderDe
                 <Sparkles size={16} className="text-accent" aria-hidden /> Ítems
               </h2>
               <p className="mt-0.5 text-sm text-muted">Escribe cada prenda como la pide el cliente. Se reconoce sola contra el catálogo y el inventario.</p>
-              <p id="quantity-help" className="mt-0.5 text-xs text-muted">
-                Si la línea empieza con la cantidad («300 polos…»), se toma sola. Enter agrega otra prenda. Con una foto de la prenda (cámara, arrastrar o pegar) se escribe la descripción sola.
-              </p>
             </div>
           </div>
-          <div className="mt-3 hidden grid-cols-[1.5rem_minmax(0,1fr)_8rem_2.75rem] gap-x-3 px-4 text-xs font-medium text-muted sm:grid" aria-hidden>
+          <div className="mt-3 hidden grid-cols-[1.5rem_minmax(0,1fr)_6rem_2.75rem] gap-x-3 px-4 text-xs font-medium text-muted sm:grid" aria-hidden>
             <span />
             <span>Prenda</span>
             <span>Cantidad</span>
@@ -735,7 +728,7 @@ function ItemCard({
         onPhoto(file);
       }}
     >
-      <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem] items-start gap-x-2 gap-y-2 sm:grid-cols-[1.5rem_minmax(0,1fr)_8rem_2.75rem] sm:gap-x-3">
+      <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem] items-start gap-x-2 gap-y-2 sm:grid-cols-[1.5rem_minmax(0,1fr)_6rem_2.75rem] sm:gap-x-3">
         <span className="flex h-11 items-center justify-center" aria-hidden>
           <span className="flex size-6 items-center justify-center rounded-full bg-canvas text-xs font-semibold tabular-nums text-muted">{n}</span>
         </span>
@@ -777,7 +770,7 @@ function ItemCard({
               type="button"
               onClick={() => fileInput.current?.click()}
               aria-label={`Foto de la prenda del ítem ${n}`}
-              title="Foto de la prenda: la IA escribe la descripción"
+              title="Foto de la prenda: cámara, arrastrar o pegar"
               className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted ring-1 ring-line hover:bg-canvas hover:text-accent"
             >
               <Camera size={18} aria-hidden />
@@ -800,11 +793,11 @@ function ItemCard({
                 onEnter();
               }
             }}
-            placeholder="300 polos deportivos azul marino con escudo sublimado, tallas 6 a 14"
+            placeholder="Ej.: 300 polos deportivos azul marino, tallas 6 a 14"
             aria-label={`Ítem ${n}: la prenda como la pide el cliente`}
             readOnly={describing}
             aria-busy={describing || undefined}
-            className={`block min-h-11 w-full resize-none overflow-hidden px-3 py-2.5 text-ink ${control}`}
+            className={`block min-h-11 w-full resize-none overflow-hidden px-3 py-2.5 text-ink placeholder:truncate ${control}`}
           />
           {describing && (
             <span className="magic-shimmer absolute inset-0 flex items-center gap-2 rounded-md px-3 text-sm font-medium text-accent ring-1 ring-accent/30" role="status">
@@ -815,7 +808,6 @@ function ItemCard({
         </div>
         {/* Phone: under the text, full width. From sm: its own column. */}
         <label className="col-span-2 col-start-2 row-start-2 flex items-center gap-2 sm:col-span-1 sm:col-start-3 sm:row-start-1">
-          <span className="w-16 shrink-0 text-xs text-muted sm:sr-only">Cantidad</span>
           <input
             type="number"
             inputMode="numeric"
@@ -825,11 +817,11 @@ function ItemCard({
             onBlur={onBlur}
             title={fromLine ? "Tomada del inicio de la línea" : undefined}
             aria-label={`Cantidad del ítem ${n}`}
-            aria-describedby={missingQuantity ? `quantity-missing-${line.key}` : "quantity-help"}
+            placeholder="Cantidad" // always garments: no unit to show
+            aria-describedby={missingQuantity ? `quantity-missing-${line.key}` : undefined}
             aria-invalid={missingQuantity || undefined}
             className={`h-11 w-full min-w-0 px-3 text-right tabular-nums text-ink sm:w-24 ${control} ${fromLine ? "bg-canvas" : ""} ${missingQuantity ? "ring-2 ring-warning" : ""}`}
           />
-          <span className="text-sm text-muted">u.</span>
         </label>
         {missingQuantity && (
           <p
