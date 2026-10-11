@@ -1,5 +1,5 @@
 from django.core.exceptions import PermissionDenied
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied as DRFPermissionDenied, ValidationError
@@ -13,7 +13,20 @@ from messaging.models import AllowedNumber
 
 from . import services
 from .models import Currency, Supplier, SupplierKind
-from .serializers import AllowedNumberSerializer
+from .serializers import AllowedNumberSerializer, SupplierDetailSerializer
+
+SelfRegisteredSchema = inline_serializer(
+    "SelfRegistered",
+    fields={"id": serializers.IntegerField(), "name": serializers.CharField(), "status": serializers.CharField(), "source": serializers.CharField()},
+)
+ImportResultSchema = inline_serializer(
+    "SupplierImportResult",
+    fields={
+        "created": serializers.ListField(child=serializers.DictField()),
+        "updated": serializers.ListField(child=serializers.DictField()),
+        "errors": serializers.ListField(child=serializers.DictField()),
+    },
+)
 
 
 class SupplierInSerializer(serializers.Serializer):
@@ -97,7 +110,7 @@ class SupplierViewSet(viewsets.ReadOnlyModelViewSet):
         cls = serializer_for(Supplier, "manager", detail=True)
         return Response(cls(supplier, context=self.get_serializer_context()).data, status=http_status)
 
-    @extend_schema(request=SupplierInSerializer, responses={201: dict})
+    @extend_schema(request=SupplierInSerializer, responses={201: SupplierDetailSerializer})
     def create(self, request):
         try:
             supplier = services.create_supplier(_validated(SupplierInSerializer, request.data), actor=request.user)
@@ -107,13 +120,13 @@ class SupplierViewSet(viewsets.ReadOnlyModelViewSet):
             raise DRFPermissionDenied(str(exc))
         return self._detail(supplier, status.HTTP_201_CREATED)
 
-    @extend_schema(request=SupplierPatchSerializer, responses={200: dict})
+    @extend_schema(request=SupplierPatchSerializer, responses={200: SupplierDetailSerializer})
     def partial_update(self, request, pk=None):
         """Approve (`active`) or discard (`inactive`) a pending supplier, or edit its card."""
         supplier = services.update_supplier(self.get_object(), _validated(SupplierPatchSerializer, request.data), actor=request.user)
         return self._detail(supplier)
 
-    @extend_schema(request=SupplierInSerializer, responses={201: dict})
+    @extend_schema(request=SupplierInSerializer, responses={201: SelfRegisteredSchema})
     @action(detail=False, methods=["post"], url_path="self-register", permission_classes=[AllowAny], authentication_classes=[])
     def self_register(self, request):
         """Public form: the supplier lands in `pending_review` with `source = self_registered`."""
@@ -127,7 +140,7 @@ class SupplierViewSet(viewsets.ReadOnlyModelViewSet):
             {"id": supplier.id, "name": supplier.name, "status": supplier.status, "source": supplier.source}, status=status.HTTP_201_CREATED
         )
 
-    @extend_schema(request=ImportInSerializer, responses={200: dict})
+    @extend_schema(request=ImportInSerializer, responses={200: ImportResultSchema})
     @action(detail=False, methods=["post"], url_path="import")
     def import_csv(self, request):
         """Multipart CSV with columns name,kind,specialties,city,weekly_capacity,lead_time_days,currency,phone,lat,lng."""

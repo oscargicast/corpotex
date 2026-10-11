@@ -1,6 +1,6 @@
 """Simulator, conversations and the dashboard assistant (ADR 0017, 0020)."""
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -61,6 +61,39 @@ class AssistantMessageSerializer(serializers.ModelSerializer):
         }
 
 
+SimulatorContactsSchema = inline_serializer(
+    "SimulatorContact",
+    many=True,
+    fields={
+        "allowed_number_id": serializers.IntegerField(),
+        "name": serializers.CharField(),
+        "supplier": inline_serializer("SimulatorContactSupplier", fields={"id": serializers.IntegerField(), "name": serializers.CharField()}, allow_null=True),
+        "channel": serializers.ChoiceField(choices=["whatsapp", "simulator"]),
+        "conversation_id": serializers.IntegerField(allow_null=True),
+        "simulated": serializers.BooleanField(),
+        "last_message": inline_serializer(
+            "SimulatorLastMessage",
+            fields={
+                "id": serializers.IntegerField(),
+                "text": serializers.CharField(),
+                "direction": serializers.CharField(),
+                "sent_at": serializers.DateTimeField(),
+            },
+            allow_null=True,
+        ),
+    },
+)
+ConversationMessagesSchema = inline_serializer(
+    "ConversationMessages", fields={"typing": serializers.BooleanField(), "messages": MessageSerializer(many=True)}
+)
+AssistantMessagesSchema = inline_serializer(
+    "AssistantMessages",
+    fields={"conversation_id": serializers.IntegerField(), "typing": serializers.BooleanField(), "messages": AssistantMessageSerializer(many=True)},
+)
+MarkedSchema = inline_serializer("AssistantRead", fields={"marked": serializers.IntegerField()})
+DetailSchema = inline_serializer("Detail", fields={"detail": serializers.CharField()})
+
+
 def _typing(conversation) -> bool:
     return conversation.turns.filter(status=Turn.Status.RUNNING).exists()
 
@@ -70,7 +103,7 @@ class SimulatorContactsView(APIView):
 
     permission_classes = [IsManager]
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: SimulatorContactsSchema})
     def get(self, request):
         rows = []
         for number in AllowedNumber.objects.filter(active=True).select_related("supplier").order_by("supplier__name", "id"):
@@ -141,7 +174,7 @@ class ConversationMessagesView(APIView):
 
     permission_classes = [IsManager]
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: ConversationMessagesSchema})
     def get(self, request, pk: int):
         conversation = Conversation.objects.exclude(channel="dashboard").filter(pk=pk).first()
         if conversation is None:
@@ -157,7 +190,7 @@ class AssistantMessageInSerializer(serializers.Serializer):
 
 
 class AssistantMessagesView(APIView):
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: AssistantMessagesSchema})
     def get(self, request):
         conversation = services.dashboard_conversation(request.user)
         after = int(request.query_params.get("after") or 0)
@@ -188,7 +221,7 @@ class AssistantMessagesView(APIView):
 
 
 class AssistantReadView(APIView):
-    @extend_schema(request=None, responses={200: dict})
+    @extend_schema(request=None, responses={200: MarkedSchema})
     def post(self, request):
         conversation = services.dashboard_conversation(request.user)
         up_to = int(request.data.get("up_to_id") or 0)
@@ -196,7 +229,7 @@ class AssistantReadView(APIView):
 
 
 class AssistantResetView(APIView):
-    @extend_schema(request=None, responses={200: dict})
+    @extend_schema(request=None, responses={200: DetailSchema})
     def post(self, request):
         conversation = services.dashboard_conversation(request.user)
         conversation.agent_session = ""
