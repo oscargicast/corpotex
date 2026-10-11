@@ -24,6 +24,7 @@ import type {
   ClaudeStatus,
   Clock,
   Customer,
+  DraftClassificationItem,
   FollowUpRequestRow,
   FollowUpResult,
   GeneratedPurchaseOrder,
@@ -485,6 +486,37 @@ function itemsFrom(body: Record<string, unknown>): OrderItem[] {
 }
 
 let nextOrderNumber = 200;
+// ADR 0028 mock: keywords stand in for Jev and Claude.
+function draftClassification(item: { key: string; description: string; quantity: number }, brand: string): DraftClassificationItem {
+  const text = (item.description ?? "").toLowerCase();
+  if (text.trim().length < 12 || !(item.quantity > 0)) return { key: item.key, status: "pending" };
+  const known = (sku: string, qty: string, confidence = 0.86): ClassificationMaterial => {
+    const material = materials.find((m) => m.sku === sku);
+    return { sku, name: material?.name ?? sku, new: null, qty_per_unit: qty, unit: material?.unit ?? "unit", confidence };
+  };
+  const fresh = (sku: string, name: string, kind: string, unit: string, qty: string): ClassificationMaterial => ({ sku: null, name, new: { sku, name, kind, unit }, qty_per_unit: qty, unit, confidence: 0.58 });
+  const catalog = (code: string, confidence: number, recipe: ClassificationMaterial[]): DraftClassificationItem => {
+    const product = products.find((p) => p.code === code)!;
+    return { key: item.key, status: "classified", description: item.description, product: { existing_id: product.id, code: product.code, name: product.name, new: null }, confidence, materials: recipe };
+  };
+  if (text.includes("polo") && (text.includes("deport") || text.includes("dry"))) return catalog("UNI-POD-01", 0.88, [known("TEL-PIQ-01", "0.28"), known("RIB-CUE-01", "1"), known("HIL-POL-40", "0.02")]);
+  if (text.includes("polo")) return catalog("UNI-POL-01", 0.84, [known("TEL-PIQ-01", "0.30"), known("RIB-CUE-01", "1"), known("HIL-POL-40", "0.02")]);
+  if (text.includes("camisa")) return catalog("UNI-CAM-01", 0.81, [known("TEL-ALG-20-1", "0.35"), known("BOT-18L-NAC", "7"), known("HIL-POL-40", "0.02")]);
+  if (text.includes("buzo")) return catalog("UNI-BUZ-01", 0.9, [known("TEL-ALG-30-1", "0.45"), known("RIB-CUE-01", "1"), known("CIE-NYL-20", "1"), known("HIL-POL-40", "0.03")]);
+  const words = item.description.split(/[,.;]/)[0].replace(/^\s*\d+\s*/, "").trim();
+  const name = text.includes("casaca") ? "Casaca cortavientos" : words.charAt(0).toUpperCase() + words.slice(1, 40);
+  return {
+    key: item.key,
+    status: "classified",
+    description: item.description,
+    product: { existing_id: null, new: { code: `${brand.slice(0, 3).toUpperCase()}-${text.includes("casaca") ? "CAS" : "NUE"}-01`, name, brand } },
+    confidence: 0.64,
+    materials: text.includes("casaca")
+      ? [fresh("TEL-TAS-01", "Taslán impermeable", "fabric", "m", "1.6"), fresh("TEL-POL-01", "Polar 280 g", "fabric", "m", "0.9"), fresh("CIE-SEP-60", "Cierre separable 60 cm", "zipper", "unit", "1"), known("HIL-POL-40", "0.04", 0.8)]
+      : [known("TEL-ALG-20-1", "0.40", 0.6), known("HIL-POL-40", "0.02", 0.8), fresh("ETQ-TEJ-01", "Etiqueta tejida", "other", "unit", "1")],
+  };
+}
+
 function createOrder(body: Record<string, unknown>, user: User): Response {
   const code = typeof body.code === "string" && body.code ? body.code : `CP-${new Date().getFullYear()}-${String(nextOrderNumber++).padStart(4, "0")}`;
   const existing = orders.find((o) => o.code === code);
@@ -507,6 +539,11 @@ function createOrder(body: Record<string, unknown>, user: User): Response {
     total_units: items.reduce((sum, item) => sum + item.quantity, 0),
     purchase_orders_summary: { total: 0, confirmed: 0, waiting_manager: 0 },
   };
+  const classified = ((body.classification as { items?: unknown[] } | undefined)?.items ?? []).length;
+  if (!classified || classified < items.length) {
+    order.status = "registered";
+    order.status_display = "Registrada";
+  }
   orders.unshift(order);
   orderDetails[order.id] = {
     issued_on: String(body.issued_on ?? new Date().toISOString().slice(0, 10)),
@@ -514,7 +551,7 @@ function createOrder(body: Record<string, unknown>, user: User): Response {
     notes: typeof body.notes === "string" ? body.notes : "",
     items: itemsFrom(body),
   };
-  return json(201, order);
+  return json(201, { ...order, needs_classification: classified < items.length, requirements: [] });
 }
 
 const monitor = structuredClone(monitorSeed) as unknown as Monitor;
@@ -700,6 +737,18 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     }
     if (typeof body.notes === "string") orderDetails[order.id] = { ...orderDetails[order.id], notes: body.notes };
     return json(200, orderDetailFor(order, user.role));
+  }
+  // ADR 0028: live classification while the order is typed, one item per request.
+  if (route === "POST /api/orders/classify-draft/") {
+    const body = readBody(init.body) as { brand?: string; items?: { key: string; description: string; quantity: number }[] };
+    if (!body.brand || !["UNICRACK", "NEXO", "Línea Médica Corpotex"].some((b) => b.toLowerCase() === body.brand!.trim().toLowerCase())) {
+      return json(400, { detail: `La marca ${body.brand ?? ""} no existe` });
+    }
+    const items = body.items ?? [];
+    const drafts = items.map((item) => draftClassification(item, body.brand!));
+    // About 1.5 s for a catalog product, 3 s for a new one (Jev alone vs Jev + Claude).
+    await new Promise((resolve) => setTimeout(resolve, drafts.some((d) => d.status === "classified" && !d.product?.existing_id) ? 3000 : 1500));
+    return json(200, { items: drafts });
   }
   // ADR 0025 C: the AI proposes product and materials for items without a catalog product.
   const orderClassify = route.match(/^POST \/api\/orders\/(\d+)\/classify\/$/);

@@ -83,3 +83,58 @@ body {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
+
+/* Orden mágica (ADR 0028): the item card grows with its result, the materials
+   come in staggered, and "Reconociendo…" shimmers. Reduced motion turns it off. */
+.magic-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 250ms ease-out;
+}
+.magic-reveal[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.magic-reveal > * {
+  min-height: 0;
+  overflow: hidden;
+}
+@keyframes magic-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.magic-in {
+  animation: magic-in 220ms ease-out both;
+}
+@keyframes magic-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.magic-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-canvas) 25%,
+    color-mix(in srgb, var(--color-accent) 14%, var(--color-canvas)) 50%,
+    var(--color-canvas) 75%
+  );
+  background-size: 200% 100%;
+  animation: magic-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .magic-reveal {
+    transition: none;
+  }
+  .magic-in,
+  .magic-shimmer {
+    animation: none;
+  }
+}

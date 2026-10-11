@@ -6,7 +6,6 @@ import { Suspense, useState } from "react";
 import useSWR from "swr";
 import { ORDER_STATUSES, SearchBox, StatusChips, statusOptions, useListParams } from "@/components/list-filters";
 import { useUser } from "@/components/require-auth";
-import { SimulateOrder } from "@/components/simulate-order";
 import { SkeletonTable } from "@/components/skeleton";
 import { Button, Pill, RISK_LABEL, RISK_TONE } from "@/components/ui";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
@@ -53,12 +52,9 @@ function Orders() {
             </Button>
           )}
           {canCreateOrder(user) && (
-            <>
-              <Link href="/orders/new" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90">
-                <Plus size={16} /> Nueva orden
-              </Link>
-              <SimulateOrder />
-            </>
+            <Link href="/orders/new" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90">
+              <Plus size={16} /> Nueva orden
+            </Link>
           )}
         </div>
       </div>
