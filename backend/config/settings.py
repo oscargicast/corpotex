@@ -24,6 +24,7 @@ env = environ.Env(
     AGENT_MODEL=(str, "sonnet"),
     STYLE_ANALYSIS_MODEL=(str, "sonnet"),
     STYLE_BOSS_MODEL=(str, "opus"),
+    STYLE_REFRESH_ENABLED=(bool, True),
 )
 
 SECRET_KEY = env("SECRET_KEY")
@@ -188,6 +189,7 @@ AGENT_HOME = str(Path(CLAUDE_CONFIG_DIR).parent)
 AGENT_MODEL = env("AGENT_MODEL")
 STYLE_ANALYSIS_MODEL = env("STYLE_ANALYSIS_MODEL")
 STYLE_BOSS_MODEL = env("STYLE_BOSS_MODEL")
+STYLE_REFRESH_ENABLED = env("STYLE_REFRESH_ENABLED")  # False freezes the approved style (demo night).
 
 # Evolution API (ADR 0001, 0006, 0010): instance token plus the Cloudflare Access service token.
 EVOLUTION_API_URL = env("EVOLUTION_API_URL")
