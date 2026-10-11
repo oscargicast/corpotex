@@ -47,8 +47,14 @@ def start(vehicle: Vehicle, *, speed_factor: float = 12, interval_s: int = 3, ac
     stops, covered = geometry(route)
     done = [i for i, s in enumerate(stops) if s.delivered_at]
     run = vehicle.sim_run + 1
+    if vehicle.sim_active:
+        # Already running on this route (one route on the road per vehicle): a new speed
+        # keeps where the vehicle is and any wait at a stop.
+        progress, wait_until = vehicle.sim_progress_m, vehicle.sim_wait_until
+    else:
+        progress, wait_until = (covered[max(done)] if done else 0.0), None
     Vehicle.objects.filter(pk=vehicle.pk).update(
-        sim_active=True, sim_progress_m=covered[max(done)] if done else 0.0, sim_speed_factor=speed_factor, sim_interval_s=interval_s, sim_wait_until=None, sim_run=run
+        sim_active=True, sim_progress_m=progress, sim_speed_factor=speed_factor, sim_interval_s=interval_s, sim_wait_until=wait_until, sim_run=run
     )
     transaction.on_commit(lambda: simulate_tick.apply_async((vehicle.pk, run), queue="periodic"))
     vehicle.refresh_from_db()

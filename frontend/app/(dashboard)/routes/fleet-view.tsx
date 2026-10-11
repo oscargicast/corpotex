@@ -99,6 +99,7 @@ export default function FleetView() {
   const [error, setError] = useState<string | null>(null);
   const [follow, setFollow] = useState<number | null>(null);
   const [fitSignal, setFitSignal] = useState(0);
+  const [speed, setSpeed] = useState<number>(40);
 
   // Fit once the routes of this view arrive (another tab or day fits again);
   // the user's pan and zoom are kept otherwise.
@@ -191,8 +192,14 @@ export default function FleetView() {
         onFollow={setFollow}
         onStart={(routeId) => act(`start-${routeId}`, () => apiFetch(`/api/routes/${routeId}/start/`, { method: "POST" }))}
         onSimulate={(vehicleId, on) =>
-          act(`sim-${vehicleId}`, () => apiFetch(`/api/vehicles/${vehicleId}/simulate/`, on ? { method: "POST", json: { speed_factor: 12, interval_s: 3 } } : { method: "DELETE" }))
+          act(`sim-${vehicleId}`, () => apiFetch(`/api/vehicles/${vehicleId}/simulate/`, on ? { method: "POST", json: { speed_factor: speed, interval_s: 2 } } : { method: "DELETE" }))
         }
+        speed={speed}
+        onSpeed={(vehicleId, x) => {
+          setSpeed(x);
+          // While it runs, the new speed applies at once and the vehicle keeps its place.
+          if (vehicleId !== null) void act(`sim-${vehicleId}`, () => apiFetch(`/api/vehicles/${vehicleId}/simulate/`, { method: "POST", json: { speed_factor: x, interval_s: 2 } }));
+        }}
         onDeliver={(routeId, stopId) => act(`deliver-${stopId}`, () => apiFetch(`/api/routes/${routeId}/stops/${stopId}/deliver/`, { method: "POST" }))}
       />
     ) : (

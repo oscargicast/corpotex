@@ -29,7 +29,7 @@ Qué se proyecta en cada paso de la demo del domingo 11/10. Sigue el orden de D5
 | 4 | Gerente: `/orders/<nueva>` → "Confirmar desglose" (o Producción en la tercera ventana, si se quiere mostrar el rol) | Lo hace Producción; el Gerente también puede. La orden pasa a confirmada y el Monitor muestra la decisión de asignación. | Oscar |
 | 5 | Gerente: `/` → tarjeta de decisión → "Cambiar proveedor" | El ranking del matching con barras por criterio (cumplimiento, precio, carga, calidad). Se aprueba. | Oscar |
 | 6 | Gerente: `/purchase-orders/<pedido de Valeria>` | El agente le escribe a Valeria por WhatsApp real, con el estilo del Gerente. Ella responde desde su celular y el chat se ve en "Chat con el proveedor". | Oscar y Valeria |
-| 6b | **Opcional, la decide Oscar en el ensayo.** Producción: `/routes` → Planificar → En vivo | Flota en vivo: "Volver a planificar el día" reparte las órdenes listas entre los 3 vehículos según su capacidad, y la que no cabe queda en "Sin asignar" con su motivo. En En vivo, el Furgón 1 sale de la planta a pantalla completa y entrega su primera parada solo. Unos 2 min; detalle abajo. Valeria espera la seña para el paso 7. | Oscar |
+| 6b | **Opcional, la decide Oscar en el ensayo.** Producción: `/routes` → Planificar → En vivo | Flota en vivo: "Volver a planificar el día" reparte las órdenes listas entre los 3 vehículos según su capacidad, y la que no cabe queda en "Sin asignar" con su motivo. En En vivo, el Furgón 1 sale de la planta a pantalla completa y entrega su primera parada solo, a unos 23 s de pulsar Simular. Unos 1 min 30 s; detalle abajo. Valeria espera la seña para el paso 7. | Oscar |
 | 7 | La misma vista, y el celular de Valeria | A la seña de Oscar, Valeria escribe que no puede terminar. El agente responde y escala. | Valeria |
 | 8 | Gerente: `/` → tarjeta "Redistribución" → "Ver la ruta nueva" | Barra 400 hechas / 600 repartidas entre dos talleres, fecha y costo antes → después. En `/routes?before=&after=`, dos rutas de entrega a clientes que salen y vuelven de la planta: la del día original (gris) y la del día nuevo (verde punteada), con el aviso "La entrega a Caja Piura (CP-2026-0142) pasa del <día> al <día nuevo>". Las rutas son entregas a clientes; nada de recojos en talleres. | Oscar |
 | 9 | Las dos ventanas a la vez | Avisos por rol: el Gerente recibe la decisión en el asistente y aprueba con el botón "Sí"; Comercial recibe solo "orden en peligro", sin precios ni proveedores. | Oscar |
@@ -60,12 +60,12 @@ Lo decide Oscar en el ensayo. Va entre el WhatsApp con Valeria (paso 6) y su can
    - En el mapa, una ruta por color.
 3. En **"Sin asignar"** queda CP-2026-0177 (Colegio San José Obrero, 400 prendas) con "No cabe: capacidad". Pulsar **"Pasar a mañana"**: sale de la lista y queda programada para mañana, todavía a tiempo frente a su promesa.
 4. **En vivo.** Cambiar a la pestaña En vivo y pulsar **"Iniciar ruta"** del Furgón 1. Las horas de llegada se recalculan desde la hora real.
-5. Pulsar **"Simular"**. Aparecen las etiquetas "Simulando" y "En vivo", con el punto que late.
+5. Pulsar **"Simular"**. La velocidad viene en x40. Aparecen las etiquetas "Simulando" y "En vivo", con el punto que late. El selector x12, x40, x60 cambia la velocidad en plena simulación, sin que el furgón retroceda.
 6. Pulsar el botón de **pantalla completa** (arriba a la derecha del mapa). El panel queda como cajón flotante; en el cajón, **"Seguir"** del Furgón 1 hace que el mapa lo acompañe.
-7. El furgón llega a su primera parada (Caja Piura, agencia Sánchez Cerro) a unos 25 s de pulsar Simular. Se queda ahí unos 50 s, que son los 10 min de descarga acelerados. Luego la parada pasa sola a **"Entregada"**, con check en el mapa, y el contador a "1/3 entregas". En total, unos 75 s desde Simular: Oscar habla mientras tanto.
+7. El furgón llega a su primera parada (Caja Piura, agencia Sánchez Cerro) a unos 6 s de pulsar Simular. Se queda ahí unos 15 s, que son los 10 min de descarga acelerados. Luego la parada pasa sola a **"Entregada"**, con check en el mapa, y el contador a "1/3 entregas". Medido con el seed: **23 s desde Simular** a x40. A x60 son unos 15 s; a x12, unos 75 s.
 8. Esc para salir de pantalla completa. Volver a la ventana del Gerente para el paso 7.
 
-Duración objetivo: **2 min** (30 s en Planificar y 90 s en En vivo).
+Duración objetivo: **1 min 30 s** (30 s en Planificar y 1 min en En vivo).
 
 Si el furgón no se mueve (el worker no tomó la tarea): pulsar "Detener simulación" y luego **"Marcar entregada"** en la próxima parada. El mapa y el contador cambian igual.
 

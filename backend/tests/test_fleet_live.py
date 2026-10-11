@@ -118,3 +118,20 @@ def test_tick_requeues_itself_and_a_stopped_run_ends(fleet, production):  # noqa
         assert queued.call_count == 1
     van.refresh_from_db()
     assert not van.sim_active and van.last_seen_at is not None
+
+
+@pytest.mark.django_db
+def test_a_new_speed_keeps_the_vehicle_where_it_is(fleet, production, django_capture_on_commit_callbacks):  # noqa: F811
+    on_the_road(fleet, production, "CP-2026-0331")
+    van, client = fleet["van"], _client_for(production)
+    with mock.patch.object(simulate_tick, "apply_async"), django_capture_on_commit_callbacks(execute=True):
+        client.post(f"/api/vehicles/{van.id}/simulate/", {"speed_factor": 12, "interval_s": 2}, format="json")
+        van.refresh_from_db()
+        simulator.step(van)
+        van.refresh_from_db()
+        moved = van.sim_progress_m
+        assert moved > 0
+        body = client.post(f"/api/vehicles/{van.id}/simulate/", {"speed_factor": 60, "interval_s": 2}, format="json").json()
+    van.refresh_from_db()
+    assert body["sim_active"] and van.sim_speed_factor == 60 and van.sim_progress_m == moved
+    assert client.post(f"/api/vehicles/{van.id}/simulate/", {"interval_s": 1}, format="json").status_code == 400
