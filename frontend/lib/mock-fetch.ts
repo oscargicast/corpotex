@@ -590,6 +590,23 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     );
     return json(200, filtered);
   }
+  if (route === "POST /api/orders/break-down/") {
+    if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
+    const body = readBody(init.body) as { order_ids?: number[] };
+    const targets = orders.filter((o) => (body.order_ids ? body.order_ids.includes(o.id) : true));
+    const broken_down: string[] = [];
+    const skipped: { code: string; reason: string }[] = [];
+    for (const order of targets) {
+      if (order.status !== "registered") {
+        skipped.push({ code: order.code, reason: `ya está ${order.status_display.toLowerCase()}` });
+        continue;
+      }
+      order.status = "broken_down";
+      order.status_display = "Desglosada";
+      broken_down.push(order.code);
+    }
+    return json(200, { broken_down, skipped });
+  }
   if (route === "POST /api/orders/") {
     if (user.role === "production") return json(403, { detail: "Solo Comercial y Gerente." });
     return createOrder(readBody(init.body), user);
@@ -695,7 +712,7 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
     if (user.role === "sales") return json(403, { detail: "Solo Producción y Gerente." });
     const body = readBody(init.body) as { material_ids?: number[]; supplier_overrides?: Record<string, number> };
     const ids = body.material_ids ?? pending.map((row) => row.material.id);
-    const created: GeneratedPurchaseOrders["created"] = [];
+    const created: NonNullable<GeneratedPurchaseOrders["created"]> = [];
     const skipped: GeneratedPurchaseOrders["skipped"] = [];
     for (const id of ids) {
       const index = pending.findIndex((row) => row.material.id === id);
@@ -732,9 +749,9 @@ export async function mockFetch(path: string, init: RequestInit & { headers: Hea
       } as unknown as PurchaseOrderListItem;
       purchaseOrders.unshift(po);
       pending.splice(index, 1);
-      created.push({ id: po.id, code: po.code, supplier, material: row.material, orders: row.orders.map((o) => ({ id: o.id, code: o.code })) });
+      created.push({ id: po.id, code: po.code, supplier: po.supplier, material: row.material, orders: po.orders });
     }
-    return json(201, { created, skipped });
+    return json(201, { created, decision_id: 900, skipped });
   }
   if (route === "GET /api/purchase-orders/") {
     const params = new URL(path, "http://mock").searchParams;

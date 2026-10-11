@@ -99,6 +99,56 @@
         "confirmed": 0,
         "waiting_manager": 0
       }
+    },
+    {
+      "id": 5,
+      "code": "CP-2026-0005",
+      "customer": {
+        "id": 5,
+        "name": "Colegio Los Algarrobos"
+      },
+      "brand": {
+        "id": 1,
+        "name": "UNICRACK"
+      },
+      "status": "registered",
+      "status_display": "Registrada",
+      "risk": "ok",
+      "risk_reason": "",
+      "promised_on": "2026-11-20",
+      "estimated_on": null,
+      "slack_days": null,
+      "total_units": 350,
+      "purchase_orders_summary": {
+        "total": 0,
+        "confirmed": 0,
+        "waiting_manager": 0
+      }
+    },
+    {
+      "id": 6,
+      "code": "CP-2026-0006",
+      "customer": {
+        "id": 7,
+        "name": "Municipalidad de Castilla"
+      },
+      "brand": {
+        "id": 2,
+        "name": "NEXO"
+      },
+      "status": "registered",
+      "status_display": "Registrada",
+      "risk": "ok",
+      "risk_reason": "",
+      "promised_on": "2026-11-25",
+      "estimated_on": null,
+      "slack_days": null,
+      "total_units": 120,
+      "purchase_orders_summary": {
+        "total": 0,
+        "confirmed": 0,
+        "waiting_manager": 0
+      }
     }
   ],
   "detail": {
