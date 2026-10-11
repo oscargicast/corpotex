@@ -67,7 +67,8 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
     """The simulated sales system (`POST /api/orders/`). Idempotent by `code`: an existing code
     returns the stored order untouched. Returns (order, created)."""
     require_role(actor, "sales", "manager")
-    existing = Order.objects.filter(code=payload["code"]).first()
+    order_code = (payload.get("code") or "").strip()
+    existing = Order.objects.filter(code=order_code).first() if order_code else None
     if existing:
         return existing, False
     # Every reference must exist before anything is written: the sales system only sends
@@ -86,7 +87,7 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
             raise UnknownReference(f"El producto {code} no existe")
     with transaction.atomic():
         order = Order.objects.create(
-            code=payload["code"],
+            code=order_code or next_order_code(),  # `code` below is reused for product codes
             customer=customer,
             brand=brand,
             owner=actor,
@@ -104,10 +105,24 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
                 sizes=item.get("sizes") or {},
                 color=item.get("color", ""),
                 customization=item.get("customization", ""),
-                unit_price=Decimal(str(item["unit_price"])),
+                unit_price=Decimal(str(item["unit_price"])) if item.get("unit_price") is not None else None,
             )
         break_down_order(order)
     return order, True
+
+
+def next_order_code() -> str:
+    """`CP-YYYY-NNNN`, the next number of the current year; the last order of the year is
+    locked for the moment of the pick so two forms submitted together never share a code."""
+    year = clock.today().year
+    prefix = f"CP-{year}-"
+    with transaction.atomic():
+        last = Order.objects.select_for_update().filter(code__startswith=prefix).order_by("-code").values_list("code", flat=True).first()
+        tail = last.rsplit("-", 1)[1] if last else ""
+        number = int(tail) + 1 if tail.isdigit() else 1
+        while Order.objects.filter(code=f"{prefix}{number:04d}").exists():
+            number += 1
+    return f"{prefix}{number:04d}"
 
 
 OPEN_ORDER_STATUSES = [s for s, _ in Order.Status.choices if s not in ("delivered", "cancelled")]
@@ -238,7 +253,7 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
                     sizes=item.get("sizes") or {},
                     color=item.get("color", "") or "",
                     customization=item.get("customization", "") or "",
-                    unit_price=Decimal(str(item["unit_price"])),
+                    unit_price=Decimal(str(item["unit_price"])) if item.get("unit_price") is not None else None,
                 )
             if order.status != Order.Status.REGISTERED:
                 warnings = rebreak_down_order(order)

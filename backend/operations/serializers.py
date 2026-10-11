@@ -170,7 +170,7 @@ class OrderListSerializer(DisplayMixin, serializers.ModelSerializer):
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_total_amount(self, obj):
-        return money(sum((i.quantity * i.unit_price for i in obj.items.all()), Decimal("0")))
+        return money(sum((i.quantity * i.unit_price for i in obj.items.all() if i.unit_price is not None), Decimal("0")))
 
     def _purchase_orders(self, obj):
         return PurchaseOrder.objects.filter(items__requirement__order=obj).distinct()
@@ -418,7 +418,7 @@ class PurchaseOrderListSerializer(DisplayMixin, serializers.ModelSerializer):
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_total_amount(self, obj):
-        return money(sum((i.quantity * i.unit_price for i in obj.items.all()), Decimal("0")))
+        return money(sum((i.quantity * i.unit_price for i in obj.items.all() if i.unit_price is not None), Decimal("0")))
 
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_redistributed_from(self, obj):

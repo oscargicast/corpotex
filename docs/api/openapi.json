@@ -4543,7 +4543,7 @@
                 "properties": {
                     "code": {
                         "type": "string",
-                        "minLength": 1
+                        "description": "Optional: CP-YYYY-NNNN is generated when missing."
                     },
                     "customer": {
                         "type": "string",
@@ -4576,7 +4576,6 @@
                 },
                 "required": [
                     "brand",
-                    "code",
                     "customer",
                     "items",
                     "promised_on"
@@ -4623,7 +4622,9 @@
                     "unit_price": {
                         "type": "string",
                         "format": "decimal",
-                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "nullable": true,
+                        "description": "Sale price; empty when the form does not know it yet."
                     },
                     "customization_display": {
                         "type": "string",
@@ -4635,8 +4636,7 @@
                     "customization_display",
                     "id",
                     "product",
-                    "quantity",
-                    "unit_price"
+                    "quantity"
                 ]
             },
             "OrderItemCustomizationEnum": {
@@ -4673,13 +4673,13 @@
                     "unit_price": {
                         "type": "string",
                         "format": "decimal",
-                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$"
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "nullable": true
                     }
                 },
                 "required": [
                     "product",
-                    "quantity",
-                    "unit_price"
+                    "quantity"
                 ]
             },
             "OrderList": {
