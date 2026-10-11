@@ -206,7 +206,8 @@ def test_at_night_a_real_whatsapp_waits_until_7_and_the_simulator_goes_now(two_s
     monkeypatch.setattr("core.clock.today", lambda config=None: night.date())
     body = client_for(sales).post(f"/api/orders/{two_suppliers['order'].id}/follow-up/", {}, format="json").json()
     assert {r["status"] for r in body["requests"]} == {"pending"}
-    assert "A Confecciones del Norte se le escribirá a las 07:00" in body["detail"] and "Le pedimos avance a Avíos Gamarra" in body["detail"]
+    assert "A Confecciones del Norte se le escribirá a las 07:00: de noche no se le escribe a los proveedores." in body["detail"]
+    assert "Le pedimos avance a Avíos Gamarra" in body["detail"] and "WhatsApp" not in body["detail"]
     whatsapp = Turn.objects.get(conversation=two_suppliers["conversation"], reason="follow_up")
     assert whatsapp.available_at == timezone.make_aware(datetime(2026, 10, 12, 7, 0))
     assert claim(two_suppliers["gamarra_conversation"]) is not None  # the simulator answers at once
