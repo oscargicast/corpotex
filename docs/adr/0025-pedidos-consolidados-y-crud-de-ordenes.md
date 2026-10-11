@@ -36,7 +36,9 @@ Oscar menciona además "jev" como servicio para clasificar qué productos usar y
 
 API: `POST /api/orders/` (ya), `PATCH /api/orders/<id>/` (ítems completos reemplazan; re-desglosa si cambia), `POST /api/orders/<id>/cancel/`, `GET /api/customers/` y `GET /api/products/` para el formulario. Al editar una orden ya desglosada, los requerimientos abiertos se recalculan; los ya pedidos no se tocan (se avisa en la respuesta).
 
-Dashboard: `/orders/new` y `/orders/[id]/edit` con formulario (cliente con búsqueda, marca, ítems con producto y cantidad, fecha prometida, notas); botones según el rol; "Simular orden de Comercial" sigue existiendo como atajo de la demo.
+Ítems a medida (Oscar, 10/10 21:35): la mayoría de los ítems son productos nuevos, hechos a medida, y la personalización puede ser varias cosas. Por eso el ítem lleva `description` en texto libre (prenda, color, tallas, personalizaciones), `quantity`, `product` opcional (producto base del catálogo) y `unit_price` opcional; `customization` es texto libre y `color` opcional. `code` lo genera el servidor si no viene. Los ítems sin producto no se desglosan solos: la orden queda "pendiente de clasificar" y el desglose de componentes lo hace la clasificación de la sección C (que pasa a P0), revisada y confirmada por Producción.
+
+Dashboard: `/orders/new` y `/orders/[id]/edit` con formulario (cliente con búsqueda, marca, ítems con descripción libre, cantidad, producto base opcional y precio opcional, fecha prometida, notas); en el detalle, "Desglosar componentes" muestra la propuesta de la clasificación (producto y materiales, existentes o nuevos, con confianza) para confirmar; botones según el rol; "Simular orden de Comercial" sigue existiendo como atajo de la demo.
 
 ### C. Clasificación con Jev (TypeSafe AI) y materiales faltantes ("creación mágica")
 
