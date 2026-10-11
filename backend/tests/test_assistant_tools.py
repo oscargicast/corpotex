@@ -1,4 +1,5 @@
 import asyncio
+from datetime import date
 from types import SimpleNamespace
 from typing import ClassVar
 
@@ -555,14 +556,14 @@ REVISED = {
     "proposal": PROPOSAL,
     "summary": "Agrega 2 botones plástico 14L por polo (600 u. más).",
     "warnings": ["1 requerimiento ya pedido no se toca"],
+    "estimated_on": date(2026, 10, 17),
 }
 
 
 def fake_revise(monkeypatch, status=200, body=REVISED):
     posted = []
-    monkeypatch.setattr(
-        assistant_tools, "api_get", fake_api({"/api/orders/": (200, [{"id": 42}])}, [])
-    )
+    orders = {"/api/orders/": (200, [{"id": 42, "estimated_on": "2026-10-15"}])}
+    monkeypatch.setattr(assistant_tools, "api_get", fake_api(orders, []))
 
     def api_post(user, path, data):
         posted.append((path, data))
@@ -583,10 +584,7 @@ def test_revise_order_previews_the_summary_and_keeps_the_proposal(monkeypatch):
     }
     is_error, text = call(conv, 1, "revise_order", args)
     assert not is_error
-    assert (
-        "Agrega 2 botones plástico 14L por polo (600 u. más). Avisos: 1 requerimiento ya pedido no se toca"
-        in text
-    )
+    assert "pasa de 2026-10-15 a 2026-10-17. Avisos: 1 requerimiento ya pedido no se toca" in text
     assert posted == [
         ("/api/orders/42/revise/", {"instruction": "agrega 2 botones por polo", "dry_run": True})
     ]

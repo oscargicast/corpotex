@@ -822,7 +822,11 @@ def _follow_up_path(user, args: dict) -> str:
 
 
 def _id_for_code(user, collection: str, code: str) -> int:
-    """The id behind a code, read as the user (their role decides what exists for them)."""
+    return _row_for_code(user, collection, code)["id"]
+
+
+def _row_for_code(user, collection: str, code: str) -> dict:
+    """The list row behind a code, read as the user (their role decides what exists for them)."""
     from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 
     status, rows = api_get(user, f"/api/{collection}/", {"code": code})
@@ -830,7 +834,7 @@ def _id_for_code(user, collection: str, code: str) -> int:
         raise PermissionDenied
     if status >= 400 or not rows:
         raise ObjectDoesNotExist(code)
-    return rows[0]["id"]
+    return rows[0]
 
 
 def _follow_up_requests(user, args: dict, *, dry_run: bool) -> list[dict]:
@@ -944,18 +948,28 @@ def _request_follow_up(conversation, turn, user):
 def _revise(user, code: str, body: dict) -> dict:
     from django.core.exceptions import PermissionDenied
 
-    status, data = api_post(user, f"/api/orders/{_id_for_code(user, 'orders', code)}/revise/", body)
+    order = _row_for_code(user, "orders", code)
+    status, data = api_post(user, f"/api/orders/{order['id']}/revise/", body)
     if status == 403:
         raise PermissionDenied
     if status >= 400:
         raise RuntimeError(
             (data or {}).get("detail") or f"no se pudo ajustar la ficha técnica (HTTP {status})"
         )
-    return data
+    return {**data, "current_estimated_on": order.get("estimated_on")}
 
 
 def _revise_text(data: dict) -> str:
     text = (data.get("summary") or "").strip()
+    new, old = data.get("estimated_on"), data.get("current_estimated_on")
+    if new and old and str(new) == str(old):
+        text += f" La fecha estimada no cambia ({new})."
+    elif new:
+        text += (
+            f" La fecha estimada pasa de {old} a {new}."
+            if old
+            else f" Fecha estimada con el cambio: {new}."
+        )
     if data.get("warnings"):
         text += " Avisos: " + "; ".join(data["warnings"])
     return text
