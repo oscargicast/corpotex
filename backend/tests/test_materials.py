@@ -58,3 +58,13 @@ def test_material_detail_lists_open_requirements(scenario, manager_client):
     assert requirement["qty_needed"] == "250.00" and requirement["qty_from_stock"] == "100.00" and requirement["qty_to_order"] == "150.00"
     assert requirement["status"] == "sourcing" and requirement["status_display"]
     assert manager_client.get("/api/materials/999999/").status_code == 404
+
+
+@pytest.mark.django_db
+def test_available_never_goes_negative_after_breakdowns(manager_client, sales, scenario):
+    from operations import services
+
+    payload = {"code": "CP-2026-0101", "customer": "Caja Piura", "brand": "UNICRACK", "promised_on": __import__("datetime").date(2026, 11, 10), "items": [{"product": "POLO-ESC-01", "quantity": 2000, "unit_price": "18.00"}]}
+    services.register_order(payload, actor=sales)  # needs 500 kg of a 120 kg stock with 100 already reserved
+    row = next(m for m in manager_client.get("/api/materials/").json() if m["sku"] == "TEL-ALG-20-1")
+    assert row["committed"] == "120.00" and row["available"] == "0.00"

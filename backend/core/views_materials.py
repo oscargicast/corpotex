@@ -9,22 +9,12 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from operations.models import Order, Requirement
+from operations.models import Requirement
+from operations.services import OPEN_ORDER_STATUSES, committed_stock_by_material
 
 from .models import Material
 from .permissions import IsManagerOrProduction
 from .serializers import RelativeFileField
-
-OPEN_ORDER_STATUSES = [s for s, _ in Order.Status.choices if s not in ("delivered", "cancelled")]
-
-
-def _committed_by_material() -> dict[int, Decimal]:
-    totals: dict[int, Decimal] = {}
-    rows = Requirement.objects.filter(kind="material", order__status__in=OPEN_ORDER_STATUSES).values_list("material_id", "qty_from_stock")
-    for material_id, qty in rows:
-        totals[material_id] = totals.get(material_id, Decimal("0")) + qty
-    return totals
-
 
 class MaterialSerializer(serializers.ModelSerializer):
     kind_display = serializers.CharField(source="get_kind_display", read_only=True)
@@ -73,7 +63,7 @@ class MaterialListView(APIView):
         if request.query_params.get("q"):
             text = request.query_params["q"].strip()
             queryset = queryset.filter(Q(sku__icontains=text) | Q(name__icontains=text))
-        context = {"request": request, "committed": _committed_by_material()}
+        context = {"request": request, "committed": committed_stock_by_material()}
         return Response(MaterialSerializer(queryset, many=True, context=context).data)
 
 
@@ -87,7 +77,7 @@ class MaterialDetailView(APIView):
         material = Material.objects.filter(pk=pk).first()
         if material is None:
             return Response(status=404)
-        context = {"request": request, "committed": _committed_by_material()}
+        context = {"request": request, "committed": committed_stock_by_material()}
         data = MaterialSerializer(material, context=context).data
         requirements = (
             Requirement.objects.filter(material=material, order__status__in=OPEN_ORDER_STATUSES)

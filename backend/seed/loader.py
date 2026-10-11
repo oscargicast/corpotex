@@ -72,6 +72,7 @@ class Loader:
         self.orders: dict[str, Order] = {}
         self.purchase_orders: dict[str, PurchaseOrder] = {}
         self.users: dict[str, User] = {}
+        self.status_notes: dict[tuple[str, str], str] = {}  # ("order" | "purchase_order", code) -> reason of the exit
 
     # --- helpers ---------------------------------------------------------------------------
 
@@ -288,6 +289,8 @@ class Loader:
                     unit_price=self.dec(item["unit_price"]),
                 )
             self.orders[order.code] = order
+            if row.get("status_note"):
+                self.status_notes[("order", order.code)] = row["status_note"]
             if order.status != "registered":
                 status, stage, estimated, risk, reason = order.status, order.production_stage, order.estimated_on, order.risk, order.risk_reason
                 break_down_order(order)
@@ -326,6 +329,8 @@ class Loader:
                 rating=self.rating(row),
             )
             self.purchase_orders[po.code] = po
+            if row.get("status_note"):
+                self.status_notes[("purchase_order", po.code)] = row["status_note"]
             if po.code == SCENE_PURCHASE_ORDER:
                 PurchaseOrder.objects.filter(pk=po.pk).update(report_token=SCENE_REPORT_TOKEN)
             for item in row.get("items") or []:
@@ -557,6 +562,11 @@ class Loader:
 
         Turn.objects.all().delete()
 
+    EXIT_NOTES = {
+        "cancelled": "Cancelado por el Gerente",
+        "cancelled_by_supplier": "Cancelado por el proveedor",
+        "declined_by_supplier": "El proveedor no aceptó el pedido",
+    }
     ORDER_PATH = ["registered", "broken_down", "confirmed", "sourcing", "in_production", "ready", "delivered"]
     PO_PATH = ["suggested", "approved", "negotiating", "confirmed", "in_progress", "delivered"]
     ACTORS = {
@@ -574,9 +584,10 @@ class Loader:
             steps = path[: path.index(order.status) + 1]
             start = datetime.combine(order.issued_on, time(9, 0), tzinfo=LIMA)
             end = min(self.t, datetime.combine(order.estimated_on or self.t.date(), time(17, 0), tzinfo=LIMA)) if order.status == "delivered" else self.t
-            self._history(order, steps, start, end, "order")
+            note = self.status_notes.get(("order", order.code)) or (order.risk_reason if order.status == "cancelled" else "")
+            self._history(order, steps, start, end, "order", note=note)
         for po in PurchaseOrder.objects.select_related("supplier"):
-            path = self.PO_PATH if po.status in self.PO_PATH else self.PO_PATH[:5] + [po.status]
+            path = self.PO_PATH if po.status in self.PO_PATH else self.PO_PATH[: 5 if po.status == "cancelled_by_supplier" else 1] + [po.status]
             steps = path[: path.index(po.status) + 1]
             if po.supplier.is_in_house:
                 steps = [s for i, s in enumerate(steps) if i == len(steps) - 1 or s not in ("approved", "negotiating")]
@@ -584,15 +595,17 @@ class Loader:
             start = datetime.combine(anchor - timedelta(days=po.supplier.lead_time_days + 2), time(10, 0), tzinfo=LIMA)
             last_delivery = po.deliveries.order_by("-received_at").first()
             end = last_delivery.received_at if po.status == "delivered" and last_delivery else self.t
-            self._history(po, steps, min(start, end - timedelta(hours=1)), end, "purchase_order")
+            self._history(po, steps, min(start, end - timedelta(hours=1)), end, "purchase_order", note=self.status_notes.get(("purchase_order", po.code), ""))
 
-    def _history(self, obj, steps, start, end, target):
+    def _history(self, obj, steps, start, end, target, note=""):
         if not steps:
             return
         span = max((end - start) / max(len(steps) - 1, 1), timedelta(minutes=30)) if len(steps) > 1 else timedelta(0)
         for index, status in enumerate(steps):
             at = start + span * index if index < len(steps) - 1 else end
-            StatusChange.objects.create(status=status, at=min(at, end), actor=self.ACTORS.get(status, "system"), **{target: obj})
+            last = index == len(steps) - 1
+            reason = (note or self.EXIT_NOTES.get(status, "")) if last else ""
+            StatusChange.objects.create(status=status, at=min(at, end), actor=self.ACTORS.get(status, "system"), note=reason[:300], **{target: obj})
 
     def finish(self):
         """Wires what the JSON cannot: the conversation of each live purchase order and the

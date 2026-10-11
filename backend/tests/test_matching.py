@@ -126,3 +126,26 @@ def test_decision_detail_carries_the_currency(catalogue, sales, production):
     decision = Decision.objects.get(kind="approve_assignment")
     assert decision.detail["after"]["currency"] in ("PEN", "USD")
     assert {p["currency"] for p in decision.detail["proposal"]} == {"PEN", "USD"}  # fabric in USD, workshops in PEN
+
+
+@pytest.mark.django_db
+def test_stock_reserved_by_an_open_order_is_not_available_to_the_next(catalogue, sales):
+    """RIB-PUN-01 showed stock 900, reserved 1700 (P0 of 10/10): the breakdown must subtract
+    what other open orders already took."""
+    from core.models import Material
+
+    Material.objects.filter(sku="TEL-ALG-20").update(stock=Decimal("200"))
+    first, _ = services.register_order(order_payload("CP-2026-0101", quantity=800), actor=sales)  # needs 200 kg
+    second, _ = services.register_order(order_payload("CP-2026-0102", quantity=400), actor=sales)  # needs 100 kg
+    first_req = first.requirements.get(kind="material")
+    second_req = second.requirements.get(kind="material")
+    assert first_req.qty_from_stock == Decimal("200") and first_req.qty_to_order == Decimal("0")
+    assert second_req.qty_from_stock == Decimal("0") and second_req.qty_to_order == Decimal("100")
+    assert services.committed_stock(Material.objects.get(sku="TEL-ALG-20")) == Decimal("200")
+    # A re-breakdown of the first order keeps its own reservation (its rows are rebuilt, not double counted).
+    services.break_down_order(first)
+    assert first.requirements.get(kind="material").qty_from_stock == Decimal("200")
+    # Once the first order closes, the stock frees up for the next breakdown.
+    Order.objects.filter(pk=first.pk).update(status="delivered")
+    services.break_down_order(second)
+    assert second.requirements.get(kind="material").qty_from_stock == Decimal("100")
