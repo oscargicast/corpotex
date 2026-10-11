@@ -65,43 +65,6 @@ def _forbidden(exc):
     raise DRFPermissionDenied(str(exc))
 
 
-class OrderItemInSerializer(serializers.Serializer):
-    product = serializers.CharField(required=False, allow_blank=True, allow_null=True, help_text="Product code; empty for a made-to-order item.")
-    description = serializers.CharField(required=False, allow_blank=True, default="", help_text="Garment, colour, sizes, customizations when there is no product.")
-    quantity = serializers.IntegerField(min_value=1)
-    sizes = serializers.DictField(required=False)
-    color = serializers.CharField(required=False, allow_blank=True)
-    customization = serializers.CharField(required=False, allow_blank=True)
-    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
-
-
-class OrderInSerializer(serializers.Serializer):
-    """The simulated sales system payload (`docs/api/examples/order-*.json`)."""
-
-    code = serializers.CharField(required=False, allow_blank=True, help_text="Optional: CP-YYYY-NNNN is generated when missing.")
-    customer = serializers.CharField(help_text="Customer name.")
-    brand = serializers.CharField(help_text="Brand name.")
-    issued_on = serializers.DateField(required=False)
-    promised_on = serializers.DateField()
-    notes = serializers.CharField(required=False, allow_blank=True, default="")
-    items = OrderItemInSerializer(many=True)
-
-
-class OrderPatchSerializer(serializers.Serializer):
-    """The order form (ADR 0025 B): header fields and, when present, the full list of items."""
-
-    customer = serializers.CharField(required=False)
-    brand = serializers.CharField(required=False)
-    issued_on = serializers.DateField(required=False)
-    promised_on = serializers.DateField(required=False)
-    notes = serializers.CharField(required=False, allow_blank=True)
-    items = OrderItemInSerializer(many=True, required=False)
-
-
-class CancelInSerializer(serializers.Serializer):
-    reason = serializers.CharField(required=False, allow_blank=True, default="")
-
-
 # Classification (ADR 0025 C): the proposal `classify` returns is what `apply-classification`
 # takes back, edited by production, so both share these shapes (schema only: the view validates
 # the request loosely and the service checks the references).
@@ -156,6 +119,84 @@ class ClassificationProductField(serializers.DictField):
 @extend_schema_field(ClassificationMaterialSerializer)
 class ClassificationMaterialField(serializers.DictField):
     """Documented as `ClassificationMaterial`."""
+
+
+class OrderItemInSerializer(serializers.Serializer):
+    key = serializers.CharField(required=False, allow_blank=True, max_length=60, help_text="The form's line key; matches `classification.items[].key` (ADR 0028).")
+    product = serializers.CharField(required=False, allow_blank=True, allow_null=True, help_text="Product code; empty for a made-to-order item.")
+    description = serializers.CharField(required=False, allow_blank=True, default="", help_text="Garment, colour, sizes, customizations when there is no product.")
+    quantity = serializers.IntegerField(min_value=1)
+    sizes = serializers.DictField(required=False)
+    color = serializers.CharField(required=False, allow_blank=True)
+    customization = serializers.CharField(required=False, allow_blank=True)
+    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
+
+
+class DraftLineInSerializer(serializers.Serializer):
+    key = serializers.CharField(max_length=60)
+    description = serializers.CharField(required=False, allow_blank=True, default="")
+    quantity = serializers.IntegerField(required=False, allow_null=True, min_value=0)
+
+
+class ClassifyDraftInSerializer(serializers.Serializer):
+    brand = serializers.CharField(help_text="Brand name.")
+    customer = serializers.CharField(required=False, allow_blank=True, help_text="Customer name, optional: a draft may not have it yet.")
+    items = DraftLineInSerializer(many=True, help_text="One line per call is the intended use: the form calls in parallel.")
+
+
+class DraftLineResultSerializer(serializers.Serializer):
+    key = serializers.CharField()
+    status = serializers.ChoiceField(choices=[("classified", "Clasificado"), ("pending", "Falta texto o cantidad"), ("error", "Falló la clasificación")])
+    description = serializers.CharField(required=False)
+    product = ClassificationProductSerializer(required=False)
+    confidence = serializers.FloatField(required=False)
+    materials = ClassificationMaterialSerializer(many=True, required=False)
+    detail = serializers.CharField(required=False, help_text="Only on error.")
+
+
+class ClassifyDraftResultSerializer(serializers.Serializer):
+    items = DraftLineResultSerializer(many=True)
+
+
+class KeyedClassificationItemSerializer(serializers.Serializer):
+    """One line confirmed in the form: the `classify-draft` proposal, edited, by `key`."""
+
+    key = serializers.CharField(max_length=60)
+    product = ClassificationProductField(help_text="{existing_id} or {new: {code, name, brand}}")
+    materials = serializers.ListField(child=ClassificationMaterialField(), required=False, default=list)
+
+
+class KeyedClassificationSerializer(serializers.Serializer):
+    items = KeyedClassificationItemSerializer(many=True)
+
+
+class OrderInSerializer(serializers.Serializer):
+    """The simulated sales system payload (`docs/api/examples/order-*.json`)."""
+
+    code = serializers.CharField(required=False, allow_blank=True, help_text="Optional: CP-YYYY-NNNN is generated when missing.")
+    customer = serializers.CharField(help_text="Customer name.")
+    brand = serializers.CharField(help_text="Brand name.")
+    issued_on = serializers.DateField(required=False)
+    promised_on = serializers.DateField()
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
+    items = OrderItemInSerializer(many=True)
+    classification = KeyedClassificationSerializer(required=False, help_text="ADR 0028: with it the order is born broken down.")
+
+
+class OrderPatchSerializer(serializers.Serializer):
+    """The order form (ADR 0025 B): header fields and, when present, the full list of items."""
+
+    customer = serializers.CharField(required=False)
+    brand = serializers.CharField(required=False)
+    issued_on = serializers.DateField(required=False)
+    promised_on = serializers.DateField(required=False)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    items = OrderItemInSerializer(many=True, required=False)
+    classification = KeyedClassificationSerializer(required=False, help_text="ADR 0028: classifies the new items by `key`.")
+
+
+class CancelInSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class ClassificationItemInSerializer(serializers.Serializer):
@@ -239,7 +280,9 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             _forbidden(exc)
         except UnknownReference as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return self.detail_response(order, status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        response = self.detail_response(order, status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        response.data["warnings"] = getattr(order, "classification_warnings", [])
+        return response
 
     @extend_schema(request=OrderPatchSerializer, responses={200: OrderDetailSerializer})
     def partial_update(self, request, pk=None):
@@ -326,6 +369,25 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
 
         order = self.get_object()
         return _follow_up_response(request, list(open_purchase_orders_of_order(order)), order.code)
+
+    @extend_schema(request=ClassifyDraftInSerializer, responses={200: ClassifyDraftResultSerializer})
+    @action(detail=False, methods=["post"], url_path="classify-draft")
+    def classify_draft(self, request):
+        """The magic form (ADR 0028 §1), the three roles: the `classify` proposal for lines still
+        being written, by `key`, nothing saved. Lines under 12 characters or without a quantity
+        come back `pending` without calling the model."""
+        from core.models import Brand, Customer
+
+        from . import classify as classifier
+
+        data = ClassifyDraftInSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        brand = Brand.objects.filter(name__iexact=data.validated_data["brand"].strip()).first()
+        if brand is None:
+            return Response({"detail": f"La marca {data.validated_data['brand']} no existe"}, status=status.HTTP_400_BAD_REQUEST)
+        name = (data.validated_data.get("customer") or "").strip()
+        customer = Customer.objects.filter(name__iexact=name).first() if name else None
+        return Response({"items": classifier.classify_draft(brand, data.validated_data["items"], customer=customer)})
 
     @extend_schema(request=None, responses={200: OrderDetailSerializer})
     @action(detail=True, methods=["post"])

@@ -1633,6 +1633,55 @@
                 }
             }
         },
+        "/api/orders/classify-draft/": {
+            "post": {
+                "operationId": "orders_classify_draft_create",
+                "description": "The magic form (ADR 0028 §1), the three roles: the `classify` proposal for lines still\nbeing written, by `key`, nothing saved. Lines under 12 characters or without a quantity\ncome back `pending` without calling the model.",
+                "tags": [
+                    "orders"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClassifyDraftInRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClassifyDraftInRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClassifyDraftInRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "tokenAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClassifyDraftResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/payments/": {
             "get": {
                 "operationId": "payments_list",
@@ -4621,6 +4670,45 @@
                     "order_id"
                 ]
             },
+            "ClassifyDraftInRequest": {
+                "type": "object",
+                "properties": {
+                    "brand": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Brand name."
+                    },
+                    "customer": {
+                        "type": "string",
+                        "description": "Customer name, optional: a draft may not have it yet."
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DraftLineInRequest"
+                        },
+                        "description": "One line per call is the intended use: the form calls in parallel."
+                    }
+                },
+                "required": [
+                    "brand",
+                    "items"
+                ]
+            },
+            "ClassifyDraftResult": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DraftLineResult"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
             "ClaudeApiKeyRequest": {
                 "type": "object",
                 "properties": {
@@ -5093,6 +5181,72 @@
                     "units"
                 ]
             },
+            "DraftLineInRequest": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                    },
+                    "description": {
+                        "type": "string",
+                        "default": ""
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "key"
+                ]
+            },
+            "DraftLineResult": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/DraftLineResultStatusEnum"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/ClassificationProduct"
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "materials": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ClassificationMaterial"
+                        }
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "Only on error."
+                    }
+                },
+                "required": [
+                    "key",
+                    "status"
+                ]
+            },
+            "DraftLineResultStatusEnum": {
+                "enum": [
+                    "classified",
+                    "pending",
+                    "error"
+                ],
+                "type": "string",
+                "description": "* `classified` - Clasificado\n* `pending` - Falta texto o cantidad\n* `error` - Falló la clasificación"
+            },
             "FollowUpInRequest": {
                 "type": "object",
                 "properties": {
@@ -5405,6 +5559,49 @@
                     "qty_pending",
                     "status",
                     "status_display"
+                ]
+            },
+            "KeyedClassificationItemRequest": {
+                "type": "object",
+                "description": "One line confirmed in the form: the `classify-draft` proposal, edited, by `key`.",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                    },
+                    "product": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ClassificationProductRequest"
+                            }
+                        ],
+                        "description": "{existing_id} or {new: {code, name, brand}}"
+                    },
+                    "materials": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ClassificationMaterialRequest"
+                        }
+                    }
+                },
+                "required": [
+                    "key",
+                    "product"
+                ]
+            },
+            "KeyedClassificationRequest": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/KeyedClassificationItemRequest"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
                 ]
             },
             "LastFollowUp": {
@@ -6337,6 +6534,14 @@
                         "items": {
                             "$ref": "#/components/schemas/OrderItemInRequest"
                         }
+                    },
+                    "classification": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/KeyedClassificationRequest"
+                            }
+                        ],
+                        "description": "ADR 0028: with it the order is born broken down."
                     }
                 },
                 "required": [
@@ -6401,6 +6606,11 @@
             "OrderItemInRequest": {
                 "type": "object",
                 "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "The form's line key; matches `classification.items[].key` (ADR 0028).",
+                        "maxLength": 60
+                    },
                     "product": {
                         "type": "string",
                         "nullable": true,
@@ -6686,6 +6896,14 @@
                         "items": {
                             "$ref": "#/components/schemas/OrderItemInRequest"
                         }
+                    },
+                    "classification": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/KeyedClassificationRequest"
+                            }
+                        ],
+                        "description": "ADR 0028: classifies the new items by `key`."
                     }
                 }
             },

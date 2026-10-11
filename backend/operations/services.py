@@ -103,8 +103,9 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
             notes=payload.get("notes") or "",
         )
         StatusChange.objects.create(order=order, status=order.status, at=clock.now(), actor=actor_label(actor))
+        keyed = []
         for item in payload["items"]:
-            OrderItem.objects.create(
+            created = OrderItem.objects.create(
                 order=order,
                 product=products.get(str(item.get("product") or "").strip()),
                 description=(item.get("description") or "").strip(),
@@ -114,6 +115,12 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
                 customization=item.get("customization", ""),
                 unit_price=Decimal(str(item["unit_price"])) if item.get("unit_price") is not None else None,
             )
+            keyed.append((item.get("key"), created))
+        order.classification_warnings = []
+        if payload.get("classification"):  # the magic form (ADR 0028): born broken down, nothing left to classify
+            from .classify import apply_by_key
+
+            apply_by_key(order, keyed, payload["classification"], order.classification_warnings)
         break_down_order(order)
     return order, True
 
@@ -260,8 +267,9 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
         order.save()
         if payload.get("items") is not None:
             order.items.all().delete()
+            keyed = []
             for item in payload["items"]:
-                OrderItem.objects.create(
+                created = OrderItem.objects.create(
                     order=order,
                     product=products.get(str(item.get("product") or "").strip()),
                     description=(item.get("description") or "").strip(),
@@ -271,8 +279,13 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
                     customization=item.get("customization", "") or "",
                     unit_price=Decimal(str(item["unit_price"])) if item.get("unit_price") is not None else None,
                 )
+                keyed.append((item.get("key"), created))
+            if payload.get("classification"):  # ADR 0028: the edit's new items come classified too
+                from .classify import apply_by_key
+
+                apply_by_key(order, keyed, payload["classification"], warnings)
             if order.status != Order.Status.REGISTERED:
-                warnings = rebreak_down_order(order)
+                warnings = warnings + rebreak_down_order(order)
         compute_critical_path(order)
     return order, warnings
 
