@@ -77,10 +77,21 @@ FOLLOW_UP_REQUESTED = (
     'motivo ("ya se le preguntó a las 10:05") y no envíes nada.'
 )
 FOLLOW_UP_REMINDER = (
-    "Recordatorio: el proveedor no respondió tu último mensaje (el último tuyo en <seguimiento> o en "
-    "el hilo). Escribe algo más corto que ese mensaje, sin reclamar y sin repetir la pregunta "
-    'completa, en este estilo y con este trato. Por ejemplo: "¿pudo ver lo de hace un rato? 🙏" o '
-    '"¿pudo ver lo de ayer?". Nunca "sigo esperando", "todavía no me responde" ni "urgente".'
+    "Recordatorio: tu último mensaje (el último tuyo en <seguimiento> o en el hilo) fue el "
+    "seguimiento y el proveedor no lo respondió; este es el único recordatorio, y el sistema ya lo "
+    "programó según el modo de seguimiento de este proveedor. Escríbelo aunque sus notas digan que "
+    "tolera poca insistencia o que responde en cierto horario: eso solo te pide que sea corto y "
+    "suave. Solo usa skip_follow_up, y no envíes nada, si el proveedor ya respondió después de tu "
+    "último mensaje o hay una decisión del Gerente pendiente que él está esperando. Escribe algo "
+    "más corto que tu mensaje anterior, sin reclamar y sin repetir la pregunta completa, en este "
+    'estilo y con este trato. Por ejemplo: "¿pudo ver lo de hace un rato? 🙏" o "¿pudo ver lo de '
+    'ayer?". Nunca "sigo esperando", "todavía no me responde" ni "urgente".'
+)
+OPEN_REQUESTS = (
+    "Si en <mensajes_nuevos> o en <avances_web> el proveedor responde a lo que se le preguntó en "
+    "<consultas_abiertas> (avance, etapa o fecha de ese pedido), llama answer_follow_up con esos "
+    "ids y un resumen corto en tus palabras (unidades, etapa, fecha), sin citar el chat. Si todavía "
+    "no lo responde, no la llames."
 )
 
 
@@ -120,7 +131,9 @@ def render_turn_message(state: dict, images: list[tuple[str, dict]] = ()) -> lis
     currency = (state.get("supplier") or {}).get("currency") or "PEN"
     orders = state.get("purchase_orders") or []
     parts = [f"<ahora>{ctx.fmt_datetime(state.get('now'))}</ahora>"]
-    parts.append(_render_orders(orders, currency))
+    # A requested follow-up's reasons name who asked (ADR 0027 §6): the supplier never learns it.
+    requested = (state.get("follow_up") or {}).get("kind") == "requested"
+    parts.append(_render_orders(orders, currency, hide_reasons=requested))
 
     if state.get("history"):
         parts.append(_render_history(state["history"]))
@@ -138,6 +151,8 @@ def render_turn_message(state: dict, images: list[tuple[str, dict]] = ()) -> lis
         parts.append(_render_web_reports(state["web_reports"]))
     if state.get("new_messages"):
         parts.append(_render_new_messages(state["new_messages"]))
+    if state.get("open_follow_up_requests"):
+        parts.append(_render_open_requests(state["open_follow_up_requests"]))
     parts.append(_render_what_to_do(state, follow_ups, new_orders))
 
     blocks = [{"type": "text", "text": "\n\n".join(parts)}]
@@ -147,7 +162,7 @@ def render_turn_message(state: dict, images: list[tuple[str, dict]] = ()) -> lis
     return blocks
 
 
-def _render_orders(orders: list[dict], currency: str) -> str:
+def _render_orders(orders: list[dict], currency: str, hide_reasons: bool = False) -> str:
     if not orders:
         return "<pedidos>Sin pedidos abiertos con este proveedor.</pedidos>"
     rendered = []
@@ -163,7 +178,7 @@ def _render_orders(orders: list[dict], currency: str) -> str:
             ultimo_reporte=ctx.fmt_datetime(order.get("last_report_at")),
             esperando_respuesta_desde=ctx.fmt_datetime(order.get("awaiting_reply_since")),
             nota_seguimiento=order.get("follow_up_note") or None,
-            motivo_seguimiento=order.get("follow_up_reason") or None,
+            motivo_seguimiento=None if hide_reasons else order.get("follow_up_reason") or None,
             link_de_reporte="enviado" if order.get("report_link_sent_at") else "no enviado",
         )
         lines = []
@@ -241,7 +256,7 @@ def _render_follow_up(follow_up: dict, codes: list[str]) -> str:
     tag = ctx.attrs(
         tipo=FOLLOW_UP_KINDS.get(follow_up.get("kind"), follow_up.get("kind")),
         modo=FOLLOW_UP_MODES.get(follow_up.get("mode"), follow_up.get("mode")),
-        motivo=follow_up.get("reason"),
+        motivo=follow_up.get("reason") if follow_up.get("kind") != "requested" else None,
         pedidos=", ".join(codes) or None,
         decision_pendiente="sí" if follow_up.get("pending_decisions") else None,
     )
@@ -257,6 +272,21 @@ def _render_follow_up(follow_up: dict, codes: list[str]) -> str:
         lines.append(f"decisión del Gerente pendiente: {ctx.text(summary)}")
     body = ("\n" + "\n".join(lines) + "\n") if lines else ""
     return f"<seguimiento{tag}>{body}</seguimiento>"
+
+
+def _render_open_requests(requests: list[dict]) -> str:
+    """Questions about progress still unanswered (ADR 0027 §6), without who asked."""
+    lines = [
+        "<consulta"
+        + ctx.attrs(
+            id=r.get("id"),
+            pedido=r.get("purchase_order_code"),
+            desde=ctx.fmt_datetime(r.get("asked_at")),
+        )
+        + "/>"
+        for r in requests
+    ]
+    return "<consultas_abiertas>\n" + "\n".join(lines) + "\n</consultas_abiertas>"
 
 
 def _is_eve(follow_up: dict, orders: list[dict]) -> bool:
@@ -286,11 +316,11 @@ def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]
         kind = follow_up.get("kind")
         if kind == "requested":
             steps.append(FOLLOW_UP_REQUESTED)  # a person asked: only skip if already waiting
+        elif kind == "reminder":
+            steps.append(FOLLOW_UP_REMINDER)  # brings its own, narrower skip criteria
         else:
             steps.append(FOLLOW_UP_SKIP)
-            if kind == "reminder":
-                steps.append(FOLLOW_UP_REMINDER)
-            elif _is_eve(follow_up, state.get("purchase_orders") or []):
+            if _is_eve(follow_up, state.get("purchase_orders") or []):
                 steps.append(FOLLOW_UP_EVE)
             else:
                 steps.append(FOLLOW_UP_CHECKPOINT)
@@ -304,6 +334,8 @@ def _render_what_to_do(state: dict, follow_ups: list[str], new_orders: list[str]
             "Acusa recibo, en un solo mensaje corto, de los avances de <avances_web> que el "
             "proveedor reportó por la web."
         )
+    if state.get("open_follow_up_requests"):
+        steps.append(OPEN_REQUESTS)
     steps.append(
         "Solo vale este estado: lo anterior del hilo puede estar desactualizado. "
         "Si no hay nada que decir, no envíes nada."

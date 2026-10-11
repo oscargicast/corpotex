@@ -190,6 +190,8 @@ def test_eve_and_reminder_pick_their_own_text():
     reminder = turn_text(follow_up_state("seguimiento_recordatorio_corto"))
     assert "Recordatorio" in reminder and "sin repetir la pregunta completa" in reminder
     assert 'tipo="recordatorio"' in reminder
+    # The reminder brings its own skip criteria: the supplier's notes do not cancel it.
+    assert "único recordatorio" in reminder and "Antes de escribir, decide" not in reminder
 
 
 def test_pending_decision_is_flagged():
@@ -221,6 +223,7 @@ def test_requested_follow_up_never_reveals_who_asked():
     assert 'tipo="a pedido"' in text
     assert "Nunca digas que alguien te pidió preguntar" in text
     assert "Lucía" not in text and "sales" not in text  # who asked never reaches the model
+    assert "pide avance" not in text and "CP-2026-0142" not in text  # nor the reasons naming it
     assert "Punto de control:" not in text and "Antes de escribir, decide" not in text
 
 
@@ -228,3 +231,10 @@ def test_requested_follow_up_skips_only_when_already_waiting():
     text = turn_text(follow_up_state("seguimiento_a_pedido_ya_esperando"))
     assert 'esperando_respuesta_desde="miércoles 14 de octubre, 09:50"' in text
     assert "La única razón para no escribir" in text
+
+
+def test_open_requests_ask_to_answer_follow_up_only_when_present():
+    text = turn_text(follow_up_state("consulta_abierta_respondida"))
+    assert '<consulta id="12" pedido="PT-0038" desde="miércoles 14 de octubre, 09:45"/>' in text
+    assert "llama answer_follow_up con esos ids" in text
+    assert "answer_follow_up" not in turn_text(follow_up_state("seguimiento_a_pedido"))
