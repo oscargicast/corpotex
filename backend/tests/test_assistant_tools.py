@@ -72,11 +72,13 @@ READS = {"list_orders", "get_order", "list_purchase_orders", "get_purchase_order
             READS
             | {"list_materials", "list_pending", "list_suppliers", "get_supplier"}
             | {"resolve_decision", "acknowledge_alert", "mark_payment_paid", "set_clock"}
-            | {"suggest_suppliers"},
+            | {"suggest_suppliers", "generate_purchase_orders"},
         ),
         (
             "production",
-            READS | {"list_materials"} | {"confirm_order", "record_delivery", "record_progress"},
+            READS
+            | {"list_materials"}
+            | {"confirm_order", "record_delivery", "record_progress", "generate_purchase_orders"},
         ),
         ("sales", READS),
     ],
@@ -342,3 +344,73 @@ def test_list_materials_passes_kind_and_text_to_the_api(monkeypatch):
     _, text = call(conversation("production"), 1, "list_materials", args)
     assert seen == [("/api/materials/", {"kind": "fabric", "q": "algodón"})]
     assert "TEL-201" in text
+
+
+PENDING = [
+    {
+        "material": {"id": 3, "sku": "BOT-NX", "name": "botones NX", "unit": "unidad"},
+        "total_to_order": "900",
+        "orders": [{"code": "CP-2026-0142", "qty": "400"}, {"code": "CP-2026-0155", "qty": "500"}],
+        "suggested_supplier": {"id": 9, "name": "Avíos Gamarra"},
+        "reference_price": "0.18",
+        "currency": "S/",
+    },
+    {
+        "material": {"id": 4, "sku": "TEL-201", "name": "algodón 20/1", "unit": "kg"},
+        "total_to_order": "50",
+        "orders": [{"code": "CP-2026-0142", "qty": "50"}],
+        "suggested_supplier": None,
+    },
+]
+
+
+def test_generate_preview_lists_orders_and_price_only_when_present(monkeypatch):
+    install(monkeypatch)
+    seen = []
+    monkeypatch.setattr(
+        assistant_tools, "api_get", fake_api({"/api/requirements/pending/": (200, PENDING)}, seen)
+    )
+    conv = conversation("production")
+    args = {"material_ids": [3], "confirmed": False}
+    is_error, text = call(conv, 1, "generate_purchase_orders", args)
+    assert not is_error
+    assert "900 unidad botones NX (CP-2026-0142: 400, CP-2026-0155: 500) a Avíos Gamarra" in text
+    assert "0.18" in text and "total S/ 162.00" in text  # the fake payload carries the price
+    assert "algodón" not in text and "(sí/no)" in text
+    assert seen == [("/api/requirements/pending/", {"material_ids": "3"})]
+    assert conv.pending_action["args"] == {"material_ids": [3]}
+
+
+def test_generate_without_material_ids_previews_everything(monkeypatch):
+    install(monkeypatch)
+    api = fake_api({"/api/requirements/pending/": (200, PENDING)}, [])
+    monkeypatch.setattr(assistant_tools, "api_get", api)
+    _, text = call(conversation(), 1, "generate_purchase_orders", {"confirmed": False})
+    assert "botones NX" in text and "algodón 20/1" in text and "sin proveedor sugerido" in text
+
+
+def test_generate_confirmed_calls_the_service_with_actor_and_records_card(monkeypatch):
+    calls = install(monkeypatch)
+    conv = conversation("production")
+    pending = {"tool": "generate_purchase_orders", "args": {"material_ids": [3]}, "turn_id": 1}
+    conv.pending_action = pending
+    args = {"material_ids": [3], "confirmed": True}
+    is_error, text = call(conv, 2, "generate_purchase_orders", args)
+    assert not is_error and "PI-0077" in text
+    ((ids,), kwargs) = services(calls, "generate_purchase_orders")[0]
+    assert ids == [3] and kwargs == {"actor": conv.user}
+    ((_, _, action), _) = services(calls, "record_assistant_action")[0]
+    assert action["links"] == [{"kind": "purchase_order", "id": 77}]
+
+
+def test_generate_before_backend_lands_fails_as_a_card(monkeypatch):
+    import sys
+
+    calls = install(monkeypatch)
+    monkeypatch.delattr(sys.modules["operations.services"], "generate_purchase_orders")
+    conv = conversation()
+    conv.pending_action = {"tool": "generate_purchase_orders", "args": {}, "turn_id": 1}
+    is_error, text = call(conv, 2, "generate_purchase_orders", {"confirmed": True})
+    assert is_error and "aún no está disponible" in text
+    ((_, _, action), _) = services(calls, "record_assistant_action")[0]
+    assert action["status"] == "failed"

@@ -8,6 +8,7 @@ from the user, so the model cannot confirm itself. Services re-check the role.
 """
 
 import json
+from decimal import Decimal, InvalidOperation
 
 from asgiref.sync import sync_to_async
 from claude_agent_sdk import tool
@@ -33,8 +34,14 @@ def assistant_tools(conversation, batch) -> list:
             _mark_payment_paid,
             _set_clock,
             _suggest_suppliers,
+            _generate_purchase_orders,
         ],
-        "production": [_confirm_order, _record_delivery, _record_progress],
+        "production": [
+            _confirm_order,
+            _record_delivery,
+            _record_progress,
+            _generate_purchase_orders,
+        ],
         # TODO(A3, after B4): sales gets find_client and register_order once their
         # endpoints exist; until then sales only reads.
     }.get(user.role, [])
@@ -675,3 +682,80 @@ def _suggest_suppliers(conversation, turn, user):
         )
 
     return handler
+
+
+# --- consolidated material purchases (ADR 0025, manager and production) -----------------
+
+
+def _pending_summary(user, material_ids: list[int]) -> str:
+    """One line per material from GET /api/requirements/pending/, as the user sees it
+    (the reference price only reaches the manager)."""
+    params = {"material_ids": ",".join(str(i) for i in material_ids)} if material_ids else None
+    status, rows = api_get(user, "/api/requirements/pending/", params)
+    if status >= 400:
+        raise RuntimeError(f"no se pudo leer lo pendiente (HTTP {status})")
+    if material_ids:
+        wanted = set(material_ids)
+        rows = [r for r in rows if (r.get("material") or {}).get("id") in wanted]
+    if not rows:
+        raise RuntimeError("no hay requerimientos abiertos para esos insumos")
+    lines = []
+    for r in rows:
+        m = r.get("material") or {}
+        orders = ", ".join(
+            f"{o.get('code', '')}: {o.get('qty', '')}" for o in r.get("orders") or []
+        )
+        supplier = (r.get("suggested_supplier") or {}).get("name") or "sin proveedor sugerido"
+        total = r.get("total_to_order")
+        line = f"{total} {m.get('unit') or ''} {m.get('name')} ({orders}) a {supplier}"
+        price = r.get("reference_price")
+        if price not in (None, ""):  # only the manager's serializer carries it
+            cur = r.get("currency") or "S/"
+            try:
+                amount = Decimal(str(total)) * Decimal(str(price))
+                line += f" a {cur} {price} c/u, total {cur} {amount:.2f}"
+            except (InvalidOperation, TypeError):
+                line += f" a {cur} {price} c/u"
+        lines.append(line)
+    return "; ".join(lines)
+
+
+def _generate_purchase_orders(conversation, turn, user):
+    def preview(args):
+        return "Generar: " + _pending_summary(user, args.get("material_ids") or [])
+
+    def run(args):
+        try:
+            from operations.services import generate_purchase_orders
+        except ImportError as e:  # until backend's B6.1 lands
+            raise RuntimeError("generar pedidos consolidados aún no está disponible") from e
+        result = generate_purchase_orders(args.get("material_ids") or None, actor=user)
+        created = result.get("created", []) if isinstance(result, dict) else list(result)
+        codes = [getattr(po, "code", str(po)) for po in created]
+        links = [
+            {"kind": "purchase_order", "id": po.pk} for po in created if getattr(po, "pk", None)
+        ]
+        title = f"{len(created)} pedido(s) generado(s)" + (f": {', '.join(codes)}" if codes else "")
+        return _card(title, "El Gerente aprueba la asignación en el Monitor.", links)
+
+    return confirmable(
+        conversation,
+        turn,
+        user,
+        name="generate_purchase_orders",
+        description=(
+            "Genera los pedidos consolidados de insumos por material a partir de los "
+            "requerimientos abiertos de todas las órdenes; el Gerente aprueba después la "
+            "asignación. Sin material_ids genera todos los pendientes."
+        ),
+        properties={
+            "material_ids": {
+                "type": "array",
+                "items": {"type": "integer"},
+                "description": "Ids de insumos; vacío para todos los pendientes",
+            }
+        },
+        required=[],
+        preview=preview,
+        run=run,
+    )
