@@ -3,13 +3,14 @@
 import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { SupplierForm } from "@/components/supplier-form";
+import { Lockup } from "@/components/brand";
 
 // Public self-registration (ADR 0024, criterion 7). The Gerente reviews it in /suppliers.
 export default function SupplierSignupPage() {
   const [sent, setSent] = useState(false);
   return (
     <main className="mx-auto max-w-lg px-4 py-8">
-      <p className="text-2xl font-black tracking-tight">CORPOTEX</p>
+      <Lockup height={32} priority />
       {sent ? (
         <section className="mt-8 rounded-xl bg-success-soft p-6 text-center ring-1 ring-success/30">
           <CheckCircle2 className="mx-auto text-success" size={40} />

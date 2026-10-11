@@ -6,6 +6,7 @@ import { ApiError, apiFetch } from "@/lib/api";
 import { getSession, saveSession } from "@/lib/auth";
 import { type LoginResponse, ROLE_LABELS, type User } from "@/lib/types";
 import { Spinner } from "@/components/ui";
+import { Lockup } from "@/components/brand";
 
 const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
@@ -78,8 +79,8 @@ function LoginForm() {
 
   return (
     <form onSubmit={submit} className="w-full max-w-sm rounded-xl bg-surface p-6 shadow-sm ring-1 ring-line sm:p-8">
-      <p className="text-2xl font-black tracking-tight">CORPOTEX</p>
-      <h1 className="mt-1 text-sm text-muted">Órdenes, pedidos y talleres</h1>
+      <Lockup height={32} priority />
+      <h1 className="mt-2 text-sm text-muted">Órdenes, pedidos y talleres</h1>
 
       <label className="mt-8 block text-sm font-medium" htmlFor="username">
         Usuario

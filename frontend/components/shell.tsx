@@ -12,6 +12,7 @@ import { AssistantPanel } from "./assistant/panel";
 import { AssistantToast } from "./assistant/toast";
 import { ClaudeBanner } from "./claude-banner";
 import { useUser } from "./require-auth";
+import { Isotipo, Lockup } from "./brand";
 
 function Count({ value, className = "" }: { value: number | null | undefined; className?: string }) {
   if (!value) return null;
@@ -58,9 +59,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-dvh">
       {/* Icons only from 768 px (two windows side by side on the projector); labels from 1280 px. */}
       <aside className="sticky top-0 hidden h-dvh w-16 shrink-0 flex-col border-r border-line bg-surface md:flex xl:w-60">
-        <Link href="/" className="flex h-14 items-center px-5 text-lg font-black tracking-tight">
-          <span className="xl:hidden">C</span>
-          <span className="hidden xl:inline">CORPOTEX</span>
+        <Link href="/" className="flex h-14 items-center justify-center px-3 xl:justify-start xl:px-5" aria-label="Corpotex, ir al Monitor">
+          <Isotipo size={28} className="xl:hidden" />
+          <Lockup height={28} priority className="hidden xl:block" />
         </Link>
         <nav className="flex flex-1 flex-col gap-1 px-2" aria-label="Principal">
           {items.map((item) => (
@@ -83,8 +84,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur">
-          <Link href="/" className="text-lg font-black tracking-tight md:hidden">
-            CORPOTEX
+          <Link href="/" className="md:hidden" aria-label="Corpotex, ir al Monitor">
+            <Lockup height={26} priority />
           </Link>
           <div className="ml-auto flex items-center gap-3">
             <button
