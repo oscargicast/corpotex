@@ -18,7 +18,7 @@ from claude_agent_sdk import tool
 from agent.tools import ok, refuse
 
 DECISION_ACTIONS = ("approve", "reject", "change_supplier")
-READ_LIMIT = 8000  # characters of JSON the model reads per call
+READ_LIMIT = 16000  # characters of JSON per read; the full lists are 9k-12.5k
 LIMA = ZoneInfo("America/Lima")
 
 
