@@ -114,10 +114,12 @@ def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
     by_code = {p.code: p for p in products}
     by_sku = {m.sku: m for m in materials}
 
+    budget = jev.Budget()  # Jev's time for this item; past it, Claude alone.
+
     # 1. A catalogue product? Jev chooses when it is on.
     criteria = {p.code: f"{p.name} · {p.brand.name if p.brand else 'sin marca'} · {', '.join(pm.material.name for pm in p.materials.all())}" for p in products}
     criteria[jev.NEW] = "Prenda nueva: ninguna del catálogo corresponde"
-    picked = jev.choose(state, criteria, "Elige el producto del catálogo que corresponde a la prenda pedida, o 'nuevo'.")
+    picked = jev.choose(state, criteria, "Elige el producto del catálogo que corresponde a la prenda pedida, o 'nuevo'.", budget=budget)
     if picked and picked[0] in by_code and picked[1] >= MIN_CONFIDENCE:
         return _catalogue_answer(item, text, by_code[picked[0]], picked[1])
 
@@ -144,19 +146,30 @@ def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
 
     materials_out = []
     by_name = {x.name.strip().lower(): x for x in materials}
-    for m in proposal.get("materials") or []:
-        if PROCESS.match(m.get("name") or "") and not (m.get("existing_sku") or "").strip():
-            continue  # embroidery, sublimation, sewing...: done in the plant, nothing to buy
+    # Plant processes are never something to buy (#87): they are dropped before anyone is asked.
+    proposed = [m for m in proposal.get("materials") or [] if not (PROCESS.match(m.get("name") or "") and not (m.get("existing_sku") or "").strip())]
+    # 3. Jev checks every proposed material against the known SKUs (+ nuevo) in ONE call.
+    sku_criteria = {**{x.sku: f"{x.name}, {x.kind}, {x.unit}" for x in materials}, jev.NEW: "Insumo nuevo: ninguno de los existentes"}
+    answers = jev.choose_many(
+        state,
+        {f"m{i}": (sku_criteria, f"Insumo propuesto: {m.get('name')} ({m.get('kind')}, {m.get('unit')}). Elige el SKU existente que es este mismo insumo, o 'nuevo'.") for i, m in enumerate(proposed)},
+        budget=budget,
+    ) or {}
+    for i, m in enumerate(proposed):
         sku = (m.get("existing_sku") or "").strip()
         if not sku:  # A "new" one that is a known material in another colour or size stays the known one.
             sku = _known_sku((m.get("sku") or "").strip().upper(), (m.get("name") or "").strip().lower(), by_sku, by_name)
+        sku = sku if sku in by_sku else ""
         unit = m.get("unit") if m.get("unit") in UNITS else "unit"
         confidence = base
-        # 3. Jev confirms each material against the known SKUs (+ nuevo) when it is on.
-        choice = jev.choose(f"{state}. Insumo propuesto: {m.get('name')} ({m.get('kind')}, {unit})", {**{x.sku: f"{x.name}, {x.kind}, {x.unit}" for x in materials}, jev.NEW: "Insumo nuevo"}, "Elige el SKU existente que corresponde, o 'nuevo'.")
-        if choice:
-            confidence = round(choice[1], 2)
-            sku = choice[0] if choice[0] in by_sku and choice[1] >= MIN_CONFIDENCE else ""
+        answer = answers.get(f"m{i}")
+        if answer and sku and answer[0] in by_sku and answer[1] >= MIN_CONFIDENCE:
+            sku, confidence = answer[0], round(answer[1], 2)  # Jev confirms (or corrects) an existing material
+        elif answer and not sku and answer[0] == jev.NEW:
+            confidence = round(answer[1], 2)  # both say new: Jev's confidence
+        # Otherwise Claude's call (and the dedupe) stands: Jev's "nuevo" never creates a duplicate, and
+        # Jev never folds a new material into an existing one. Measured on CP-2026-0161 (10/10 23:10):
+        # it turned a snap fastener into BOT-MET-NX and embroidery thread into HIL-POL-40.
         if sku and sku in by_sku:
             known = by_sku[sku]
             same = next((x for x in materials_out if x.get("sku") == known.sku), None)
