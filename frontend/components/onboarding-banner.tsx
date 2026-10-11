@@ -14,7 +14,7 @@ export function OnboardingBanner() {
   const next = missing[0];
   return (
     <Link
-      href={`/settings/${next.slug}`}
+      href={next.href}
       className="flex items-center gap-3 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning ring-1 ring-warning/20 hover:bg-warning-soft/80"
     >
       <ListChecks size={18} className="shrink-0" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardPaste, ExternalLink } from "lucide-react";
+import { Check, ClipboardPaste, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import useSWR from "swr";
 import { ApiError, apiFetch, fetcher } from "@/lib/api";
@@ -29,89 +29,146 @@ function errorText(err: unknown): string {
   return "Algo salió mal. Inténtalo de nuevo.";
 }
 
-const dateFormat = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", dateStyle: "medium" });
-
 // The API sends these as epoch numbers (seconds or milliseconds).
 function toDate(value: number | string): Date {
   if (typeof value === "string") return new Date(value);
   return new Date(value < 1e12 ? value * 1000 : value);
 }
 
-// Connect the single Claude account every agent uses (ADR 0022), copied from mano's flow.
+// Claude's mark, as mano draws it: strokes in currentColor.
+export function ClaudeIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      focusable="false"
+      stroke="currentColor"
+      fill="none"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M13 12L18.5 5M7.63965 3L12.5 12L13.6865 3M4.48381 6.71679L11.9872 12M3 12L11.9872 12.473M12.2244 13.177L7 20M4.84194 16.8682L11.2824 12.9758M11.5 21L12.665 13.177M21 14L13.1846 12.668M21 10.5788L13 12.3223M16.779 19.646L12.8876 13.3772M19.3566 18.207L13.313 12.9893" />
+    </svg>
+  );
+}
+
+const shortDate = new Intl.DateTimeFormat("es-PE", { timeZone: "America/Lima", day: "numeric", month: "short" });
+
+// Connect the single Claude account every agent uses (ADR 0022). The flow and
+// its texts follow mano's: one big "Continuar con Claude", then two steps.
 export function ClaudeConnect({ reconnect = false }: { reconnect?: boolean }) {
   const { data: status, mutate } = useSWR<ClaudeStatus>(STATUS_URL, fetcher);
   const [flowOpen, setFlowOpen] = useState(reconnect);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   if (!status) return <SkeletonCard lines={2} />;
 
   const broken = status.expired || !!status.last_error;
   const showFlow = flowOpen || !status.connected || broken;
+  const update = (next: ClaudeStatus) => mutate(next, { revalidate: false });
 
   return (
     <div className="space-y-4">
-      <StatusCard status={status} />
-
-      {status.connected && !showFlow && (
-        <button type="button" onClick={() => setFlowOpen(true)} className="text-sm font-medium text-accent underline">
-          Reconectar con otra cuenta
-        </button>
-      )}
-
-      {showFlow && (
-        <OAuthFlow
-          isReconnect={status.connected || broken || reconnect}
-          onConnected={(next) => {
-            mutate(next, { revalidate: false });
-            setFlowOpen(false);
-          }}
+      {(status.connected || broken) && (
+        <StatusCard
+          status={status}
+          onReconnect={showFlow ? undefined : () => setFlowOpen(true)}
+          onDisconnect={status.connected && !disconnecting ? () => setDisconnecting(true) : undefined}
         />
       )}
 
-      <ApiKeyForm onConnected={(next) => mutate(next, { revalidate: false })} />
+      {disconnecting && (
+        <Disconnect
+          onDone={(next) => {
+            update(next);
+            setDisconnecting(false);
+          }}
+          onCancel={() => setDisconnecting(false)}
+        />
+      )}
 
-      {status.connected && <Disconnect onDone={(next) => mutate(next, { revalidate: false })} />}
+      {showFlow && (
+        <ConnectCard
+          isReconnect={status.connected || broken || reconnect}
+          onConnected={(next) => {
+            update(next);
+            setFlowOpen(false);
+          }}
+          onCancel={status.connected && !broken ? () => setFlowOpen(false) : undefined}
+        />
+      )}
     </div>
   );
 }
 
-function StatusCard({ status }: { status: ClaudeStatus }) {
+function StatusCard({ status, onReconnect, onDisconnect }: { status: ClaudeStatus; onReconnect?: () => void; onDisconnect?: () => void }) {
   const broken = status.expired || !!status.last_error;
-  let title = "Desconectado";
-  let detail = "Los agentes y el asistente no funcionan hasta conectar una cuenta de Claude.";
-  let tone = "bg-surface ring-line";
+  let title: string[];
+  let detail: string | null = null;
+  let tone = "bg-success-soft ring-success/30";
+  let iconTone = "bg-surface text-[#d97757]";
 
-  if (status.connected && !broken) {
-    tone = "bg-success-soft ring-success/30";
-    if (status.method === "api_key") {
-      title = "Conectado con una API key";
-      detail = "Cada llamada se cobra en la consola de Anthropic.";
-    } else {
-      const plan = status.subscription_type ? ` · suscripción ${capitalize(status.subscription_type)}` : "";
-      title = `Conectado${plan}`;
-      detail = status.refresh_token_expires_at
-        ? `La conexión vence el ${dateFormat.format(toDate(status.refresh_token_expires_at))}.`
-        : "La conexión está activa.";
-    }
-  } else if (broken) {
+  if (broken) {
     tone = "bg-danger-soft ring-danger/30";
-    title = "La conexión con Claude venció";
+    iconTone = "bg-surface text-danger";
+    title = ["La conexión con Claude venció"];
     detail = "Reconecta la cuenta para que los agentes vuelvan a responder.";
+  } else if (status.method === "api_key") {
+    title = ["Conectado", "clave de API"];
+    detail = "Cada llamada se cobra en la consola de Anthropic.";
+  } else {
+    const parts = ["Conectado"];
+    if (status.subscription_type) parts.push(capitalize(status.subscription_type));
+    if (status.refresh_token_expires_at) parts.push(`vence el ${shortDate.format(toDate(status.refresh_token_expires_at)).replace(/\.$/, "")}`);
+    title = parts;
   }
 
   return (
-    <section className={`rounded-xl p-5 ring-1 ${tone}`}>
-      <p className="text-lg font-semibold">{title}</p>
-      <p className="mt-1 text-sm text-muted">{detail}</p>
+    <section className={`flex items-start gap-4 rounded-xl p-5 ring-1 ${tone}`}>
+      <span className={`flex size-11 shrink-0 items-center justify-center rounded-full ring-1 ring-line ${iconTone}`}>
+        <ClaudeIcon size={22} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-lg font-semibold">
+          {/* "vence el 9 nov" never splits across lines on the phone. */}
+          {title.map((part, i) => (
+            <span key={part} className={title.length > 1 ? "whitespace-nowrap" : undefined}>
+              {i > 0 && " · "}
+              {part}
+            </span>
+          ))}
+        </p>
+        {detail && <p className="mt-0.5 text-sm text-muted">{detail}</p>}
+        {(onReconnect || onDisconnect) && (
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            {onReconnect && (
+              <button type="button" onClick={onReconnect} className="font-medium text-accent underline">
+                Reconectar con otra cuenta
+              </button>
+            )}
+            {onDisconnect && (
+              <button type="button" onClick={onDisconnect} className="font-medium text-danger underline">
+                Desconectar
+              </button>
+            )}
+          </p>
+        )}
+      </div>
     </section>
   );
 }
 
-function OAuthFlow({ isReconnect, onConnected }: { isReconnect: boolean; onConnected: (s: ClaudeStatus) => void }) {
+function ConnectCard({ isReconnect, onConnected, onCancel }: { isReconnect: boolean; onConnected: (s: ClaudeStatus) => void; onCancel?: () => void }) {
   const [started, setStarted] = useState(false);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [withKey, setWithKey] = useState(false);
 
   async function start() {
     setError(null);
@@ -169,78 +226,147 @@ function OAuthFlow({ isReconnect, onConnected }: { isReconnect: boolean; onConne
   }
 
   const canPaste = typeof navigator !== "undefined" && !!navigator.clipboard?.readText;
+  // Thin bar on top: choose, sign in and authorize, paste, connect.
+  const progress = !started ? 12 : busy ? 92 : code.trim() ? 75 : 45;
+
+  function restart() {
+    setStarted(false);
+    setCode("");
+    setError(null);
+  }
 
   return (
-    <section className="rounded-xl bg-surface p-5 ring-1 ring-line">
-      <h2 className="font-semibold">{isReconnect ? "Reconectar con Claude" : "Conectar con Claude"}</h2>
-      <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm">
-        <li>Inicia sesión en Claude.</li>
-        <li>Toca Autorizar.</li>
-        <li>Copia el código y pégalo aquí.</li>
-      </ol>
-
-      <button
-        type="button"
-        onClick={start}
-        disabled={busy}
-        aria-busy={(busy && !started) || undefined}
-        className="mt-4 inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2.5 font-semibold text-ink hover:bg-brand-hover disabled:opacity-60"
-      >
-        {busy && !started && <Spinner />}
-        {busy && !started ? "Abriendo Claude…" : isReconnect ? "Reconectar con Claude" : "Conectar con Claude"}
-      </button>
-      {authUrl && (
-        <a href={authUrl} target="_blank" rel="noreferrer" className="ml-3 inline-flex items-center gap-1 text-sm text-accent underline">
-          Abrir Claude otra vez <ExternalLink size={14} />
-        </a>
-      )}
-
-      <form onSubmit={submit} className="mt-5">
-        <label htmlFor="claude-code" className="block text-sm font-medium">
-          Código de autorización
-        </label>
-        <div className="mt-1 flex gap-2">
-          <input
-            id="claude-code"
-            value={code}
-            onChange={(e) => {
-              setCode(e.target.value);
-              setError(null);
-            }}
-            disabled={!started}
-            placeholder="Pega el código de Claude"
-            autoComplete="one-time-code"
-            spellCheck={false}
-            className="min-w-0 flex-1 rounded-md border border-line px-3 py-2.5 font-mono text-sm disabled:bg-canvas"
-          />
-          {canPaste && (
+    <section className="overflow-hidden rounded-xl bg-surface ring-1 ring-line">
+      <div className="h-1 bg-canvas" aria-hidden>
+        <div className="h-full rounded-r-full bg-brand transition-[width] duration-500" style={{ width: `${progress}%` }} />
+      </div>
+      <div className="p-5 sm:p-6">
+        {!started ? (
+          <>
+            <h2 className="text-lg font-semibold">Corpotex piensa con tu suscripción de Claude</h2>
+            <ul className="mt-3 space-y-2 text-sm">
+              {["Usa tu suscripción Claude Pro o Max.", "Una sola cuenta para WhatsApp, el asistente de cada rol y el estilo del Gerente."].map((line) => (
+                <li key={line} className="flex items-start gap-2">
+                  <Check size={16} className="mt-0.5 shrink-0 text-success" aria-hidden />
+                  {line}
+                </li>
+              ))}
+            </ul>
             <button
               type="button"
-              onClick={paste}
-              disabled={!started}
-              className="flex items-center gap-1 rounded-md border border-line px-3 text-sm hover:bg-canvas disabled:opacity-50"
+              onClick={start}
+              disabled={busy}
+              aria-busy={busy || undefined}
+              className="mt-5 flex h-12 w-full items-center justify-center gap-2.5 rounded-lg bg-brand px-6 text-base font-semibold text-ink transition-colors hover:bg-brand-hover disabled:opacity-60 sm:w-auto sm:min-w-72"
             >
-              <ClipboardPaste size={16} />
-              Pegar
+              {busy ? <Spinner /> : <ClaudeIcon />}
+              {busy ? "Abriendo Claude…" : isReconnect ? "Conectar con Claude" : "Continuar con Claude"}
             </button>
-          )}
-        </div>
-        {error && (
-          <p className="mt-2 text-sm text-danger" role="alert">
-            {error}
-          </p>
+            {error && (
+              <p className="mt-2 text-sm text-danger" role="alert">
+                {error}
+              </p>
+            )}
+            <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              <button type="button" onClick={() => setWithKey((v) => !v)} aria-expanded={withKey} className="text-muted underline hover:text-ink">
+                Usar una clave de API (no recomendado)
+              </button>
+              {onCancel && (
+                <button type="button" onClick={onCancel} className="text-muted underline hover:text-ink">
+                  Cancelar
+                </button>
+              )}
+            </p>
+            {withKey && <ApiKeyForm onConnected={onConnected} />}
+          </>
+        ) : (
+          <>
+            <ol className="space-y-6">
+              <Step number={1} done title="Inicia sesión en Claude y autoriza">
+                <ul className="mt-1 space-y-0.5 text-sm text-muted">
+                  <li>Inicia sesión en Claude.</li>
+                  <li>Toca Authorize.</li>
+                  <li>Copia el código y vuelve a Corpotex.</li>
+                </ul>
+                {authUrl && (
+                  <a href={authUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-accent underline">
+                    Abrir Claude otra vez <ExternalLink size={14} aria-hidden />
+                  </a>
+                )}
+              </Step>
+              <Step number={2} title="Pega el código de Claude">
+                <form onSubmit={submit} className="mt-2">
+                  <div className="flex gap-2">
+                    <input
+                      id="claude-code"
+                      value={code}
+                      onChange={(e) => {
+                        setCode(e.target.value);
+                        setError(null);
+                      }}
+                      placeholder="Pega tu código de autorización"
+                      aria-label="Código de autorización de Claude"
+                      autoComplete="one-time-code"
+                      spellCheck={false}
+                      autoFocus
+                      className="h-12 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 font-mono text-sm"
+                    />
+                    {canPaste && (
+                      <button
+                        type="button"
+                        onClick={paste}
+                        aria-label="Pegar el código del portapapeles"
+                        className="flex h-12 items-center gap-1.5 rounded-lg border border-line px-3 text-sm hover:bg-canvas"
+                      >
+                        <ClipboardPaste size={16} aria-hidden />
+                        <span className="hidden sm:inline">Pegar</span>
+                      </button>
+                    )}
+                  </div>
+                  {error && (
+                    <p className="mt-2 text-sm text-danger" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={busy || !code.trim()}
+                    aria-busy={busy || undefined}
+                    className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand px-6 text-base font-semibold text-ink hover:bg-brand-hover disabled:opacity-50 sm:w-auto sm:min-w-56"
+                  >
+                    {busy && <Spinner />}
+                    {busy ? "Conectando…" : "Conectar"}
+                  </button>
+                </form>
+              </Step>
+            </ol>
+            <button type="button" onClick={restart} className="mt-5 text-sm text-muted underline hover:text-ink">
+              Empezar de nuevo
+            </button>
+          </>
         )}
-        <button
-          type="submit"
-          disabled={!started || busy || !code.trim()}
-          aria-busy={(busy && started) || undefined}
-          className="mt-3 inline-flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-        >
-          {busy && started && <Spinner />}
-          {busy && started ? "Conectando…" : "Conectar"}
-        </button>
-      </form>
+      </div>
     </section>
+  );
+}
+
+function Step({ number, title, done = false, children }: { number: number; title: string; done?: boolean; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span
+        className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${done ? "bg-success text-white" : "bg-ink text-white"}`}
+        aria-hidden
+      >
+        {done ? <Check size={15} /> : number}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold">
+          <span className="sr-only">Paso {number}: </span>
+          {title}
+        </p>
+        {children}
+      </div>
+    </li>
   );
 }
 
@@ -270,21 +396,22 @@ function ApiKeyForm({ onConnected }: { onConnected: (s: ClaudeStatus) => void })
   }
 
   return (
-    <details className="rounded-xl bg-surface p-5 ring-1 ring-line">
-      <summary className="cursor-pointer text-sm font-medium">Usar una API key</summary>
-      <p className="mt-2 text-sm text-muted">Reemplaza la conexión con la suscripción. Cada llamada se cobra en la consola de Anthropic.</p>
+    <div className="mt-3 rounded-lg bg-canvas p-4">
+      <p className="text-sm font-medium">Conecta con una clave de API</p>
+      <p className="mt-1 text-sm text-muted">Reemplaza la conexión con la suscripción. Cada llamada se cobra en la consola de Anthropic.</p>
       <form onSubmit={submit} className="mt-3 flex flex-wrap gap-2">
         <input
           type="password"
           value={key}
           onChange={(e) => setKey(e.target.value)}
           placeholder="sk-ant-…"
+          aria-label="Clave de API de Anthropic"
           autoComplete="off"
-          className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 font-mono text-sm"
+          className="h-11 min-w-0 flex-1 rounded-md border border-line bg-surface px-3 font-mono text-sm"
         />
-        <button type="submit" disabled={busy || !key} aria-busy={busy || undefined} className="inline-flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
+        <button type="submit" disabled={busy || !key} aria-busy={busy || undefined} className="inline-flex h-11 items-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white disabled:opacity-40">
           {busy && <Spinner />}
-          Guardar key
+          Guardar clave
         </button>
       </form>
       {error && (
@@ -292,14 +419,13 @@ function ApiKeyForm({ onConnected }: { onConnected: (s: ClaudeStatus) => void })
           {error}
         </p>
       )}
-    </details>
+    </div>
   );
 }
 
 const CONFIRM_WORD = "desconectar";
 
-function Disconnect({ onDone }: { onDone: (s: ClaudeStatus) => void }) {
-  const [open, setOpen] = useState(false);
+function Disconnect({ onDone, onCancel }: { onDone: (s: ClaudeStatus) => void; onCancel: () => void }) {
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -307,20 +433,12 @@ function Disconnect({ onDone }: { onDone: (s: ClaudeStatus) => void }) {
     setBusy(true);
     try {
       onDone(await apiFetch<ClaudeStatus>("/api/settings/claude/disconnect/", { method: "POST" }));
-      setOpen(false);
       setTyped("");
     } finally {
       setBusy(false);
     }
   }
 
-  if (!open) {
-    return (
-      <button type="button" onClick={() => setOpen(true)} className="text-sm font-medium text-danger underline">
-        Desconectar
-      </button>
-    );
-  }
   return (
     <section className="rounded-xl bg-danger-soft p-5 ring-1 ring-danger/30">
       <p className="text-sm">
@@ -344,7 +462,7 @@ function Disconnect({ onDone }: { onDone: (s: ClaudeStatus) => void }) {
           {busy && <Spinner />}
           Desconectar
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm">
+        <button type="button" onClick={onCancel} className="rounded-md px-3 py-2 text-sm">
           Cancelar
         </button>
       </div>

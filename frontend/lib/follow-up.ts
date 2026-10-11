@@ -5,11 +5,12 @@ import { type PendingFollowUp, ROLE_LABELS, type Role } from "./types";
 
 export type FollowUpMode = "minimal" | "balanced" | "high";
 
+// The API's names (contract of S1). Old payloads (follow_up_*) still load.
 export interface FollowUpSettings {
-  follow_up_mode: FollowUpMode;
-  follow_up_window_start: string; // "09:00", Lima time
-  follow_up_window_end: string; // "18:00"
-  follow_up_weekdays: number[]; // 0 = Monday … 6 = Sunday
+  mode: FollowUpMode;
+  window_start: string; // "09:00", Lima time
+  window_end: string; // "18:00"
+  weekdays: number[]; // 0 = Monday … 6 = Sunday
 }
 
 export interface FollowUpPreviewItem {
@@ -18,14 +19,31 @@ export interface FollowUpPreviewItem {
   at: string; // ISO datetime
   kind: "checkpoint" | "reminder";
   reason: string;
+  mode?: FollowUpMode;
 }
 
 export const DEFAULT_FOLLOW_UP: FollowUpSettings = {
-  follow_up_mode: "balanced",
-  follow_up_window_start: "09:00",
-  follow_up_window_end: "18:00",
-  follow_up_weekdays: [0, 1, 2, 3, 4, 5],
+  mode: "balanced",
+  window_start: "09:00",
+  window_end: "18:00",
+  weekdays: [0, 1, 2, 3, 4, 5],
 };
+
+// Whatever the API sends becomes a complete form: a missing or odd field comes
+// back empty (the form asks for it) instead of crashing the page.
+export function normalizeFollowUp(raw: unknown): FollowUpSettings {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const pick = (name: string) => r[name] ?? r[`follow_up_${name}`];
+  const mode = pick("mode");
+  const time = (value: unknown) => (typeof value === "string" ? value.slice(0, 5) : "");
+  const days = pick("weekdays");
+  return {
+    mode: typeof mode === "string" && mode in FOLLOW_UP_MODES ? (mode as FollowUpMode) : "balanced",
+    window_start: time(pick("window_start")),
+    window_end: time(pick("window_end")),
+    weekdays: Array.isArray(days) ? [...new Set(days.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort((a, b) => a - b) : [],
+  };
+}
 
 // ADR 0027 §2: checkpoints for a 10-day purchase order, and the reminder rule.
 export const FOLLOW_UP_MODES: Record<FollowUpMode, { label: string; about: string; reminder: string; days: number[] }> = {

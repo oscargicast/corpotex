@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
       { source: "/onboarding", destination: "/settings", permanent: true },
       { source: "/onboarding/:step", destination: "/settings/:step", permanent: true },
       { source: "/style", destination: "/settings/style", permanent: true },
+      // Suppliers live in the main menu; "Por pedir" is Inventario's filter (Oscar, 11/10 01:30).
+      // Query values pass through: ?material=<id> reaches /inventory.
+      { source: "/settings/suppliers", destination: "/suppliers", permanent: true },
+      { source: "/purchase-orders/pending", destination: "/inventory?to_order=1", permanent: true },
     ];
   },
   async rewrites() {
