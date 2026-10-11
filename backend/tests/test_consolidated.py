@@ -77,6 +77,8 @@ def test_pending_purchases_groups_by_material_with_the_suggestion(two_orders, ca
     assert buttons["reference_price"] is None  # Production never sees prices.
     manager_view = next(g for g in manager_client.get("/api/requirements/pending/").json() if g["material"]["sku"] == "BOT-NX")
     assert manager_view["reference_price"] == "0.18" and manager_view["currency"] == "PEN" and buttons["currency"] is None
+    assert manager_view["candidates"] == [{"supplier": {"id": catalogue["gamarra"].id, "name": "Avíos Gamarra"}, "unit_price": "0.18", "currency": "PEN", "score": manager_view["candidates"][0]["score"]}]
+    assert buttons["candidates"] == [] and buttons["alert_id"] is None and set(buttons["material"]) == {"id", "sku", "name", "kind", "unit", "image"}
     only = production_client.get(f"/api/requirements/pending/?material_ids={catalogue['fabric'].id}").json()
     assert [g["material"]["sku"] for g in only] == ["TEL-20"]
     assert {g["material"]["sku"] for g in body} == {"BOT-NX", "TEL-20"}
@@ -90,13 +92,14 @@ def test_generate_makes_one_purchase_order_per_material_across_orders(two_orders
     response = production_client.post("/api/purchase-orders/generate/", {"material_ids": [catalogue["buttons"].id]}, format="json")
     assert response.status_code == 201, response.content
     body = response.json()
-    assert len(body["purchase_orders"]) == 1 and body["skipped"] == []
-    po = PurchaseOrder.objects.get(pk=body["purchase_orders"][0]["id"])
+    assert len(body["created"]) == 1 and body["skipped"] == []
+    po = PurchaseOrder.objects.get(pk=body["created"][0]["id"])
     assert po.code.startswith("PI-") and po.supplier == catalogue["gamarra"] and po.status == "suggested"
+    assert body["created"][0]["material"] == {"id": catalogue["buttons"].id, "sku": "BOT-NX", "name": "Botón NX"} and body["created"][0]["supplier"]["name"] == "Avíos Gamarra"
     assert [(i.requirement.order.code, i.quantity) for i in po.items.order_by("requirement__order__promised_on")] == [("CP-2026-0302", Decimal("1500.00")), ("CP-2026-0301", Decimal("1100.00"))]
     assert po.internal_due_on == date(2026, 10, 28)  # The earliest order's deadline.
     assert "unit_price" not in str(body)  # Production's payload carries no prices.
-    assert {o["code"] for o in body["purchase_orders"][0]["orders"]} == {"CP-2026-0301", "CP-2026-0302"}
+    assert {o["code"] for o in body["created"][0]["orders"]} == {"CP-2026-0301", "CP-2026-0302"}
     assert set(Requirement.objects.filter(material=catalogue["buttons"]).values_list("status", flat=True)) == {"ordered"}
     assert Requirement.objects.filter(material=catalogue["fabric"], status="open").count() == 2
     decision = Decision.objects.get(pk=body["decision_id"])
@@ -106,10 +109,10 @@ def test_generate_makes_one_purchase_order_per_material_across_orders(two_orders
     # The buttons are no longer pending; a second generate for them creates nothing.
     assert {g["material"]["sku"] for g in production_client.get("/api/requirements/pending/").json()} == {"TEL-20"}
     again = production_client.post("/api/purchase-orders/generate/", {"material_ids": [catalogue["buttons"].id]}, format="json").json()
-    assert again["purchase_orders"] == [] and again["skipped"] == [{"material_id": catalogue["buttons"].id, "reason": "sin requerimientos abiertos"}] and again["decision_id"] is None
+    assert again["created"] == [] and again["skipped"] == [{"material_id": catalogue["buttons"].id, "reason": "sin requerimientos abiertos"}] and again["decision_id"] is None
     # Generate everything left: the fabric in USD.
     rest = manager_client.post("/api/purchase-orders/generate/", {}, format="json").json()
-    assert len(rest["purchase_orders"]) == 1 and rest["purchase_orders"][0]["currency"] == "USD"
+    assert len(rest["created"]) == 1 and rest["created"][0]["currency"] == "USD"
     assert production_client.get("/api/requirements/pending/").json() == []
     # Each order's detail lists the shared purchase order.
     detail = manager_client.get(f"/api/orders/{a.id}/").json()
@@ -133,3 +136,17 @@ def test_sales_cannot_generate(two_orders, sales):
 
     with pytest.raises(PermissionDenied):
         services.generate_purchase_orders(None, actor=sales)
+
+
+@pytest.mark.django_db
+def test_supplier_override_forces_the_supplier_or_answers_400(two_orders, catalogue, manager_client):
+    other = Supplier.objects.create(name="Botones Lima", kind="material", city="Lima", lead_time_days=9)
+    Rate.objects.create(supplier=other, material=catalogue["buttons"], unit_price=Decimal("0.25"), valid_from=date(2026, 1, 1))
+    bad = manager_client.post("/api/purchase-orders/generate/", {"material_ids": [catalogue["buttons"].id], "supplier_overrides": {str(catalogue["buttons"].id): catalogue["textil"].id}}, format="json")
+    assert bad.status_code == 400 and "no tiene tarifa" in bad.json()["detail"]
+    assert not PurchaseOrder.objects.filter(supplier__kind="material").exists()
+    response = manager_client.post("/api/purchase-orders/generate/", {"material_ids": [catalogue["buttons"].id], "supplier_overrides": {str(catalogue["buttons"].id): other.id}}, format="json")
+    assert response.status_code == 201, response.content
+    created = response.json()["created"][0]
+    assert created["supplier"]["name"] == "Botones Lima" and created["items"][0]["unit_price"] == "0.25"
+    assert created["suggested_supplier"]["name"] == "Botones Lima"  # The override is the suggestion of record; the ranking stays in the decision.

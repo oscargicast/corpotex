@@ -121,6 +121,7 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
 
 class GenerateInSerializer(serializers.Serializer):
     material_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
+    supplier_overrides = serializers.DictField(child=serializers.IntegerField(), required=False, default=dict)
 
 
 class PendingPurchasesView(APIView):
@@ -176,13 +177,17 @@ class PurchaseOrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
         data = GenerateInSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         try:
-            result = services.generate_purchase_orders(data.validated_data.get("material_ids") or None, actor=request.user)
+            result = services.generate_purchase_orders(
+                data.validated_data.get("material_ids") or None, actor=request.user, supplier_overrides=data.validated_data.get("supplier_overrides") or None
+            )
         except PermissionDenied as exc:
             _forbidden(exc)
+        except UnknownReference as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         cls = serializer_for(PurchaseOrder, self.role, detail=True)
         return Response(
             {
-                "purchase_orders": cls(result["created"], many=True, context=self.get_serializer_context()).data,
+                "created": cls(result["created"], many=True, context=self.get_serializer_context()).data,
                 "decision_id": result["decision"].id if result["decision"] else None,
                 "skipped": result["skipped"],
             },

@@ -206,6 +206,8 @@ def pending_purchases(*, with_prices: bool, material_ids=None) -> list[dict]:
                 "reference_price": None,
                 "currency": None,
                 "lead_time_days": None,
+                "candidates": [],
+                "alert_id": None,
                 "_first": requirement,
             },
         )
@@ -213,7 +215,9 @@ def pending_purchases(*, with_prices: bool, material_ids=None) -> list[dict]:
         group["total_to_order"] += requirement.qty_to_order
         group["orders"].append({"id": requirement.order_id, "code": requirement.order.code, "customer_name": requirement.order.customer.name, "qty": str(requirement.qty_to_order), "due_on": due})
         group["due_on"] = min(group["due_on"], due) if group["due_on"] else due
-    for group in groups.values():
+    from manager.models import Alert
+
+    for material_id, group in groups.items():
         candidates = rank_candidates(group.pop("_first"))
         if candidates:
             best = candidates[0]
@@ -222,19 +226,29 @@ def pending_purchases(*, with_prices: bool, material_ids=None) -> list[dict]:
             group["currency"] = best["currency"] if with_prices else None
             group["lead_time_days"] = supplier.lead_time_days
             group["reference_price"] = best["unit_price"] if with_prices else None
+            if with_prices:  # The "Cambiar" menu: every supplier with a rate, best first.
+                group["candidates"] = [
+                    {"supplier": {"id": c["supplier_id"], "name": c["supplier_name"]}, "unit_price": c["unit_price"], "currency": c["currency"], "score": c["score"]}
+                    for c in candidates
+                ]
+        alert = Alert.objects.filter(kind="purchase_suggested", status="open", detail__material__id=material_id).order_by("-id").first()
+        group["alert_id"] = alert.id if alert else None
         group["total_to_order"] = str(group["total_to_order"].quantize(Decimal("0.01")))
     return list(groups.values())
 
 
-def generate_purchase_orders(material_ids=None, *, actor) -> dict:
+def generate_purchase_orders(material_ids=None, *, actor, supplier_overrides=None) -> dict:
     """One suggested purchase order per material for every open requirement of the confirmed
     orders (all materials, or the ids given), with one item per requirement, and one
     `approve_assignment` decision for the batch. Idempotent: a material with nothing open is
-    skipped. Returns `{"created": [PurchaseOrder], "decision": Decision | None, "skipped": [material_id]}`."""
+    skipped. `supplier_overrides` ({material_id: supplier_id}) forces the supplier of a material
+    ("Cambiar"); it must have a current rate. Returns
+    `{"created": [PurchaseOrder], "decision": Decision | None, "skipped": [{material_id, reason}]}`."""
     require_role(actor, "manager", "production")
     requirements = open_material_requirements(material_ids)
+    overrides = {int(k): int(v) for k, v in (supplier_overrides or {}).items()}
     with transaction.atomic():
-        created, decision = match_requirements(requirements, consolidate=True)
+        created, decision = match_requirements(requirements, consolidate=True, supplier_overrides=overrides)
     ordered = {po.items.first().requirement.material_id for po in created if po.items.exists()}
     with_requirements = {r.material_id for r in requirements}
     skipped = [
@@ -438,7 +452,7 @@ def _rationale(supplier: Supplier, scores: dict, cheapest: bool) -> str:
     return ", ".join(parts).capitalize() if parts else "Cumple los requisitos"
 
 
-def match_requirements(requirements: list[Requirement], *, exclude: Supplier | None = None, redistributed_from=None, consolidate: bool = False):
+def match_requirements(requirements: list[Requirement], *, exclude: Supplier | None = None, redistributed_from=None, consolidate: bool = False, supplier_overrides=None):
     """Step 3: one suggested purchase order per requirement and supplier; a large workshop
     requirement is split across workshops when the first one lacks free capacity. With
     `consolidate`, the requirements of the same material become ONE purchase order with an item
@@ -464,6 +478,12 @@ def match_requirements(requirements: list[Requirement], *, exclude: Supplier | N
                     logger.warning("match: no supplier for material %s", pending[0][0].material_id)
                     continue
                 candidate = candidates[0]
+                forced = (supplier_overrides or {}).get(pending[0][0].material_id)
+                if forced:
+                    candidate = next((c for c in candidates if c["supplier_id"] == forced), None)
+                    if candidate is None:
+                        material = pending[0][0].material
+                        raise UnknownReference(f"El proveedor {forced} no tiene tarifa vigente para {material.name if material else 'el insumo'}")
                 supplier = Supplier.objects.get(pk=candidate["supplier_id"])
                 due = min(r.order.promised_on for r, _ in pending) - timedelta(days=config.buffer_days)
                 po = PurchaseOrder.objects.create(
