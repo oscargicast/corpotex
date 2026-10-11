@@ -8,13 +8,9 @@ import { Thumb } from "@/components/thumb";
 import { apiFetch, fetcher } from "@/lib/api";
 import { formatDay } from "@/lib/format";
 
-interface Report {
-  code: string;
-  product: { name: string; image: string | null };
-  quantity: number | string;
-  committed_on: string | null;
-  units_done: number;
-}
+import type { components } from "@/lib/api-types";
+
+type Report = components["schemas"]["PublicReport"];
 
 // Public, mobile-first page for a workshop to report progress (ADR 0024 C).
 // No login: the token in the URL identifies the purchase order. No prices, no supplier name.
@@ -78,9 +74,9 @@ export default function ReportPage() {
     <main className="mx-auto max-w-md px-4 py-6">
       <p className="text-xl font-black tracking-tight">CORPOTEX</p>
       <section className="mt-5 flex items-center gap-3 rounded-xl bg-surface p-4 ring-1 ring-line">
-        <Thumb src={data.product.image} alt={data.product.name} size={56} />
+        <Thumb src={data.product?.image} alt={data.product?.name ?? "Producto"} size={56} />
         <div className="text-sm">
-          <p className="font-semibold">{data.product.name}</p>
+          <p className="font-semibold">{data.product?.name ?? "Pedido"}</p>
           <p className="text-muted">
             Pedido {data.code} · {total} prendas{data.committed_on ? ` · entrega ${formatDay(data.committed_on)}` : ""}
           </p>

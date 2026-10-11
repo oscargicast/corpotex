@@ -1,4 +1,10 @@
-// Base types for F1. F2.1 replaces them with types generated from docs/api/openapi.json.
+// API types. `S` are the schemas generated from docs/api/openapi.json
+// (lib/api-types.ts, `pnpm gen:types`). Hand-written shapes remain only where
+// the schema types a nested field as `object` or marks as optional something
+// the API always sends.
+import type { components } from "./api-types";
+
+type S = components["schemas"];
 
 export type Role = "manager" | "sales" | "production";
 
@@ -14,23 +20,9 @@ export interface LoginResponse {
   user: User;
 }
 
-export interface Clock {
-  now: string;
-  factor: number | string; // Decimal in the API
-  paused: boolean;
-}
+export type Clock = S["Clock"];
 
-export interface Badges {
-  assistant_unread: number;
-  latest_unread: { id: number; preview: string; alert_kind: string | null } | null;
-  claude_ok: boolean;
-  // Manager only; null for the other roles.
-  pending_decisions: number | null;
-  orders_in_danger: number | null;
-  claude_expired: boolean | null;
-  claude_last_error: string | null;
-  claude_refresh_expires_at: string | null;
-}
+export type Badges = S["Badges"];
 
 export type Currency = "PEN" | "USD";
 export type Risk = "ok" | "at_risk" | "in_danger";
@@ -80,36 +72,11 @@ export interface PurchaseOrderListItem {
   alert_severity: Severity | null;
 }
 
-export interface Payment {
-  id: number;
-  kind: "advance" | "balance";
-  kind_display: string;
-  amount: string;
-  status: "pending" | "paid";
-  due_on: string | null;
-  paid_at: string | null;
-  method: "yape" | "transfer" | "cash" | null;
-  receipt: string | null;
-}
+export type Payment = Omit<S["Payment"], "purchase_order" | "due_on"> & { due_on: string | null };
 
-export interface ProgressReport {
-  id: number;
-  units_done: number;
-  note: string;
-  photo: string | null;
-  source: "whatsapp" | "web" | "manual" | "simulator";
-  reported_at: string;
-}
+export type ProgressReport = Omit<S["ProgressReport"], "photo"> & { photo: string | null };
 
-export interface ChatMessage {
-  id: number;
-  direction: "inbound" | "outbound";
-  author: "supplier" | "agent" | "manager" | "system";
-  text: string;
-  media: string | null;
-  media_kind?: "image" | "audio" | "document" | null; // not in the API yet
-  sent_at: string;
-}
+export type ChatMessage = S["Message"] & { media_kind?: "image" | "audio" | "document" | null }; // media_kind is not in the API
 
 export interface PurchaseOrderDetail extends PurchaseOrderListItem {
   status_history?: StatusHistoryEntry[];
@@ -163,13 +130,7 @@ export interface SupplierListItem {
   is_in_house: boolean;
 }
 
-export interface SupplierNumber {
-  id: number;
-  phone: string;
-  name: string;
-  active: boolean;
-  simulated?: boolean; // answered through the simulator, not WhatsApp
-}
+export type SupplierNumber = S["AllowedNumber"];
 
 export interface SupplierDetail extends SupplierListItem {
   notes: string;
@@ -312,13 +273,7 @@ export interface PaymentSummary {
 
 export interface Monitor {
   clock: Clock;
-  kpis: {
-    orders_in_danger: number;
-    orders_at_risk: number;
-    stalled_purchase_orders: number;
-    pending_decisions: number | null;
-    open_alerts: number;
-  };
+  kpis: S["MonitorKpis"];
   alerts: Alert[];
   decisions: Decision[];
   orders_in_danger: OrderListItem[];
@@ -369,112 +324,46 @@ export type AssistantAction =
       }[];
     };
 
-export interface AssistantMessage {
-  id: number;
+export type AssistantMessage = Omit<S["AssistantMessage"], "role" | "text" | "action"> & {
   role: "user" | "assistant";
   text: string;
   action: AssistantAction | null;
-  created_at: string;
-}
+};
 
 // Inventory (F2.6): stock, reserved by open orders, and what is left.
-export interface Material {
-  id: number;
-  sku: string;
-  name: string;
-  kind: "fabric" | "button" | "zipper" | "collar_cuff" | "other";
-  kind_display?: string;
-  unit: "m" | "kg" | "unit";
-  stock: string | number;
-  committed: string | number;
-  available: string | number;
-  image: string | null;
-}
+export type Material = Omit<S["Material"], "stock"> & { stock: string | number };
 
-export interface MaterialDetail extends Material {
-  requirements: {
-    order_id?: number;
-    order_code: string;
-    qty_needed: string | number;
-    qty_from_stock: string | number;
-    qty_to_order: string | number;
-    status: string;
-    status_display?: string;
-  }[];
-}
+export type MaterialDetail = Omit<S["MaterialDetailSchema"], "stock"> & { stock: string | number };
 
 // Onboarding (ADR 0011, 0019) and style history.
-export type StyleSupplierStatus = "pending" | "reading" | "analyzing" | "done" | "no_phone" | "no_chat" | "not_allowed" | "error";
+export type StyleSupplierStatus = S["StyleSupplierProgressStatusEnum"];
 
-export interface StyleState {
-  status: "not_started" | "extracting" | "draft" | "approved" | "error";
-  status_display: string;
-  error: string;
-  since: string | null;
-  step: "suppliers" | "merging" | null;
-  suppliers: { id: number; name: string; status: StyleSupplierStatus; messages_read: number | null; error: string }[];
-  style_md: string;
-  notes: { supplier_id: number; supplier_name: string; notes: string }[];
-  approved_at: string | null;
-}
+export type StyleState = S["OnboardingStyle"];
 
-export interface StyleVersion {
-  id: number;
-  source: "onboarding" | "daily" | "template" | "manual" | "rollback";
-  source_display: string;
-  changelog: string;
-  created_at: string;
-}
+export type StyleVersion = S["StyleVersion"];
 
-export interface StyleVersionDetail extends StyleVersion {
-  style_md: string;
-  notes_snapshot: Record<string, string>;
-}
+export type StyleVersionDetail = S["StyleVersionDetail"];
 
-export interface WhatsAppState {
-  state: string; // open | connecting | close
-  webhook: { url: string; events: string[]; base64: boolean } | null;
-  settings: Record<string, unknown> | null;
-  offline: boolean;
-  done_at: string | null;
-}
+export type WhatsAppState = S["WhatsAppOnboarding"];
 
 // Routes (ADR 0024): straight lines between stops, no routing service.
-export interface RouteStop {
-  position: number;
-  kind: "pickup" | "delivery";
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-  eta: string | null;
+export type RouteStop = Omit<S["RouteStop"], "supplier" | "customer" | "purchase_order" | "order"> & {
   supplier?: { id: number; name: string } | null;
   customer?: { id: number; name: string } | null;
   purchase_order?: Ref | null;
   order?: Ref | null;
-}
+};
 
-export interface Route {
-  id: number;
-  date: string;
-  status: "proposed" | "planned" | "in_progress" | "completed" | "replaced" | "discarded";
+export type Route = Omit<S["Route"], "status" | "distance_km" | "duration_min" | "path" | "stops"> & {
+  status: S["RouteStatusEnum"];
   distance_km: string | number;
   duration_min: number;
   path: { type: "LineString"; coordinates: [number, number][] } | null; // [lng, lat]
-  recalculated_from: number | null;
   stops: RouteStop[];
-}
+};
 
 // Simulator (ADR 0017 demo decision: one real supplier on WhatsApp, the rest here).
-export interface SimulatorContact {
-  allowed_number_id: number;
-  name: string; // the number's label ("Simulador", "dueña"); the supplier name is in supplier.name
-  supplier: { id: number; name: string } | null;
-  conversation_id: number | null;
-  channel: "simulator" | "whatsapp";
-  simulated?: boolean;
-  last_message: { id: number; text: string; direction: "inbound" | "outbound"; sent_at: string } | null;
-}
+export type SimulatorContact = S["SimulatorContact"];
 
 export interface AssistantContext {
   path: string;
@@ -483,15 +372,8 @@ export interface AssistantContext {
 }
 
 // /api/settings/claude/* (ADR 0022). The credential itself never reaches the browser.
-export interface ClaudeStatus {
-  connected: boolean;
-  method: "oauth" | "api_key" | "none";
-  subscription_type: string | null;
-  expires_at: string | null;
-  refresh_token_expires_at: string | null;
-  expired: boolean;
-  last_error: string | null;
-}
+// expires_at and refresh_token_expires_at arrive as epoch numbers (seconds or ms).
+export type ClaudeStatus = S["ClaudeStatus"];
 
 export type ClaudeErrorCode =
   | "invalid_code"
