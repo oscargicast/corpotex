@@ -51,4 +51,4 @@ Paso 3 del guion: Comercial abre `/orders/new`, elige Caja Piura, escribe dos l�
 ## Consecuencias
 
 - `classify-draft` llama a Jev y a Claude sin guardar nada: una orden de 5 ítems son hasta 5 llamadas a Claude en paralelo. Para la demo es aceptable; en producción conviene un límite por usuario.
-- Tareas: M1 backend, M2 disenador, M3 backend (clasificación automática en segundo plano para órdenes por API), M4 backend (`describe-image`) y M5 disenador (foto en el ítem), en `docs/planning.md`. Oscar movió el cierre a las 07:00 (11/10 03:45): lo que no esté en verde a esa hora no entra, y el formulario de texto sigue igual.
+- Tareas: M1 backend, M2 disenador, M3 backend (clasificación automática en segundo plano para órdenes por API), M4 backend (`describe-image`) y M5 disenador (foto en el ítem), en `docs/planning.md`. No hay hora de cierre (Oscar, 11/10 04:20): se mergea lo que esté en verde hasta el pitch; si la foto no está, el formulario de texto sigue igual.

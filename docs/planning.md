@@ -33,7 +33,7 @@ Reglas: cada sesión trabaja en su worktree y abre un PR por fase contra `main`;
 | Dom 11 | 09:00 a 11:00 | Pitch time | **La demo** |
 | Dom 11 | 11:00 a 12:00 | Deliberación y premiación | |
 
-Consecuencia: no hay "domingo en la mañana" para integrar. Lo que no esté mergeado a las 07:00 no entra (Oscar movió el cierre de las 04:30 a las 07:00 el 11/10 03:45; el ensayo pasa a las 07:00-08:00). La prueba con la proveedora real, el seed final, el ensayo y el video van entre las 05:00 y las 07:30.
+Consecuencia: no hay "domingo en la mañana" para integrar. No hay hora de cierre de alcance (Oscar, 11/10 04:20: "no te limites por la hora"): se sigue mergeando lo que esté en verde hasta el pitch, con un reseed después de cada despliegue que lo necesite. La prueba con la proveedora real, el seed final, el ensayo y el video van entre las 05:00 y las 07:30.
 
 ## Setup de desarrollo (ADR 0023)
 
