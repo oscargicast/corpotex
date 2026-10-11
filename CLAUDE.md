@@ -58,7 +58,7 @@ Asistente del Gerente con 4 pasos: conectar la cuenta de Claude (ADR 0022), cone
 - Escena que pide el jurado: un taller cancela a mitad del pedido y el sistema redistribuye y recalcula fecha, costo y ruta (ADR 0024).
 - Clientes en la data: Caja Piura, colegios de Piura, AIDER, PIQA.
 - Por WhatsApp solo hay un proveedor real: Valeria (`51906746241`, constante en el seed, activo en la allowlist). El Gerente escribe desde el número de Oscar (`51907898162`). Los demás proveedores van por el simulador. Oscar no puede ser proveedor: es su propio número.
-- Plan B: simulador de chat si falla el wifi, y video de respaldo.
+- Plan B: simulador de chat si falla el wifi, y video de respaldo (lo graba Oscar a mano, decisión 10/10 21:00; el guion y el script de grabación están en `docs/demo/guion-visual.md`).
 - En vivo no se muestra el QR ni se corre la extracción de estilo: el onboarding se muestra ya hecho, con el estilo del Gerente ya extraído y aprobado (ADR 0011).
 - Orden del guion: el paso Estilo (mostrar el borrador y aprobar) va ANTES de la escena de WhatsApp. El bot usa el último estilo aprobado; si se aprueba después, el bot habla con el perfil base.
 - Dato de dolor para el pitch: al proveedor le dan 5 días cuando al cliente le prometieron 10, y aun así hay pedidos que nadie revisa hasta el día 9.
