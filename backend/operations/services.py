@@ -34,6 +34,18 @@ logger = logging.getLogger(__name__)
 
 PO_PREFIX = {"workshop": "PT", "material": "PI", "finished": "PF"}
 CUSTOMIZATION_STAGE = {"embroidery": "embroidery", "sublimation": "sublimation", "print": "sublimation"}
+CUSTOMIZATION_WORDS = {"embroidery": ("bord", "embroid"), "sublimation": ("sublim", "estamp", "print", "serigraf")}
+
+
+def customization_stages(order) -> set[str]:
+    """Plant stages implied by the free-text customizations of the items (several at once)."""
+    stages = set()
+    for item in order.items.all():
+        text = (item.customization or "").lower()
+        for stage, words in CUSTOMIZATION_WORDS.items():
+            if any(w in text for w in words):
+                stages.add(stage)
+    return stages
 SCORE_WEIGHTS = {"price": 0.35, "on_time": 0.30, "quality": 0.20, "load": 0.15}
 DEFAULT_SCORE = 0.7  # Unrated suppliers start neutral.
 
@@ -79,12 +91,7 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
     brand = Brand.objects.filter(name__iexact=payload["brand"].strip()).first()
     if brand is None:
         raise UnknownReference(f"La marca {payload['brand']} no existe")
-    products = {}
-    for item in payload["items"]:
-        code = str(item["product"]).strip()
-        products[code] = products.get(code) or Product.objects.filter(code__iexact=code).first()
-        if products[code] is None:
-            raise UnknownReference(f"El producto {code} no existe")
+    _, _, products = _resolve_references({"items": payload["items"]})
     with transaction.atomic():
         order = Order.objects.create(
             code=order_code or next_order_code(),  # `code` below is reused for product codes
@@ -97,10 +104,10 @@ def register_order(payload: dict, *, actor) -> tuple[Order, bool]:
         )
         StatusChange.objects.create(order=order, status=order.status, at=clock.now(), actor=actor_label(actor))
         for item in payload["items"]:
-            product = products[str(item["product"]).strip()]
             OrderItem.objects.create(
                 order=order,
-                product=product,
+                product=products.get(str(item.get("product") or "").strip()),
+                description=(item.get("description") or "").strip(),
                 quantity=item["quantity"],
                 sizes=item.get("sizes") or {},
                 color=item.get("color", ""),
@@ -148,7 +155,9 @@ def break_down_order(order: Order) -> list[Requirement]:
     with transaction.atomic():
         order.requirements.all().delete()
         needed: dict[int, Decimal] = {}
-        for item in order.items.select_related("product").prefetch_related("product__materials__material"):
+        order.needs_classification = order.items.filter(product__isnull=True).exists()
+        order.save(update_fields=["needs_classification", "updated_at"])
+        for item in order.items.filter(product__isnull=False).select_related("product").prefetch_related("product__materials__material"):
             for pm in item.product.materials.all():
                 needed[pm.material_id] = needed.get(pm.material_id, Decimal("0")) + item.quantity * pm.qty_per_unit
         requirements = []
@@ -165,7 +174,7 @@ def break_down_order(order: Order) -> list[Requirement]:
                     status=Requirement.Status.COVERED if qty - from_stock <= 0 else Requirement.Status.OPEN,
                 )
             )
-        for item in order.items.all():
+        for item in order.items.filter(product__isnull=False):
             requirements.append(
                 Requirement.objects.create(order=order, kind="workshop", product=item.product, qty_needed=item.quantity)
             )
@@ -180,6 +189,8 @@ def confirm_order(order: Order, *, actor) -> Order:
     require_role(actor, "production", "manager")
     if order.status != Order.Status.BROKEN_DOWN:
         return order
+    if order.needs_classification:
+        raise UnknownReference(f"La orden {order.code} tiene ítems sin producto: clasifícalos antes de confirmar")
     with transaction.atomic():
         set_status(order, Order.Status.CONFIRMED, actor=actor, note="Desglose confirmado")
         # Materials stay open: Produccion (or the manager) generates one consolidated purchase
@@ -220,6 +231,10 @@ def _resolve_references(payload: dict) -> tuple:
             raise UnknownReference(f"La marca {payload['brand']} no existe")
     products = {}
     for item in payload.get("items") or []:
+        if not item.get("product"):
+            if not (item.get("description") or "").strip():
+                raise UnknownReference("Cada ítem necesita un producto del catálogo o una descripción")
+            continue
         code = str(item["product"]).strip()
         products[code] = products.get(code) or Product.objects.filter(code__iexact=code).first()
         if products[code] is None:
@@ -248,7 +263,8 @@ def update_order(order: Order, payload: dict, *, actor) -> tuple[Order, list[str
             for item in payload["items"]:
                 OrderItem.objects.create(
                     order=order,
-                    product=products[str(item["product"]).strip()],
+                    product=products.get(str(item.get("product") or "").strip()),
+                    description=(item.get("description") or "").strip(),
                     quantity=item["quantity"],
                     sizes=item.get("sizes") or {},
                     color=item.get("color", "") or "",
@@ -268,7 +284,9 @@ def rebreak_down_order(order: Order) -> list[str]:
     kept_keys = {(r.kind, r.material_id, r.product_id) for r in kept}
     order.requirements.exclude(pk__in=[r.pk for r in kept]).delete()
     needed: dict[int, Decimal] = {}
-    for item in order.items.select_related("product").prefetch_related("product__materials__material"):
+    order.needs_classification = order.items.filter(product__isnull=True).exists()
+    order.save(update_fields=["needs_classification", "updated_at"])
+    for item in order.items.filter(product__isnull=False).select_related("product").prefetch_related("product__materials__material"):
         for pm in item.product.materials.all():
             needed[pm.material_id] = needed.get(pm.material_id, Decimal("0")) + item.quantity * pm.qty_per_unit
     from core.models import Material
@@ -283,7 +301,7 @@ def rebreak_down_order(order: Order) -> list[str]:
             order=order, kind="material", material=material, qty_needed=qty, qty_from_stock=from_stock,
             status=Requirement.Status.COVERED if qty - from_stock <= 0 else Requirement.Status.OPEN,
         )
-    for item in order.items.all():
+    for item in order.items.filter(product__isnull=False):
         if ("workshop", None, item.product_id) not in kept_keys:
             Requirement.objects.create(order=order, kind="workshop", product=item.product, qty_needed=item.quantity)
     warnings = []
@@ -489,8 +507,7 @@ def compute_critical_path(order: Order) -> Order:
         cursor = today
 
     stages = ["cutting"]
-    customizations = {i.customization for i in order.items.all() if i.customization}
-    stages += sorted({CUSTOMIZATION_STAGE[c] for c in customizations if c in CUSTOMIZATION_STAGE})
+    stages += sorted(customization_stages(order))
     for stage in stages:
         end = cursor + timedelta(days=int(durations.get(stage, 1)))
         path.append(_step(dict(Order.Stage.choices)[stage], "production", cursor, end, True))

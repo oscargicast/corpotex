@@ -44,6 +44,7 @@ class Order(TimeStamped):
     issued_on = models.DateField()
     promised_on = models.DateField(help_text="Promised to the customer.")
     notes = models.TextField(blank=True, help_text="Free text from the order form (ADR 0025 B).")
+    needs_classification = models.BooleanField(default=False, help_text="Some item has no catalogue product yet (ADR 0025 C).")
     estimated_on = models.DateField(null=True, blank=True, help_text="From the critical path.")
     critical_path = models.JSONField(default=list)
     risk = models.CharField(max_length=20, choices=Risk.choices, default=Risk.OK)
@@ -59,17 +60,14 @@ class Order(TimeStamped):
 
 
 class OrderItem(TimeStamped):
-    class Customization(models.TextChoices):
-        EMBROIDERY = "embroidery", "Bordado"
-        PRINT = "print", "Estampado"
-        SUBLIMATION = "sublimation", "Sublimado"
 
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="order_items")
+    product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.PROTECT, related_name="order_items")
     quantity = models.PositiveIntegerField()
     sizes = models.JSONField(default=dict, help_text="Quantity per size.")
     color = models.CharField(max_length=60, blank=True)
-    customization = models.CharField(max_length=20, choices=Customization.choices, blank=True)
+    customization = models.CharField(max_length=200, blank=True, help_text="Free text: embroidery, sublimation, print, several at once.")
+    description = models.TextField(blank=True, help_text="What the customer asked for when no catalogue product fits (ADR 0025 C).")
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Sale price; empty when the form does not know it yet.")
 
     class Meta:

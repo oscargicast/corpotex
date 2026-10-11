@@ -5,12 +5,11 @@ by spectacular at schema time, never by settings."""
 from core.models import Customer, Material, OnboardingStyle, StyleVersion
 from manager.models import Alert, Decision
 from messaging.models import Conversation, Message, Turn
-from operations.models import Order, OrderItem, Payment, PurchaseOrder, Route, RouteStop
+from operations.models import Order, Payment, PurchaseOrder, Route, RouteStop
 
 ORDER_STATUS = Order.Status.choices
 ORDER_STAGE = Order.Stage.choices
 ORDER_RISK = Order.Risk.choices
-ORDER_ITEM_CUSTOMIZATION = OrderItem.Customization.choices
 PURCHASE_ORDER_STATUS = PurchaseOrder.Status.choices
 PAYMENT_KIND = Payment.Kind.choices
 PAYMENT_METHOD = Payment.Method.choices

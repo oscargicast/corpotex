@@ -61,12 +61,11 @@ class MaterialRefSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(DisplayMixin, serializers.ModelSerializer):
-    product = ProductRefSerializer(read_only=True)
+    product = ProductRefSerializer(read_only=True, allow_null=True)
 
     class Meta:
         model = OrderItem
-        display_fields = ["customization"]
-        fields = ["id", "product", "quantity", "sizes", "color", "customization", "unit_price"]
+        fields = ["id", "product", "description", "quantity", "sizes", "color", "customization", "unit_price"]
 
 
 class RequirementSerializer(DisplayMixin, serializers.ModelSerializer):
@@ -203,6 +202,7 @@ class OrderDetailSerializer(StatusHistoryMixin, OrderListSerializer):
         fields = OrderListSerializer.Meta.fields + [
             "owner",
             "notes",
+            "needs_classification",
             "critical_path",
             "items",
             "requirements",

@@ -131,7 +131,6 @@ SPECTACULAR_SETTINGS = {
         "OrderStatusEnum": "config.enums.ORDER_STATUS",
         "OrderStageEnum": "config.enums.ORDER_STAGE",
         "OrderRiskEnum": "config.enums.ORDER_RISK",
-        "OrderItemCustomizationEnum": "config.enums.ORDER_ITEM_CUSTOMIZATION",
         "PurchaseOrderStatusEnum": "config.enums.PURCHASE_ORDER_STATUS",
         "PaymentKindEnum": "config.enums.PAYMENT_KIND",
         "PaymentMethodEnum": "config.enums.PAYMENT_METHOD",

@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 
 from core.models import Brand, Customer, Product, User
 from operations import services
-from operations.models import Order, PurchaseOrder, Requirement
+from operations.models import Order, OrderItem, PurchaseOrder, Requirement
 from tests.test_consolidated import catalogue, order  # noqa: F401
 
 
@@ -119,3 +119,31 @@ def test_form_payload_without_code_or_prices_creates_the_order(catalogue, sales_
     assert numbers[-1] == numbers[-2] + 1
     manager_view = manager_client.get(f"/api/orders/{data['id']}/").json()
     assert manager_view["items"][0]["unit_price"] is None and manager_view["total_amount"] == "0.00"
+
+
+@pytest.mark.django_db
+def test_made_to_order_items_wait_for_classification(catalogue, sales_client, production, manager_client):
+    """ADR 0025 C: an item without a catalogue product is described in free text, breaks down
+    nothing and keeps the order from being confirmed until it is classified."""
+    body = {"customer": "Caja Piura", "brand": "UNICRACK", "promised_on": "2026-11-20",
+            "items": [{"product": "UNI-POL-01", "quantity": 100, "customization": "bordado en pecho y sublimado en espalda"},
+                      {"description": "Casaca impermeable azul, tallas S-XL, logo bordado", "quantity": 40, "color": "azul"}]}
+    response = sales_client.post("/api/orders/", body, format="json")
+    assert response.status_code == 201, response.content
+    data = response.json()
+    assert data["needs_classification"] is True and data["status"] == "broken_down"
+    items = {i["description"] or i["product"]["code"]: i for i in data["items"]}
+    assert items["Casaca impermeable azul, tallas S-XL, logo bordado"]["product"] is None
+    assert items["UNI-POL-01"]["customization"] == "bordado en pecho y sublimado en espalda"
+    assert {r["kind"] for r in data["requirements"]} == {"material", "workshop"} and all(r["product"]["code"] == "UNI-POL-01" for r in data["requirements"] if r["kind"] == "workshop")
+    order = Order.objects.get(pk=data["id"])
+    assert {s["name"] for s in order.critical_path if s["kind"] == "production"} >= {"Bordado", "Sublimado"}
+    confirm = client_for(production).post(f"/api/orders/{order.id}/confirm/", {}, format="json")
+    assert confirm.status_code == 400 and "sin producto" in confirm.json()["detail"]
+    assert sales_client.post("/api/orders/", {**body, "items": [{"quantity": 5}]}, format="json").status_code == 400
+    # Once the item gets a product (the classification), the order breaks down and confirms.
+    OrderItem.objects.filter(order=order, product__isnull=True).update(product=Product.objects.get(code="UNI-POL-01"))
+    services.break_down_order(order)
+    order.refresh_from_db()
+    assert order.needs_classification is False and order.requirements.filter(kind="workshop").count() == 2  # one per item
+    assert client_for(production).post(f"/api/orders/{order.id}/confirm/", {}, format="json").status_code == 200

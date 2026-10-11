@@ -66,7 +66,8 @@ def _forbidden(exc):
 
 
 class OrderItemInSerializer(serializers.Serializer):
-    product = serializers.CharField(help_text="Product code.")
+    product = serializers.CharField(required=False, allow_blank=True, allow_null=True, help_text="Product code; empty for a made-to-order item.")
+    description = serializers.CharField(required=False, allow_blank=True, default="", help_text="Garment, colour, sizes, customizations when there is no product.")
     quantity = serializers.IntegerField(min_value=1)
     sizes = serializers.DictField(required=False)
     color = serializers.CharField(required=False, allow_blank=True)
@@ -186,6 +187,8 @@ class OrderViewSet(RoleSerializerMixin, viewsets.ReadOnlyModelViewSet):
             order = services.confirm_order(order, actor=request.user)
         except PermissionDenied as exc:
             _forbidden(exc)
+        except UnknownReference as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return self.detail_response(order)
 
 

@@ -4450,6 +4450,10 @@
                         "type": "string",
                         "description": "Free text from the order form (ADR 0025 B)."
                     },
+                    "needs_classification": {
+                        "type": "boolean",
+                        "description": "Some item has no catalogue product yet (ADR 0025 C)."
+                    },
                     "critical_path": {},
                     "items": {
                         "type": "array",
@@ -4595,7 +4599,12 @@
                                 "$ref": "#/components/schemas/ProductRef"
                             }
                         ],
-                        "readOnly": true
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "What the customer asked for when no catalogue product fits (ADR 0025 C)."
                     },
                     "quantity": {
                         "type": "integer",
@@ -4610,14 +4619,9 @@
                         "maxLength": 60
                     },
                     "customization": {
-                        "oneOf": [
-                            {
-                                "$ref": "#/components/schemas/OrderItemCustomizationEnum"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BlankEnum"
-                            }
-                        ]
+                        "type": "string",
+                        "description": "Free text: embroidery, sublimation, print, several at once.",
+                        "maxLength": 200
                     },
                     "unit_price": {
                         "type": "string",
@@ -4625,36 +4629,26 @@
                         "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
                         "nullable": true,
                         "description": "Sale price; empty when the form does not know it yet."
-                    },
-                    "customization_display": {
-                        "type": "string",
-                        "readOnly": true,
-                        "default": ""
                     }
                 },
                 "required": [
-                    "customization_display",
                     "id",
                     "product",
                     "quantity"
                 ]
-            },
-            "OrderItemCustomizationEnum": {
-                "enum": [
-                    "embroidery",
-                    "print",
-                    "sublimation"
-                ],
-                "type": "string",
-                "description": "* `embroidery` - Bordado\n* `print` - Estampado\n* `sublimation` - Sublimado"
             },
             "OrderItemInRequest": {
                 "type": "object",
                 "properties": {
                     "product": {
                         "type": "string",
-                        "minLength": 1,
-                        "description": "Product code."
+                        "nullable": true,
+                        "description": "Product code; empty for a made-to-order item."
+                    },
+                    "description": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Garment, colour, sizes, customizations when there is no product."
                     },
                     "quantity": {
                         "type": "integer",
@@ -4678,7 +4672,6 @@
                     }
                 },
                 "required": [
-                    "product",
                     "quantity"
                 ]
             },
