@@ -32,7 +32,8 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
   async function add(e: React.FormEvent) {
     e.preventDefault();
     const digits = phone.replace(/\D/g, "");
-    if (digits.length < 9) {
+    // A test number needs no phone: the backend gives it a sim-<slug> id and turns it on.
+    if (!simulated && digits.length < 9) {
       setError("Escribe el celular con código de país, por ejemplo 51987654321.");
       return;
     }
@@ -66,7 +67,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
                 </div>
                 <div className="flex items-center gap-2">
                   {number.simulated && <Pill tone="info">Simulador</Pill>}
-                  {number.active ? <Pill tone="success">Activo para WhatsApp</Pill> : <Pill>Inactivo</Pill>}
+                  {number.active ? <Pill tone="success">{number.simulated ? "Activo en el simulador" : "Activo para WhatsApp"}</Pill> : <Pill>Inactivo</Pill>}
                   {number.active ? (
                     <Button className="py-1" busy={busy} onClick={() => setActive(number, false)}>
                       Desactivar
@@ -100,7 +101,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
 
       <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-2 border-t border-line pt-4">
         <label className="text-sm">
-          <span className="block text-xs text-muted">Celular</span>
+          <span className="block text-xs text-muted">Celular{simulated && " (opcional)"}</span>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -117,7 +118,7 @@ export function Numbers({ supplierId, numbers, onChange }: { supplierId: number;
           <input type="checkbox" checked={simulated} onChange={(e) => setSimulated(e.target.checked)} className="size-4 accent-[var(--color-accent)]" />
           Para pruebas (simulado)
         </label>
-        <Button type="submit" busy={busy} disabled={!phone}>
+        <Button type="submit" busy={busy} disabled={!phone && !simulated}>
           Agregar número
         </Button>
       </form>

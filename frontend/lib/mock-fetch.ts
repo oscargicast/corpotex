@@ -218,7 +218,10 @@ function supplierRoutes(route: string, body: BodyInit | null | undefined): Respo
     if (!supplier) return json(404, { detail: "No existe." });
     const { phone, name, simulated } = readBody(body);
     const detail = (supplierDetails[supplier.id] ??= {});
-    const number = { id: Date.now(), phone: String(phone), name: String(name ?? ""), active: false, simulated: simulated === true };
+    // Like the backend (P6b): a simulated number gets a sim-<slug> id and is active at once.
+    const sim = simulated === true;
+    const slug = supplier.name.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const number = { id: Date.now(), phone: sim ? `sim-${slug}-${Date.now() % 1000}` : String(phone), name: String(name ?? ""), active: sim, simulated: sim };
     detail.numbers = [...(detail.numbers ?? []), number];
     return json(201, number);
   }
