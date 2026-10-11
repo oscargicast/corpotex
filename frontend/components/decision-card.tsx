@@ -55,7 +55,7 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
           {proposal.map((item, i) => (
             <li key={i} className="flex flex-wrap justify-between gap-x-3 rounded-md bg-canvas px-3 py-1.5">
               <span>
-                <strong>{item.supplier.name}</strong> · {item.quantity} u.
+                <strong>{item.supplier.name}</strong> · {Number(item.quantity)} u.
               </span>
               <span className="tabular-nums text-muted">{formatMoney(item.unit_price, item.currency)} c/u</span>
             </li>
@@ -66,7 +66,7 @@ export function DecisionCard({ decision, onResolved }: { decision: DecisionLike;
       {after && !decision.detail.cancelled && (
         <p className="mt-2 text-xs text-muted">
           {/* A price decision carries only the new total; assignments also move the date. */}
-          {[after.estimated_on && `Nueva fecha estimada ${formatDay(after.estimated_on)}`, after.total_amount && `total ${formatMoney(after.total_amount, proposal[0]?.currency)}`]
+          {[after.estimated_on && `Nueva fecha estimada ${formatDay(after.estimated_on)}`, after.total_amount && `total ${formatMoney(after.total_amount, after.currency ?? proposal[0]?.currency)}`]
             .filter(Boolean)
             .join(" · ")}
         </p>
@@ -143,7 +143,7 @@ function ChangeSupplier({
               onClick={() => setIndex(i)}
               className={`rounded-md px-3 py-1.5 text-sm ring-1 ${i === index ? "bg-ink text-white ring-ink" : "ring-line"}`}
             >
-              {p.purchase_order?.code ?? `Parte ${i + 1}`} · {p.quantity} u.
+              {p.purchase_order?.code ?? `Parte ${i + 1}`} · {Number(p.quantity)} u.
             </button>
           ))}
         </div>
