@@ -76,4 +76,6 @@ export const CRITERIA_LABELS: Record<string, string> = {
   price: "Precio",
   load: "Carga libre",
   quality: "Calidad",
+  lead_time: "Plazo",
+  capacity: "Capacidad",
 };
