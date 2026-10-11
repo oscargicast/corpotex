@@ -345,7 +345,21 @@ export type AssistantMessage = Omit<S["AssistantMessage"], "role" | "text" | "ac
 };
 
 // Inventory (F2.6): stock, reserved by open orders, and what is left.
-export type Material = Omit<S["Material"], "stock"> & { stock: string | number };
+// `to_order` (same number as "Por pedir") and `incoming` (live purchase orders,
+// suggested included) are being added by backend; optional until they land.
+export interface IncomingPurchaseOrder {
+  id: number;
+  code: string;
+  status: string;
+  status_display: string;
+  qty_pending: Decimal;
+}
+
+export type Material = Omit<S["Material"], "stock"> & {
+  stock: string | number;
+  to_order?: Decimal | null;
+  incoming?: IncomingPurchaseOrder[] | null;
+};
 
 export type MaterialDetail = Omit<S["MaterialDetailSchema"], "stock"> & { stock: string | number };
 
