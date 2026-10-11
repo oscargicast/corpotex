@@ -82,11 +82,10 @@ function ConnectionTabs({ pathname }: { pathname: string }) {
 const ABOUT: Record<string, string> = {
   claude: "La cuenta que usan todos los agentes.",
   whatsapp: "El número desde el que el agente escribe a los proveedores.",
-  suppliers: "Talleres y proveedores de insumos, con su celular.",
   style: "Cómo escribe el Gerente, sacado de sus chats.",
 };
 
-// "Puesta en marcha 4/4": one line when everything is done; the four steps
+// "Puesta en marcha 3/3": one line when everything is done; the three steps
 // unfold on their own while one is missing (and on demand otherwise).
 function SetupSummary() {
   const pathname = usePathname();
@@ -124,14 +123,14 @@ function SetupSummary() {
             <span className="font-medium">
               Puesta en marcha {done}/{steps.length}
             </span>
-            <span className="text-muted">· Claude, WhatsApp, proveedores y estilo listos</span>
+            <span className="text-muted">· Claude, WhatsApp y estilo listos</span>
             <ChevronDown size={16} className={`ml-auto shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
           </>
         )}
       </button>
       {open && !loading && (
         <div className="border-t border-line/70 px-4 pb-3 pt-3">
-          <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <ol className="grid gap-2 sm:grid-cols-3">
             {steps.map((step, i) => {
               const active = pathname === step.href;
               return (
