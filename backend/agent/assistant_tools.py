@@ -828,19 +828,31 @@ def _asked_at(value) -> str:
     return f"las {moment:%H:%M}" if moment else "antes"
 
 
-def _follow_up_text(requests: list[dict]) -> tuple[str, str]:
-    """(who gets a message, who is already waiting), one phrase each."""
+def _follow_up_text(requests: list[dict]) -> tuple[str, str, str]:
+    """(who gets a message, who is already waiting, who cannot be asked), one phrase each."""
+
+    def code(r):
+        return (r.get("purchase_order") or {}).get("code")
+
+    def waits(r):
+        return r.get("status") == "asked" or r.get("already_asked")
+
     ask = ", ".join(
-        f"{r.get('supplier_name')} ({(r.get('purchase_order') or {}).get('code')})"
+        f"{r.get('supplier_name')} ({code(r)})"
         for r in requests
-        if r.get("status") != "asked"
+        if r.get("status") == "pending" and not waits(r)
     )
     waiting = ", ".join(
-        f"{(r.get('purchase_order') or {}).get('code')} ({r.get('supplier_name')}) desde {_asked_at(r.get('asked_at'))}"
+        f"{code(r)} ({r.get('supplier_name')}) desde {_asked_at(r.get('asked_at'))}"
         for r in requests
-        if r.get("status") == "asked"
+        if waits(r)
     )
-    return ask, waiting
+    skipped = ", ".join(
+        f"{code(r)} ({r.get('supplier_name')}): {r.get('skip_reason') or 'sin canal'}"
+        for r in requests
+        if r.get("status") == "skipped"
+    )
+    return ask, waiting, skipped
 
 
 def _request_follow_up(conversation, turn, user):
@@ -848,20 +860,26 @@ def _request_follow_up(conversation, turn, user):
         requests = _follow_up_requests(user, args, dry_run=True)
         if not requests:
             raise RuntimeError("no tiene pedidos abiertos: no hay a quién pedirle avance")
-        ask, waiting = _follow_up_text(requests)
+        ask, waiting, skipped = _follow_up_text(requests)
+        if not ask and not waiting:
+            raise RuntimeError(f"no se le puede pedir avance a ninguno: {skipped}")
         parts = []
         if ask:
             parts.append(f"Pedir avance a {ask}")
         if waiting:
             parts.append(f"ya esperan respuesta, no se les escribe otra vez: {waiting}")
+        if skipped:
+            parts.append(f"no se les puede escribir: {skipped}")
         return "; ".join(parts) + ". La respuesta llega a este chat."
 
     def run(args):
         requests = _follow_up_requests(user, args, dry_run=False)
-        ask, waiting = _follow_up_text(requests)
+        ask, waiting, skipped = _follow_up_text(requests)
         summary = f"Le pregunto a {ask}." if ask else ""
         if waiting:
             summary += f" Ya esperaban respuesta, no se les escribió otra vez: {waiting}."
+        if skipped:
+            summary += f" Sin pedir: {skipped}."
         summary += " Te aviso aquí cuando contesten."
         links = [
             {"kind": "purchase_order", "id": (r.get("purchase_order") or {}).get("id")}
