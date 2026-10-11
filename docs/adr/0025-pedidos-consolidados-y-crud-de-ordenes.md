@@ -36,9 +36,18 @@ API: `POST /api/orders/` (ya), `PATCH /api/orders/<id>/` (ítems completos reemp
 
 Dashboard: `/orders/new` y `/orders/[id]/edit` con formulario (cliente con búsqueda, marca, ítems con producto y cantidad, fecha prometida, notas); botones según el rol; "Simular orden de Comercial" sigue existiendo como atajo de la demo.
 
-### C. Clasificación con IA al crear la orden y materiales faltantes ("creación mágica")
+### C. Clasificación con Jev (TypeSafe AI) y materiales faltantes ("creación mágica")
 
-Al crear o editar una orden, si un ítem no corresponde a un producto del catálogo o el producto no tiene lista de materiales, el sistema propone (modelo con `sdk.complete` y esquema JSON): el producto del catálogo más cercano o uno nuevo (código, nombre, marca) y su lista de materiales (SKU existente o material nuevo: SKU, nombre, tipo, unidad, cantidad por prenda). Producción revisa y confirma; con eso se crean producto/materiales y se desglosa. Es el lugar donde entra "jev" si es un servicio externo de clasificación: `JEV` en `.env` (vacío → se usa el modelo de Claude; con valor → se consulta jev primero). Pendiente: Oscar define qué es jev y su API.
+"jev" es **Jev, el modelo System One de TypeSafe AI** (https://docs.typesafe.ai/): se le manda un `state` (texto o JSON) y preguntas tipadas y devuelve respuestas estructuradas con probabilidades calibradas y `confidence`, sin generar texto. Tres primitivas: `Choice` (elige una opción de una lista), `Score` (puntúa en una rúbrica) y `Noul` (sí/no con probabilidad). SDK Python `typesafe-sdk` (`uv add typesafe-sdk`), cliente `TypeSafeClient()` que lee `TYPESAFE_API_KEY`; REST `POST https://api.typesafe.ai/v1/systemone` con `Authorization: Bearer`. Varias preguntas van en una sola llamada (`/patterns/fan-out`).
+
+Jev decide; Claude genera. Al crear o editar una orden, `POST /api/orders/classify/ {items: [{description, quantity}]}`:
+
+1. **Producto** (Jev `Choice`): `state` = descripción del ítem + marca; `criteria` = productos del catálogo (`code: "nombre · marca · materiales"`) más `nuevo`. `confidence >= 0.6` → ese producto; si no, pasa a 2.
+2. **Producto nuevo** (Claude `sdk.complete` con esquema JSON): propone código, nombre, marca y lista de materiales (cantidad por prenda, unidad).
+3. **Materiales** (Jev, una pregunta por material propuesto): `Choice` contra los SKU del inventario más `nuevo` (`state` = material propuesto + lista de SKU con nombre y unidad). `confidence >= 0.6` → SKU existente; si no, se propone crearlo (SKU, nombre, tipo, unidad) con `Noul` "¿este material es realmente un insumo textil distinto a los existentes?" como guardia.
+4. La respuesta trae la propuesta con las confianzas; Producción revisa y confirma en el formulario; `POST /api/orders/apply-classification/` crea producto y materiales nuevos y desglosa la orden.
+
+Sin `TYPESAFE_API_KEY`, los pasos 1 y 3 los hace Claude con el mismo esquema (`confidence` fijo 0.5 y siempre revisión manual). Jev también sirve para puntuar candidatos del matching (`Score` por criterio) si sobra tiempo; no en el alcance de hoy.
 
 ## Consecuencias
 

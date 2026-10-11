@@ -4,7 +4,7 @@ Hackathon Piura Innova, 10 y 11 de octubre de 2026. Reto 7: gestión inteligente
 
 El repo arranca vacío. Prioridad: que la demo funcione el domingo; velocidad antes que pulido.
 
-Stack: backend Django + Django REST Framework, frontend Next.js, Postgres, agente con Claude Agent SDK. Monorepo: `backend/`, `frontend/`, `infra/`, `docs/` (ADR 0008); todo levanta con `docker compose up` desde la raíz (ADR 0023). Las decisiones de arquitectura están en `docs/adr/`; cada decisión nueva va como un ADR numerado ahí. URL pública: `https://corpotex.oscargicast.com` (ADR 0006).
+Stack: backend Django + Django REST Framework, frontend Next.js, Postgres, agente con Claude Agent SDK; Jev (TypeSafe AI, `TYPESAFE_API_KEY`) para clasificar ítems de órdenes contra catálogo e inventario (ADR 0025 C). Monorepo: `backend/`, `frontend/`, `infra/`, `docs/` (ADR 0008); todo levanta con `docker compose up` desde la raíz (ADR 0023). Las decisiones de arquitectura están en `docs/adr/`; cada decisión nueva va como un ADR numerado ahí. URL pública: `https://corpotex.oscargicast.com` (ADR 0006).
 
 ## Convenciones
 
