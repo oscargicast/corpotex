@@ -1,4 +1,5 @@
 import asyncio
+from datetime import date
 from types import SimpleNamespace
 from typing import ClassVar
 
@@ -72,14 +73,19 @@ READS = {"list_orders", "get_order", "list_purchase_orders", "get_purchase_order
             READS
             | {"list_materials", "list_pending", "list_suppliers", "get_supplier"}
             | {"resolve_decision", "acknowledge_alert", "mark_payment_paid", "set_clock"}
-            | {"suggest_suppliers", "generate_purchase_orders", "request_follow_up"},
+            | {
+                "suggest_suppliers",
+                "generate_purchase_orders",
+                "request_follow_up",
+                "revise_order",
+            },
         ),
         (
             "production",
             READS
             | {"list_materials"}
             | {"confirm_order", "record_delivery", "record_progress", "generate_purchase_orders"}
-            | {"request_follow_up"},
+            | {"request_follow_up", "revise_order"},
         ),
         ("sales", READS | {"request_follow_up"}),
     ],
@@ -540,3 +546,86 @@ def test_request_follow_up_names_orders_without_a_channel_and_refuses_when_none_
             "request_follow_up",
             {"order_code": "CP-2026-0155", "confirmed": False},
         )
+
+
+PROPOSAL = {
+    "items": [{"item_id": 5, "materials": [{"material_id": 3, "qty_per_unit": 2}]}],
+    "stage_overrides": {},
+}
+REVISED = {
+    "proposal": PROPOSAL,
+    "summary": "Agrega 2 botones plástico 14L por polo (600 u. más).",
+    "warnings": ["1 requerimiento ya pedido no se toca"],
+    "estimated_on": date(2026, 10, 17),
+}
+
+
+def fake_revise(monkeypatch, status=200, body=REVISED):
+    posted = []
+    orders = {"/api/orders/": (200, [{"id": 42, "estimated_on": "2026-10-15"}])}
+    monkeypatch.setattr(assistant_tools, "api_get", fake_api(orders, []))
+
+    def api_post(user, path, data):
+        posted.append((path, data))
+        return status, body
+
+    monkeypatch.setattr(assistant_tools, "api_post", api_post)
+    return posted
+
+
+def test_revise_order_previews_the_summary_and_keeps_the_proposal(monkeypatch):
+    install(monkeypatch)
+    posted = fake_revise(monkeypatch)
+    conv = conversation("production")
+    args = {
+        "order_code": "CP-2026-0142",
+        "instruction": "agrega 2 botones por polo",
+        "confirmed": False,
+    }
+    is_error, text = call(conv, 1, "revise_order", args)
+    assert not is_error
+    assert "pasa de 2026-10-15 a 2026-10-17. Avisos: 1 requerimiento ya pedido no se toca" in text
+    assert posted == [
+        ("/api/orders/42/revise/", {"instruction": "agrega 2 botones por polo", "dry_run": True})
+    ]
+    assert conv.pending_action["data"] == PROPOSAL
+
+
+def test_revise_order_confirmed_applies_the_previewed_proposal(monkeypatch):
+    calls = install(monkeypatch)
+    posted = fake_revise(monkeypatch, body={**REVISED, "order": {"id": 42}})
+    conv = conversation("manager")
+    args = {"order_code": "CP-2026-0142", "instruction": "agrega 2 botones por polo"}
+    conv.pending_action = {"tool": "revise_order", "args": args, "turn_id": 1, "data": PROPOSAL}
+    is_error, _ = call(conv, 2, "revise_order", {**args, "confirmed": True})
+    assert not is_error
+    assert posted == [
+        (
+            "/api/orders/42/revise/",
+            {"instruction": "agrega 2 botones por polo", "proposal": PROPOSAL},
+        )
+    ]
+    ((_, _, action), _) = services(calls, "record_assistant_action")[0]
+    assert action["title"] == "Ficha técnica de CP-2026-0142 actualizada"
+    assert action["links"] == [{"kind": "order", "id": 42}]
+
+
+def test_revise_order_says_why_the_instruction_was_refused(monkeypatch):
+    install(monkeypatch)
+    fake_revise(
+        monkeypatch, status=400, body={"detail": "La instrucción no cambia nada de la ficha."}
+    )
+    args = {"order_code": "CP-2026-0142", "instruction": "hazlo bonito", "confirmed": False}
+    with pytest.raises(RuntimeError, match="no cambia nada"):
+        call(conversation("production"), 1, "revise_order", args)
+    fake_revise(monkeypatch, status=403, body={})
+    is_error, text = call(conversation("production"), 1, "revise_order", args)
+    assert is_error and "Tu rol no puede hacer eso" in text
+
+
+def test_revise_order_prefers_backends_fresh_current_estimate(monkeypatch):
+    install(monkeypatch)
+    fake_revise(monkeypatch, body={**REVISED, "current_estimated_on": "2026-10-17"})
+    args = {"order_code": "CP-2026-0142", "instruction": "agrega 2 botones por polo", "confirmed": False}
+    _, text = call(conversation("production"), 1, "revise_order", args)
+    assert "La fecha estimada no cambia (2026-10-17)." in text

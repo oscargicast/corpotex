@@ -39,6 +39,7 @@ def assistant_tools(conversation, batch) -> list:
             _suggest_suppliers,
             _generate_purchase_orders,
             _request_follow_up,
+            _revise_order,
         ],
         "production": [
             _confirm_order,
@@ -46,6 +47,7 @@ def assistant_tools(conversation, batch) -> list:
             _record_progress,
             _generate_purchase_orders,
             _request_follow_up,
+            _revise_order,
         ],
         # TODO(A3, after B4): sales gets find_client and register_order once their
         # endpoints exist; until then sales only reads and asks for progress.
@@ -264,9 +266,22 @@ def finish_dashboard_turn(conversation, batch, result) -> None:
     post_assistant_message(conversation, batch.turn, result.text.strip(), action=action)
 
 
-def confirmable(conversation, turn, user, *, name, description, properties, required, preview, run):
+def confirmable(
+    conversation,
+    turn,
+    user,
+    *,
+    name,
+    description,
+    properties,
+    required,
+    preview,
+    run,
+    with_data=False,
+):
     """A write tool. `preview(args) -> str` and `run(args) -> action` are sync; `action` is
-    the card ({title, summary, links}) that record_assistant_action stores."""
+    the card ({title, summary, links}) that record_assistant_action stores. With `with_data`,
+    `preview` returns `(text, data)` and `run(args, data)` gets exactly what was previewed."""
     from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 
     schema = {
@@ -282,17 +297,18 @@ def confirmable(conversation, turn, user, *, name, description, properties, requ
     }
 
     def propose(args):
-        text = preview(args)
-        _store_pending(conversation, name, args, turn)
+        text, data = preview(args) if with_data else (preview(args), None)
+        _store_pending(conversation, name, args, turn, data=data)
         return text
 
     def execute(args):
         from messaging.services import record_assistant_action
 
-        if _take_pending(conversation, name, args, turn) is None:
+        pending = _take_pending(conversation, name, args, turn)
+        if pending is None:
             return refuse(NOT_CONFIRMED)
         try:
-            action = run(args)
+            action = run(args, pending.get("data")) if with_data else run(args)
         except PermissionDenied:
             return refuse("Tu rol no puede hacer eso.")
         except Exception as e:  # noqa: BLE001 - a domain refusal (e.g. already resolved) goes on the card
@@ -795,8 +811,6 @@ def _generate_purchase_orders(conversation, turn, user):
 
 def _follow_up_path(user, args: dict) -> str:
     """`/api/<orders|purchase-orders>/<id>/follow-up/` for the code the model passed."""
-    from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-
     collection, code = (
         ("purchase-orders", args.get("purchase_order_code"))
         if args.get("purchase_order_code")
@@ -804,12 +818,23 @@ def _follow_up_path(user, args: dict) -> str:
     )
     if not code:
         raise ValueError("indica order_code o purchase_order_code")
+    return f"/api/{collection}/{_id_for_code(user, collection, code)}/follow-up/"
+
+
+def _id_for_code(user, collection: str, code: str) -> int:
+    return _row_for_code(user, collection, code)["id"]
+
+
+def _row_for_code(user, collection: str, code: str) -> dict:
+    """The list row behind a code, read as the user (their role decides what exists for them)."""
+    from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+
     status, rows = api_get(user, f"/api/{collection}/", {"code": code})
     if status == 403:
         raise PermissionDenied
     if status >= 400 or not rows:
         raise ObjectDoesNotExist(code)
-    return f"/api/{collection}/{rows[0]['id']}/follow-up/"
+    return rows[0]
 
 
 def _follow_up_requests(user, args: dict, *, dry_run: bool) -> list[dict]:
@@ -914,4 +939,82 @@ def _request_follow_up(conversation, turn, user):
         required=[],
         preview=preview,
         run=run,
+    )
+
+
+# --- technical sheet changed by an instruction (ADR 0029 §4, manager and production) ----
+
+
+def _revise(user, code: str, body: dict) -> dict:
+    from django.core.exceptions import PermissionDenied
+
+    order = _row_for_code(user, "orders", code)
+    status, data = api_post(user, f"/api/orders/{order['id']}/revise/", body)
+    if status == 403:
+        raise PermissionDenied
+    if status >= 400:
+        raise RuntimeError(
+            (data or {}).get("detail") or f"no se pudo ajustar la ficha técnica (HTTP {status})"
+        )
+    # backend may send its own fresh `current_estimated_on`; the list row is the fallback
+    return {"current_estimated_on": order.get("estimated_on"), **data}
+
+
+def _revise_text(data: dict) -> str:
+    text = (data.get("summary") or "").strip()
+    new, old = data.get("estimated_on"), data.get("current_estimated_on")
+    if new and old and str(new) == str(old):
+        text += f" La fecha estimada no cambia ({new})."
+    elif new:
+        text += (
+            f" La fecha estimada pasa de {old} a {new}."
+            if old
+            else f" Fecha estimada con el cambio: {new}."
+        )
+    if data.get("warnings"):
+        text += " Avisos: " + "; ".join(data["warnings"])
+    return text
+
+
+def _revise_order(conversation, turn, user):
+    def preview(args):
+        data = _revise(
+            user, args["order_code"], {"instruction": args["instruction"], "dry_run": True}
+        )
+        return _revise_text(data), data.get("proposal")
+
+    def run(args, proposal):
+        # Applies the previewed proposal: the instruction is not interpreted a second time.
+        data = _revise(
+            user, args["order_code"], {"instruction": args["instruction"], "proposal": proposal}
+        )
+        links = [{"kind": "order", "id": (data.get("order") or {}).get("id")}]
+        return _card(
+            f"Ficha técnica de {args['order_code']} actualizada", _revise_text(data), links
+        )
+
+    return confirmable(
+        conversation,
+        turn,
+        user,
+        name="revise_order",
+        description=(
+            "Cambia la ficha técnica de una orden con una instrucción: insumos por prenda, "
+            'cantidades o días de un paso ("agrega 2 botones por polo", "el corte toma 3 días"). '
+            "Solo esa orden; la receta del catálogo no cambia. Los requerimientos ya pedidos no se tocan."
+        ),
+        properties={
+            "order_code": {
+                "type": "string",
+                "description": "Código de la orden, p. ej. CP-2026-0142",
+            },
+            "instruction": {
+                "type": "string",
+                "description": "El cambio, en las palabras del usuario",
+            },
+        },
+        required=["order_code", "instruction"],
+        preview=preview,
+        run=run,
+        with_data=True,
     )
