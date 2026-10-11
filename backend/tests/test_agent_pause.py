@@ -100,7 +100,8 @@ def test_a_persons_request_to_a_paused_supplier_is_skipped(ten_days, production)
 
 
 @pytest.mark.django_db
-def test_global_settings_and_resume_send_the_first_contacts_approved_meanwhile(ten_days, manager, production):
+def test_global_settings_and_resume_send_the_first_contacts_approved_meanwhile(ten_days, manager, production, monkeypatch):
+    monkeypatch.setattr(services, "QUIET_HOURS", None)  # a first contact waits for 07:00 otherwise, whatever the .env says
     client = client_for(manager)
     assert client_for(production).get("/api/settings/agent/").status_code == 403
     assert client.get("/api/settings/agent/").json() == {"paused": False, "paused_suppliers": 0}
