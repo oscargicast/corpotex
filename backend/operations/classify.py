@@ -110,7 +110,8 @@ def classify_order(order: Order, *, actor) -> dict:
 
 def classify_item(item: OrderItem, order: Order, products, materials) -> dict:
     text = _item_text(item)
-    state = f"Pedido de {order.customer.name}, marca {order.brand.name}: {text}"
+    customer = order.customer if order.customer_id else None  # a draft (ADR 0028) may have no customer yet
+    state = f"Pedido de {customer.name}, marca {order.brand.name}: {text}" if customer else f"Pedido para la marca {order.brand.name}: {text}"
     by_code = {p.code: p for p in products}
     by_sku = {m.sku: m for m in materials}
 
@@ -222,6 +223,37 @@ def _slug_code(code: str, brand: str, name: str) -> str:
     return code
 
 
+def product_for_entry(entry: dict, order: Order, warnings: list[str]) -> Product:
+    """One confirmed classification (`{product: {existing_id} | {new: {code, name, brand}},
+    materials: [...]}`): the catalogue product, or a new one with its new materials and bill of
+    materials. Shared by `apply-classification` and the order born broken down (ADR 0028)."""
+    from .services import UnknownReference
+
+    product_block = entry.get("product") or {}
+    if product_block.get("existing_id"):
+        product = Product.objects.filter(pk=product_block["existing_id"]).first()
+        if product is None:
+            raise UnknownReference(f"El producto {product_block['existing_id']} no existe")
+        return product
+    new = product_block.get("new") or {}
+    if not new.get("name"):
+        raise UnknownReference("Cada ítem clasificado necesita un producto existente o uno nuevo con nombre")
+    brand = Brand.objects.filter(name__iexact=(new.get("brand") or order.brand.name).strip()).first() or order.brand
+    product = Product.objects.create(code=_slug_code(new.get("code") or "", brand.name, new["name"]), name=new["name"][:160], brand=brand)
+    for m in entry.get("materials") or []:
+        material = _material_for(m)
+        if material is None:
+            continue
+        qty = Decimal(str(m.get("qty_per_unit") or 0))
+        if qty <= 0:
+            warnings.append(f"{material.name}: cantidad por prenda vacía, no entra al desglose")
+            continue
+        ProductMaterial.objects.get_or_create(product=product, material=material, defaults={"qty_per_unit": qty})
+    if not product.materials.exists():
+        warnings.append(f"{product.name}: sin insumos; solo se pedirá costura")
+    return product
+
+
 def apply_classification(order: Order, items: list[dict], *, actor) -> tuple[Order, list[str]]:
     """What production confirmed: creates products, materials and bills of materials as needed,
     assigns the product to each item and breaks the order down again."""
@@ -235,32 +267,52 @@ def apply_classification(order: Order, items: list[dict], *, actor) -> tuple[Ord
                 item = order.items.get(pk=entry["item_id"])
             except (OrderItem.DoesNotExist, KeyError):
                 raise UnknownReference(f"El ítem {entry.get('item_id')} no es de la orden {order.code}")
-            product_block = entry.get("product") or {}
-            if product_block.get("existing_id"):
-                product = Product.objects.filter(pk=product_block["existing_id"]).first()
-                if product is None:
-                    raise UnknownReference(f"El producto {product_block['existing_id']} no existe")
-            else:
-                new = product_block.get("new") or {}
-                if not new.get("name"):
-                    raise UnknownReference(f"El ítem {item.id} necesita un producto existente o uno nuevo con nombre")
-                brand = Brand.objects.filter(name__iexact=(new.get("brand") or order.brand.name).strip()).first() or order.brand
-                product = Product.objects.create(code=_slug_code(new.get("code") or "", brand.name, new["name"]), name=new["name"][:160], brand=brand)
-                for m in entry.get("materials") or []:
-                    material = _material_for(m)
-                    if material is None:
-                        continue
-                    qty = Decimal(str(m.get("qty_per_unit") or 0))
-                    if qty <= 0:
-                        warnings.append(f"{material.name}: cantidad por prenda vacía, no entra al desglose")
-                        continue
-                    ProductMaterial.objects.get_or_create(product=product, material=material, defaults={"qty_per_unit": qty})
-                if not product.materials.exists():
-                    warnings.append(f"{product.name}: sin insumos; solo se pedirá costura")
-            item.product = product
+            item.product = product_for_entry(entry, order, warnings)
             item.save(update_fields=["product", "updated_at"])
         break_down_order(order)
     return order, warnings
+
+
+def apply_by_key(order: Order, keyed_items: list[tuple[str | None, OrderItem]], classification: dict | None, warnings: list[str]) -> int:
+    """`classification` of `POST/PATCH /api/orders/` (ADR 0028): the items whose `key` has a
+    confirmed classification get their product; the rest stay to classify. Returns how many."""
+    entries = {str(e["key"]): e for e in (classification or {}).get("items") or [] if e.get("key") not in (None, "")}
+    done = 0
+    for key, item in keyed_items:
+        if item.product_id or key in (None, "") or str(key) not in entries:
+            continue
+        item.product = product_for_entry(entries[str(key)], order, warnings)
+        item.save(update_fields=["product", "updated_at"])
+        done += 1
+    return done
+
+
+MIN_DRAFT_TEXT = 12
+
+
+def classify_draft(brand: Brand, items: list[dict], *, customer=None) -> list[dict]:
+    """`POST /api/orders/classify-draft/` (ADR 0028 §1): the `classify` proposal for lines still
+    being written, nothing saved. Short lines or lines without a quantity come back `pending`
+    without calling any model; a model failure is that line's `error`, never the request's."""
+    draft = Order(brand=brand, customer=customer)
+    products = materials = None
+    results = []
+    for line in items:
+        key, text, quantity = line.get("key"), (line.get("description") or "").strip(), line.get("quantity")
+        if len(text) < MIN_DRAFT_TEXT or not quantity:
+            results.append({"key": key, "status": "pending"})
+            continue
+        if products is None:
+            products, materials = _catalogue()
+        try:
+            proposal = classify_item(OrderItem(order=draft, description=text, quantity=int(quantity)), draft, products, materials)
+        except Exception as exc:  # The form keeps working: this line shows the failure and can be saved unclassified.
+            logger.warning("classify_draft: line %s failed: %s", key, exc)
+            results.append({"key": key, "status": "error", "detail": f"No se pudo clasificar: {exc}"[:300]})
+            continue
+        proposal.pop("item_id", None)
+        results.append({"key": key, "status": "classified", **proposal})
+    return results
 
 
 def _material_for(entry: dict):
