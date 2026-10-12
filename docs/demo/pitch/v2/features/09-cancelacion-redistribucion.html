@@ -1,0 +1,310 @@
+<style>
+  .cr{--brand:#ff8c06;--accent:#0062fa;--ink:#15141c;--muted:#5f5e6b;--line:#e3e3e8;--canvas:#f5f5f7;--surface:#fff;--danger:#c4281c;--danger-soft:#fdecea;--warning:#9a5b00;--warning-soft:#fff4e0;--success:#12773d;--success-soft:#e6f4ea;--wa-out:#d9fdd3;--wa-bg:#efeae2;
+    position:relative;width:1600px;height:900px;overflow:hidden;background:var(--paper,#f5f5f7);color:var(--ink);
+    font-family:var(--sans,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);font-size:20px;line-height:1.45;box-sizing:border-box}
+  .cr-canvas{position:absolute;inset:0;z-index:1;padding:100px 80px 40px}
+  .cr .pg{position:absolute;right:80px;bottom:30px;font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:20px;opacity:.45}
+  .cr .mark{position:absolute;right:80px;top:52px;width:238px;height:54px}
+  .cr *,.cr *::before,.cr *::after{box-sizing:border-box;margin:0}
+  .cr.is-instant *,.cr.is-instant *::before,.cr.is-instant *::after{transition:none!important;animation:none!important}
+  .cr svg{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .cr-kicker{display:flex;align-items:baseline;gap:18px;margin-bottom:20px;margin-top:-40px}
+  .cr-kicker .cr-num{font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:20px;letter-spacing:5px;color:var(--maroon,#5B2230);opacity:.85}
+  .cr-kicker h2{font-family:var(--serif,Georgia,"Times New Roman",serif);font-size:40px;font-weight:400;letter-spacing:-.005em}
+  .cr-kicker p{font-size:20px;color:var(--muted);max-width:760px;line-height:1.3}
+  .cr-stage{display:grid;grid-template-columns:400px 1fr;gap:40px;align-items:start}
+  /* Chat with the workshop */
+  .cr-chat{border-radius:16px;background:var(--wa-bg);box-shadow:0 0 0 1px var(--line);overflow:hidden;height:470px;display:flex;flex-direction:column}
+  .cr-chat-h{background:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+  .cr-av{width:38px;height:38px;border-radius:50%;background:var(--danger-soft);color:var(--danger);display:grid;place-items:center;font-weight:700;font-size:15px}
+  .cr-chat-h b{display:block;font-size:17px}.cr-chat-h small{display:block;font-size:13px;color:var(--muted)}
+  .cr-chat-h .cr-glyph{margin-left:auto;color:var(--success);font-size:22px}
+  .cr-msgs{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:8px}
+  .cr-b{max-width:88%;padding:8px 12px 6px;border-radius:12px;background:#fff;font-size:16.5px;line-height:1.35;box-shadow:0 1px 1px rgba(0,0,0,.08);display:none}
+  .cr-b.is-on{display:block;animation:cr-in .22s ease-out both}
+  .cr-b.in{align-self:flex-start;border-bottom-left-radius:4px}
+  .cr-b.out{align-self:flex-end;background:var(--wa-out);border-bottom-right-radius:4px}
+  .cr-b .cr-t{display:flex;justify-content:flex-end;gap:4px;font-size:11px;color:#7a7a84;margin-top:2px}
+  .cr-b .cr-who{font-size:12px;font-weight:600;color:var(--brand);margin-bottom:2px}
+  .cr-typing{display:none;align-self:flex-start;padding:10px 14px;border-radius:12px;background:#fff;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+  .cr-typing.out{align-self:flex-end;background:var(--wa-out)}
+  .cr-typing.is-on{display:flex;gap:4px;animation:cr-in .2s ease-out both}
+  .cr-typing i{width:7px;height:7px;border-radius:50%;background:#8a8a94;animation:cr-dot 1s ease-in-out infinite}
+  .cr-typing i:nth-child(2){animation-delay:.15s}.cr-typing i:nth-child(3){animation-delay:.3s}
+  @keyframes cr-dot{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-4px);opacity:1}}
+  @keyframes cr-in{from{opacity:0;transform:translateY(6px)}}
+  .cr-sys{display:none;align-self:center;font-size:13px;color:var(--danger);background:var(--danger-soft);padding:4px 12px;border-radius:999px;font-weight:600}
+  .cr-sys.is-on{display:inline-flex;align-items:center;gap:6px;animation:cr-in .2s ease-out both}
+  /* Decision card (Monitor) */
+  .cr-card{position:relative;background:var(--surface);border-radius:16px;box-shadow:0 0 0 1px var(--line);padding:26px 28px;opacity:0;transform:translateY(10px);transition:opacity .3s ease-out,transform .3s ease-out}
+  .cr-card.is-on{opacity:1;transform:none}
+  .cr-top{display:flex;align-items:center;gap:12px;font-size:18px}
+  .cr-pill{font-size:15px;font-weight:600;padding:5px 12px;border-radius:999px;white-space:nowrap}
+  .cr-pill.warn{background:var(--warning-soft);color:var(--warning)}
+  .cr-pill.ok{background:var(--success-soft);color:var(--success)}
+  .cr-pill.danger{background:var(--danger-soft);color:var(--danger)}
+  .cr-top a{color:var(--accent);font-weight:600;text-decoration:none}
+  .cr-top span.cr-cust{color:var(--muted)}
+  .cr-sum{margin-top:12px;font-size:19px;line-height:1.45}
+  .cr-bar{display:flex;height:34px;border-radius:8px;overflow:hidden;margin-top:18px;background:repeating-linear-gradient(135deg,#eceaf1 0 10px,#f7f6fa 10px 20px)}
+  .cr-bar i{display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:600;height:100%;width:0;transition:width .9s cubic-bezier(.2,.8,.2,1);overflow:hidden;white-space:nowrap}
+  .cr-bar .done{background:#5f5e6b}.cr-bar .a{background:var(--accent)}.cr-bar .b{background:var(--success)}
+  .cr-legend{display:flex;gap:18px;margin-top:8px;font-size:14px;color:var(--muted)}
+  .cr-legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+  .cr-legend .pend{opacity:1;transition:opacity .3s}.cr-legend.is-split .pend{display:none}
+  .cr-legend .a,.cr-legend .b{display:none}.cr-legend.is-split .a,.cr-legend.is-split .b{display:inline}
+  .cr-figs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+  .cr-fig{padding:14px 16px;border-radius:12px;background:var(--canvas)}
+  .cr-fig small{display:block;font-size:14px;color:var(--muted)}
+  .cr-fig .cr-v{display:flex;align-items:baseline;gap:10px;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+  .cr-fig .cr-old{font-size:20px;font-weight:500;color:var(--muted);text-decoration:line-through;opacity:0;transition:opacity .3s}
+  .cr-fig .cr-arrow{font-size:20px;color:var(--muted);opacity:0;transition:opacity .3s}
+  .cr-fig.is-after .cr-old,.cr-fig.is-after .cr-arrow{opacity:1}
+  .cr-fig .cr-d{font-size:15px;font-weight:600;color:var(--danger);opacity:0;transition:opacity .3s}
+  .cr-fig.is-after .cr-d{opacity:1}
+  .cr-actions{display:flex;gap:12px;margin-top:22px}
+  .cr-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:52px;padding:0 20px;border-radius:10px;font-weight:600;font-size:19px;border:0;background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line);transition:transform .12s,box-shadow .2s,opacity .2s}
+  .cr-btn.primary{background:var(--brand);box-shadow:none;margin-left:auto}
+  .cr-btn.is-press{transform:scale(.96);box-shadow:0 0 0 4px rgba(255,140,6,.35)}
+  .cr-actions.is-done .cr-btn{opacity:.4}
+  .cr-done{display:none;align-items:center;gap:10px;margin-top:22px;font-size:18px;color:var(--success);font-weight:600}
+  .cr-done.is-on{display:flex;animation:cr-in .25s ease-out both}
+  /* Confirm dialog over the card */
+  .cr-dim{position:absolute;inset:0;border-radius:16px;background:rgba(21,20,28,.35);display:none;align-items:center;justify-content:center;z-index:3}
+  .cr-dim.is-on{display:flex;animation:cr-fade .2s ease-out both}
+  @keyframes cr-fade{from{opacity:0}}
+  .cr-dlg{width:560px;background:#fff;border-radius:14px;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.25);animation:cr-pop .22s ease-out both}
+  @keyframes cr-pop{from{opacity:0;transform:scale(.96)}}
+  .cr-dlg h3{font-size:22px;font-weight:600}.cr-dlg p{font-size:17px;margin-top:8px;color:var(--ink)}
+  .cr-dlg .cr-actions{margin-top:18px;justify-content:flex-end}
+  .cr-dlg .cr-btn{height:46px;font-size:17px}.cr-dlg .cr-btn.primary{margin-left:0}
+  /* Cursor */
+  .cr-cursor{position:absolute;z-index:4;left:0;top:0;width:28px;height:28px;opacity:0;transition:transform .55s cubic-bezier(.2,.8,.2,1),opacity .2s;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+  .cr-cursor.is-on{opacity:1}
+  .cr-cursor svg{width:28px;height:28px;fill:#15141c;stroke:#fff;stroke-width:1.5}
+  /* WhatsApp toast */
+  .cr-toast{position:absolute;left:50%;bottom:118px;transform:translate(-50%,16px);display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:999px;background:var(--surface);box-shadow:0 10px 30px rgba(21,20,28,.18),0 0 0 1px var(--line);font-size:18px;font-weight:500;opacity:0;transition:opacity .25s,transform .25s,background .3s,color .3s;z-index:5;white-space:nowrap}
+  .cr-toast.is-on{opacity:1;transform:translate(-50%,0)}
+  .cr-toast.is-sent{background:var(--success-soft);color:var(--success);box-shadow:0 10px 30px rgba(21,20,28,.12),0 0 0 1px rgba(18,119,61,.3)}
+  .cr-toast .cr-ring{position:relative;display:grid;place-items:center;width:22px;height:22px}
+  .cr-toast .cr-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(18,119,61,.3);animation:cr-ring 1.2s ease-out infinite}
+  .cr-toast.is-sent .cr-ring::before{display:none}
+  .cr-toast .cr-ring svg{position:relative;color:var(--success);font-size:20px;animation:cr-send .6s ease-in-out infinite}
+  .cr-toast.is-sent .cr-ring svg{animation:none}
+  @keyframes cr-ring{from{transform:scale(.6);opacity:.9}to{transform:scale(2.2);opacity:0}}
+  @keyframes cr-send{0%,100%{transform:none}40%{transform:translateY(-2px) rotate(-10deg)}70%{transform:translateY(1px) rotate(6deg)}}
+  /* Notices to the other roles */
+  .cr-notices{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px}
+  .cr-notice{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:14px;background:var(--surface);box-shadow:0 0 0 1px var(--line);opacity:0;transform:translateY(10px);transition:opacity .3s ease-out,transform .3s ease-out}
+  .cr-notice.is-on{opacity:1;transform:none}
+  .cr-notice .cr-bell{width:40px;height:40px;border-radius:12px;background:var(--warning-soft);color:var(--warning);display:grid;place-items:center;font-size:20px;flex:none}
+  .cr-notice.is-on .cr-bell svg{animation:cr-bell .6s ease-in-out 1}
+  @keyframes cr-bell{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg)}50%{transform:rotate(12deg)}75%{transform:rotate(-6deg)}}
+  .cr-notice b{display:block;font-size:15px;color:var(--muted);font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+  .cr-notice p{font-size:17px;line-height:1.4;margin-top:2px}
+  .cr-notice .cr-snd{margin-left:auto;color:var(--muted);font-size:18px;opacity:.7;flex:none}
+</style>
+<section class="slide feature cr" data-feature="cancelacion-redistribucion">
+<svg class="mark" viewBox="0 0 238 54" aria-hidden="true"><use href="#ciso" x="0" y="0" width="46" height="54"/><use href="#cword" x="56" y="15" width="182" height="23"/></svg>
+<div class="cr-canvas">
+<div class="cr-kicker"><span class="cr-num">09</span><h2>Un taller cancela</h2><p>El sistema redistribuye las unidades, recalcula fecha y costo, el Gerente aprueba y cada rol se entera solo.</p></div>
+<div class="cr-stage">
+  <div class="cr-chat">
+    <div class="cr-chat-h"><span class="cr-av">TC</span><div><b>Taller Costura Castilla</b><small data-status>en línea</small></div><span class="cr-glyph"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg></span></div>
+    <div class="cr-msgs">
+      <div class="cr-b out is-on"><div class="cr-who">Gerente · agente</div>¿cómo van los polos de Caja Piura? llevamos 500<div class="cr-t">ayer 17:10</div></div>
+      <div class="cr-typing" data-typing-in><i></i><i></i><i></i></div>
+      <div class="cr-b in" data-b="1">jefe, no vamos a poder con el pedido. se me fueron dos costureras<div class="cr-t">09:14</div></div>
+      <div class="cr-sys" data-sys><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>El agente detectó la cancelación de PT-0001</div>
+      <div class="cr-typing out" data-typing-out><i></i><i></i><i></i></div>
+      <div class="cr-b out" data-b="2">entendido, gracias por avisar. quedan las 500 que ya hiciste, el resto lo reparto<div class="cr-t">09:15</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="cr-card" data-card>
+      <div class="cr-top"><span class="cr-pill warn" data-kind>Redistribuir</span><a>CP-2026-0001</a><span class="cr-cust">Caja Piura · 1000 polos</span><span class="cr-pill danger" style="margin-left:auto">Orden en peligro</span></div>
+      <p class="cr-sum">Taller Costura Castilla canceló <b>PT-0001</b> con 500 de 1000 polos hechos. Propongo repartir las 500 restantes entre <b>Confecciones del Norte (300)</b> y <b>Confecciones Tallán (200)</b>: mejor cumplimiento y carga libre esta semana.</p>
+      <div class="cr-bar"><i class="done" data-seg="done">500 hechas</i><i class="a" data-seg="a">300</i><i class="b" data-seg="b">200</i></div>
+      <div class="cr-legend" data-legend><span style="--c:#5f5e6b">Castilla (hecho)</span><span class="pend" style="--c:#eceaf1">500 por asignar</span><span class="a" style="--c:#0062fa">Confecciones del Norte · 300</span><span class="b" style="--c:#12773d">Confecciones Tallán · 200</span></div>
+      <div class="cr-figs">
+        <div class="cr-fig" data-fig="date"><small>Fecha estimada</small><div class="cr-v"><span class="cr-old">22 oct.</span><span class="cr-arrow">→</span><span data-date>22 oct.</span></div><span class="cr-d">+5 días · entrega prometida 24 oct.</span></div>
+        <div class="cr-fig" data-fig="cost"><small>Costo total</small><div class="cr-v"><span class="cr-old">S/ 18,500</span><span class="cr-arrow">→</span><span>S/ <span data-cost>18,500</span></span></div><span class="cr-d">+S/ 840 · tarifa de los talleres nuevos</span></div>
+      </div>
+      <div class="cr-actions" data-actions>
+        <button class="cr-btn" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>Rechazar</button>
+        <button class="cr-btn" type="button"><svg viewBox="0 0 24 24"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>Cambiar proveedor</button>
+        <button class="cr-btn primary" type="button" data-approve><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg>Aprobar</button>
+      </div>
+      <div class="cr-done" data-done><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg>Aprobada · PT-0046 Confecciones del Norte y PT-0047 Confecciones Tallán creados · ruta recalculada</div>
+      <div class="cr-dim" data-dim><div class="cr-dlg">
+        <h3>Aprobar asignación</h3>
+        <p>Se aprueba la redistribución a Confecciones del Norte y Confecciones Tallán: el agente manda el primer contacto por WhatsApp con precio de referencia y fecha.</p>
+        <div class="cr-actions"><button class="cr-btn" type="button">Cancelar</button><button class="cr-btn primary" type="button" data-confirm><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg>Aprobar</button></div>
+      </div></div>
+      <div class="cr-cursor" data-cursor><svg viewBox="0 0 24 24"><path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87a.5.5 0 0 0 .35-.85L6.35 2.85a.5.5 0 0 0-.85.36Z"/></svg></div>
+    </div>
+    <div class="cr-notices">
+      <div class="cr-notice" data-notice="1"><span class="cr-bell"><svg viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></span><div><b>Asistente de Comercial</b><p>CP-2026-0001 (Caja Piura): un taller canceló, ya se redistribuyó. La entrega estimada pasa al 27 oct.; la prometida sigue el 24. Avisa al cliente si hace falta.</p></div><span class="cr-snd"><svg viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg></span></div>
+      <div class="cr-notice" data-notice="2"><span class="cr-bell"><svg viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></span><div><b>Asistente de Producción</b><p>PT-0001 se repartió: PT-0046 Confecciones del Norte (300) y PT-0047 Confecciones Tallán (200). El corte ya está; coordina el despacho a los dos talleres.</p></div><span class="cr-snd"><svg viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg></span></div>
+    </div>
+  </div>
+</div>
+<div class="cr-toast" data-toast><span class="cr-ring"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg></span><span data-toast-text>Enviando por WhatsApp…</span></div>
+</div>
+<div class="pg">09</div>
+</section>
+<script>
+(function () {
+  const root = document.querySelector('.feature[data-feature="cancelacion-redistribucion"]');
+  const $ = (sel) => root.querySelector(sel);
+  const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("reduced");
+  // One .slide in the document: opened on its own or in the preview iframe; the deck has eleven.
+  const standalone = document.querySelectorAll(".slide").length === 1;
+  let timers = [];
+  const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const on = (sel) => $(sel).classList.add("is-on");
+  const off = (sel) => $(sel).classList.remove("is-on");
+
+  // Two short tones for the notice, only after the person touched the page
+  // (browsers block sound before a gesture) and never under reduced motion.
+  let gestured = false;
+  const mark = () => (gestured = true);
+  window.addEventListener("pointerdown", mark, { once: true });
+  window.addEventListener("keydown", mark, { once: true });
+  let audio = null;
+  function chime() {
+    const active = (navigator.userActivation && navigator.userActivation.hasBeenActive) || gestured;
+    if (!active || reduced()) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === "suspended") audio.resume();
+      [[660, 0], [880, 0.14]].forEach(([freq, at]) => {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = "sine"; o.frequency.value = freq;
+        const t = audio.currentTime + at;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        o.connect(g).connect(audio.destination);
+        o.start(t); o.stop(t + 0.18);
+      });
+    } catch (_) { /* no audio: the notice still shows */ }
+  }
+
+  // Cursor in canvas px: the card is the positioning context.
+  function moveCursor(target) {
+    const card = $("[data-card]").getBoundingClientRect();
+    const r = target.getBoundingClientRect();
+    const s = card.width / $("[data-card]").offsetWidth || 1;
+    const x = (r.left - card.left) / s + r.width * 0.55 / s;
+    const y = (r.top - card.top) / s + r.height * 0.6 / s;
+    $("[data-cursor]").style.transform = `translate(${x}px, ${y}px)`;
+  }
+  function countTo(el, value, ms) {
+    const from = Number(String(el.textContent).replace(/[^\d]/g, "")) || 0;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / ms);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(from + (value - from) * e).toLocaleString("en-US");
+      if (p < 1) timers.push(setTimeout(() => requestAnimationFrame(tick), 16));
+    };
+    requestAnimationFrame(tick);
+  }
+  const split = () => {
+    $('[data-seg="done"]').style.width = "50%";
+    $('[data-seg="a"]').style.width = "30%";
+    $('[data-seg="b"]').style.width = "20%";
+    $("[data-legend]").classList.add("is-split");
+  };
+  const after = () => {
+    root.querySelectorAll("[data-fig]").forEach((f) => f.classList.add("is-after"));
+    $("[data-date]").textContent = "27 oct.";
+  };
+
+  const steps = [
+    [500, () => { $("[data-status]").textContent = "escribiendo…"; on("[data-typing-in]"); }],
+    [1700, () => { off("[data-typing-in]"); $("[data-status]").textContent = "en línea"; on('[data-b="1"]'); }],
+    [2700, () => on("[data-sys]")],
+    [3300, () => on("[data-typing-out]")],
+    [4300, () => { off("[data-typing-out]"); on('[data-b="2"]'); }],
+    [4900, () => { on("[data-card]"); $('[data-seg="done"]').style.width = "50%"; }],
+    [7600, () => { on("[data-cursor]"); moveCursor($("[data-approve]")); }],
+    [8300, () => $("[data-approve]").classList.add("is-press")],
+    [8500, () => { $("[data-approve]").classList.remove("is-press"); on("[data-dim]"); later(60, () => moveCursor($("[data-confirm]"))); }],
+    [9700, () => $("[data-confirm]").classList.add("is-press")],
+    [9900, () => {
+      $("[data-confirm]").classList.remove("is-press");
+      off("[data-dim]"); off("[data-cursor]");
+      $("[data-actions]").classList.add("is-done");
+      $("[data-kind]").textContent = "Aprobada"; $("[data-kind]").className = "cr-pill ok";
+      split();
+      on("[data-toast]");
+    }],
+    [10500, () => { after(); countTo($("[data-cost]"), 19340, 1100); }],
+    [11200, () => on("[data-done]")],
+    [11400, () => { $("[data-toast]").classList.add("is-sent"); $("[data-toast-text]").textContent = "Enviado a Confecciones del Norte y Confecciones Tallán"; }],
+    [13600, () => { on('[data-notice="1"]'); chime(); }],
+    [15200, () => { on('[data-notice="2"]'); chime(); }],
+    [15600, () => off("[data-toast]")],
+  ];
+
+  const FINAL = () => {
+    on('[data-b="1"]'); on("[data-sys]"); on('[data-b="2"]'); on("[data-card]");
+    $("[data-actions]").classList.add("is-done");
+    $("[data-kind]").textContent = "Aprobada"; $("[data-kind]").className = "cr-pill ok";
+    split(); after();
+    $("[data-cost]").textContent = "19,340";
+    on("[data-done]"); on('[data-notice="1"]'); on('[data-notice="2"]');
+  };
+
+  function reset() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    root.classList.remove("is-instant");
+    root.querySelectorAll(".is-on").forEach((el) => el.classList.remove("is-on"));
+    root.querySelectorAll(".is-press").forEach((el) => el.classList.remove("is-press"));
+    root.querySelectorAll("[data-fig]").forEach((f) => f.classList.remove("is-after"));
+    $("[data-status]").textContent = "en línea";
+    $("[data-actions]").classList.remove("is-done");
+    $("[data-kind]").textContent = "Redistribuir"; $("[data-kind]").className = "cr-pill warn";
+    root.querySelectorAll("[data-seg]").forEach((s) => (s.style.width = "0"));
+    $("[data-legend]").classList.remove("is-split");
+    $("[data-date]").textContent = "22 oct.";
+    $("[data-cost]").textContent = "18,500";
+    $("[data-toast]").classList.remove("is-sent");
+    $("[data-toast-text]").textContent = "Enviando por WhatsApp…";
+    $("[data-cursor]").style.transform = "translate(0,0)";
+  }
+
+  function start() {
+    reset();
+    if (reduced()) { root.classList.add("is-instant"); FINAL(); return; }
+    steps.forEach(([t, fn]) => later(t, fn));
+  }
+
+  window.features = window.features || {};
+  window.features["cancelacion-redistribucion"] = { start, reset, duration: 20000 };
+
+  // Opened on its own: fit the viewport and play; the preview iframe drives it
+  // with postMessage({feature, action}). Inside the deck the shell calls start/reset.
+  if (standalone) {
+    const fit = () => {
+      const s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+      root.style.transformOrigin = "top left";
+      root.style.transform = `scale(${s})`;
+      document.body.style.margin = "0";
+      document.body.style.background = "#15141c";
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    window.addEventListener("message", (e) => {
+      const m = e.data || {};
+      if (m.feature !== "cancelacion-redistribucion") return;
+      if (m.action === "start") start();
+      if (m.action === "reset") reset();
+    });
+    if (window === window.top) later(400, start);
+  }
+})();
+</script>

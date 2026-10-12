@@ -1,0 +1,5 @@
+# Archify receipts; the diagram source is *.workflow.json and the artifact is *.html
+*.finalize.json
+*.finalize-summary.json
+*.delivery.json
+*.browser-check.json

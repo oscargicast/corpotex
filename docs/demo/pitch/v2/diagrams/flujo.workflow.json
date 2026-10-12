@@ -1,0 +1,209 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "De la orden a la entrega",
+    "animation": "trace",
+    "visual_preset": "editorial",
+    "quality_profile": "showcase",
+    "output": "docs/demo/pitch/v2/diagrams/flujo.html",
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "frontend": {
+          "label": "Comercial"
+        },
+        "backend": {
+          "label": "Producción y planta"
+        },
+        "database": {
+          "label": "Pedidos"
+        },
+        "security": {
+          "label": "Decisión del Gerente"
+        },
+        "messagebus": {
+          "label": "Agente por WhatsApp"
+        },
+        "external": {
+          "label": "Proveedores y talleres"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "equipo",
+      "label": "Comercial y Producción"
+    },
+    {
+      "id": "gerente",
+      "label": "Gerente"
+    },
+    {
+      "id": "agente",
+      "label": "Agente (WhatsApp del Gerente)"
+    },
+    {
+      "id": "proveedores",
+      "label": "Proveedores y talleres"
+    }
+  ],
+  "phases": [
+    {
+      "id": "registrar",
+      "label": "Registrar",
+      "fromCol": 0,
+      "toCol": 2
+    },
+    {
+      "id": "abastecer",
+      "label": "Abastecer y seguir",
+      "fromCol": 3,
+      "toCol": 4,
+      "variant": "emphasis"
+    },
+    {
+      "id": "entregar",
+      "label": "Entregar",
+      "fromCol": 5,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "orden",
+    "ficha",
+    "pedidos",
+    "decision",
+    "whatsapp",
+    "proveedor",
+    "entrega"
+  ],
+  "nodes": [
+    {
+      "id": "orden",
+      "lane": "equipo",
+      "col": 0,
+      "type": "frontend",
+      "label": "Orden del cliente",
+      "sublabel": "texto libre o foto",
+      "width": 150
+    },
+    {
+      "id": "ficha",
+      "lane": "equipo",
+      "col": 1,
+      "type": "backend",
+      "label": "Ficha técnica",
+      "sublabel": "insumos y talleres",
+      "tag": "se ajusta por prompt",
+      "width": 150
+    },
+    {
+      "id": "pedidos",
+      "lane": "equipo",
+      "col": 2,
+      "type": "database",
+      "label": "Pedidos por proveedor",
+      "sublabel": "una compra, 3 marcas",
+      "width": 150
+    },
+    {
+      "id": "entrega",
+      "lane": "equipo",
+      "col": 5,
+      "type": "backend",
+      "label": "Entrega al cliente",
+      "sublabel": "ruta desde la planta",
+      "width": 150
+    },
+    {
+      "id": "decision",
+      "lane": "gerente",
+      "col": 3,
+      "type": "security",
+      "label": "Aprueba o cambia",
+      "sublabel": "proveedor por histórico",
+      "tag": "un clic",
+      "width": 150
+    },
+    {
+      "id": "whatsapp",
+      "lane": "agente",
+      "col": 4,
+      "type": "messagebus",
+      "label": "Agente por WhatsApp",
+      "sublabel": "precio y fecha, su estilo",
+      "width": 150
+    },
+    {
+      "id": "proveedor",
+      "lane": "proveedores",
+      "col": 5,
+      "type": "external",
+      "label": "Proveedor o taller",
+      "sublabel": "confirma y reporta",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "id": "orden-ficha",
+      "from": "orden",
+      "to": "ficha",
+      "label": "reconoce",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ficha-pedidos",
+      "from": "ficha",
+      "to": "pedidos",
+      "label": "aprobar y abastecer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "pedidos-decision",
+      "from": "pedidos",
+      "to": "decision",
+      "label": "sugiere proveedor",
+      "variant": "security"
+    },
+    {
+      "id": "decision-whatsapp",
+      "from": "decision",
+      "to": "whatsapp",
+      "label": "aprobado",
+      "variant": "emphasis"
+    },
+    {
+      "id": "whatsapp-proveedor",
+      "from": "whatsapp",
+      "to": "proveedor",
+      "label": "propone fecha",
+      "variant": "emphasis"
+    },
+    {
+      "id": "proveedor-whatsapp",
+      "from": "proveedor",
+      "to": "whatsapp",
+      "label": "avances y fotos",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "id": "whatsapp-decision",
+      "from": "whatsapp",
+      "to": "decision",
+      "label": "escala precio o cambios",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "id": "proveedor-entrega",
+      "from": "proveedor",
+      "to": "entrega",
+      "label": "entrega",
+      "variant": "emphasis"
+    }
+  ]
+}

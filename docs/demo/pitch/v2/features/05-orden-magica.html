@@ -1,0 +1,231 @@
+<style>
+  .om{--brand:#ff8c06;--brand-hover:#f07f00;--accent:#0062fa;--ink:#15141c;--muted:#5f5e6b;--line:#e3e3e8;--canvas:#f5f5f7;--surface:#fff;--danger:#c4281c;--danger-soft:#fdecea;--warning:#9a5b00;--warning-soft:#fff4e0;--success:#12773d;--success-soft:#e6f4ea;
+    position:relative;width:1600px;height:900px;overflow:hidden;background:var(--paper,#f5f5f7);color:var(--ink);
+    font-family:var(--sans,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);font-size:20px;line-height:1.45;box-sizing:border-box}
+  .om-canvas{position:absolute;inset:0;z-index:1;padding:100px 80px 40px}
+  /* Deck furniture, same values as the shell, so the fragment also reads alone. */
+  .om .pg{position:absolute;right:80px;bottom:30px;font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:20px;opacity:.45}
+  .om .mark{position:absolute;right:80px;top:52px;width:238px;height:54px}
+  .om *,.om *::before,.om *::after{box-sizing:border-box;margin:0}
+  .om.is-instant *,.om.is-instant *::before,.om.is-instant *::after{transition:none!important;animation:none!important}
+  .om svg{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .om-kicker{display:flex;align-items:baseline;gap:18px;margin-bottom:20px;margin-top:-40px}
+  .om-kicker .om-num{font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:20px;letter-spacing:5px;color:var(--maroon,#5B2230);opacity:.85}
+  .om-kicker h2{font-family:var(--serif,Georgia,"Times New Roman",serif);font-size:40px;font-weight:400;letter-spacing:-.005em}
+  .om-kicker p{font-size:20px;color:var(--muted);max-width:760px;line-height:1.3}
+  .om-stage{display:grid;grid-template-columns:1fr 440px;gap:24px;align-items:start}
+  .om-card{background:var(--surface);border-radius:16px;box-shadow:0 0 0 1px var(--line);padding:24px}
+  .om-h{font-size:22px;font-weight:600;margin-bottom:18px}
+  .om-row{display:grid;grid-template-columns:.8fr 1.4fr .9fr;gap:16px;margin-bottom:18px}
+  .om-label{font-size:16px;color:var(--muted);display:block;margin-bottom:6px}
+  .om-field{height:52px;border-radius:10px;background:var(--surface);box-shadow:0 0 0 1px var(--line);padding:0 16px;display:flex;align-items:center;font-size:20px}
+  .om-field.is-select::after{content:"";width:10px;height:10px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-3px);margin-left:auto}
+  .om-item{border-radius:12px;box-shadow:0 0 0 1px var(--line);padding:20px;transition:box-shadow .25s ease-out}
+  .om-item.is-live{box-shadow:0 0 0 2px var(--accent)}
+  .om-item-head{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:16px;margin-bottom:12px}
+  .om-item-head .om-n{width:30px;height:30px;border-radius:50%;background:var(--canvas);display:grid;place-items:center;font-weight:600;color:var(--ink)}
+  .om-text{min-height:72px;border-radius:10px;box-shadow:0 0 0 1px var(--line);padding:14px 16px;font-size:21px;line-height:1.4;position:relative;white-space:pre-wrap}
+  .om-text .om-ph{color:#9896a3;position:absolute;inset:14px 16px;transition:opacity .2s}
+  .om-text.has-text .om-ph{opacity:0}
+  .om-caret{display:inline-block;width:2px;height:1.15em;background:var(--ink);vertical-align:-3px;margin-left:1px;animation:om-blink 1s steps(2) infinite}
+  @keyframes om-blink{to{opacity:0}}
+  .om-under{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+  .om-recog{display:flex;align-items:center;gap:12px;color:var(--accent);font-size:18px;height:0;opacity:0;overflow:hidden;transition:height .25s ease-out,opacity .25s ease-out}
+  .om-recog.is-on{height:36px;opacity:1}
+  .om-shimmer{flex:1;height:14px;border-radius:7px;background:linear-gradient(90deg,#e6ecfb 0%,#c9d8ff 50%,#e6ecfb 100%);background-size:200% 100%;animation:om-shimmer 1.1s linear infinite}
+  @keyframes om-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+  .om-chip{display:none;align-items:center;gap:10px;width:max-content;padding:8px 14px;border-radius:999px;background:#e6ecfb;color:var(--accent);font-weight:600;font-size:18px;margin-top:12px;transform:scale(.9);opacity:0}
+  .om-chip.is-on{display:inline-flex;animation:om-pop .28s ease-out forwards}
+  @keyframes om-pop{to{transform:scale(1);opacity:1}}
+  .om-chip .om-pct{font-weight:500;color:var(--muted)}
+  .om-recipe{margin-top:14px;display:grid;gap:6px}
+  .om-recipe li{list-style:none;display:none;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;padding:8px 12px;border-radius:10px;background:var(--canvas)}
+  .om-recipe li.is-on{display:grid;animation:om-in .24s ease-out both}
+  @keyframes om-in{from{opacity:0;transform:translateY(8px)}}
+  .om-thumb{width:44px;height:44px;border-radius:8px;display:grid;place-items:center;background:#fff;color:var(--muted);box-shadow:0 0 0 1px var(--line)}
+  .om-recipe .om-name{font-weight:600;font-size:18px}
+  .om-recipe .om-meta{font-size:15px;color:var(--muted)}
+  .om-pill{font-size:14px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .om-pill.ok{background:var(--success-soft);color:var(--success)}
+  .om-pill.order{background:var(--danger-soft);color:var(--danger)}
+  .om-pill.plant{background:var(--canvas);color:var(--muted);box-shadow:0 0 0 1px var(--line)}
+  .om-side .om-card{position:sticky;top:0}
+  .om-sum{display:grid;gap:14px}
+  .om-sum div{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line);font-size:18px;color:var(--muted)}
+  .om-sum b{font-size:28px;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:700}
+  .om-sum .om-sub{display:block;font-size:14px;color:var(--muted);text-align:right}
+  .om-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 24px;border-radius:10px;font-weight:600;font-size:20px;border:0;width:100%;margin-top:22px;transition:background .2s,color .2s,opacity .2s,box-shadow .2s}
+  .om-btn.primary{background:var(--brand);color:var(--ink)}
+  .om-btn.is-off{background:var(--brand);color:var(--ink);opacity:.45}
+  .om-btn.is-ready{animation:om-ready .6s ease-out}
+  @keyframes om-ready{0%{box-shadow:0 0 0 0 rgba(255,140,6,.6)}100%{box-shadow:0 0 0 18px rgba(255,140,6,0)}}
+  .om-hint{font-size:15px;color:var(--muted);text-align:center;margin-top:10px;min-height:22px}
+  .om-hint.is-ready{color:var(--success);font-weight:600}
+</style>
+<section class="slide feature om" data-feature="orden-magica">
+<svg class="mark" viewBox="0 0 238 54" aria-hidden="true"><use href="#ciso" x="0" y="0" width="46" height="54"/><use href="#cword" x="56" y="15" width="182" height="23"/></svg>
+<div class="om-canvas">
+<div class="om-kicker"><span class="om-num">05</span><h2>Orden mágica</h2><p>Comercial escribe la orden en lenguaje natural; la IA reconoce la prenda y arma la ficha técnica al instante.</p></div>
+<div class="om-stage">
+  <div class="om-card">
+    <div class="om-h">Nueva orden</div>
+    <div class="om-row">
+      <div><span class="om-label">Marca *</span><div class="om-field is-select">UNICRACK</div></div>
+      <div><span class="om-label">Cliente *</span><div class="om-field is-select">Colegio Los Algarrobos</div></div>
+      <div><span class="om-label">Fecha de entrega *</span><div class="om-field">10 nov. 2026</div></div>
+    </div>
+    <div class="om-item" data-item>
+      <div class="om-item-head"><span class="om-n">1</span>Prenda · describe lo que pide el cliente</div>
+      <div class="om-text" data-text><span class="om-ph">Ej.: 200 batas médicas blancas con bordado del logo</span><span data-typed></span></div>
+      <div class="om-recog" data-recog><svg viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>Reconociendo…<span class="om-shimmer"></span></div>
+      <div class="om-chip" data-chip><svg viewBox="0 0 24 24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>Polo deportivo UNICRACK <span class="om-pct">· 88 %</span></div>
+      <ul class="om-recipe" data-recipe>
+        <li><span class="om-thumb"><svg viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></svg></span><div><div class="om-name">Tela piqué algodón 30/1 azul marino</div><div class="om-meta">0.45 m × 300 = 135 m · stock 220 m</div></div><span class="om-pill ok">Cubierto</span></li>
+        <li><span class="om-thumb"><svg viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></svg></span><div><div class="om-name">Cuello rib tejido</div><div class="om-meta">1 × 300 = 300 u. · stock 0</div></div><span class="om-pill order">Por pedir 300</span></li>
+        <li><span class="om-thumb"><svg viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></svg></span><div><div class="om-name">Puño rib tejido</div><div class="om-meta">2 × 300 = 600 u. · stock 900 · reservado 900</div></div><span class="om-pill order">Por pedir 600</span></li>
+        <li><span class="om-thumb"><svg viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></svg></span><div><div class="om-name">Hilo poliéster 40/2</div><div class="om-meta">1 cono · stock 14</div></div><span class="om-pill ok">Cubierto</span></li>
+        <li><span class="om-thumb"><svg viewBox="0 0 24 24"><path d="M12 16h.01"/><path d="M16 16h.01"/><path d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a.5.5 0 0 0-.769-.422l-4.462 2.844A.5.5 0 0 1 15 10.5v-2a.5.5 0 0 0-.769-.422L9.77 10.922A.5.5 0 0 1 9 10.5V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><path d="M8 16h.01"/></svg></span><div><div class="om-name">Sublimado del escudo</div><div class="om-meta">300 u. · 100 % en planta</div></div><span class="om-pill plant">Planta Corpotex</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="om-side">
+    <div class="om-card">
+      <div class="om-h">Resumen</div>
+      <div class="om-sum">
+        <div>Prendas<b data-count="garments">0</b></div>
+        <div>Unidades<b data-count="units">0</b></div>
+        <div>Insumos<span><b data-count="materials">0</b><span class="om-sub" data-toorder>&nbsp;</span></span></div>
+        <div>Fecha estimada<b data-eta>—</b></div>
+      </div>
+      <button class="om-btn primary is-off" type="button" data-create><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg>Crear orden</button>
+      <div class="om-hint" data-hint>Falta describir la prenda</div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="pg">05</div>
+</section>
+<script>
+(function () {
+  const root = document.querySelector('.feature[data-feature="orden-magica"]');
+  const $ = (sel) => root.querySelector(sel);
+  const TEXT = "300 polos deportivos azul marino con escudo sublimado, tallas 6 a 14";
+  const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("reduced");
+  // One .slide in the document: opened on its own or in the preview iframe; the deck has eleven.
+  const standalone = document.querySelectorAll(".slide").length === 1;
+  let timers = [];
+  const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+
+  // Numbers that climb to their value in a few steps (ease-out).
+  function countTo(el, value, ms) {
+    const from = Number(el.textContent) || 0;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / ms);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(from + (value - from) * e);
+      if (p < 1) timers.push(setTimeout(() => requestAnimationFrame(tick), 16));
+    };
+    requestAnimationFrame(tick);
+  }
+
+  const steps = [
+    [300, () => $("[data-item]").classList.add("is-live")],
+    [600, () => {
+      const typed = $("[data-typed]");
+      $("[data-text]").classList.add("has-text");
+      const caret = document.createElement("span");
+      caret.className = "om-caret";
+      typed.after(caret);
+      let i = 0;
+      const step = () => {
+        typed.textContent = TEXT.slice(0, ++i);
+        if (i < TEXT.length) later(38 + (TEXT[i - 1] === " " ? 40 : 0) + (TEXT[i - 1] === "," ? 160 : 0), step);
+        else later(400, () => caret.remove());
+      };
+      step();
+    }],
+    [4700, () => $("[data-recog]").classList.add("is-on")],
+    [6400, () => { $("[data-recog]").classList.remove("is-on"); $("[data-chip]").classList.add("is-on"); }],
+    [6900, () => root.querySelectorAll("[data-recipe] li").forEach((li, i) => later(i * 160, () => li.classList.add("is-on")))],
+    [8200, () => { countTo($('[data-count="garments"]'), 1, 300); countTo($('[data-count="units"]'), 300, 900); }],
+    [8700, () => { countTo($('[data-count="materials"]'), 5, 700); later(700, () => { $("[data-toorder]").textContent = "2 por pedir"; }); }],
+    [9900, () => { $("[data-eta]").textContent = "28 oct."; }],
+    [10800, () => {
+      const btn = $("[data-create]");
+      btn.classList.remove("is-off");
+      btn.classList.add("is-ready");
+      const hint = $("[data-hint]");
+      hint.textContent = "Lista: nace con ficha técnica contra inventario";
+      hint.classList.add("is-ready");
+    }],
+  ];
+
+  function reset() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    root.classList.remove("is-instant");
+    $("[data-item]").classList.remove("is-live");
+    $("[data-typed]").textContent = "";
+    root.querySelectorAll(".om-caret").forEach((c) => c.remove());
+    $("[data-text]").classList.remove("has-text");
+    $("[data-recog]").classList.remove("is-on");
+    $("[data-chip]").classList.remove("is-on");
+    root.querySelectorAll("[data-recipe] li").forEach((li) => li.classList.remove("is-on"));
+    root.querySelectorAll("[data-count]").forEach((b) => (b.textContent = "0"));
+    $("[data-toorder]").innerHTML = "&nbsp;";
+    $("[data-eta]").textContent = "—";
+    $("[data-create]").classList.add("is-off");
+    $("[data-create]").classList.remove("is-ready");
+    $("[data-hint]").textContent = "Falta describir la prenda";
+    $("[data-hint]").classList.remove("is-ready");
+  }
+
+  function start() {
+    reset();
+    if (reduced()) {
+      // Straight to the end: everything typed, recognised and counted.
+      root.classList.add("is-instant");
+      $("[data-item]").classList.add("is-live");
+      $("[data-typed]").textContent = TEXT;
+      $("[data-text]").classList.add("has-text");
+      $("[data-chip]").classList.add("is-on");
+      root.querySelectorAll("[data-recipe] li").forEach((li) => li.classList.add("is-on"));
+      $('[data-count="garments"]').textContent = "1";
+      $('[data-count="units"]').textContent = "300";
+      $('[data-count="materials"]').textContent = "5";
+      $("[data-toorder]").textContent = "2 por pedir";
+      $("[data-eta]").textContent = "28 oct.";
+      $("[data-create]").classList.remove("is-off");
+      $("[data-hint]").textContent = "Lista: nace con ficha técnica contra inventario";
+      $("[data-hint]").classList.add("is-ready");
+      return;
+    }
+    steps.forEach(([t, fn]) => later(t, fn));
+  }
+
+  window.features = window.features || {};
+  window.features["orden-magica"] = { start, reset, duration: 15000 };
+
+  // Opened on its own: fit the viewport and play; the preview iframe drives it
+  // with postMessage({feature, action}). Inside the deck the shell calls start/reset.
+  if (standalone) {
+    const fit = () => {
+      const s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+      root.style.transformOrigin = "top left";
+      root.style.transform = `scale(${s})`;
+      document.body.style.margin = "0";
+      document.body.style.background = "#15141c";
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    window.addEventListener("message", (e) => {
+      const m = e.data || {};
+      if (m.feature !== "orden-magica") return;
+      if (m.action === "start") start();
+      if (m.action === "reset") reset();
+    });
+    if (window === window.top) later(400, start);
+  }
+})();
+</script>
